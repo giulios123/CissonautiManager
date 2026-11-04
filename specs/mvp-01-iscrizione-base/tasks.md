@@ -26,7 +26,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: `/api/me` senza sessione 401; con sessione restituisce saldo e scadenza corretti.
 - [x] **11. Admin iscrizioni e pagamenti**: elenco con filtri e ricerca, scheda, registrazione pagamento, conferma automatica, riattivazione se c'è posto, avviso se non c'è, email di conferma in console.
   Test: pagamento parziale lascia `in_attesa_pagamento`; pagamento che copre conferma; pagamento su scaduta con posto riattiva; senza posto resta scaduta con avviso; saldo corretto; email inviata una volta.
-- [ ] **12. CI**: workflow `ci.yml` con ruff, pytest (anche su SQL Server come service container), eslint, vitest, build del frontend e dell'immagine.
+- [x] **12. CI**: workflow `ci.yml` con ruff, pytest (anche su SQL Server come service container), eslint, vitest, build del frontend e dell'immagine.
   Test: la CI è verde sul branch.
 
 ## Parte 1b · Deploy su Azure
