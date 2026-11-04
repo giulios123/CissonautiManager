@@ -12,7 +12,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: `alembic upgrade head` da zero e `downgrade base` senza errori (SQLite in locale, SQL Server in CI).
 - [x] **4. Regole di dominio**: `compute_fee`, `effective_status`, `occupies_seats`, `available_seats`, `hold_deadline`, `can_reactivate`, `generate_personal_code`.
   Test: importo con giorni distinti e stesso giorno contato una volta; scadenza prima e dopo; stati che occupano posti; riattivazione; formato e alfabeto del codice.
-- [ ] **5. Magic link, sessione e admin seed**: `EmailSender` astratto e `ConsoleEmailSender`, magic link (hash, 30 minuti, monouso), `auth_session` con cookie 14 giorni, dipendenze `current_user` e `require_admin`, seed da `ADMIN_EMAIL`.
+- [x] **5. Magic link, sessione e admin seed**: `EmailSender` astratto e `ConsoleEmailSender`, magic link (hash, 30 minuti, monouso), `auth_session` con cookie 14 giorni, dipendenze `current_user` e `require_admin`, seed da `ADMIN_EMAIL`.
   Test: token scaduto, token riusato, risposta neutra per email sconosciuta, attributi del cookie, accesso admin negato a un partecipante, seed idempotente.
 - [ ] **6. Password**: hash argon2, `POST /api/auth/login`, `PUT /api/me/password`, `ADMIN_PASSWORD` opzionale nel seed.
   Test: password corta rifiutata, login corretto, errore identico per email sconosciuta, password errata e utente senza password.

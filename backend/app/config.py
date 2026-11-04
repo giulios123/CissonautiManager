@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.app_env == "production"
 
+    @property
+    def cookie_secure(self) -> bool:
+        """Session cookies are Secure whenever the app is served over https."""
+        return self.app_base_url.startswith("https://")
+
 
 @lru_cache
 def get_settings() -> Settings:
