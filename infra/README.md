@@ -12,6 +12,8 @@ Un solo gruppo di risorse con: Container App (si spegne quando nessuno la usa), 
 
 ## Prima configurazione (una volta sola)
 
+**Via rapida**: da Azure Cloud Shell (Bash), dopo `gh auth login`, lancia `./infra/bootstrap.sh`. Fa in un colpo tutto quello che segue (gruppo di risorse, utenza di deploy, ambiente GitHub, variabili e segreti) e non stampa nessun segreto. I passi sotto sono la stessa cosa fatta a mano, per riferimento.
+
 Servono Azure CLI e i permessi sull'abbonamento.
 
 ```bash
