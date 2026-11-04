@@ -343,3 +343,23 @@ class TestEmbedding:
     @pytest.mark.parametrize("path", ["/", "/accedi", "/admin", "/api/health", "/api/me"])
     def test_everything_else_cannot_be_framed_by_others(self, client, path):
         assert client.get(path).headers["content-security-policy"] == "frame-ancestors 'self'"
+
+
+class TestSlotOrder:
+    """Regression: afternoon used to be listed before morning (sorted by period name)."""
+
+    def test_summary_and_email_list_morning_before_afternoon(self, client, outbox, slot_ids):
+        ids = [slot_ids[(d(13), "afternoon")], slot_ids[(d(13), "morning")]]
+        booking = client.post("/api/public/registrations", json=payload(ids)).json()["booking"]
+        periods = [s["period"] for s in booking["slots"]]
+        assert periods == ["morning", "afternoon"]
+        body = outbox.sent[0].body
+        assert body.index("mattina") < body.index("pomeriggio")
+
+    def test_public_edition_lists_morning_first(self, client, edition):
+        first_day = client.get("/api/public/edition").json()["days"][0]
+        assert [s["period"] for s in first_day["slots"]] == ["morning", "afternoon"]
+
+    def test_admin_edition_lists_morning_first(self, admin_client, edition):
+        slots = admin_client.get("/api/admin/edition").json()["slots"]
+        assert [s["period"] for s in slots[:2]] == ["morning", "afternoon"]

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from app.domain.booking import effective_status
 from app.domain.fees import balance_cents
-from app.models import Booking
+from app.models import Booking, slot_sort_key
 from app.timefmt import format_slot
 
 
@@ -35,7 +35,7 @@ class BookingView(BaseModel):
 
 def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -> BookingView:
     paid = sum(p.amount_cents for p in booking.payments)
-    slots = sorted(booking.slots, key=lambda s: (s.date, s.period))
+    slots = sorted(booking.slots, key=slot_sort_key)
     return BookingView(
         id=booking.id,
         status=effective_status(booking.status, booking.hold_expires_at, now),

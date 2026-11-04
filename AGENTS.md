@@ -10,21 +10,20 @@ Database Azure SQL (SQL Server in locale), deploy su Azure Container Apps, open 
 
 ## Comandi
 
-> Fino al completamento dell'MVP 1 questi comandi sono previsti e non ancora funzionanti.
-
 ```bash
 # Setup
 cp .env.example .env
+# Optional: SQL Server in Docker. Without it the app uses a local SQLite file (default DATABASE_URL).
 docker compose up -d db
 cd backend && uv sync
 cd frontend && npm ci
 
 # Run locale (due terminali)
-cd backend && uv run uvicorn app.main:app --reload    # API su http://localhost:8000
+cd backend && uv run alembic upgrade head && uv run uvicorn app.main:app --reload   # API su http://localhost:8000
 cd frontend && npm run dev                             # UI su http://localhost:5173, proxy /api verso 8000
 
 # Test
-cd backend && uv run pytest
+cd backend && uv run pytest                       # SQLite; con TEST_DATABASE_URL gira su SQL Server
 cd frontend && npm test
 
 # Lint e formattazione

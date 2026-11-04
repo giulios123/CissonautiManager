@@ -16,6 +16,7 @@ from app.models import (
     Participant,
     PaymentChannel,
     Slot,
+    slot_sort_key,
 )
 from app.services import auth as auth_service
 from app.services import edition as edition_service
@@ -95,7 +96,7 @@ def _email_body(
 ) -> str:
     slots = "\n".join(
         f"- {format_slot(s.date, s.period, s.start_time, s.end_time)}"
-        for s in sorted(booking.slots, key=lambda s: (s.date, s.period))
+        for s in sorted(booking.slots, key=slot_sort_key)
     )
     pay = "\n".join(f"- {c.label}: {c.instructions}".rstrip(": ") for c in channels) or (
         "- Ti scriveremo le istruzioni appena possibile."

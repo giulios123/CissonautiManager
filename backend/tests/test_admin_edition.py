@@ -40,8 +40,8 @@ class TestCreateAndUpdate:
         assert {s["capacity"] for s in slots} == {25}
         first_day = [s for s in slots if s["date"] == "2026-07-13"]
         assert [(s["period"], s["start_time"], s["end_time"]) for s in first_day] == [
-            ("afternoon", "14:00:00", "18:00:00"),
             ("morning", "09:00:00", "13:00:00"),
+            ("afternoon", "14:00:00", "18:00:00"),
         ]
 
     def test_create_adds_four_disabled_payment_channels(self, admin_client):

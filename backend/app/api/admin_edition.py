@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import require_admin
-from app.models import Edition, LegalDocument, PaymentChannel
+from app.models import Edition, LegalDocument, PaymentChannel, slot_sort_key
 from app.services import edition as edition_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
@@ -84,7 +84,7 @@ class LegalIn(BaseModel):
 
 
 def _edition_out(db: Session, edition: Edition) -> EditionOut:
-    slots = sorted(edition.slots, key=lambda s: (s.date, s.period))
+    slots = sorted(edition.slots, key=slot_sort_key)
     privacy = edition_service.latest_legal_document(db, edition, "privacy")
     disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
     base = EditionIn.model_validate(edition, from_attributes=True)

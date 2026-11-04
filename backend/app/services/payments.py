@@ -15,6 +15,7 @@ from app.models import (
     Participant,
     Payment,
     Slot,
+    slot_sort_key,
 )
 from app.services import edition as edition_service
 from app.services.seats import expire_overdue, free_by_slot
@@ -42,7 +43,7 @@ def _send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -
     participant = booking.participant
     slots = "\n".join(
         f"- {format_slot(s.date, s.period, s.start_time, s.end_time)}"
-        for s in sorted(booking.slots, key=lambda s: (s.date, s.period))
+        for s in sorted(booking.slots, key=slot_sort_key)
     )
     sender.send(
         EmailMessage(

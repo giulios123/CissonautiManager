@@ -169,3 +169,8 @@ class AuthSession(Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+def slot_sort_key(slot: Slot) -> tuple[date, time]:
+    """Chronological order: by day, then by start time (so morning comes before afternoon)."""
+    return (slot.date, slot.start_time)

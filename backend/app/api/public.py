@@ -12,6 +12,7 @@ from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
 from app.email import EmailSender
+from app.models import slot_sort_key
 from app.services import edition as edition_service
 from app.services import registration as registration_service
 from app.services.seats import expire_overdue, free_by_slot
@@ -125,7 +126,7 @@ def get_public_edition(
     assert edition is not None
     expire_overdue(db, now)
     db.commit()
-    slots = sorted(edition.slots, key=lambda s: (s.date, s.period))
+    slots = sorted(edition.slots, key=slot_sort_key)
     free = free_by_slot(db, slots, now)
     days = [
         DayOut(
@@ -223,7 +224,7 @@ def create_registration(
                     period=s.period,
                     label=format_slot(s.date, s.period, s.start_time, s.end_time),
                 )
-                for s in sorted(booking.slots, key=lambda s: (s.date, s.period))
+                for s in sorted(booking.slots, key=slot_sort_key)
             ],
             payment_channels=_channels(db, edition),
         ),
