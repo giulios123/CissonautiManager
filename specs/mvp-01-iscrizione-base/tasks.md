@@ -8,7 +8,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: health risponde 200; config legge i valori d'ambiente.
 - [x] **2. Scaffold frontend e app unica**: Vite + React + TypeScript, React Router, eslint, prettier, vitest; FastAPI serve la build con fallback SPA; `Dockerfile` multi-stage con ODBC Driver 18.
   Test: vitest di smoke sul router; pytest che una rotta SPA restituisce `index.html` e `/api/...` sconosciuto restituisce 404 JSON.
-- [ ] **3. Database e migrazione iniziale**: SQLAlchemy 2, Alembic, modelli del design, migrazione iniziale.
+- [x] **3. Database e migrazione iniziale**: SQLAlchemy 2, Alembic, modelli del design, migrazione iniziale.
   Test: `alembic upgrade head` da zero e `downgrade base` senza errori (SQLite in locale, SQL Server in CI).
 - [ ] **4. Regole di dominio**: `compute_fee`, `effective_status`, `occupies_seats`, `available_seats`, `hold_deadline`, `can_reactivate`, `generate_personal_code`.
   Test: importo con giorni distinti e stesso giorno contato una volta; scadenza prima e dopo; stati che occupano posti; riattivazione; formato e alfabeto del codice.
