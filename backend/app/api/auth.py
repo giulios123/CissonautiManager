@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.config import Settings
@@ -16,6 +16,7 @@ from app.email import EmailSender
 from app.models import ROLE_ADMIN, Participant
 from app.services import auth as auth_service
 from app.services.participants import get_by_email
+from app.services.passwords import verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -28,6 +29,11 @@ class MagicLinkRequest(BaseModel):
 
 class VerifyRequest(BaseModel):
     token: str
+
+
+class PasswordLogin(BaseModel):
+    email: EmailStr
+    password: str = Field(max_length=128)
 
 
 class LoginResult(BaseModel):
@@ -78,6 +84,23 @@ def verify_magic_link(
     participant = auth_service.consume_magic_link(db, body.token, now)
     if participant is None:
         raise HTTPException(status_code=400, detail="Link non valido o scaduto")
+    set_session_cookie(response, settings, auth_service.create_session(db, participant, now))
+    return login_result(participant)
+
+
+@router.post("/login")
+def login_with_password(
+    body: PasswordLogin,
+    response: Response,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings_dep),
+    now: datetime = Depends(get_now),
+) -> LoginResult:
+    participant = get_by_email(db, body.email)
+    stored_hash = participant.password_hash if participant else None
+    # One generic error for unknown email, no password set and wrong password.
+    if participant is None or not verify_password(stored_hash, body.password):
+        raise HTTPException(status_code=401, detail="Email o password non corretti")
     set_session_cookie(response, settings, auth_service.create_session(db, participant, now))
     return login_result(participant)
 

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.domain.codes import generate_personal_code
 from app.models import ROLE_ADMIN, Participant
+from app.services.passwords import hash_password
 
 
 def normalize_email(email: str) -> str:
@@ -21,8 +22,12 @@ def new_unique_personal_code(db: Session) -> str:
     raise RuntimeError("Could not generate a unique personal code")
 
 
-def ensure_admin(db: Session, email: str) -> Participant:
-    """Create the participant with this email as admin, or promote the existing one."""
+def ensure_admin(db: Session, email: str, password: str | None = None) -> Participant:
+    """Create the participant with this email as admin, or promote the existing one.
+
+    The optional password is only used when the admin has none yet, so it never overwrites
+    a password the admin chose later.
+    """
     participant = get_by_email(db, email)
     if participant is None:
         participant = Participant(
@@ -35,5 +40,7 @@ def ensure_admin(db: Session, email: str) -> Participant:
         db.add(participant)
     else:
         participant.role = ROLE_ADMIN
+    if password and participant.password_hash is None:
+        participant.password_hash = hash_password(password)
     db.commit()
     return participant

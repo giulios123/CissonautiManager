@@ -40,7 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if settings.admin_email:
             with app.state.session_factory() as db:
-                ensure_admin(db, settings.admin_email)
+                ensure_admin(db, settings.admin_email, settings.admin_password)
         else:
             logger.warning("ADMIN_EMAIL is not set: no admin will be created")
         yield

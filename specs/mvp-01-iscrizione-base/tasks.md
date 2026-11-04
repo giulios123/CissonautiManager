@@ -14,7 +14,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: importo con giorni distinti e stesso giorno contato una volta; scadenza prima e dopo; stati che occupano posti; riattivazione; formato e alfabeto del codice.
 - [x] **5. Magic link, sessione e admin seed**: `EmailSender` astratto e `ConsoleEmailSender`, magic link (hash, 30 minuti, monouso), `auth_session` con cookie 14 giorni, dipendenze `current_user` e `require_admin`, seed da `ADMIN_EMAIL`.
   Test: token scaduto, token riusato, risposta neutra per email sconosciuta, attributi del cookie, accesso admin negato a un partecipante, seed idempotente.
-- [ ] **6. Password**: hash argon2, `POST /api/auth/login`, `PUT /api/me/password`, `ADMIN_PASSWORD` opzionale nel seed.
+- [x] **6. Password**: hash argon2, `POST /api/auth/login`, `PUT /api/me/password`, `ADMIN_PASSWORD` opzionale nel seed.
   Test: password corta rifiutata, login corretto, errore identico per email sconosciuta, password errata e utente senza password.
 - [ ] **7. Impostazioni edizione**: API e pagina `/admin/impostazioni` per dati edizione, generazione slot, canali di pagamento, nuove versioni dei testi legali.
   Test: generazione slot dalle date; rifiuto della rimozione di giorni prenotati; versionamento dei testi.
