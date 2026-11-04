@@ -2,19 +2,23 @@
 
 ## Ora
 
-Bootstrap completato: Memory Bank, `AGENTS.md`, roadmap e spec dell'MVP 1 (`specs/mvp-01-iscrizione-base/`).
-La spec dell'MVP 1 è in attesa di conferma del maintainer.
+MVP 1, Parte 1a, in implementazione sul branch `feat/mvp-01-iscrizione-base` (fallback: `claude/ecstatic-davinci-20qb6m`). Task in `specs/mvp-01-iscrizione-base/tasks.md`.
+
+## Decisioni del maintainer (2026-11-04)
+
+1. MVP 1 diviso in 1a (task 1-12, locale e CI) e 1b (task 13-14, deploy Azure).
+2. Branch `feat/mvp-01-iscrizione-base`; se non si riesce a crearlo si usa quello della sessione.
+3. Accesso anche con password, oltre al magic link (aggiornato `domain.md`).
+4. Scadenza del blocco: N x 24 ore esatte dalla creazione.
+5. Email già iscritta con prenotazione scaduta: nuova prenotazione se c'è posto, altrimenti rifiuto.
+6. Pagamento su prenotazione scaduta: riattivazione se c'è posto, altrimenti pagamento registrato e avviso all'admin.
+7. Email di conferma pagamento nell'MVP 1 (non risposto, assunto sì).
 
 ## Prossimo passo
 
-Dopo la conferma: fase B2 sull'MVP 1, partendo dal task 1 di `specs/mvp-01-iscrizione-base/tasks.md`.
+Task 1 (scaffold backend), poi in ordine.
 
 ## Dubbi aperti
 
-1. Dividere l'MVP 1 in 1a (tutto in locale, task 1-11) e 1b (deploy Azure, task 12-13)?
-2. Branch: la Parte B prevede `feat/mvp-NN-<slug>`, ma la sessione cloud corrente può pushare solo sul branch assegnato. Quale usare?
-3. L'admin deve fare login già nell'MVP 1: si anticipa il magic link con cookie da 14 giorni dall'MVP 2, con una pagina personale solo in lettura.
-4. Scadenza del blocco: N x 24 ore esatte oppure fine giornata (23:59 Europe/Rome) dell'N-esimo giorno? Proposta: fine giornata.
-5. Email già iscritta: con prenotazione attiva si reinvia il link; con prenotazione scaduta se ne crea una nuova?
-6. Pagamento registrato su prenotazione scaduta: riattivarla solo se c'è ancora posto, altrimenti registrare il pagamento e avvisare l'admin?
-7. Email di conferma pagamento già nell'MVP 1 (in console)?
+- Il maintainer ha scritto "prevedi solo 8-18 e post 18" rispondendo al punto 4. Interpretazione adottata: orari configurabili con default 9-13 e 14-18 come in `domain.md` (quindi 8-18 si ottiene configurandoli). Se invece si intende un solo slot diurno 8-18 più la sera, serve una modifica a `domain.md`.
+- Test di integrazione su SQLite in locale (nessun Docker in questo ambiente), su SQL Server in CI.

@@ -7,6 +7,7 @@ Riferimento: `memory-bank/domain.md`. In caso di conflitto vince `domain.md`.
 Come organizzatore voglio che il primo admin esista già all'avvio, per poter configurare l'edizione.
 
 - Quando l'app parte con `ADMIN_EMAIL` impostata e nessun utente con quell'email esiste, allora viene creato un utente con ruolo `admin`.
+- Quando è impostata anche `ADMIN_PASSWORD`, allora il primo admin può entrare subito con email e password.
 - Quando l'utente esiste già, allora gli viene assegnato il ruolo `admin` senza duplicarlo.
 - Quando `ADMIN_EMAIL` non è impostata, allora l'app parte e scrive un avviso nei log.
 
@@ -19,6 +20,15 @@ Come admin o partecipante voglio entrare senza password usando la mia email.
 - Quando apro il link entro 30 minuti, allora entro e ricevo un cookie di sessione httpOnly, Secure, SameSite=Lax valido 14 giorni.
 - Quando riapro lo stesso link o lo apro dopo 30 minuti, allora vedo un errore e la possibilità di richiedere un nuovo link.
 - Quando l'admin entra, allora arriva al pannello admin; quando entra un partecipante, allora arriva alla sua pagina personale.
+
+## US-2b · Accesso con password (opzionale)
+
+Come admin o partecipante voglio poter entrare anche con email e password.
+
+- Quando sono dentro con una sessione valida e imposto una password di almeno 10 caratteri, allora viene salvata solo come hash e da quel momento posso entrare con email e password.
+- Quando inserisco email e password corrette in `/accedi`, allora ricevo lo stesso cookie di sessione del magic link (14 giorni).
+- Quando email o password sono sbagliate, o l'utente non ha una password, allora vedo sempre lo stesso errore generico.
+- Quando ho dimenticato la password, allora posso usare il magic link per entrare e impostarne una nuova.
 
 ## US-3 · Impostazioni essenziali dell'edizione
 
@@ -43,6 +53,7 @@ Come persona invitata voglio iscrivermi da una pagina pubblica, anche dentro Goo
 - Quando invio il modulo, allora parte un'email (in console) con riepilogo e magic link; il link si apre in una finestra normale, fuori dall'iframe.
 - Quando uno slot scelto si riempie mentre compilo, allora ricevo un errore che indica lo slot e posso cambiare la scelta.
 - Quando l'email ha già una prenotazione attiva, allora non ne viene creata un'altra e mi viene inviato il magic link.
+- Quando l'email ha solo prenotazioni scadute e c'è posto negli slot scelti, allora viene creata una nuova prenotazione; se non c'è posto, allora l'iscrizione viene rifiutata con l'indicazione degli slot pieni.
 
 ## US-5 · Calcolo dell'importo
 
@@ -51,6 +62,7 @@ Come persona invitata voglio iscrivermi da una pagina pubblica, anche dentro Goo
 
 ## US-6 · Scadenza del blocco
 
+- Quando creo una prenotazione, allora la scadenza è esattamente N x 24 ore dopo la creazione (N = giorni di blocco).
 - Quando una prenotazione `in_attesa_pagamento` supera la scadenza senza essere coperta dai pagamenti, allora alla lettura risulta `scaduta` e i suoi posti tornano disponibili.
 - Quando la scadenza non è ancora passata, allora i posti restano occupati.
 
@@ -67,6 +79,8 @@ Come admin voglio vedere tutte le iscrizioni.
 - Quando dalla scheda registro un pagamento con importo, canale, data e nota, allora compare nell'elenco dei pagamenti e il saldo si aggiorna.
 - Quando i pagamenti coprono l'importo dovuto, allora la prenotazione diventa `confermata` e parte un'email (in console) di conferma.
 - Quando i pagamenti non coprono l'importo, allora la prenotazione resta `in_attesa_pagamento`.
+- Quando registro un pagamento su una prenotazione `scaduta` e gli slot hanno ancora posto, allora la prenotazione viene riattivata e, se il pagamento copre l'importo, confermata.
+- Quando registro un pagamento su una prenotazione `scaduta` e uno slot è pieno, allora il pagamento viene registrato, la prenotazione resta `scaduta` e la scheda mostra un avviso all'admin.
 
 ## US-9 · Pagina personale minima
 

@@ -41,6 +41,7 @@
 
 - Pagina pubblica di iscrizione senza login, incorporabile in Google Sites tramite iframe: header CSP `frame-ancestors` che autorizza `https://sites.google.com` e `https://*.googleusercontent.com`. Dopo l'invio mostra riepilogo, importo, istruzioni di pagamento e scadenza, e invia un'email con il magic link.
 - Magic link: token monouso valido 30 minuti, apre la pagina personale in una finestra normale (fuori dall'iframe). Dopo il login un cookie di sessione httpOnly, Secure, SameSite=Lax dura 14 giorni. Chi non ha un cookie valido può richiedere un nuovo link inserendo l'email.
+- Password (opzionale): oltre al magic link si può accedere con email e password. La password si imposta dalla pagina personale dopo un accesso con magic link; il magic link resta sempre disponibile come recupero.
 - Pagina personale: modifica degli slot, adesione a pranzi, cene e attività, esigenze alimentari, contributi offerti (talk, temi per l'unconference, competenze), saldo e istruzioni di pagamento, richiesta di disdetta.
 - Admin: stessa app, ruolo `admin`. Gli admin si aggiungono e rimuovono dal pannello, senza limite di numero. Il primo admin viene creato da variabile d'ambiente.
 
