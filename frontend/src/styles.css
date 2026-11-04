@@ -141,3 +141,76 @@ summary {
   border-radius: 0.5rem;
   background: #fff;
 }
+
+main.wide {
+  max-width: 72rem;
+}
+
+.admin-nav {
+  background: var(--accent);
+}
+
+.admin-nav nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: center;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0.25rem 1rem;
+}
+
+.admin-nav a,
+.admin-nav button.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  color: #fff;
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.admin-nav a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.admin-nav :focus-visible {
+  outline-color: #fff;
+}
+
+button.secondary {
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd8cd;
+  vertical-align: top;
+}
+
+dt {
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+dd {
+  margin: 0;
+}

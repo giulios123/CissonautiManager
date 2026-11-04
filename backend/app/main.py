@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api import admin_edition as admin_edition_api
+from app.api import admin_registrations as admin_registrations_api
 from app.api import auth as auth_api
 from app.api import me as me_api
 from app.api import public as public_api
@@ -73,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_api.router)
     app.include_router(me_api.router)
     app.include_router(admin_edition_api.router)
+    app.include_router(admin_registrations_api.router)
     app.include_router(public_api.router)
 
     @app.middleware("http")

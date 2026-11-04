@@ -54,3 +54,4 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Prelazione per chi ha già partecipato.
 - Gestione esplicita del +1 (dettagli da definire prima dell'MVP 7).
 - Limite di richieste (rate limit) su richiesta del magic link e sul login con password, per evitare invii email ripetuti e tentativi a raffica.
+- Canale "contanti/altro" per registrare pagamenti fuori dai quattro canali previsti.

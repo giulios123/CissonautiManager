@@ -1,5 +1,8 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { RequireLogin } from "./auth";
+import { AdminLayout } from "./pages/AdminLayout";
+import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
+import { AdminRegistrations } from "./pages/AdminRegistrations";
 import { AdminSettings } from "./pages/AdminSettings";
 import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
@@ -37,13 +40,17 @@ export function App() {
       <Route path="/accedi/verifica" element={<Verify />} />
       <Route path="/io" element={<Personal />} />
       <Route
-        path="/admin/impostazioni"
+        path="/admin"
         element={
           <RequireLogin admin>
-            <AdminSettings />
+            <AdminLayout />
           </RequireLogin>
         }
-      />
+      >
+        <Route index element={<AdminRegistrations />} />
+        <Route path="iscrizioni/:id" element={<AdminRegistrationDetail />} />
+        <Route path="impostazioni" element={<AdminSettings />} />
+      </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

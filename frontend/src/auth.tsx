@@ -10,7 +10,7 @@ export type BookingView = {
   balance_cents: number;
   hold_expires_at: string;
   slots: { date: string; period: string; label: string }[];
-  payments: { amount_cents: number; channel: string; paid_on: string }[];
+  payments: { amount_cents: number; channel: string; paid_on: string; note?: string | null }[];
 };
 
 export type Me = {
