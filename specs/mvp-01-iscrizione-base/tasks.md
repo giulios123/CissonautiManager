@@ -6,7 +6,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
 
 - [x] **1. Scaffold backend**: `pyproject.toml` con `uv` (Python 3.12), FastAPI, `config.py` da variabili d'ambiente, `GET /api/health`, ruff, pytest.
   Test: health risponde 200; config legge i valori d'ambiente.
-- [ ] **2. Scaffold frontend e app unica**: Vite + React + TypeScript, React Router, eslint, prettier, vitest; FastAPI serve la build con fallback SPA; `Dockerfile` multi-stage con ODBC Driver 18.
+- [x] **2. Scaffold frontend e app unica**: Vite + React + TypeScript, React Router, eslint, prettier, vitest; FastAPI serve la build con fallback SPA; `Dockerfile` multi-stage con ODBC Driver 18.
   Test: vitest di smoke sul router; pytest che una rotta SPA restituisce `index.html` e `/api/...` sconosciuto restituisce 404 JSON.
 - [ ] **3. Database e migrazione iniziale**: SQLAlchemy 2, Alembic, modelli del design, migrazione iniziale.
   Test: `alembic upgrade head` da zero e `downgrade base` senza errori (SQLite in locale, SQL Server in CI).
