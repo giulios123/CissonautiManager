@@ -1,0 +1,281 @@
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { api, ApiError } from "../api";
+import { feePreview, formatDay, formatDeadline, hhmm, periodLabel, type Day } from "../booking";
+import { formatEuro } from "../money";
+
+type Channel = { code: string; label: string; instructions: string };
+type Legal = { version: number; body: string };
+type PublicEdition = {
+  registration_open: boolean;
+  name: string | null;
+  base_fee_cents: number | null;
+  per_day_fee_cents: number | null;
+  hold_days: number | null;
+  days: Day[];
+  payment_channels: Channel[];
+  privacy: Legal | null;
+  disclaimer: Legal | null;
+};
+type Summary = {
+  personal_code: string;
+  amount_due_cents: number;
+  hold_expires_at: string;
+  slots: { label: string }[];
+  payment_channels: Channel[];
+};
+type Outcome = { kind: "created"; booking: Summary } | { kind: "already"; message: string };
+
+const fetchEdition = () => api<PublicEdition>("/api/public/edition");
+
+export function Registration() {
+  const [edition, setEdition] = useState<PublicEdition | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    fetchEdition()
+      .then(setEdition)
+      .catch(() => setLoadError(true));
+  }, []);
+
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
+
+  if (loadError)
+    return <main role="alert">Non riesco a caricare la pagina. Riprova tra poco.</main>;
+  if (!edition) return <main aria-busy="true">Caricamento…</main>;
+
+  if (outcome?.kind === "already") {
+    return (
+      <main>
+        <h1>Sei già iscritto</h1>
+        <p role="status">{outcome.message}</p>
+      </main>
+    );
+  }
+  if (outcome?.kind === "created") return <Confirmation booking={outcome.booking} />;
+
+  if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
+    return (
+      <main>
+        <h1>{edition.name ?? "Cisonauti Summer Camp"}</h1>
+        <p>Le iscrizioni non sono ancora aperte. Torna a trovarci presto!</p>
+      </main>
+    );
+  }
+
+  const { privacy, disclaimer } = edition;
+  const fee = feePreview(
+    edition.days,
+    selected,
+    edition.base_fee_cents ?? 0,
+    edition.per_day_fee_cents ?? 0,
+  );
+
+  function toggle(id: number, checked: boolean) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    if (selected.size === 0) {
+      setError("Scegli almeno uno slot.");
+      return;
+    }
+    const data = new FormData(event.currentTarget);
+    const text = (name: string) => String(data.get(name) ?? "");
+    setSending(true);
+    try {
+      const result = await api<{ result: string; message?: string; booking?: Summary }>(
+        "/api/public/registrations",
+        {
+          method: "POST",
+          json: {
+            first_name: text("first_name"),
+            last_name: text("last_name"),
+            email: text("email"),
+            phone: text("phone") || null,
+            invited_by: text("invited_by") || null,
+            can_bring: text("can_bring"),
+            slot_ids: [...selected],
+            accept_privacy: data.get("accept_privacy") === "on",
+            accept_disclaimer: data.get("accept_disclaimer") === "on",
+            privacy_version: privacy.version,
+            disclaimer_version: disclaimer.version,
+          },
+        },
+      );
+      if (result.result === "created" && result.booking) {
+        setOutcome({ kind: "created", booking: result.booking });
+      } else {
+        setOutcome({ kind: "already", message: result.message ?? "Risulti già iscritto." });
+      }
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      if (caught instanceof ApiError && caught.status === 409) {
+        setSelected(new Set());
+        setEdition(await fetchEdition().catch(() => edition));
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <main>
+      <h1>{edition.name}</h1>
+      <p>
+        Scegli i momenti in cui vuoi venire. Il posto resta bloccato per {edition.hold_days} giorni:
+        per confermarlo basta pagare la quota.
+      </p>
+      <form onSubmit={submit} noValidate={false}>
+        <fieldset>
+          <legend>Quando vieni</legend>
+          {edition.days.map((day) => (
+            <fieldset key={day.date}>
+              <legend>{formatDay(day.date)}</legend>
+              {day.slots.map((slot) => {
+                const full = slot.available < 1;
+                return (
+                  <label className="check" key={slot.id}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(slot.id)}
+                      disabled={full}
+                      onChange={(e) => toggle(slot.id, e.target.checked)}
+                    />
+                    <span>
+                      {periodLabel(slot.period)} {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
+                      {" · "}
+                      {full ? "completo" : `${slot.available} posti liberi`}
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          ))}
+          <p aria-live="polite" className="fee">
+            Quota da versare: <strong>{formatEuro(fee)}</strong>
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <legend>I tuoi dati</legend>
+          <div className="row">
+            <label>
+              Nome
+              <input name="first_name" autoComplete="given-name" required maxLength={100} />
+            </label>
+            <label>
+              Cognome
+              <input name="last_name" autoComplete="family-name" required maxLength={100} />
+            </label>
+          </div>
+          <label>
+            Email
+            <input type="email" name="email" autoComplete="email" required />
+          </label>
+          <label>
+            Telefono (facoltativo)
+            <input type="tel" name="phone" autoComplete="tel" maxLength={50} />
+          </label>
+          <label>
+            Chi ti ha invitato? (facoltativo)
+            <input name="invited_by" maxLength={200} />
+          </label>
+          <label>
+            Cosa puoi portare al camp?
+            <textarea name="can_bring" rows={3} required maxLength={2000} />
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Consensi</legend>
+          <details>
+            <summary>Leggi l'informativa privacy</summary>
+            <p className="legal">{privacy.body}</p>
+          </details>
+          <label className="check">
+            <input type="checkbox" name="accept_privacy" required />
+            Ho letto e accetto l'informativa privacy
+          </label>
+          <details>
+            <summary>Leggi lo scarico di responsabilità</summary>
+            <p className="legal">{disclaimer.body}</p>
+          </details>
+          <label className="check">
+            <input type="checkbox" name="accept_disclaimer" required />
+            Ho letto e accetto lo scarico di responsabilità
+          </label>
+        </fieldset>
+
+        {error && (
+          <p role="alert" tabIndex={-1} ref={errorRef} className="notice error">
+            {error}
+          </p>
+        )}
+        <button type="submit" disabled={sending}>
+          {sending ? "Invio in corso…" : "Iscriviti"}
+        </button>
+      </form>
+    </main>
+  );
+}
+
+function Confirmation({ booking }: { booking: Summary }) {
+  return (
+    <main>
+      <h1>Iscrizione ricevuta</h1>
+      <p role="status">
+        Ti abbiamo inviato un&apos;email con il riepilogo e il tuo link personale. Controlla anche
+        lo spam.
+      </p>
+      <h2>I tuoi slot</h2>
+      <ul>
+        {booking.slots.map((slot) => (
+          <li key={slot.label}>{slot.label}</li>
+        ))}
+      </ul>
+      <h2>Come pagare</h2>
+      <p>
+        Quota: <strong>{formatEuro(booking.amount_due_cents)}</strong>
+        <br />
+        Causale: <strong>{booking.personal_code}</strong>
+      </p>
+      <p>
+        Il posto è bloccato fino al <strong>{formatDeadline(booking.hold_expires_at)}</strong>. Se
+        non paghi entro quella data si libera.
+      </p>
+      {booking.payment_channels.length > 0 ? (
+        <ul>
+          {booking.payment_channels.map((channel) => (
+            <li key={channel.code}>
+              <strong>{channel.label}</strong>
+              <br />
+              <span className="legal">{channel.instructions}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Le istruzioni di pagamento arriveranno presto.</p>
+      )}
+      <p>
+        <a href="/accedi" target="_blank" rel="noopener">
+          Vai alla tua pagina personale
+        </a>{" "}
+        (si apre in una nuova finestra)
+      </p>
+    </main>
+  );
+}

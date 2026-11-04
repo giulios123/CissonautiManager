@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { RequireLogin } from "./auth";
 import { AdminSettings } from "./pages/AdminSettings";
+import { Registration } from "./pages/Registration";
 
 function Home() {
   return (
@@ -28,7 +29,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/iscrizione" element={<Home />} />
+      <Route path="/iscrizione" element={<Registration />} />
       <Route
         path="/admin/impostazioni"
         element={

@@ -20,7 +20,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: generazione slot dalle date; rifiuto della rimozione di giorni prenotati; versionamento dei testi.
 - [x] **8. API iscrizione pubblica**: `GET /api/public/edition`, `POST /api/public/registrations` con lock sugli slot, CSP `frame-ancestors`.
   Test: capienza rispettata, slot pieno 409, posti liberati da prenotazione scaduta, email già iscritta (attiva e scaduta con o senza posto), versioni legali salvate, header CSP su `/iscrizione` e sulle altre pagine.
-- [ ] **9. Pagina di iscrizione**: modulo accessibile e mobile-first, posti liberi per slot, errori per campo, riepilogo con importo, causale, istruzioni, scadenza e link che si apre fuori dall'iframe.
+- [x] **9. Pagina di iscrizione**: modulo accessibile e mobile-first, posti liberi per slot, errori per campo, riepilogo con importo, causale, istruzioni, scadenza e link che si apre fuori dall'iframe.
   Test: vitest sul calcolo dell'anteprima dell'importo lato client.
 - [ ] **10. Accesso e pagina personale minima**: pagine `/accedi` (magic link e password), `/accedi/verifica`, `/io` con modulo password; `GET /api/me`.
   Test: `/api/me` senza sessione 401; con sessione restituisce saldo e scadenza corretti.

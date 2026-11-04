@@ -114,3 +114,22 @@ button {
   background: #fbe4e1;
   color: #8a1c10;
 }
+
+.legal {
+  white-space: pre-wrap;
+}
+
+.fee {
+  font-size: 1.1rem;
+}
+
+details {
+  margin: 0.5rem 0;
+}
+
+summary {
+  cursor: pointer;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
