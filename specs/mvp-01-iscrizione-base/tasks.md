@@ -18,7 +18,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: password corta rifiutata, login corretto, errore identico per email sconosciuta, password errata e utente senza password.
 - [x] **7. Impostazioni edizione**: API e pagina `/admin/impostazioni` per dati edizione, generazione slot, canali di pagamento, nuove versioni dei testi legali.
   Test: generazione slot dalle date; rifiuto della rimozione di giorni prenotati; versionamento dei testi.
-- [ ] **8. API iscrizione pubblica**: `GET /api/public/edition`, `POST /api/public/registrations` con lock sugli slot, CSP `frame-ancestors`.
+- [x] **8. API iscrizione pubblica**: `GET /api/public/edition`, `POST /api/public/registrations` con lock sugli slot, CSP `frame-ancestors`.
   Test: capienza rispettata, slot pieno 409, posti liberati da prenotazione scaduta, email già iscritta (attiva e scaduta con o senza posto), versioni legali salvate, header CSP su `/iscrizione` e sulle altre pagine.
 - [ ] **9. Pagina di iscrizione**: modulo accessibile e mobile-first, posti liberi per slot, errori per campo, riepilogo con importo, causale, istruzioni, scadenza e link che si apre fuori dall'iframe.
   Test: vitest sul calcolo dell'anteprima dell'importo lato client.

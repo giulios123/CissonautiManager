@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -11,12 +11,16 @@ from sqlalchemy.orm import Session
 from app.api import admin_edition as admin_edition_api
 from app.api import auth as auth_api
 from app.api import me as me_api
+from app.api import public as public_api
 from app.config import Settings, get_settings
 from app.db import get_db, make_engine, make_session_factory, utcnow
 from app.email import build_email_sender
 from app.services.participants import ensure_admin
 
 logger = logging.getLogger(__name__)
+
+# Only the public registration page may be embedded, and only by Google Sites.
+EMBED_ANCESTORS = "https://sites.google.com https://*.googleusercontent.com"
 
 
 def _mount_frontend(app: FastAPI, static_dir: Path) -> None:
@@ -69,6 +73,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_api.router)
     app.include_router(me_api.router)
     app.include_router(admin_edition_api.router)
+    app.include_router(public_api.router)
+
+    @app.middleware("http")
+    async def frame_policy(request: Request, call_next):
+        response = await call_next(request)
+        embeddable = request.url.path.rstrip("/") == "/iscrizione"
+        response.headers["Content-Security-Policy"] = (
+            f"frame-ancestors {EMBED_ANCESTORS}" if embeddable else "frame-ancestors 'self'"
+        )
+        return response
 
     static_dir = Path(settings.static_dir)
     if (static_dir / "index.html").is_file():
