@@ -36,6 +36,6 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
 
 ## Parte 1b · Deploy su Azure
 
-- [ ] **14. Infrastruttura e deploy**: Container App con minimo 0 repliche (si spegne se non usata, da ricordare al maintainer) e database Basic; `infra/main.bicep`, workflow `deploy.yml` con OIDC e GHCR, migrazioni all'avvio, istruzioni in `infra/README.md`.
+- [ ] **14. Infrastruttura e deploy** (SCRITTO, NON VALIDATO: servono `az bicep build`, `what-if` e un primo deploy): Container App con minimo 0 repliche (si spegne se non usata, da ricordare al maintainer) e database Basic; `infra/main.bicep`, workflow `deploy.yml` con OIDC e GHCR, migrazioni all'avvio, istruzioni in `infra/README.md`.
   Test: `az bicep build` senza errori; deploy su una risorsa di prova; `GET /api/health` 200.
 - [ ] **15. Verifica e chiusura** (IN ATTESA: sbloccare dopo alcuni MVP, decisione del maintainer): prova manuale completa dentro Google Sites, aggiornamento Memory Bank e README, descrizione PR con checklist per gli organizzatori.

@@ -6,7 +6,7 @@ MVP 1, Parte 1a completata sul branch `feat/mvp-01-iscrizione-base` (task 1-12 s
 
 ## Prossimo passo
 
-Task 13 (slot serale) fatto. Prossimo: task 14 (Bicep e deploy su Azure). Il task 15 (verifica in Google Sites e chiusura) è in attesa: si sblocca dopo alcuni MVP. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
+Task 13 (slot serale) fatto. Task 14 scritto (Bicep, workflow, README in `infra/`) ma da validare con un primo deploy: servono i passi di `infra/README.md` e i dati Azure. Il task 15 (verifica in Google Sites e chiusura) è in attesa: si sblocca dopo alcuni MVP. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
 
 ## Dubbi aperti
 
@@ -19,3 +19,5 @@ Task 13 (slot serale) fatto. Prossimo: task 14 (Bicep e deploy su Azure). Il tas
 - In setup (task 14): ricordare al maintainer che la Container App deve scalare a zero. Il database Basic non si mette in pausa.
 - Esiti della call decisi (D-008): due promemoria, magic link senza codice numerico, pranzi nell'app, MVP 7 ridotto, stack Azure.
 - Deciso (D-009): la sera dell'intero giorno è una regola derivata, non si aggiunge alle prenotazioni.
+- Task 14: Bicep, workflow di deploy e Dockerfile (migrazioni all'avvio) non sono mai stati eseguiti. Da verificare: `az bicep build`, `what-if`, build dell'immagine, primo deploy, `minReplicas: 0` e l'avvio da zero.
+- Finché non c'è l'email reale (MVP 2) in produzione i magic link compaiono solo nei log.
