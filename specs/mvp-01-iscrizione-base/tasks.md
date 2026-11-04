@@ -16,7 +16,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: token scaduto, token riusato, risposta neutra per email sconosciuta, attributi del cookie, accesso admin negato a un partecipante, seed idempotente.
 - [x] **6. Password**: hash argon2, `POST /api/auth/login`, `PUT /api/me/password`, `ADMIN_PASSWORD` opzionale nel seed.
   Test: password corta rifiutata, login corretto, errore identico per email sconosciuta, password errata e utente senza password.
-- [ ] **7. Impostazioni edizione**: API e pagina `/admin/impostazioni` per dati edizione, generazione slot, canali di pagamento, nuove versioni dei testi legali.
+- [x] **7. Impostazioni edizione**: API e pagina `/admin/impostazioni` per dati edizione, generazione slot, canali di pagamento, nuove versioni dei testi legali.
   Test: generazione slot dalle date; rifiuto della rimozione di giorni prenotati; versionamento dei testi.
 - [ ] **8. API iscrizione pubblica**: `GET /api/public/edition`, `POST /api/public/registrations` con lock sugli slot, CSP `frame-ancestors`.
   Test: capienza rispettata, slot pieno 409, posti liberati da prenotazione scaduta, email già iscritta (attiva e scaduta con o senza posto), versioni legali salvate, header CSP su `/iscrizione` e sulle altre pagine.

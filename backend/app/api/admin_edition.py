@@ -1,0 +1,146 @@
+from datetime import date, time
+from typing import Literal, Self
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from sqlalchemy.orm import Session
+
+from app.db import get_db
+from app.deps import require_admin
+from app.models import Edition, LegalDocument, PaymentChannel
+from app.services import edition as edition_service
+
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+
+
+class EditionIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    start_date: date | None = None
+    end_date: date | None = None
+    morning_start: time = time(9, 0)
+    morning_end: time = time(13, 0)
+    afternoon_start: time = time(14, 0)
+    afternoon_end: time = time(18, 0)
+    default_capacity: int = Field(default=25, ge=1, le=10000)
+    hold_days: int = Field(default=3, ge=1, le=60)
+    base_fee_cents: int = Field(default=1000, ge=0)
+    per_day_fee_cents: int = Field(default=100, ge=0)
+
+    @model_validator(mode="after")
+    def check_consistency(self) -> Self:
+        if (self.start_date is None) != (self.end_date is None):
+            raise ValueError("Indica sia la data di inizio sia quella di fine")
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("La data di fine non può precedere quella di inizio")
+        if self.start_date and self.end_date and (self.end_date - self.start_date).days > 60:
+            raise ValueError("L'edizione non può durare più di 60 giorni")
+        if self.morning_start >= self.morning_end or self.afternoon_start >= self.afternoon_end:
+            raise ValueError("L'orario di inizio deve precedere quello di fine")
+        return self
+
+
+class SlotOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    date: date
+    period: str
+    start_time: time
+    end_time: time
+    capacity: int
+
+
+class ChannelOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    code: str
+    label: str
+    instructions: str
+    enabled: bool
+
+
+class LegalOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    kind: str
+    version: int
+    body: str
+
+
+class EditionOut(EditionIn):
+    id: int
+    slots: list[SlotOut]
+    payment_channels: list[ChannelOut]
+    privacy: LegalOut | None
+    disclaimer: LegalOut | None
+
+
+class ChannelIn(BaseModel):
+    code: Literal["revolut", "satispay", "paypal", "iban"]
+    instructions: str = Field(default="", max_length=2000)
+    enabled: bool = False
+
+
+class LegalIn(BaseModel):
+    kind: Literal["privacy", "disclaimer"]
+    body: str = Field(min_length=1, max_length=50000)
+
+
+def _edition_out(db: Session, edition: Edition) -> EditionOut:
+    slots = sorted(edition.slots, key=lambda s: (s.date, s.period))
+    privacy = edition_service.latest_legal_document(db, edition, "privacy")
+    disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
+    base = EditionIn.model_validate(edition, from_attributes=True)
+    return EditionOut(
+        **base.model_dump(),
+        id=edition.id,
+        slots=[SlotOut.model_validate(s) for s in slots],
+        payment_channels=[
+            ChannelOut.model_validate(c) for c in edition_service.list_channels(db, edition)
+        ],
+        privacy=LegalOut.model_validate(privacy) if privacy else None,
+        disclaimer=LegalOut.model_validate(disclaimer) if disclaimer else None,
+    )
+
+
+def _require_edition(db: Session) -> Edition:
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        raise HTTPException(status_code=404, detail="Nessuna edizione configurata")
+    return edition
+
+
+@router.get("/edition")
+def get_edition(db: Session = Depends(get_db)) -> EditionOut:
+    return _edition_out(db, _require_edition(db))
+
+
+@router.put("/edition")
+def put_edition(body: EditionIn, db: Session = Depends(get_db)) -> EditionOut:
+    try:
+        edition = edition_service.save_edition(db, body.model_dump())
+    except edition_service.SlotsInUseError as exc:
+        days = ", ".join(d.strftime("%d/%m/%Y") for d in exc.days)
+        raise HTTPException(
+            status_code=409,
+            detail=f"Non puoi togliere giorni con slot già prenotati: {days}",
+        ) from exc
+    return _edition_out(db, edition)
+
+
+@router.put("/payment-channels")
+def put_payment_channels(body: list[ChannelIn], db: Session = Depends(get_db)) -> list[ChannelOut]:
+    edition = _require_edition(db)
+    by_code = {c.code: c for c in edition_service.list_channels(db, edition)}
+    for item in body:
+        channel: PaymentChannel = by_code[item.code]
+        channel.instructions = item.instructions
+        channel.enabled = item.enabled
+    db.commit()
+    return [ChannelOut.model_validate(c) for c in edition_service.list_channels(db, edition)]
+
+
+@router.post("/legal-documents", status_code=201)
+def post_legal_document(body: LegalIn, db: Session = Depends(get_db)) -> LegalOut:
+    edition = _require_edition(db)
+    document: LegalDocument = edition_service.publish_legal_document(
+        db, edition, body.kind, body.body
+    )
+    return LegalOut.model_validate(document)
