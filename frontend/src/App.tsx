@@ -1,7 +1,10 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { RequireLogin } from "./auth";
 import { AdminSettings } from "./pages/AdminSettings";
+import { Login } from "./pages/Login";
+import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
+import { Verify } from "./pages/Verify";
 
 function Home() {
   return (
@@ -30,6 +33,9 @@ export function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/iscrizione" element={<Registration />} />
+      <Route path="/accedi" element={<Login />} />
+      <Route path="/accedi/verifica" element={<Verify />} />
+      <Route path="/io" element={<Personal />} />
       <Route
         path="/admin/impostazioni"
         element={

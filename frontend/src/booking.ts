@@ -39,3 +39,12 @@ export const formatDay = (isoDate: string) => dayFormat.format(new Date(`${isoDa
 export const formatDeadline = (isoDateTime: string) => deadlineFormat.format(new Date(isoDateTime));
 export const periodLabel = (period: string) => (period === "morning" ? "Mattina" : "Pomeriggio");
 export const hhmm = (time: string) => time.slice(0, 5);
+
+const STATUS_LABELS: Record<string, string> = {
+  in_attesa_pagamento: "In attesa di pagamento",
+  confermata: "Confermata",
+  scaduta: "Scaduta",
+  disdetta_richiesta: "Disdetta richiesta",
+  rimborsata: "Rimborsata",
+};
+export const statusLabel = (status: string) => STATUS_LABELS[status] ?? status;

@@ -22,7 +22,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: capienza rispettata, slot pieno 409, posti liberati da prenotazione scaduta, email già iscritta (attiva e scaduta con o senza posto), versioni legali salvate, header CSP su `/iscrizione` e sulle altre pagine.
 - [x] **9. Pagina di iscrizione**: modulo accessibile e mobile-first, posti liberi per slot, errori per campo, riepilogo con importo, causale, istruzioni, scadenza e link che si apre fuori dall'iframe.
   Test: vitest sul calcolo dell'anteprima dell'importo lato client.
-- [ ] **10. Accesso e pagina personale minima**: pagine `/accedi` (magic link e password), `/accedi/verifica`, `/io` con modulo password; `GET /api/me`.
+- [x] **10. Accesso e pagina personale minima**: pagine `/accedi` (magic link e password), `/accedi/verifica`, `/io` con modulo password; `GET /api/me`.
   Test: `/api/me` senza sessione 401; con sessione restituisce saldo e scadenza corretti.
 - [ ] **11. Admin iscrizioni e pagamenti**: elenco con filtri e ricerca, scheda, registrazione pagamento, conferma automatica, riattivazione se c'è posto, avviso se non c'è, email di conferma in console.
   Test: pagamento parziale lascia `in_attesa_pagamento`; pagamento che copre conferma; pagamento su scaduta con posto riattiva; senza posto resta scaduta con avviso; saldo corretto; email inviata una volta.

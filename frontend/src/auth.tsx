@@ -2,6 +2,17 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { api } from "./api";
 
+export type BookingView = {
+  id: number;
+  status: string;
+  amount_due_cents: number;
+  paid_cents: number;
+  balance_cents: number;
+  hold_expires_at: string;
+  slots: { date: string; period: string; label: string }[];
+  payments: { amount_cents: number; channel: string; paid_on: string }[];
+};
+
 export type Me = {
   id: number;
   first_name: string;
@@ -10,6 +21,8 @@ export type Me = {
   role: "participant" | "admin";
   personal_code: string;
   has_password: boolean;
+  bookings: BookingView[];
+  payment_channels: { code: string; label: string; instructions: string }[];
 };
 
 type MeState = { status: "loading" } | { status: "anonymous" } | { status: "user"; me: Me };

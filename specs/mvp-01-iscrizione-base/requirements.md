@@ -17,7 +17,7 @@ Come admin o partecipante voglio entrare senza password usando la mia email.
 
 - Quando inserisco un'email nella pagina `/accedi`, allora vedo sempre lo stesso messaggio ("Se l'email è registrata riceverai un link"), che l'email esista o no.
 - Quando l'email esiste, allora ricevo (in console nell'MVP 1) un link con un token monouso valido 30 minuti.
-- Quando apro il link entro 30 minuti, allora entro e ricevo un cookie di sessione httpOnly, Secure, SameSite=Lax valido 14 giorni.
+- Quando apro il link entro 30 minuti e premo «Entra», allora entro e ricevo un cookie di sessione httpOnly, Secure, SameSite=Lax valido 14 giorni.
 - Quando riapro lo stesso link o lo apro dopo 30 minuti, allora vedo un errore e la possibilità di richiedere un nuovo link.
 - Quando l'admin entra, allora arriva al pannello admin; quando entra un partecipante, allora arriva alla sua pagina personale.
 

@@ -133,3 +133,11 @@ summary {
   display: flex;
   align-items: center;
 }
+
+.card {
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  border: 1px solid #c9c4ba;
+  border-radius: 0.5rem;
+  background: #fff;
+}

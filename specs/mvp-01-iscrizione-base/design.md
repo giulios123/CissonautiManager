@@ -76,7 +76,7 @@ Quando una prenotazione viene letta ed è scaduta, lo stato viene anche scritto 
 
 - `/iscrizione`: modulo pubblico, unica pagina con CSP `frame-ancestors https://sites.google.com https://*.googleusercontent.com`. Tutte le altre risposte hanno `frame-ancestors 'self'`.
 - `/accedi`: richiesta del magic link oppure accesso con email e password.
-- `/accedi/verifica?token=...`: pagina che invia il token con una POST. Così i client email che pre-aprono i link non consumano il token.
+- `/accedi/verifica?token=...`: pagina con il pulsante «Entra» che invia il token con una POST. Il token non si consuma al caricamento della pagina, così i client email e gli scanner che pre-aprono i link non lo bruciano.
 - `/io`: pagina personale in sola lettura, con il modulo per impostare la password.
 - `/admin`, `/admin/iscrizioni/:id`, `/admin/impostazioni`.
 
