@@ -10,7 +10,7 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
   Test: vitest di smoke sul router; pytest che una rotta SPA restituisce `index.html` e `/api/...` sconosciuto restituisce 404 JSON.
 - [x] **3. Database e migrazione iniziale**: SQLAlchemy 2, Alembic, modelli del design, migrazione iniziale.
   Test: `alembic upgrade head` da zero e `downgrade base` senza errori (SQLite in locale, SQL Server in CI).
-- [ ] **4. Regole di dominio**: `compute_fee`, `effective_status`, `occupies_seats`, `available_seats`, `hold_deadline`, `can_reactivate`, `generate_personal_code`.
+- [x] **4. Regole di dominio**: `compute_fee`, `effective_status`, `occupies_seats`, `available_seats`, `hold_deadline`, `can_reactivate`, `generate_personal_code`.
   Test: importo con giorni distinti e stesso giorno contato una volta; scadenza prima e dopo; stati che occupano posti; riattivazione; formato e alfabeto del codice.
 - [ ] **5. Magic link, sessione e admin seed**: `EmailSender` astratto e `ConsoleEmailSender`, magic link (hash, 30 minuti, monouso), `auth_session` con cookie 14 giorni, dipendenze `current_user` e `require_admin`, seed da `ADMIN_EMAIL`.
   Test: token scaduto, token riusato, risposta neutra per email sconosciuta, attributi del cookie, accesso admin negato a un partecipante, seed idempotente.
