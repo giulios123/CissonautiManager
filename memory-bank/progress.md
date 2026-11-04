@@ -5,7 +5,7 @@
 | MVP | Nome | Stato |
 |-----|------|-------|
 | 0 | Bootstrap (Memory Bank, AGENTS.md, roadmap, spec MVP 1) | fatto |
-| 1 | Iscrizione base | in corso: 1a fatta (task 1-12), 1b da fare (task 13-14, deploy Azure) |
+| 1 | Iscrizione base | in corso: 1a fatta (task 1-12), slot serale da fare (task 13), 1b da fare (task 14-15, deploy Azure) |
 | 2 | Pagina personale | da fare |
 | 3 | Pannello admin completo | da fare |
 | 4 | Lista d'attesa | da fare |

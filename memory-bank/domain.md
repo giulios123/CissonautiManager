@@ -5,8 +5,8 @@
 ## Edizione, giorni e slot
 
 - Un'edizione ha date configurabili dall'admin (non ancora definite).
-- Ogni giorno ha due slot, mattina e pomeriggio, con orari configurabili (default 9-13 e 14-18).
-- Capienza per slot configurabile, default 25. La sera non ha limite di capienza.
+- Ogni giorno ha tre slot: mattina, pomeriggio e sera, con orari configurabili (default 9-13, 14-18 e 19-24).
+- Capienza per slot configurabile, default 25, per mattina e pomeriggio. Lo slot serale non ha limite di capienza.
 - Il partecipante sceglie qualsiasi combinazione di slot, anche su giorni non contigui.
 
 ## Stati della prenotazione
@@ -26,8 +26,8 @@
 
 ## Importi
 
-- Quota di partecipazione: quota base + importo per ogni giorno con almeno uno slot prenotato. Default 10 € + 1 €/giorno, configurabili.
-- Pranzi e cene: adesione per singolo giorno, prezzo flat per pasto configurabile.
+- Quota di partecipazione: quota base + importo per ogni giorno con almeno uno slot prenotato, sera compresa (un giorno con la sola sera conta, per ora). Default 10 € + 1 €/giorno, configurabili.
+- Pranzi e cene: adesione per singolo giorno, prezzo flat per pasto configurabile. La presenza serale permette di aderire alla cena. L'adesione ai pasti non avviene all'iscrizione: si fa dopo, dalla pagina personale, e si può cambiare.
 - Attività: create dall'admin, gratuite o a pagamento, capienza opzionale.
 - Saldo del partecipante = totale dovuto meno pagamenti registrati.
 

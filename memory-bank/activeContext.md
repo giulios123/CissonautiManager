@@ -6,12 +6,13 @@ MVP 1, Parte 1a completata sul branch `feat/mvp-01-iscrizione-base` (task 1-12 s
 
 ## Prossimo passo
 
-Parte 1b (task 13-14): Bicep, deploy su Azure, prova dentro Google Sites. Serve prima il via del maintainer e alcune informazioni (vedi dubbi).
+Task 13 (slot serale, deciso il 2026-11-04, vedi D-006), poi Parte 1b (task 14-15): Bicep, deploy su Azure, prova dentro Google Sites. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
 
 ## Dubbi aperti
 
 - La CI su SQL Server non è mai girata: al primo push può mostrare differenze tra SQLite e SQL Server da correggere.
 - Il Dockerfile non è stato costruito in sessione (nessun daemon Docker).
 - Per la 1b servono: abbonamento e resource group Azure, nome dell'app, dominio (o quello di default di Container Apps), mittente email per l'MVP 2.
-- "prevedi solo 8-18 e post 18" (risposta al punto 4): interpretato come orari configurabili con default 9-13 e 14-18. Se si voleva un solo slot diurno 8-18, serve una modifica a `domain.md`.
+- Chiarito: due slot diurni più la sera come terzo slot (default 19-24, senza limite).
+- Da chiarire prima dell'MVP 5: serve la presenza di giorno per il pranzo?
 - Conferma pagamento via email già nell'MVP 1 (assunto sì, non era stato risposto).

@@ -25,8 +25,8 @@ infra/main.bicep
 
 | Tabella | Campi principali |
 |---------|------------------|
-| `edition` | id, name, start_date, end_date, morning_start/end, afternoon_start/end, default_capacity, hold_days, base_fee_cents, per_day_fee_cents, is_active |
-| `slot` | id, edition_id, date, period (`morning`/`afternoon`), start_time, end_time, capacity |
+| `edition` | id, name, start_date, end_date, morning_start/end, afternoon_start/end, evening_start/end, default_capacity, hold_days, base_fee_cents, per_day_fee_cents, is_active |
+| `slot` | id, edition_id, date, period (`morning`/`afternoon`/`evening`), start_time, end_time, capacity (nullable: vuoto = senza limite, usato dalla sera) |
 | `participant` | id, first_name, last_name, email (unica), phone, invited_by, can_bring, personal_code (unico), role (`participant`/`admin`), password_hash (nullable), created_at |
 | `booking` | id, edition_id, participant_id, status, hold_expires_at, amount_due_cents, privacy_document_id, privacy_accepted_at, disclaimer_document_id, disclaimer_accepted_at, created_at |
 | `booking_slot` | booking_id, slot_id |

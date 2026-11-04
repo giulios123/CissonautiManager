@@ -29,8 +29,13 @@ Divisione confermata: **Parte 1a** (task 1-12, tutto funzionante in locale con C
 - [x] **12. CI**: workflow `ci.yml` con ruff, pytest (anche su SQL Server come service container), eslint, vitest, build del frontend e dell'immagine.
   Test: la CI è verde sul branch.
 
+## Parte 1a bis · Slot serale
+
+- [ ] **13. Slot serale**: terzo slot `evening` (default 19-24, orario di fine 00:00 = mezzanotte) senza limite di posti; migrazione 0002 con `evening_start/end` sull'edizione e `capacity` nullable sullo slot; API, pagina di iscrizione e impostazioni aggiornate; `available` assente per la sera.
+  Test: generazione di tre slot al giorno; la sera accetta più persone della capienza; giorno con la sola sera conta nella quota; orari serali configurabili; mezzanotte come fine valida; la migrazione 0002 si applica e torna indietro; ordine mattina, pomeriggio, sera.
+
 ## Parte 1b · Deploy su Azure
 
-- [ ] **13. Infrastruttura e deploy**: `infra/main.bicep`, workflow `deploy.yml` con OIDC e GHCR, migrazioni all'avvio, istruzioni in `infra/README.md`.
+- [ ] **14. Infrastruttura e deploy**: `infra/main.bicep`, workflow `deploy.yml` con OIDC e GHCR, migrazioni all'avvio, istruzioni in `infra/README.md`.
   Test: `az bicep build` senza errori; deploy su una risorsa di prova; `GET /api/health` 200.
-- [ ] **14. Verifica e chiusura**: prova manuale completa dentro Google Sites, aggiornamento Memory Bank e README, descrizione PR con checklist per gli organizzatori.
+- [ ] **15. Verifica e chiusura**: prova manuale completa dentro Google Sites, aggiornamento Memory Bank e README, descrizione PR con checklist per gli organizzatori.

@@ -29,7 +29,7 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 ## MVP 5 · Pranzi e cene
 
 - **Obiettivo**: sapere quanti mangiano e cosa possono mangiare.
-- **Contenuto**: adesione per giorno a pranzi e cene, prezzo flat per pasto, esigenze alimentari con consenso specifico visibili solo agli admin, vista per pasto con export.
+- **Contenuto**: adesione per giorno a pranzi e cene dalla pagina personale (dopo l'iscrizione, modificabile; la presenza serale abilita la cena), prezzo flat per pasto, esigenze alimentari con consenso specifico visibili solo agli admin, vista per pasto con export.
 - **Fatto quando**: il partecipante aderisce ai pasti e l'importo si aggiorna; l'admin vede per ogni pasto numero di persone ed esigenze alimentari; senza consenso le allergie non si salvano.
 
 ## MVP 6 · Attività e contributi
@@ -55,3 +55,5 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Gestione esplicita del +1 (dettagli da definire prima dell'MVP 7).
 - Limite di richieste (rate limit) su richiesta del magic link e sul login con password, per evitare invii email ripetuti e tentativi a raffica.
 - Canale "contanti/altro" per registrare pagamenti fuori dai quattro canali previsti.
+- Regola per i pranzi: serve la presenza di giorno per aderire al pranzo? (da chiarire prima dell'MVP 5)
+- Se la quota giornaliera debba contare un giorno con la sola sera (per ora sì).

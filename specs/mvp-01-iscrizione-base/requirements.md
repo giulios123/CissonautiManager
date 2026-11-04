@@ -34,7 +34,7 @@ Come admin o partecipante voglio poter entrare anche con email e password.
 
 Come admin voglio configurare l'edizione senza toccare il codice.
 
-- Quando salvo nome, data di inizio e data di fine, allora per ogni giorno vengono creati gli slot mattina e pomeriggio con gli orari di default (9-13 e 14-18) e la capienza di default (25).
+- Quando salvo nome, data di inizio e data di fine, allora per ogni giorno vengono creati gli slot mattina, pomeriggio e sera con gli orari di default (9-13, 14-18 e 19-24); mattina e pomeriggio hanno la capienza di default (25), la sera non ha limite.
 - Quando modifico orari o capienza, allora i valori si applicano agli slot dell'edizione.
 - Quando provo a togliere dalle date un giorno con slot già prenotati, allora ricevo un errore e niente viene cancellato.
 - Quando imposto giorni di blocco, quota base e quota per giorno, allora i nuovi valori valgono per le iscrizioni successive.
@@ -45,7 +45,7 @@ Come admin voglio configurare l'edizione senza toccare il codice.
 
 Come persona invitata voglio iscrivermi da una pagina pubblica, anche dentro Google Sites.
 
-- Quando apro `/iscrizione`, allora vedo i giorni dell'edizione con gli slot mattina e pomeriggio e i posti liberi di ciascuno; gli slot pieni non sono selezionabili.
+- Quando apro `/iscrizione`, allora vedo i giorni dell'edizione con gli slot mattina, pomeriggio e sera e i posti liberi di mattina e pomeriggio; gli slot pieni non sono selezionabili e la sera è sempre selezionabile.
 - Quando la pagina è dentro un iframe di `https://sites.google.com` o `https://*.googleusercontent.com`, allora viene mostrata; da altri domini il browser la blocca.
 - Quando invio il modulo senza nome, cognome, email valida, "cosa puoi portare al camp?", almeno uno slot o una delle due checkbox obbligatorie, allora vedo l'errore accanto al campo.
 - Quando invio un modulo valido, allora viene creata una prenotazione `in_attesa_pagamento` che occupa i posti scelti, e vedo riepilogo degli slot, importo, causale con il mio codice personale (es. `CSC-7K3P`), istruzioni dei canali attivi e data di scadenza.
@@ -59,6 +59,7 @@ Come persona invitata voglio iscrivermi da una pagina pubblica, anche dentro Goo
 
 - Quando scelgo slot su K giorni distinti, allora l'importo è quota base + K x quota per giorno (default 10 € + 1 €/giorno).
 - Quando scelgo mattina e pomeriggio dello stesso giorno, allora quel giorno conta una volta sola.
+- Quando scelgo la sola sera di un giorno, allora quel giorno conta per la quota giornaliera.
 
 ## US-6 · Scadenza del blocco
 
