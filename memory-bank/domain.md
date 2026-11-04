@@ -27,7 +27,7 @@
 ## Importi
 
 - Quota di partecipazione: quota base + importo per ogni giorno con almeno uno slot prenotato, sera compresa (un giorno con la sola sera conta, per ora). Default 10 € + 1 €/giorno, configurabili.
-- Pranzi e cene: adesione per singolo giorno, prezzo flat per pasto configurabile. La presenza serale permette di aderire alla cena. L'adesione ai pasti non avviene all'iscrizione: si fa dopo, dalla pagina personale, e si può cambiare.
+- Pranzi e cene: adesione per singolo giorno, prezzo flat per pasto configurabile. La presenza di giorno permette di aderire al pranzo e la presenza serale alla cena; chi prenota l'intero giorno (mattina e pomeriggio) conta anche per la sera. L'adesione ai pasti non avviene all'iscrizione: si fa dopo, dalla pagina personale, e si può cambiare.
 - Attività: create dall'admin, gratuite o a pagamento, capienza opzionale.
 - Saldo del partecipante = totale dovuto meno pagamenti registrati.
 

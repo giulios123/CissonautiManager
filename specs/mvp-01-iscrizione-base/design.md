@@ -90,7 +90,7 @@ Quando una prenotazione viene letta ed è scaduta, lo stato viene anche scritto 
 
 ## Infrastruttura
 
-- Bicep in `infra/main.bicep`: Log Analytics, Container Apps Environment, Container App (min 0 repliche), Azure SQL server + database serverless con free offer.
+- Bicep in `infra/main.bicep`: Log Analytics, Container Apps Environment, Container App (min 0 repliche), Azure SQL server + database tier Basic (D-007).
 - Immagine su GitHub Container Registry (gratuito per repo pubblici).
 - `deploy.yml`: login Azure con OIDC, build e push immagine, `az deployment group create`, migrazioni Alembic all'avvio del container.
 - Segreti (`DATABASE_URL`, `SECRET_KEY`, `ADMIN_EMAIL`) come secret della Container App, valorizzati dai secret di GitHub.
