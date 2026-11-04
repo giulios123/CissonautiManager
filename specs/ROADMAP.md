@@ -11,8 +11,8 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 ## MVP 2 · Pagina personale
 
 - **Obiettivo**: rendere il partecipante autonomo dopo l'iscrizione.
-- **Contenuto**: login con magic link e cookie da 14 giorni, modifica degli slot, saldo e istruzioni, richiesta di disdetta, email reali (Azure Communication Services) e avviso di scadenza 24 ore prima.
-- **Fatto quando**: un partecipante riceve una vera email, entra nella pagina personale, cambia i suoi slot con l'importo ricalcolato, vede il saldo, richiede la disdetta liberando i posti; l'avviso di scadenza parte una sola volta.
+- **Contenuto**: login con magic link e cookie da 14 giorni, modifica degli slot, saldo e istruzioni, richiesta di disdetta, email reali (Azure Communication Services) e due promemoria di pagamento (a metà blocco e 24 ore prima della scadenza).
+- **Fatto quando**: un partecipante riceve una vera email, entra nella pagina personale, cambia i suoi slot con l'importo ricalcolato, vede il saldo, richiede la disdetta liberando i posti; ogni promemoria parte una sola volta.
 
 ## MVP 3 · Pannello admin completo
 
@@ -41,8 +41,8 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 ## MVP 7 · Inviti e report
 
 - **Obiettivo**: gestire i +1 e chiudere l'edizione con i numeri.
-- **Contenuto**: +1 collegato a chi invita, report di riepilogo dell'edizione.
-- **Fatto quando**: un partecipante registra un +1 collegato a sé e l'admin genera il report di riepilogo (presenze, pasti, attività, incassi).
+- **Contenuto**: priorità in lista d'attesa a chi porta un +1 (il legame resta il campo testuale «chi ti ha invitato?», già presente), report di riepilogo dell'edizione.
+- **Fatto quando**: la priorità a chi porta un +1 funziona in lista d'attesa e l'admin genera il report di riepilogo (presenze, pasti, attività, incassi).
 
 ## Backlog
 
@@ -52,8 +52,7 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Testi legali definitivi (in attesa di parere).
 - Meccanismo dell'unconference.
 - Prelazione per chi ha già partecipato.
-- Gestione esplicita del +1 (dettagli da definire prima dell'MVP 7).
+- Dettagli della priorità per chi porta un +1 (come si verifica, quanti posti) da definire prima dell'MVP 4.
 - Limite di richieste (rate limit) su richiesta del magic link e sul login con password, per evitare invii email ripetuti e tentativi a raffica.
 - Canale "contanti/altro" per registrare pagamenti fuori dai quattro canali previsti.
-- Regola per i pranzi: serve la presenza di giorno per aderire al pranzo? (da chiarire prima dell'MVP 5)
 - Se la quota giornaliera debba contare un giorno con la sola sera (per ora sì).

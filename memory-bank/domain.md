@@ -34,7 +34,7 @@
 ## Pagamenti
 
 - Nessuna integrazione: Revolut, Satispay, PayPal, IBAN. Istruzioni per canale configurabili dall'admin.
-- Causale generata dal sistema con un codice personale (es. `CSC-7K3P`).
+- Causale generata dal sistema con un codice personale (es. `CSC-7K3P`). Il codice serve solo come causale, mai per accedere.
 - L'admin registra un pagamento (importo, canale, data, nota) con un clic dalla scheda del partecipante.
 
 ## Accesso
@@ -59,7 +59,7 @@
 
 ## Email
 
-Conferma iscrizione con magic link · conferma pagamento · avviso unico 24 ore prima della scadenza del blocco · posto liberato dalla lista d'attesa · conferma disdetta. Niente solleciti ripetuti.
+Conferma iscrizione con magic link · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
 
 ## Fuori scope
 
