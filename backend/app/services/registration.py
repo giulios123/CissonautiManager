@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import Settings
-from app.domain.booking import effective_status, hold_deadline
+from app.domain.booking import effective_status, has_free_seat, hold_deadline
 from app.domain.fees import compute_fee
 from app.email import EmailMessage, EmailSender
 from app.models import (
@@ -152,7 +152,7 @@ def register(
     if len(slots) != len(wanted_ids):
         raise InvalidSlots()
     free = free_by_slot(db, slots, now)
-    full = [s for s in slots if free[s.id] < 1]
+    full = [s for s in slots if not has_free_seat(free[s.id])]
     if full:
         raise SlotsFull(full)
 

@@ -13,6 +13,16 @@ from app.services import edition as edition_service
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 
+MIDNIGHT = time(0, 0)
+
+
+def _valid_range(start: time, end: time) -> bool:
+    """End must come after start. An end of 00:00 means midnight, the end of the day."""
+    if end == MIDNIGHT:
+        return start != MIDNIGHT
+    return start < end
+
+
 class EditionIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     start_date: date | None = None
@@ -21,6 +31,9 @@ class EditionIn(BaseModel):
     morning_end: time = time(13, 0)
     afternoon_start: time = time(14, 0)
     afternoon_end: time = time(18, 0)
+    evening_start: time = time(19, 0)
+    evening_end: time = time(0, 0)
+    # Seats per morning and afternoon slot. The evening has no limit.
     default_capacity: int = Field(default=25, ge=1, le=10000)
     hold_days: int = Field(default=3, ge=1, le=60)
     base_fee_cents: int = Field(default=1000, ge=0)
@@ -34,7 +47,12 @@ class EditionIn(BaseModel):
             raise ValueError("La data di fine non può precedere quella di inizio")
         if self.start_date and self.end_date and (self.end_date - self.start_date).days > 60:
             raise ValueError("L'edizione non può durare più di 60 giorni")
-        if self.morning_start >= self.morning_end or self.afternoon_start >= self.afternoon_end:
+        ranges = [
+            (self.morning_start, self.morning_end),
+            (self.afternoon_start, self.afternoon_end),
+            (self.evening_start, self.evening_end),
+        ]
+        if not all(_valid_range(start, end) for start, end in ranges):
             raise ValueError("L'orario di inizio deve precedere quello di fine")
         return self
 
@@ -46,7 +64,7 @@ class SlotOut(BaseModel):
     period: str
     start_time: time
     end_time: time
-    capacity: int
+    capacity: int | None
 
 
 class ChannelOut(BaseModel):

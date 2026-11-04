@@ -7,6 +7,7 @@ from app.models import (
     DOC_DISCLAIMER,
     DOC_PRIVACY,
     PERIOD_AFTERNOON,
+    PERIOD_EVENING,
     PERIOD_MORNING,
     BookingSlot,
     Edition,
@@ -65,6 +66,7 @@ def sync_slots(db: Session, edition: Edition) -> None:
     hours: dict[str, tuple[time, time]] = {
         PERIOD_MORNING: (edition.morning_start, edition.morning_end),
         PERIOD_AFTERNOON: (edition.afternoon_start, edition.afternoon_end),
+        PERIOD_EVENING: (edition.evening_start, edition.evening_end),
     }
     for day in sorted(wanted_days):
         for period, (start, end) in hours.items():
@@ -73,7 +75,8 @@ def sync_slots(db: Session, edition: Edition) -> None:
                 slot = Slot(edition_id=edition.id, date=day, period=period)
                 db.add(slot)
             slot.start_time, slot.end_time = start, end
-            slot.capacity = edition.default_capacity
+            # The evening has no seat limit.
+            slot.capacity = None if period == PERIOD_EVENING else edition.default_capacity
     db.flush()
 
 

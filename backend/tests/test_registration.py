@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from sqlalchemy import func, select
@@ -13,34 +13,7 @@ from app.models import (
     Participant,
     Slot,
 )
-
-
-@pytest.fixture
-def slot_ids(db, edition):
-    """Slot ids keyed by (date, period) for the 13-17 July edition."""
-    return {(s.date, s.period): s.id for s in db.scalars(select(Slot))}
-
-
-def payload(slot_ids_list, **overrides):
-    body = {
-        "first_name": "Ada",
-        "last_name": "Lovelace",
-        "email": "ada@example.com",
-        "phone": "+39 333 1234567",
-        "invited_by": "Grace",
-        "can_bring": "Un talk sulle macchine analitiche",
-        "slot_ids": slot_ids_list,
-        "accept_privacy": True,
-        "accept_disclaimer": True,
-        "privacy_version": 1,
-        "disclaimer_version": 1,
-    }
-    body.update(overrides)
-    return body
-
-
-def d(day: int) -> date:
-    return date(2026, 7, day)
+from tests.helpers import d, payload
 
 
 class TestPublicEdition:
@@ -60,8 +33,9 @@ class TestPublicEdition:
         data = client.get("/api/public/edition").json()
         assert data["registration_open"] is True
         assert [day["date"] for day in data["days"]] == [f"2026-07-{n}" for n in range(13, 18)]
-        assert all(len(day["slots"]) == 2 for day in data["days"])
-        assert {s["available"] for day in data["days"] for s in day["slots"]} == {25}
+        assert all(len(day["slots"]) == 3 for day in data["days"])
+        limited = [s for day in data["days"] for s in day["slots"] if s["period"] != "evening"]
+        assert {s["available"] for s in limited} == {25}
         assert data["base_fee_cents"] == 1000 and data["per_day_fee_cents"] == 100
         assert data["privacy"]["version"] == 1
 
@@ -358,8 +332,8 @@ class TestSlotOrder:
 
     def test_public_edition_lists_morning_first(self, client, edition):
         first_day = client.get("/api/public/edition").json()["days"][0]
-        assert [s["period"] for s in first_day["slots"]] == ["morning", "afternoon"]
+        assert [s["period"] for s in first_day["slots"]] == ["morning", "afternoon", "evening"]
 
     def test_admin_edition_lists_morning_first(self, admin_client, edition):
         slots = admin_client.get("/api/admin/edition").json()["slots"]
-        assert [s["period"] for s in slots[:2]] == ["morning", "afternoon"]
+        assert [s["period"] for s in slots[:3]] == ["morning", "afternoon", "evening"]

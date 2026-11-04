@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
-import { feePreview, formatDay, formatDeadline, hhmm, periodLabel, type Day } from "../booking";
+import {
+  feePreview,
+  formatDay,
+  formatDeadline,
+  hhmm,
+  isFull,
+  periodLabel,
+  seatsLabel,
+  type Day,
+} from "../booking";
 import { formatEuro } from "../money";
 
 type Channel = { code: string; label: string; instructions: string };
@@ -146,7 +155,7 @@ export function Registration() {
             <fieldset key={day.date}>
               <legend>{formatDay(day.date)}</legend>
               {day.slots.map((slot) => {
-                const full = slot.available < 1;
+                const full = isFull(slot);
                 return (
                   <label className="check" key={slot.id}>
                     <input
@@ -158,7 +167,7 @@ export function Registration() {
                     <span>
                       {periodLabel(slot.period)} {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
                       {" · "}
-                      {full ? "completo" : `${slot.available} posti liberi`}
+                      {seatsLabel(slot)}
                     </span>
                   </label>
                 );

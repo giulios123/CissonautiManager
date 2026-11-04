@@ -6,7 +6,7 @@ MVP 1, Parte 1a completata sul branch `feat/mvp-01-iscrizione-base` (task 1-12 s
 
 ## Prossimo passo
 
-Task 13 (slot serale, deciso il 2026-11-04, vedi D-006), poi Parte 1b (task 14-15): Bicep, deploy su Azure, prova dentro Google Sites. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
+Task 13 (slot serale) fatto. Prossimo: task 14 (Bicep e deploy su Azure). Il task 15 (verifica in Google Sites e chiusura) è in attesa: si sblocca dopo alcuni MVP. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
 
 ## Dubbi aperti
 
@@ -18,4 +18,4 @@ Task 13 (slot serale, deciso il 2026-11-04, vedi D-006), poi Parte 1b (task 14-1
 - Conferma pagamento via email già nell'MVP 1 (assunto sì, non era stato risposto).
 - In setup (task 14): ricordare al maintainer che la Container App deve scalare a zero. Il database Basic non si mette in pausa.
 - Esiti della call decisi (D-008): due promemoria, magic link senza codice numerico, pranzi nell'app, MVP 7 ridotto, stack Azure.
-- Da decidere al task 13: la sera di chi prenota l'intero giorno si aggiunge alle prenotazioni o si considera solo per la cena.
+- Deciso (D-009): la sera dell'intero giorno è una regola derivata, non si aggiunge alle prenotazioni.

@@ -32,16 +32,18 @@ class TestAccess:
 
 
 class TestCreateAndUpdate:
-    def test_create_generates_two_slots_per_day_with_defaults(self, admin_client):
+    def test_create_generates_three_slots_per_day_with_defaults(self, admin_client):
         response = admin_client.put("/api/admin/edition", json=PAYLOAD)
         assert response.status_code == 200
         slots = response.json()["slots"]
-        assert len(slots) == 6
-        assert {s["capacity"] for s in slots} == {25}
+        assert len(slots) == 9
+        limited = [s for s in slots if s["period"] != "evening"]
+        assert {s["capacity"] for s in limited} == {25}
         first_day = [s for s in slots if s["date"] == "2026-07-13"]
         assert [(s["period"], s["start_time"], s["end_time"]) for s in first_day] == [
             ("morning", "09:00:00", "13:00:00"),
             ("afternoon", "14:00:00", "18:00:00"),
+            ("evening", "19:00:00", "00:00:00"),
         ]
 
     def test_create_adds_four_disabled_payment_channels(self, admin_client):
@@ -53,7 +55,7 @@ class TestCreateAndUpdate:
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         assert db.scalar(select(func.count()).select_from(Edition)) == 1
-        assert db.scalar(select(func.count()).select_from(Slot)) == 6
+        assert db.scalar(select(func.count()).select_from(Slot)) == 9
         assert db.scalar(select(func.count()).select_from(PaymentChannel)) == 4
 
     def test_changing_hours_and_capacity_applies_to_all_slots(self, admin_client):
@@ -65,7 +67,7 @@ class TestCreateAndUpdate:
             "morning_end": "12:00",
         }
         slots = admin_client.put("/api/admin/edition", json=changed).json()["slots"]
-        assert {s["capacity"] for s in slots} == {30}
+        assert {s["capacity"] for s in slots if s["period"] != "evening"} == {30}
         mornings = [s for s in slots if s["period"] == "morning"]
         assert {(s["start_time"], s["end_time"]) for s in mornings} == {("08:00:00", "12:00:00")}
 
@@ -82,12 +84,12 @@ class TestCreateAndUpdate:
     def test_extending_dates_adds_slots(self, admin_client):
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         extended = {**PAYLOAD, "end_date": "2026-07-17"}
-        assert len(admin_client.put("/api/admin/edition", json=extended).json()["slots"]) == 10
+        assert len(admin_client.put("/api/admin/edition", json=extended).json()["slots"]) == 15
 
     def test_shrinking_dates_removes_unbooked_slots(self, admin_client):
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         shrunk = {**PAYLOAD, "end_date": "2026-07-13"}
-        assert len(admin_client.put("/api/admin/edition", json=shrunk).json()["slots"]) == 2
+        assert len(admin_client.put("/api/admin/edition", json=shrunk).json()["slots"]) == 3
 
     def test_edition_without_dates_has_no_slots(self, admin_client):
         body = {"name": "Camp 2026"}
@@ -104,7 +106,7 @@ class TestBookedDaysProtection:
         response = admin_client.put("/api/admin/edition", json=shrunk)
         assert response.status_code == 409
         assert "17/07/2026" in response.json()["detail"]
-        assert db.scalar(select(func.count()).select_from(Slot)) == 10
+        assert db.scalar(select(func.count()).select_from(Slot)) == 15
         db.expire_all()
         assert db.scalar(select(Edition)).end_date == date(2026, 7, 17)
 

@@ -41,7 +41,7 @@ def occupied_by_slot(db: Session, slot_ids: Iterable[int], now: datetime) -> dic
     return {slot_id: counts.get(slot_id, 0) for slot_id in ids}
 
 
-def free_by_slot(db: Session, slots: Iterable[Slot], now: datetime) -> dict[int, int]:
+def free_by_slot(db: Session, slots: Iterable[Slot], now: datetime) -> dict[int, int | None]:
     slots = list(slots)
     occupied = occupied_by_slot(db, [s.id for s in slots], now)
     return {s.id: available_seats(s.capacity, occupied[s.id]) for s in slots}

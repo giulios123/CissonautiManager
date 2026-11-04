@@ -28,8 +28,8 @@ class SlotAvailability(BaseModel):
     period: str
     start_time: time
     end_time: time
-    capacity: int
-    available: int
+    capacity: int | None
+    available: int | None
 
 
 class DayOut(BaseModel):

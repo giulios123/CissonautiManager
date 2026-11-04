@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime, time, timedelta
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,7 @@ from app.config import Settings
 from app.db import Base, make_engine
 from app.email import EmailMessage, EmailSender
 from app.main import create_app
-from app.models import ROLE_ADMIN, ROLE_PARTICIPANT, STATUS_PENDING, Booking, Participant
+from app.models import ROLE_ADMIN, ROLE_PARTICIPANT, STATUS_PENDING, Booking, Participant, Slot
 from app.services import edition as edition_service
 from app.services.passwords import hash_password
 
@@ -182,3 +183,9 @@ def admin_client(app, make_participant) -> TestClient:
     )
     assert response.status_code == 200
     return client
+
+
+@pytest.fixture
+def slot_ids(db, edition):
+    """Slot ids keyed by (date, period) for the 13-17 July edition."""
+    return {(s.date, s.period): s.id for s in db.scalars(select(Slot))}

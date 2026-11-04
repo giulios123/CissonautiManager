@@ -28,10 +28,17 @@ def occupies_seats(status: str) -> bool:
     return status in (STATUS_PENDING, STATUS_CONFIRMED)
 
 
-def available_seats(capacity: int, occupied: int) -> int:
+def available_seats(capacity: int | None, occupied: int) -> int | None:
+    """Seats left in a slot. None means the slot has no limit (the evening)."""
+    if capacity is None:
+        return None
     return max(capacity - occupied, 0)
 
 
-def can_reactivate(free_seats_per_slot: Iterable[int]) -> bool:
+def has_free_seat(free: int | None) -> bool:
+    return free is None or free >= 1
+
+
+def can_reactivate(free_seats_per_slot: Iterable[int | None]) -> bool:
     """An expired booking can come back only if every one of its slots still has a free seat."""
-    return all(free >= 1 for free in free_seats_per_slot)
+    return all(has_free_seat(free) for free in free_seats_per_slot)

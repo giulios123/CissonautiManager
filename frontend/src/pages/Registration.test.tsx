@@ -30,6 +30,14 @@ const edition = {
           capacity: 25,
           available: 0,
         },
+        {
+          id: 7,
+          period: "evening",
+          start_time: "19:00:00",
+          end_time: "00:00:00",
+          capacity: null,
+          available: null,
+        },
       ],
     },
     {
@@ -93,6 +101,16 @@ describe("Registration page", () => {
     await user.click(screen.getByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
     await user.click(screen.getByLabelText(/Mattina 09:00-13:00 · 25 posti liberi/));
     expect(screen.getByText(/Quota da versare/)).toHaveTextContent("12,00");
+  });
+
+  it("always allows the evening, with no seat limit", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    const user = userEvent.setup();
+    const evening = await screen.findByLabelText(/Sera 19:00-00:00 · senza limite di posti/);
+    expect(evening).toBeEnabled();
+    await user.click(evening);
+    expect(screen.getByText(/Quota da versare/)).toHaveTextContent("11,00");
   });
 
   it("asks for at least one slot", async () => {

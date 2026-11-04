@@ -20,6 +20,7 @@ ROLE_ADMIN = "admin"
 
 PERIOD_MORNING = "morning"
 PERIOD_AFTERNOON = "afternoon"
+PERIOD_EVENING = "evening"
 
 STATUS_PENDING = "in_attesa_pagamento"
 STATUS_CONFIRMED = "confermata"
@@ -42,6 +43,9 @@ class Edition(Base):
     morning_end: Mapped[time] = mapped_column(Time, default=time(13, 0))
     afternoon_start: Mapped[time] = mapped_column(Time, default=time(14, 0))
     afternoon_end: Mapped[time] = mapped_column(Time, default=time(18, 0))
+    # Evening runs until midnight: an end time of 00:00 means the end of the day.
+    evening_start: Mapped[time] = mapped_column(Time, default=time(19, 0))
+    evening_end: Mapped[time] = mapped_column(Time, default=time(0, 0))
     default_capacity: Mapped[int] = mapped_column(Integer, default=25)
     hold_days: Mapped[int] = mapped_column(Integer, default=3)
     base_fee_cents: Mapped[int] = mapped_column(Integer, default=1000)
@@ -61,7 +65,8 @@ class Slot(Base):
     period: Mapped[str] = mapped_column(String(12))
     start_time: Mapped[time] = mapped_column(Time)
     end_time: Mapped[time] = mapped_column(Time)
-    capacity: Mapped[int] = mapped_column(Integer)
+    # None means no limit (the evening slot).
+    capacity: Mapped[int | None] = mapped_column(Integer)
 
     edition: Mapped[Edition] = relationship(back_populates="slots")
 

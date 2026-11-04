@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 ROME = ZoneInfo("Europe/Rome")
 
 _WEEKDAYS = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"]
-_PERIODS = {"morning": "mattina", "afternoon": "pomeriggio"}
+_PERIODS = {"morning": "mattina", "afternoon": "pomeriggio", "evening": "sera"}
 
 
 def to_rome(value: datetime) -> datetime:

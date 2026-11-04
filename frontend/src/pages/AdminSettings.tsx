@@ -13,6 +13,8 @@ type Edition = {
   morning_end: string;
   afternoon_start: string;
   afternoon_end: string;
+  evening_start: string;
+  evening_end: string;
   default_capacity: number;
   hold_days: number;
   base_fee_cents: number;
@@ -70,6 +72,8 @@ function EditionSection({
           morning_end: text("morning_end"),
           afternoon_start: text("afternoon_start"),
           afternoon_end: text("afternoon_end"),
+          evening_start: text("evening_start"),
+          evening_end: text("evening_end"),
           default_capacity: Number(text("default_capacity")),
           hold_days: Number(text("hold_days")),
           base_fee_cents: base,
@@ -142,10 +146,30 @@ function EditionSection({
             />
           </label>
         </div>
+        <div className="row">
+          <label>
+            Sera dalle
+            <input
+              type="time"
+              name="evening_start"
+              required
+              defaultValue={hhmm(edition?.evening_start ?? "19:00")}
+            />
+          </label>
+          <label>
+            alle (00:00 = mezzanotte)
+            <input
+              type="time"
+              name="evening_end"
+              required
+              defaultValue={hhmm(edition?.evening_end ?? "00:00")}
+            />
+          </label>
+        </div>
       </fieldset>
       <div className="row">
         <label>
-          Posti per slot
+          Posti per slot di giorno (la sera è senza limite)
           <input
             type="number"
             name="default_capacity"

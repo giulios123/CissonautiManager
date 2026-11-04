@@ -24,6 +24,14 @@ describe("fee preview", () => {
     expect(feePreview(days, new Set([1, 5]), 1000, 100)).toBe(1200);
   });
 
+  it("counts a day with only the evening", () => {
+    const withEvening: Day[] = [
+      { date: "2026-07-13", slots: [slot(1), slot(2, "afternoon"), slot(7, "evening")] },
+    ];
+    expect(feePreview(withEvening, new Set([7]), 1000, 100)).toBe(1100);
+    expect(feePreview(withEvening, new Set([1, 7]), 1000, 100)).toBe(1100);
+  });
+
   it("is only the base fee with nothing selected", () => {
     expect(feePreview(days, new Set(), 1000, 100)).toBe(1000);
   });
