@@ -4,7 +4,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
 
 **Dimensione**: 9 task.
 
-- [ ] **1. Migrazione 0005**: `edition.waitlist_percent`, tabella `waitlist_entry`.
+- [x] **1. Migrazione 0005**: `edition.waitlist_percent`, tabella `waitlist_entry`.
   Test: upgrade e downgrade da zero; default 20 sulle edizioni esistenti.
 - [ ] **2. Regole pure**: `waitlist_limit`, `can_join`, `queue`, `position`, `hold_after_promotion`, `promotion_kind`.
   Test: 25 al 20% fa 5, 3 al 20% fa 0, sera senza lista; ogni motivo di rifiuto di `can_join`; ordine per arrivo a parità di orario; la scadenza non si accorcia mai; giorno passato rifiutato.

@@ -31,6 +31,13 @@ STATUS_REFUNDED = "rimborsata"
 DOC_PRIVACY = "privacy"
 DOC_DISCLAIMER = "disclaimer"
 
+# Why a waitlist entry was closed. Entries are never deleted: the history stays.
+CLOSE_PROMOTED = "promoted"  # the seat went to this person
+CLOSE_LEFT = "left"  # the person left the list
+CLOSE_REMOVED = "removed"  # an admin removed the entry
+CLOSE_CANCELLED = "cancelled"  # the person cancelled their booking
+CLOSE_BOOKED = "booked"  # the person booked the slot by other means
+
 
 class Edition(Base):
     __tablename__ = "edition"
@@ -50,6 +57,8 @@ class Edition(Base):
     hold_days: Mapped[int] = mapped_column(Integer, default=3)
     base_fee_cents: Mapped[int] = mapped_column(Integer, default=1000)
     per_day_fee_cents: Mapped[int] = mapped_column(Integer, default=100)
+    # Maximum waitlist length as a percentage of a slot's capacity.
+    waitlist_percent: Mapped[int] = mapped_column(Integer, default=20)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")
@@ -188,6 +197,31 @@ class AuthSession(Base):
     token_hash: Mapped[str] = mapped_column(Unicode(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class WaitlistEntry(Base):
+    """Someone waiting for a seat in a full slot. Active while `closed_at` is empty.
+
+    The legal texts accepted are stored on the entry, so that a promotion can create a booking
+    for someone who is only on the waitlist (they never had a booking to copy them from).
+    """
+
+    __tablename__ = "waitlist_entry"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id"))
+    participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    close_reason: Mapped[str | None] = mapped_column(Unicode(16))
+    promoted_booking_id: Mapped[int | None] = mapped_column(Integer)
+    privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
+    privacy_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    disclaimer_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
+    disclaimer_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
+
+    slot: Mapped[Slot] = relationship()
+    participant: Mapped[Participant] = relationship()
 
 
 class AuditLog(Base):
