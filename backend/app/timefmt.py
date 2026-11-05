@@ -58,3 +58,8 @@ def meal_label(kind: str) -> str:
 
 def format_meal(day: date, kind: str) -> str:
     return f"{_MEALS.get(kind, kind)} di {_WEEKDAYS[day.weekday()]} {day.strftime('%d/%m')}"
+
+
+def format_activity(title: str, day: date, period: str) -> str:
+    when = f"{_WEEKDAYS[day.weekday()]} {day.strftime('%d/%m')} {_PERIODS.get(period, period)}"
+    return f"{title} ({when})"
