@@ -127,3 +127,15 @@ def free_by_activity(
     activities = list(activities)
     occupied = occupied_by_activity(db, [a.id for a in activities], now)
     return {a.id: available_seats(a.capacity, occupied[a.id]) for a in activities}
+
+
+def activities_for_update(activity_ids: Iterable[int], edition_id: int):
+    """Select activities and lock them until commit, as `slots_for_update` does for slots
+    (SQL Server needs the explicit hint, D-011)."""
+    return (
+        select(Activity)
+        .where(Activity.id.in_(list(activity_ids)), Activity.edition_id == edition_id)
+        .order_by(Activity.id)
+        .with_for_update()
+        .with_hint(Activity, "WITH (UPDLOCK, HOLDLOCK)", "mssql")
+    )

@@ -22,6 +22,7 @@ from app.services import audit
 from app.services import edition as edition_service
 from app.services.amounts import recompute_amount
 from app.services.seats import (
+    activities_for_update,
     expire_overdue,
     free_by_activity,
     free_by_slot,
@@ -80,8 +81,12 @@ def revive_expired(
     slots = list(db.scalars(slots_for_update([s.id for s in booking.slots])))
     if not can_reactivate(free_by_slot(db, slots, now).values()):
         return NO_ROOM
-    free = free_by_activity(db, booking.activities, now)
-    full = [a for a in booking.activities if not has_free_seat(free[a.id])]
+    # Same locks as a sign-up, so a reactivation and a sign-up cannot both take the last seat.
+    activities = list(
+        db.scalars(activities_for_update([a.id for a in booking.activities], booking.edition_id))
+    )
+    free = free_by_activity(db, activities, now)
+    full = [a for a in activities if not has_free_seat(free[a.id])]
     if full:
         booking.activities = [a for a in booking.activities if a not in full]
         edition = db.get(Edition, booking.edition_id)

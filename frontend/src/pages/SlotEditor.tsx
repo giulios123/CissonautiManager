@@ -3,6 +3,7 @@ import { api, ApiError } from "../api";
 import type { BookingView } from "../auth";
 import {
   canJoinWaitlist,
+  extrasPreview,
   feePreview,
   formatDay,
   hhmm,
@@ -10,6 +11,7 @@ import {
   periodLabel,
   seatsLabel,
   type Day,
+  type PricedExtras,
 } from "../booking";
 import { formatEuro } from "../money";
 
@@ -24,9 +26,12 @@ const fetchEdition = () => api<PublicEdition>("/api/public/edition");
 export function SlotEditor({
   booking,
   onSaved,
+  extras,
 }: {
   booking: BookingView;
   onSaved: () => Promise<void> | void;
+  // Meals and activities of the booking, so the preview includes the ones that stay.
+  extras?: PricedExtras;
 }) {
   const original = new Set(booking.slots.map((slot) => slot.id));
   const [edition, setEdition] = useState<PublicEdition | null>(null);
@@ -46,12 +51,13 @@ export function SlotEditor({
   if (loadError) return <p role="alert">Non riesco a caricare i giorni. Riprova tra poco.</p>;
   if (!edition) return <p aria-busy="true">Caricamento…</p>;
 
-  const fee = feePreview(
-    edition.days,
-    selected,
-    edition.base_fee_cents ?? 0,
-    edition.per_day_fee_cents ?? 0,
-  );
+  const fee =
+    feePreview(
+      edition.days,
+      selected,
+      edition.base_fee_cents ?? 0,
+      edition.per_day_fee_cents ?? 0,
+    ) + (extras ? extrasPreview(edition.days, selected, extras) : 0);
   const delta = fee - booking.amount_due_cents;
   const changed = selected.size !== original.size || [...selected].some((id) => !original.has(id));
 

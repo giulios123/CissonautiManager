@@ -306,6 +306,8 @@ class DietaryIn(BaseModel):
     diet: Literal["omnivore", "vegetarian", "vegan"] | None = None
     allergies: str | None = Field(default=None, max_length=2000)
     consent: bool = False
+    # Version of the consent text shown to the person; required with consent.
+    consent_version: int | None = None
 
 
 @router.put("/me/booking/dietary")
@@ -319,7 +321,9 @@ def save_my_dietary(
     if booking is None:
         raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
     try:
-        health_service.save_dietary(db, booking, body.diet, body.allergies, body.consent, now)
+        health_service.save_dietary(
+            db, booking, body.diet, body.allergies, body.consent, now, body.consent_version
+        )
     except booking_changes.NotEditable as exc:
         raise HTTPException(
             status_code=409, detail="Questa iscrizione non si può più modificare"
@@ -330,6 +334,13 @@ def save_my_dietary(
             status_code=422,
             detail="Per salvare allergie e intolleranze serve il consenso al trattamento dei "
             "dati sanitari",
+        ) from exc
+    except health_service.ConsentTextChanged as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Il testo del consenso è stato aggiornato: ricarica la pagina, rileggilo e "
+            "conferma di nuovo",
         ) from exc
     except health_service.NoConsentText as exc:
         db.rollback()

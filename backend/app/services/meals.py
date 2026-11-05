@@ -55,8 +55,10 @@ def change_meals(
     and `actor` are for admins.
     """
     expire_overdue(db, now)
-    db.refresh(booking)
+    # Lock first, then read: a cancellation committed in between must be seen (as in
+    # record_payment), or a cancelled booking could be edited and even confirmed again.
     lock_booking(db, booking.id)
+    db.refresh(booking)
     if not can_edit_slots(effective_status(booking.status, booking.hold_expires_at, now)):
         raise NotEditable()
     current = meals_of(booking)

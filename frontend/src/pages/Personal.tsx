@@ -195,7 +195,18 @@ function BookingCard({
           {booking.can_cancel && <CancelBooking booking={booking} onDone={onCancelled} />}
         </div>
       )}
-      {editing && booking.editable && <SlotEditor booking={booking} onSaved={reload} />}
+      {editing && booking.editable && (
+        <SlotEditor
+          booking={booking}
+          onSaved={reload}
+          extras={{
+            meals: booking.meals ?? [],
+            activities: (me.activities ?? []).filter((offer) => offer.joined),
+            lunchCents: me.lunch_price_cents ?? 0,
+            dinnerCents: me.dinner_price_cents ?? 0,
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -21,14 +21,18 @@ export function DietaryForm({
 }) {
   const [diet, setDiet] = useState(booking.diet ?? "");
   const [allergies, setAllergies] = useState(booking.allergies ?? "");
-  const [consent, setConsent] = useState(booking.health_consent_version != null);
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const consentText = me.health_consent;
+  const hadConsent = booking.health_consent_version != null;
+  // A consent given to an older text does not count for the current one: it must be renewed.
+  const textChanged = hadConsent && booking.health_consent_version !== consentText?.version;
+  const [consent, setConsent] = useState(hadConsent && !textChanged);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
-    if (allergies.trim() && !consent) {
+    // Without consent, allergies can only be withdrawn (if they were given before), never added.
+    if (allergies.trim() && !consent && !hadConsent) {
       setMessage({
         ok: false,
         text: "Per salvare allergie e intolleranze spunta il consenso al trattamento dei dati sanitari.",
@@ -38,7 +42,12 @@ export function DietaryForm({
     try {
       await api("/api/me/booking/dietary", {
         method: "PUT",
-        json: { diet: diet || null, allergies: consent ? allergies : null, consent },
+        json: {
+          diet: diet || null,
+          allergies: consent ? allergies : null,
+          consent,
+          consent_version: consent ? (consentText?.version ?? null) : null,
+        },
       });
       if (!consent) setAllergies("");
       await onSaved();
@@ -88,7 +97,13 @@ export function DietaryForm({
             />
             Acconsento al trattamento dei miei dati sanitari (allergie e intolleranze)
           </label>
-          {!consent && booking.health_consent_version != null && (
+          {textChanged && (
+            <p className="legal">
+              Il testo del consenso è cambiato: rileggilo e spunta di nuovo per mantenere le
+              allergie.
+            </p>
+          )}
+          {!consent && hadConsent && (
             <p className="legal">Salvando senza consenso le allergie vengono cancellate.</p>
           )}
         </>

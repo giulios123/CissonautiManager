@@ -148,3 +148,30 @@ def _mssql():
     from sqlalchemy.dialects import mssql
 
     return mssql.dialect()
+
+
+def test_reactivation_locks_the_activity_rows(
+    monkeypatch, db, edition, make_participant, make_booking, clock
+):
+    """Reactivation counts activity seats under the same row locks as a sign-up."""
+    from app.services import payments
+
+    calls = []
+    original = payments.activities_for_update
+
+    def spy(ids, edition_id):
+        calls.append(list(ids))
+        return original(ids, edition_id)
+
+    monkeypatch.setattr(payments, "activities_for_update", spy)
+    hike = activity(db, edition, "Escursione", 13, "morning", 0, 2)
+    booking = make_booking(
+        make_participant("ada@example.com"),
+        [slot(db, 13)],
+        status=STATUS_EXPIRED,
+        hold_expires_at=clock() - timedelta(hours=1),
+    )
+    booking.activities = [hike]
+    db.commit()
+    assert payments.revive_expired(db, booking, clock()) == payments.REVIVED
+    assert calls == [[hike.id]]

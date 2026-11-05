@@ -472,6 +472,7 @@ describe("dietary needs", () => {
       diet: "vegan",
       allergies: "Arachidi",
       consent: true,
+      consent_version: 1,
     });
   });
 
@@ -585,5 +586,85 @@ describe("contributions", () => {
       title: "Lavoro remoto",
       description: null,
     });
+  });
+});
+
+describe("dietary needs after review", () => {
+  const consent = { version: 2, body: "Testo del consenso v2" };
+  const withAllergy = (version: number) =>
+    booking({ allergies: "Arachidi", health_consent_version: version });
+
+  it("withdraws the consent and the allergies without clearing the field by hand", async () => {
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: { ...me([withAllergy(2)]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/dietary" && init?.method === "PUT") return { body: booking() };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    await userEvent.click(form.getByRole("checkbox", { name: /Acconsento/ }));
+    await userEvent.click(form.getByRole("button", { name: "Salva esigenze alimentari" }));
+    expect(await form.findByRole("status")).toHaveTextContent("salvate");
+    expect(calls.find((c) => c.url === "/api/me/booking/dietary")?.body).toEqual({
+      diet: null,
+      allergies: null,
+      consent: false,
+      consent_version: null,
+    });
+  });
+
+  it("asks to accept again a consent text that changed", async () => {
+    openAt((url) => {
+      if (url === "/api/me") return { body: { ...me([withAllergy(1)]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    expect(form.getByRole("checkbox", { name: /Acconsento/ })).not.toBeChecked();
+    expect(form.getByText(/Il testo del consenso è cambiato/)).toBeInTheDocument();
+  });
+});
+
+describe("slot preview with meals and activities", () => {
+  it("keeps the price of the extras still allowed and drops the others", async () => {
+    const withExtras = {
+      ...me([
+        booking({
+          amount_due_cents: 1100 + 800 + 1500,
+          meals: [{ date: "2026-07-13", kind: "lunch", label: "pranzo di lun 13/07" }],
+        }),
+      ]),
+      lunch_price_cents: 800,
+      dinner_price_cents: 1200,
+      activities: [
+        {
+          id: 1,
+          title: "Escursione",
+          description: null,
+          date: "2026-07-13",
+          period: "morning",
+          time_label: null,
+          price_cents: 1500,
+          capacity: null,
+          free: null,
+          joined: true,
+          past: false,
+        },
+      ],
+    };
+    openAt((url) => {
+      if (url === "/api/me") return { body: withExtras };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    const form = await openEditor();
+    const [, , tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    // Monday morning stays: lunch and hike stay too; one more day adds 1 euro.
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("Nuova quota: 35,00 € (1,00 € in più");
+    const [, monday] = form.getAllByRole("group");
+    await userEvent.click(within(monday).getByRole("checkbox", { name: /Mattina/ }));
+    // Without Monday morning, lunch and hike go: only Tuesday is left.
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("Nuova quota: 11,00 €");
   });
 });

@@ -27,6 +27,9 @@ export function ActivityPicker<T = unknown>({
   admin?: boolean;
 }) {
   const original = new Set(offers.filter((o) => o.joined).map((o) => o.id));
+  // Offers can change while the picker is open (a slot change drops an activity): only the
+  // activities still offered can be chosen and sent.
+  const offered = new Set(offers.map((o) => o.id));
   const [selected, setSelected] = useState<Set<number>>(new Set(original));
   const [force, setForce] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +37,10 @@ export function ActivityPicker<T = unknown>({
   const [saving, setSaving] = useState(false);
   const price = (ids: Set<number>) =>
     offers.filter((o) => ids.has(o.id)).reduce((sum, o) => sum + o.price_cents, 0);
-  const fee = booking.amount_due_cents - price(original) + price(selected);
+  const fee = booking.amount_due_cents - price(original) + price(new Set(selected));
   const delta = fee - booking.amount_due_cents;
-  const changed = selected.size !== original.size || [...selected].some((id) => !original.has(id));
+  const chosen = new Set([...selected].filter((id) => offered.has(id)));
+  const changed = chosen.size !== original.size || [...chosen].some((id) => !original.has(id));
 
   function toggle(id: number, checked: boolean) {
     setSaved(false);
@@ -53,7 +57,7 @@ export function ActivityPicker<T = unknown>({
     setError(null);
     setSaving(true);
     try {
-      const json = admin ? { activity_ids: [...selected], force } : { activity_ids: [...selected] };
+      const json = admin ? { activity_ids: [...chosen], force } : { activity_ids: [...chosen] };
       const result = await api<T>(path, { method: "PUT", json });
       await onSaved(result);
       setSaved(true);

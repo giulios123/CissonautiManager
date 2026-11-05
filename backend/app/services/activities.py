@@ -41,6 +41,7 @@ from app.services.amounts import recompute_amount
 from app.services.booking_changes import ChangeResult, NotEditable
 from app.services.payments import paid_total, send_confirmation
 from app.services.seats import (
+    activities_for_update,
     expire_overdue,
     free_by_activity,
     lock_booking,
@@ -91,18 +92,6 @@ def get_activity(db: Session, edition: Edition, activity_id: int) -> Activity:
     if activity is None or activity.edition_id != edition.id:
         raise ActivityNotFound()
     return activity
-
-
-def activities_for_update(activity_ids: Iterable[int], edition_id: int):
-    """Select activities and lock them until commit, as `slots_for_update` does for slots
-    (SQL Server needs the explicit hint, D-011)."""
-    return (
-        select(Activity)
-        .where(Activity.id.in_(list(activity_ids)), Activity.edition_id == edition_id)
-        .order_by(Activity.id)
-        .with_for_update()
-        .with_hint(Activity, "WITH (UPDLOCK, HOLDLOCK)", "mssql")
-    )
 
 
 def linked_count(db: Session, activity_id: int) -> int:
@@ -249,8 +238,10 @@ def change_activities(
     together. `allow_past`, `force` and `actor` are for admins.
     """
     expire_overdue(db, now)
-    db.refresh(booking)
+    # Lock first, then read: a cancellation committed in between must be seen (as in
+    # record_payment), or a cancelled booking could be edited and even confirmed again.
     lock_booking(db, booking.id)
+    db.refresh(booking)
     if not can_edit_slots(effective_status(booking.status, booking.hold_expires_at, now)):
         raise NotEditable()
     wanted = set(activity_ids)

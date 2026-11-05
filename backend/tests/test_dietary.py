@@ -56,7 +56,7 @@ def test_allergies_without_consent_are_refused(member, db, booking, consent_text
 
 
 def test_allergies_with_consent_keep_the_version_and_time(member, db, booking, consent_text, clock):
-    response = save(member, diet="omnivore", allergies="Arachidi", consent=True)
+    response = save(member, diet="omnivore", allergies="Arachidi", consent=True, consent_version=1)
     assert response.status_code == 200
     assert response.json()["allergies"] == "Arachidi"
     assert response.json()["health_consent_version"] == 1
@@ -66,7 +66,7 @@ def test_allergies_with_consent_keep_the_version_and_time(member, db, booking, c
 
 
 def test_withdrawing_consent_deletes_the_allergies(member, db, booking, consent_text):
-    save(member, allergies="Arachidi", consent=True)
+    save(member, allergies="Arachidi", consent=True, consent_version=1)
     response = save(member, allergies="", consent=False)
     assert response.status_code == 200
     db.refresh(booking)
@@ -75,7 +75,7 @@ def test_withdrawing_consent_deletes_the_allergies(member, db, booking, consent_
 
 def test_without_a_published_text_allergies_cannot_be_collected(member, edition):
     assert member.get("/api/me").json()["health_consent"] is None
-    response = save(member, allergies="Arachidi", consent=True)
+    response = save(member, allergies="Arachidi", consent=True, consent_version=1)
     assert response.status_code == 409
 
 
@@ -98,7 +98,7 @@ def test_unknown_diet_rejected(member):
 
 
 def test_allergies_never_appear_in_emails(member, db, booking, consent_text, outbox):
-    save(member, allergies="Arachidi", consent=True)
+    save(member, allergies="Arachidi", consent=True, consent_version=1)
     booking.meals = [BookingMeal(date=d(13), kind="lunch")]
     db.commit()
     member.put("/api/me/booking/slots", json={"slot_ids": [slot(db, 14).id]})
@@ -108,8 +108,32 @@ def test_allergies_never_appear_in_emails(member, db, booking, consent_text, out
 
 
 def test_removed_booking_takes_the_health_data_away(member, db, booking, consent_text):
-    save(member, allergies="Arachidi", consent=True)
+    save(member, allergies="Arachidi", consent=True, consent_version=1)
     assert member.post("/api/me/booking/cancel").json()["outcome"] == "removed"
     from app.models import Booking
 
     assert db.scalar(select(Booking).where(Booking.allergies.is_not(None))) is None
+
+
+def test_consent_to_an_outdated_text_is_refused(member, db, booking, consent_text, edition):
+    edition_service.publish_legal_document(db, edition, "health", "Consenso v2")
+    response = save(member, allergies="Arachidi", consent=True, consent_version=1)
+    assert response.status_code == 409
+    assert "aggiornato" in response.json()["detail"]
+    db.refresh(booking)
+    assert booking.allergies is None
+
+
+def test_consent_without_a_version_is_refused(member, consent_text):
+    assert save(member, allergies="Arachidi", consent=True).status_code == 409
+
+
+def test_a_diet_only_save_does_not_upgrade_the_accepted_version(
+    member, db, booking, consent_text, edition
+):
+    save(member, allergies="Arachidi", consent=True, consent_version=1)
+    edition_service.publish_legal_document(db, edition, "health", "Consenso v2")
+    response = save(member, diet="vegan", allergies="Arachidi", consent=True, consent_version=1)
+    assert response.status_code == 409
+    db.refresh(booking)
+    assert booking.health_consent_document_id == consent_text.id
