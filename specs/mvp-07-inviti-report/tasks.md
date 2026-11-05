@@ -18,7 +18,7 @@ Branch di implementazione: `feat/mvp-07-inviti-report` (se la sessione non può 
   Test: ogni sezione con dati minimi; confermate e in attesa separate; scadute, disdette e rimborsate escluse da presenze, pasti e attività ma contate negli incassi; pagamenti annullati esclusi; netto, da incassare e crediti; scomposizione del dovuto che torna al totale anche con un prezzo cambiato (riga «scarto»); picco, media e giorni-persona; sezioni vuote a zero.
 - [x] **7. Report: dati, endpoint e CSV**: `load_report`, `GET /api/admin/views/report`.
   Test: totali di presenza uguali alla vista «Settimana», pasti a «Pasti», attività a «Attività», incassi alla somma di «Persone»; CSV con BOM, `;`, virgola decimale; nessun nome né testo di allergie nel report, solo il numero; 403 per un partecipante.
-- [ ] **8. Report: pagina e stampa**: `AdminReport.tsx`, voce di menu, `@media print`.
+- [x] **8. Report: pagina e stampa**: `AdminReport.tsx`, voce di menu, `@media print`.
   Test vitest: tutte le sezioni presenti; importi formattati in euro; bottone CSV; sezione vuota a zero; `theme.test.ts` ancora verde.
 - [ ] **9. Chiusura**: lint e test verdi, migrazioni da zero, Memory Bank (`progress.md`, `activeContext.md`, `decisions.md`, `domain.md` con le sole modifiche approvate), README e AGENTS.md se serve, descrizione PR con checklist per organizzatori.
 

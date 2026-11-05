@@ -29,6 +29,7 @@ export function AdminLayout() {
           <NavLink to="/admin/pasti">Pasti</NavLink>
           <NavLink to="/admin/attivita">Attività</NavLink>
           <NavLink to="/admin/contributi">Contributi</NavLink>
+          <NavLink to="/admin/report">Report</NavLink>
           <NavLink to="/admin/da-verificare">Da verificare</NavLink>
           <NavLink to="/admin/amministratori">Admin</NavLink>
           <NavLink to="/admin/impostazioni">Impostazioni</NavLink>

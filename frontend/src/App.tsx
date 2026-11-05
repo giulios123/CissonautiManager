@@ -7,6 +7,7 @@ import { AdminContributions } from "./pages/AdminContributions";
 import { AdminMeals } from "./pages/AdminMeals";
 import { AdminLayout } from "./pages/AdminLayout";
 import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
+import { AdminReport } from "./pages/AdminReport";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
 import { AdminReview } from "./pages/AdminReview";
 import { AdminSlots } from "./pages/AdminSlots";
@@ -68,6 +69,7 @@ export function App() {
           <Route path="attivita" element={<AdminActivities />} />
           <Route path="attivita/:id" element={<AdminActivityDetail />} />
           <Route path="contributi" element={<AdminContributions />} />
+          <Route path="report" element={<AdminReport />} />
           <Route path="da-verificare" element={<AdminReview />} />
           <Route path="amministratori" element={<AdminAdmins />} />
           <Route path="impostazioni" element={<AdminSettings />} />
