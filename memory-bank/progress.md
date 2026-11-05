@@ -14,6 +14,7 @@
 | 7 | Inviti e report | fatto e provato in locale (task 1-9) |
 | 8 | Stile del sito | fatto e provato in locale (task 1-7) |
 | 9 | Guida in app e note di rilascio | fatto e provato in locale (task 1-10) |
+| 10 | Incassi (Da incassare) | fatto e provato in locale (task 1-10) |
 
 ## Verifiche manuali
 
@@ -49,6 +50,9 @@
 
 - **MVP 9**, provato in locale con Chromium (DB nuovo da migrazioni, app costruita come in produzione con `APP_VERSION` e `BUILT_AT`, note generate dalla storia vera, 10 rilasci): partecipante a 390 px vede 9 sezioni, nessuna scheda, nessun testo admin, versione in fondo, API delle note 403; admin a 1280 px vede le tre schede, dal link «Guida» di «Giorni e slot» arriva alla sezione giusta, frecce e Fine spostano tra le schede, «Novità» elenca i rilasci; nessuno scorrimento orizzontale a 390 px su tutte e tre le schede, schede alte 45 px, nessun errore in console. Il controllo `check-guide.sh` provato su quattro casi (pagina senza guida, con guida, solo test, label).
 - **Non verificato (MVP 9)**: build dell'immagine Docker con le build args (il demone Docker non c'era nella sessione); il workflow `guide.yml` e il deploy con `fetch-depth: 0` (si vedono solo su GitHub); le note di rilascio dopo un deploy vero; Safari e Firefox. **Da verificare a mano**: dopo il deploy «Novità» mostra i rilasci veri e la versione in fondo coincide con l'ultimo commit su `main`; leggere i testi della guida con gli organizzatori e correggere cosa non torna.
+
+- **MVP 10**, provato in locale con Chromium a 390 px (iPhone 13, DB nuovo da migrazioni 0001-0010, tre iscrizioni in attesa): ricerca per causale (`g8ax` lascia una riga), canale Bonifico, «Segna pagato» registra 19,00 € e la riga mostra «Pagato · Annulla»; esce dall'elenco dopo 10,4 secondi; annullo di un'altra riga che la riporta da incassare; l'email di conferma è partita solo per il pagamento non annullato; nessun errore in console, nessuno scorrimento laterale della pagina (la tabella scorre dentro il suo riquadro).
+- **Non verificato (MVP 10)**: CI su SQL Server con la migrazione 0010 e l'UPDATE condizionale; il timer da 30 secondi su Azure con l'app che scala a zero (la rete di sicurezza è nel job orario); email vera nella casella; due admin sulla stessa riga. **Da verificare a mano**: dopo il deploy segna un pagamento vero, aspetta 30 secondi e controlla l'email; annulla entro 10 secondi e controlla che non arrivi.
 
 ## Bug corretti fuori MVP
 
