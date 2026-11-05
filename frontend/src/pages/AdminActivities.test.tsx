@@ -112,3 +112,46 @@ describe("activity detail page", () => {
     );
   });
 });
+
+describe("contributions view", () => {
+  it("filters by kind and flags inactive registrations", async () => {
+    const rows = [
+      {
+        id: 1,
+        kind: "talk",
+        title: "Macchine",
+        description: "Venti minuti",
+        booking_id: 7,
+        first_name: "Ada",
+        last_name: "Lovelace",
+        status: "confermata",
+        active: true,
+      },
+      {
+        id: 2,
+        kind: "talk",
+        title: "Vecchio talk",
+        description: null,
+        booking_id: 8,
+        first_name: "Bob",
+        last_name: "Rossi",
+        status: "scaduta",
+        active: false,
+      },
+    ];
+    const calls = stubAdminApi((call) =>
+      call.url.startsWith("/api/admin/views/contributions") ? { body: rows } : undefined,
+    );
+    renderAt("/admin/contributi");
+    const old = (await screen.findByText("Vecchio talk")).closest("tr") as HTMLElement;
+    expect(within(old).getByText("iscrizione scaduta")).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Tipo"), "talk");
+    await waitFor(() =>
+      expect(calls.some((c) => c.url === "/api/admin/views/contributions?kind=talk")).toBe(true),
+    );
+    expect(screen.getByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
+      "href",
+      "/api/admin/views/contributions?kind=talk&format=csv",
+    );
+  });
+});

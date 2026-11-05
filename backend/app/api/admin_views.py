@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import date, datetime, time
 from itertools import groupby
 from typing import Literal
@@ -256,6 +257,7 @@ class WeekDayOut(BaseModel):
     people: int
     lunches: int = 0
     dinners: int = 0
+    activities: int = 0
 
 
 class WeekOut(BaseModel):
@@ -263,6 +265,7 @@ class WeekOut(BaseModel):
     total_people: int
     total_lunches: int = 0
     total_dinners: int = 0
+    total_activities: int = 0
 
 
 @router.get("/week", response_model=None)
@@ -277,6 +280,7 @@ def week_view(
     meals = meal_counts_by_day(
         ((r.day, r.kind) for r in views_service.load_meals(db, now).rows), day_list
     )
+    signups = Counter(views_service.activity_signup_days(db, now))
     days = [
         WeekDayOut(
             date=s.day,
@@ -287,12 +291,14 @@ def week_view(
             people=s.people,
             lunches=meals[s.day][MEAL_LUNCH],
             dinners=meals[s.day][MEAL_DINNER],
+            activities=signups.get(s.day, 0),
         )
         for s in summary
     ]
     total = len({row.person_id for row in data.rows})
     lunches = sum(d.lunches for d in days)
     dinners = sum(d.dinners for d in days)
+    activities = sum(d.activities for d in days)
     if fmt == "csv":
         header = [
             "Giorno",
@@ -303,6 +309,7 @@ def week_view(
             "Persone",
             "Pranzi",
             "Cene",
+            "Adesioni alle attività",
         ]
         rows: list[list[Cell]] = [
             [
@@ -314,12 +321,84 @@ def week_view(
                 d.people,
                 d.lunches,
                 d.dinners,
+                d.activities,
             ]
             for d in days
         ]
-        rows.append(["Totale (persone diverse)", None, None, None, None, total, lunches, dinners])
+        rows.append(
+            [
+                "Totale (persone diverse)",
+                None,
+                None,
+                None,
+                None,
+                total,
+                lunches,
+                dinners,
+                activities,
+            ]
+        )
         return csv_response(csv_filename("settimana", now), header, rows)
-    return WeekOut(days=days, total_people=total, total_lunches=lunches, total_dinners=dinners)
+    return WeekOut(
+        days=days,
+        total_people=total,
+        total_lunches=lunches,
+        total_dinners=dinners,
+        total_activities=activities,
+    )
+
+
+class ContributionOut(BaseModel):
+    id: int
+    kind: str
+    title: str
+    description: str | None
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    status: str
+    active: bool
+    created_at: datetime
+
+
+KIND_LABELS = {"talk": "Talk", "topic": "Tema per l'unconference", "skill": "Competenza"}
+
+
+@router.get("/contributions", response_model=None)
+def contributions_view(
+    kind: Literal["talk", "topic", "skill"] | None = None,
+    fmt: Format = Query(default="json", alias="format"),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> list[ContributionOut] | Response:
+    rows = views_service.contribution_rows(db, now, kind)
+    if fmt == "csv":
+        header = [
+            "Tipo",
+            "Titolo",
+            "Descrizione",
+            "Nome",
+            "Cognome",
+            "Email",
+            "Stato",
+            "Proposto il",
+        ]
+        csv_rows = [
+            [
+                KIND_LABELS.get(r.kind, r.kind),
+                r.title,
+                r.description,
+                r.first_name,
+                r.last_name,
+                r.email,
+                status_label(r.status),
+                r.created_at,
+            ]
+            for r in rows
+        ]
+        return csv_response(csv_filename("contributi", now), header, csv_rows)
+    return [ContributionOut(**vars(r)) for r in rows]
 
 
 class ReviewRowOut(BaseModel):

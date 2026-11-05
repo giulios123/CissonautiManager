@@ -172,6 +172,7 @@ class TestWeekView:
             "people": 0,
             "lunches": 0,
             "dinners": 0,
+            "activities": 0,
         }
 
     def test_total_counts_each_person_once_across_days(self, admin_client, db, camp):
@@ -195,8 +196,9 @@ class TestWeekView:
             "Persone",
             "Pranzi",
             "Cene",
+            "Adesioni alle attività",
         ]
-        assert rows[0] == ["13/07/2026", "2", "1", "2", "1", "3", "0", "0"]
+        assert rows[0] == ["13/07/2026", "2", "1", "2", "1", "3", "0", "0", "0"]
         assert len(rows) == 5 + 1
         assert rows[-1][0] == "Totale (persone diverse)" and rows[-1][5] == "3"
 
@@ -212,6 +214,7 @@ class TestWeekView:
             "total_people": 0,
             "total_lunches": 0,
             "total_dinners": 0,
+            "total_activities": 0,
         }
 
 

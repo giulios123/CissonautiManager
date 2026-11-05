@@ -12,12 +12,14 @@ type DayRow = {
   people: number;
   lunches?: number;
   dinners?: number;
+  activities?: number;
 };
 type Week = {
   days: DayRow[];
   total_people: number;
   total_lunches?: number;
   total_dinners?: number;
+  total_activities?: number;
 };
 
 export function AdminWeek() {
@@ -58,6 +60,7 @@ export function AdminWeek() {
                   <th scope="col">Persone</th>
                   <th scope="col">Pranzi</th>
                   <th scope="col">Cene</th>
+                  <th scope="col">Attività</th>
                 </tr>
               </thead>
               <tbody>
@@ -75,17 +78,19 @@ export function AdminWeek() {
                     <td>{day.people}</td>
                     <td>{day.lunches ?? 0}</td>
                     <td>{day.dinners ?? 0}</td>
+                    <td>{day.activities ?? 0}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr>
                   <th scope="row" colSpan={4}>
-                    Persone diverse in tutta la settimana, pasti totali
+                    Persone diverse in tutta la settimana, pasti e adesioni totali
                   </th>
                   <td>{week.total_people}</td>
                   <td>{week.total_lunches ?? 0}</td>
                   <td>{week.total_dinners ?? 0}</td>
+                  <td>{week.total_activities ?? 0}</td>
                 </tr>
               </tfoot>
             </table>

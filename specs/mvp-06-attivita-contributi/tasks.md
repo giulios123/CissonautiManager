@@ -20,7 +20,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: iscritti e posti; scadute e disdette escluse; CSV per attività e complessivo.
 - [x] **8. Contributi lato partecipante**: servizio, endpoint, sezione «Cosa porti al camp».
   Test: aggiunta, modifica, rimozione; titolo obbligatorio; tipo non valido rifiutato; nessuno modifica i contributi di altri; spariscono con la prenotazione rimossa.
-- [ ] **9. Vista Contributi e Settimana**: vista con filtro e CSV; colonna «Attività» in «Settimana».
+- [x] **9. Vista Contributi e Settimana**: vista con filtro e CSV; colonna «Attività» in «Settimana».
   Test: filtro per tipo; contributi di prenotazioni non attive segnati; CSV con le righe filtrate; conteggi per giorno nella settimana.
 - [ ] **10. Chiusura**: lint e test verdi, migrazioni da zero, Memory Bank (modifiche a `domain.md` approvate, `decisions.md`), README, descrizione PR con checklist per organizzatori.
 

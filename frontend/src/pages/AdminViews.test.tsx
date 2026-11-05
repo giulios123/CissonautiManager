@@ -123,6 +123,7 @@ describe("week view", () => {
         people: 3,
         lunches: 2,
         dinners: 1,
+        activities: 4,
       },
       {
         date: "2026-07-14",
@@ -133,11 +134,13 @@ describe("week view", () => {
         people: 0,
         lunches: 0,
         dinners: 0,
+        activities: 0,
       },
     ],
     total_people: 3,
     total_lunches: 2,
     total_dinners: 1,
+    total_activities: 4,
   };
 
   it("shows the counts per day, the derived evenings and the weekly total", async () => {
@@ -152,6 +155,7 @@ describe("week view", () => {
       "3",
       "2",
       "1",
+      "4",
     ]);
     const tuesday = within(within(table).getByRole("row", { name: /14 luglio/ }));
     expect(tuesday.getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
@@ -161,9 +165,15 @@ describe("week view", () => {
       "0",
       "0",
       "0",
+      "0",
     ]);
     const total = within(within(table).getByRole("row", { name: /Persone diverse/ }));
-    expect(total.getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["3", "2", "1"]);
+    expect(total.getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "3",
+      "2",
+      "1",
+      "4",
+    ]);
   });
 
   it("offers the CSV download", async () => {
