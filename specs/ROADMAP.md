@@ -41,8 +41,14 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 ## MVP 7 · Inviti e report
 
 - **Obiettivo**: gestire i +1 e chiudere l'edizione con i numeri.
-- **Contenuto**: priorità in lista d'attesa a chi porta un +1 (il legame resta il campo testuale «chi ti ha invitato?», già presente), report di riepilogo dell'edizione.
-- **Fatto quando**: la priorità a chi porta un +1 funziona in lista d'attesa e l'admin genera il report di riepilogo (presenze, pasti, attività, incassi).
+- **Contenuto**: priorità in lista d'attesa a chi è stato invitato (il +1), con il legame verificato dall'admin (resta il campo testuale «chi ti ha invitato?», già presente); report di riepilogo dell'edizione.
+- **Fatto quando**: un +1 verificato passa davanti in lista d'attesa e l'admin genera il report di riepilogo (presenze, pasti, attività, incassi) a video, in stampa e in CSV.
+
+## MVP 8 · Stile del sito
+
+- **Obiettivo**: far sembrare l'app parte del sito Cissone Eventi (https://sites.google.com/view/cissoneeventi/welcome), che ospita l'iframe di iscrizione.
+- **Contenuto**: colori, font, logo e componenti ripresi dal sito su tutte le pagine; modalità iframe senza intestazione doppia; font self-hosted; accessibilità invariata.
+- **Fatto quando**: dentro il sito il modulo di iscrizione sembra parte della pagina, login, pagina personale e pannello admin hanno lo stesso stile e i contrasti restano AA.
 
 ## Backlog
 
@@ -52,7 +58,6 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Testi legali definitivi (in attesa di parere).
 - Meccanismo dell'unconference.
 - Prelazione per chi ha già partecipato.
-- Dettagli della priorità per chi porta un +1 (come si verifica, quanti posti) da definire prima dell'MVP 4.
 - Limite di richieste (rate limit) su richiesta del magic link e sul login con password, per evitare invii email ripetuti e tentativi a raffica.
 - Canale "contanti/altro" per registrare pagamenti fuori dai quattro canali previsti.
 - Se la quota giornaliera debba contare un giorno con la sola sera (per ora sì).
@@ -63,3 +68,6 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Avvisare con un'email il partecipante quando un admin cambia i suoi slot (oggi non parte nulla), emerso nell'MVP 3.
 - Due admin che si rimuovono a vicenda nello stesso istante possono lasciare zero admin: serve un controllo con blocco se diventa un problema reale.
 - Vista Persone senza paginazione: se le iscrizioni diventano molte, aggiungere pagine o scorrimento.
+- Collegare il +1 a un partecipante vero (relazione invece del testo libero), emerso nella spec dell'MVP 7.
+- Report che confronta più edizioni, emerso nella spec dell'MVP 7.
+- Modalità scura e stile configurabile dal pannello admin, emersi nella spec dell'MVP 8.

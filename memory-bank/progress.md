@@ -11,7 +11,8 @@
 | 4 | Lista d'attesa | da fare |
 | 5 | Pranzi e cene | da fare |
 | 6 | Attività e contributi | da fare |
-| 7 | Inviti e report | da fare |
+| 7 | Inviti e report | spec scritta, in attesa di conferma (dipende dagli MVP 4-6) |
+| 8 | Stile del sito | spec scritta, in attesa di conferma (task 1 bloccato: sito non raggiungibile dalla sessione) |
 
 ## Verifiche manuali
 
