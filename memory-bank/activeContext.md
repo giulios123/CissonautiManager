@@ -15,7 +15,7 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 Scritte su richiesta del maintainer mentre gli MVP 4-6 sono in lavorazione altrove: `specs/mvp-07-inviti-report/` e `specs/mvp-08-stile-sito/`. In attesa di conferma.
 
 - MVP 7: priorità a chi è stato invitato (+1), verificata dall'admin con una spunta; ordine calcolato alla promozione. Report di edizione a video, in stampa e in CSV. Il design si appoggia su ipotesi sugli MVP 4-6, da riallineare prima del task 1.
-- MVP 8 (nuovo): grafica ripresa da https://sites.google.com/view/cissoneeventi/welcome. Il sito non è raggiungibile dalla rete della sessione cloud: per il task 1 serve `sites.google.com` tra i domini consentiti, oppure screenshot, colori, font e logo dal maintainer.
+- MVP 8 (nuovo): grafica ripresa da https://sites.google.com/view/cissoneeventi/welcome. Colori, font (Montserrat) e loghi rilevati in `specs/mvp-08-stile-sito/stile.md`; da confermare palette, nome dell'evento (il sito dice «Cissone Summer Camp»), permesso della Pro Loco per i loghi.
 
 Domande aperte:
 

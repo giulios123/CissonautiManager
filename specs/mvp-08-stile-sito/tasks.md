@@ -4,7 +4,7 @@ Branch di implementazione: `feat/mvp-08-stile-sito`. Indipendente dall'MVP 7: pu
 
 **Dimensione**: 7 task.
 
-- [ ] **1. Raccolta dello stile** (bloccante): screenshot, colori, font, forma dei componenti e logo in `specs/mvp-08-stile-sito/stile.md`; conferma del maintainer.
+- [ ] **1. Raccolta dello stile** (bloccante): screenshot, colori, font, forma dei componenti e logo in `specs/mvp-08-stile-sito/stile.md`; conferma del maintainer. Colori, font e loghi rilevati il 2026-11-05 (vedi `stile.md`); mancano la conferma della palette, il permesso per i loghi e la forma dei bottoni.
   Richiede `sites.google.com` tra i domini consentiti dall'ambiente, oppure i materiali forniti a mano.
 - [ ] **2. Token CSS**: palette su `:root`, tutti i colori scritti a mano sostituiti.
   Test: vitest sul contrasto delle coppie testo/sfondo, bottone/testo e bordo dei campi/sfondo; `grep` senza colori fuori da `:root`; test esistenti verdi.
