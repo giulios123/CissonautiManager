@@ -16,3 +16,20 @@ def balance_cents(due_cents: int, paid_cents: int) -> int:
 def is_covered(due_cents: int, paid_cents: int) -> bool:
     """True when registered payments cover the amount due."""
     return paid_cents >= due_cents
+
+
+def compute_amount_due(
+    slot_dates: Iterable[date],
+    lunches: int,
+    dinners: int,
+    base_cents: int,
+    per_day_cents: int,
+    lunch_cents: int,
+    dinner_cents: int,
+) -> int:
+    """What the person owes: the participation fee plus a flat price for each meal."""
+    return (
+        compute_fee(slot_dates, base_cents, per_day_cents)
+        + lunches * lunch_cents
+        + dinners * dinner_cents
+    )
