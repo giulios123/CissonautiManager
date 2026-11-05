@@ -337,3 +337,16 @@ class TestSlotOrder:
     def test_admin_edition_lists_morning_first(self, admin_client, edition):
         slots = admin_client.get("/api/admin/edition").json()["slots"]
         assert [s["period"] for s in slots[:3]] == ["morning", "afternoon", "evening"]
+
+
+def test_new_booking_starts_its_hold_at_creation_with_no_reminders_sent(
+    client, db, edition, slot_ids, clock
+):
+    response = client.post(
+        "/api/public/registrations", json=payload([slot_ids[(d(13), "morning")]])
+    )
+    assert response.status_code == 201
+    booking = db.scalar(select(Booking))
+    assert booking.hold_started_at == clock()
+    assert booking.hold_expires_at == clock() + timedelta(days=3)
+    assert booking.reminder_mid_sent_at is None and booking.reminder_final_sent_at is None

@@ -97,6 +97,10 @@ def record_payment(
         if can_reactivate(free_by_slot(db, slots, now).values()):
             booking.status = STATUS_PENDING
             booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))
+            # A new hold: reminders count from now and may go out again.
+            booking.hold_started_at = now
+            booking.reminder_mid_sent_at = None
+            booking.reminder_final_sent_at = None
             reactivated = True
         else:
             warning = EXPIRED_NO_ROOM

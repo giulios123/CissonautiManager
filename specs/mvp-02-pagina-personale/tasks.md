@@ -10,7 +10,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test: aggiunta con posto; aggiunta su slot pieno 409; rimozione libera il posto; slot già miei non bloccano su capienza piena; selezione vuota; importo ricalcolato con giorni distinti; scadenza invariata; confermata resta confermata con saldo da versare e con credito; stati vietati; giorno passato; accesso senza sessione 401.
 - [x] **4. Disdetta (servizio e API)**: `request_cancellation`, `POST /api/me/booking/cancel`, email di conferma.
   Test: con pagamenti passa a `disdetta_richiesta`; senza pagamenti la prenotazione sparisce (anche `booking_slot`) e la persona resta; posti liberati in entrambi i casi; email inviata una volta; stati vietati; riscrizione dopo disdetta crea nuova prenotazione.
-- [ ] **5. Riattivazione e blocco**: la riattivazione in `services/payments.py` reimposta `hold_started_at` e azzera i promemoria; `register` imposta `hold_started_at`.
+- [x] **5. Riattivazione e blocco**: la riattivazione in `services/payments.py` reimposta `hold_started_at` e azzera i promemoria; `register` imposta `hold_started_at`.
   Test: dopo la riattivazione i promemoria possono ripartire.
 - [ ] **6. Email reali**: `AcsEmailSender`, `build_email_sender` con `acs`, testi in `app/email/templates.py`, errori solo loggati.
   Test con client finto: invio corretto, errore non propagato, avvio rifiutato senza stringa di connessione.

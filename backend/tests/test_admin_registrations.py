@@ -193,6 +193,21 @@ class TestPaymentOnExpiredBooking:
         db.expire_all()
         assert db.get(Booking, ada_booking.id).hold_expires_at == clock() + timedelta(days=3)
 
+    def test_revival_starts_a_new_hold_and_resets_the_reminders(
+        self, admin_client, ada_booking, clock, db
+    ):
+        ada_booking.reminder_mid_sent_at = clock() + timedelta(hours=36)
+        ada_booking.reminder_final_sent_at = clock() + timedelta(hours=48)
+        db.commit()
+        original_start = ada_booking.hold_started_at
+        clock.advance(days=5)
+        pay(admin_client, ada_booking.id, 500)
+        db.expire_all()
+        booking = db.get(Booking, ada_booking.id)
+        assert booking.hold_started_at == clock() != original_start
+        assert booking.reminder_mid_sent_at is None
+        assert booking.reminder_final_sent_at is None
+
     def test_revives_and_confirms_when_payment_covers(
         self, admin_client, ada_booking, clock, outbox
     ):
