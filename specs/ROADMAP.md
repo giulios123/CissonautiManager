@@ -63,3 +63,8 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Avvisare con un'email il partecipante quando un admin cambia i suoi slot (oggi non parte nulla), emerso nell'MVP 3.
 - Due admin che si rimuovono a vicenda nello stesso istante possono lasciare zero admin: serve un controllo con blocco se diventa un problema reale.
 - Vista Persone senza paginazione: se le iscrizioni diventano molte, aggiungere pagine o scorrimento.
+- Lista d'attesa per le attività piene (emersa nella spec dell'MVP 6).
+- Annullare un'attività con iscritti togliendola a tutti e ricalcolando gli importi; cambiarne il prezzo dopo le adesioni (MVP 6).
+- Attività su più fasce o su tutto il giorno, come le escursioni (MVP 6).
+- Capienza dei pasti o chiusura delle adesioni a un'ora fissa (MVP 5).
+- Avviso a chi è in lista d'attesa quando la sua posizione cambia (MVP 4).

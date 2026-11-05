@@ -2,13 +2,27 @@
 
 ## Ora
 
-MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 implementati sul branch `claude/magical-gauss-vbss2u` (backend 470 test, frontend 96 test, lint verdi, provati in browser da telefono). Aperto solo il task 9 dell'MVP 2: infrastruttura Azure (ACS, job orario) scritta ma mai validata.
+MVP 1-3 su `main` (PR #4). Aperti e non bloccanti: task 15 dell'MVP 1 (Google Sites) e task 9 dell'MVP 2 (infrastruttura Azure da validare). Fase B1 degli MVP 4, 5 e 6: spec scritte in `specs/mvp-04-lista-attesa/`, `specs/mvp-05-pranzi-cene/`, `specs/mvp-06-attivita-contributi/`, in attesa di conferma del maintainer. Nessun codice.
 
 ## Prossimo passo
 
-1. Passaggio su `main` quando il maintainer lo decide (decisione: tutto insieme a fine sviluppi, nessuna PR intermedia). Prima: CI su SQL Server sul branch, poi `az bicep build`, `what-if` e deploy per validare il task 9 dell'MVP 2 (vedi `infra/README.md`).
-2. Prova con le descrizioni di PR per gli organizzatori: `specs/mvp-02-pagina-personale/pr-description.md` e `specs/mvp-03-pannello-admin/pr-description.md`.
-3. MVP 4 (lista d'attesa), dopo il passaggio su `main`. Da chiarire prima: dettagli della priorità per chi porta un +1 (vedi Backlog).
+1. Conferma delle tre spec e delle loro «Modifiche a domain.md».
+2. Implementazione in ordine: MVP 4, poi 5, poi 6 (il 6 usa il calcolo unico dell'importo del 5).
+3. Validazione del task 9 dell'MVP 2 quando il maintainer lo decide (serve anche al job orario che nell'MVP 4 promuove dalla lista).
+
+## Scelte del maintainer per MVP 4-6 (2026-11-05)
+
+- B0: l'MVP 4 non era fatto; il maintainer ha chiesto di pianificare 4, 5 e 6 insieme.
+- MVP 4: lista d'attesa anche dal modulo pubblico, anche senza slot liberi; promozione su prenotazione confermata: resta confermata, saldo con la differenza.
+- MVP 5: due prezzi (pranzo e cena); regime senza consenso, allergie e intolleranze con consenso specifico; pasti modificabili come gli slot.
+- MVP 6: si aderisce a un'attività solo se presenti in quella fascia.
+
+## Domande aperte MVP 4-6
+
+- Importi di default di pranzo e cena (la spec usa segnaposto).
+- MVP 4: l'email di promozione a chi è già confermato chiede la differenza senza una scadenza: va bene?
+- MVP 4: la promozione dopo una scadenza arriva entro un'ora (job orario): va bene, o serve anche alla lettura?
+- MVP 6: servono attività su tutto il giorno (escursioni)? Per ora nel Backlog.
 
 ## Risolto il 2026-11-05 (conferma del maintainer)
 
@@ -35,5 +49,5 @@ Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/...`, per il vincol
 - Task 15: verifica dell'embed reale in Google Sites e chiusura dell'MVP 1.
 - Finché il task 9 non è validato in produzione i magic link compaiono solo nei log (`EMAIL_PROVIDER=console`).
 - Il database Basic non si mette in pausa; la Container App deve restare a `minReplicas: 0`.
-- Da chiarire prima dell'MVP 5: serve la presenza di giorno per il pranzo?
+- Presenza di giorno per il pranzo: la spec dell'MVP 5 propone mattina o pomeriggio (da confermare).
 - Esiti della call (D-008), sera derivata (D-009), nome con due s (D-012) e risorse ricreate (D-013): già registrati in `decisions.md`.
