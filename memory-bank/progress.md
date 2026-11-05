@@ -11,7 +11,7 @@
 | 4 | Lista d'attesa | codice fatto e provato in locale (task 1-9), in PR verso `main` |
 | 5 | Pranzi e cene | codice fatto e provato in locale (task 1-10), in PR verso `main` |
 | 6 | Attività e contributi | codice fatto e provato in locale (task 1-10), in PR verso `main` |
-| 7 | Inviti e report | spec confermata, da fare dopo gli MVP 4-6 |
+| 7 | Inviti e report | spec riallineata sul codice di `main`, in attesa di conferma |
 | 8 | Stile del sito | fatto e provato in locale (task 1-7) |
 
 ## Verifiche manuali

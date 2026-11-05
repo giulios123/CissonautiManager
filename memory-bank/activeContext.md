@@ -9,7 +9,7 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
 2. Dopo il merge il deploy applica le migrazioni 0005-0007 all'avvio: il primo avvio a freddo può essere lento (circa 4 minuti con la PR #5).
 3. Prove manuali in produzione con le checklist di MVP 2-6: email vera nella casella e fuori dallo spam, il job `cissonauti-booking-reminders` che gira ogni ora (portale Azure, «Execution history»), viste e CSV con dati veri, lista d'attesa che si sblocca dopo una scadenza.
-4. MVP 7 (inviti e report): la priorità del +1 si innesta in `domain/waitlist.queue`; da definire come si verifica il +1 (Backlog).
+4. MVP 7 (inviti e report): spec in `specs/mvp-07-inviti-report/`, in attesa di conferma; il +1 si verifica con una spunta dell'admin (decisione del 2026-11-05).
 5. Importi definitivi di pranzo e cena (oggi 8 € e 12 €, segnaposto).
 
 ## Scelte del maintainer per MVP 4-6 (2026-11-05)
@@ -31,7 +31,7 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 
 Scritte su richiesta del maintainer mentre gli MVP 4-6 sono in lavorazione altrove: `specs/mvp-07-inviti-report/` e `specs/mvp-08-stile-sito/`. Confermate.
 
-- MVP 7: priorità a chi è stato invitato (+1), verificata dall'admin con una spunta; ordine calcolato alla promozione. Report di edizione a video, in stampa e in CSV. Il design si appoggia su ipotesi sugli MVP 4-6, da riallineare prima del task 1.
+- MVP 7: priorità a chi è stato invitato (+1), verificata dall'admin con una spunta; ordine calcolato alla promozione. Report di edizione a video, in stampa e in CSV. Spec riallineata il 2026-11-05 sul codice reale degli MVP 4-6 (ora su `main`): la priorità si innesta in `queue` di `domain/waitlist.py`, la verifica è per id partecipante (chi è solo in lista non ha una scheda, D-028), migrazione 0008, 9 task.
 - MVP 8 (nuovo): grafica ripresa da https://sites.google.com/view/cissoneeventi/welcome. Colori, font (Montserrat) e loghi rilevati in `specs/mvp-08-stile-sito/stile.md`. Confermati: nome «Cissonauti Summer Camp», palette petrolio `#005C68` e ambra `#F4B400`, bottoni squadrati. Aperto: permesso della Pro Loco per i loghi (senza, l'intestazione mostra solo il nome).
 
 Risposte del maintainer (2026-11-05), spec confermate:
@@ -41,7 +41,9 @@ Risposte del maintainer (2026-11-05), spec confermate:
 
 MVP 8 completato sul branch `claude/nifty-hawking-mgu6fa` (D-035), descrizione PR in `specs/mvp-08-stile-sito/pr-description.md`. Da provare nel sito Google vero dopo il deploy. Le pagine degli MVP 4-7 devono usare i token di `styles.css`, senza colori scritti a mano (lo controlla `theme.test.ts`).
 
-Prossimo passo: MVP 7 dopo la chiusura degli MVP 4-6, riallineando prima le ipotesi del design.
+Prossimo passo: conferma del maintainer sulla spec riallineata dell'MVP 7 (B1.5), poi implementazione.
+
+Domande aperte sull'MVP 7: la verifica del +1 sta sul partecipante e con più edizioni andrà spostata (accettato, nel Backlog); la scomposizione del dovuto nel report usa i prezzi correnti, con una riga «scarto» se sono cambiati dopo le iscrizioni.
 
 ## Risolto il 2026-11-05 (conferma del maintainer)
 
