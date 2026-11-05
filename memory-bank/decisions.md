@@ -92,3 +92,46 @@
 - **Decisione**: i nomi tecnici passano a due s: gruppo `cissonauti-rg`, app `cissonauti-booking`, identità `cissonauti-deploy`, login SQL `cissonautiadmin`, database `cissonauti`. Il gruppo vecchio (`cisonauti-rg`) e la vecchia identità vengono eliminati. Cambiano anche il nome dei pacchetti e i file di lock.
 - **Motivo**: scelta del maintainer, quando l'app ancora non aveva dati. Risolve la D-012 sui nomi tecnici.
 - **Alternative scartate**: tenere i vecchi nomi (indirizzo dell'app con il nome sbagliato).
+
+## D-014 · Promemoria da un Container Apps Job orario
+
+- **Data**: 2026-11-05
+- **Decisione**: i promemoria di pagamento partono da un Container Apps Job che gira ogni ora (`0 * * * *`, UTC) con la stessa immagine dell'app e il comando `python -m app.jobs.send_reminders`.
+- **Motivo**: l'app scala a zero e a riposo non può inviare nulla; il job è in Bicep, senza endpoint pubblici in più, senza segreti nuovi su GitHub e con costo trascurabile.
+- **Alternative scartate**: cron di GitHub Actions che chiama un endpoint protetto (ritardi del cron, disattivazione dopo 60 giorni di inattività del repo, endpoint in più da proteggere).
+
+## D-015 · Email con Azure Communication Services e dominio gestito
+
+- **Data**: 2026-11-05
+- **Decisione**: `EMAIL_PROVIDER=acs` usa un dominio gestito Azure (mittente `DoNotReply@<id>.azurecomm.net`). L'invio usa `begin_send` senza attendere l'esito: un rifiuto viene scritto nei log e non annulla l'operazione già salvata.
+- **Motivo**: gratuito e pronto subito; con poche decine di iscritti i limiti d'invio bastano. Rendere la richiesta indipendente dall'email evita che un problema di posta blocchi iscrizioni o pagamenti.
+- **Alternative scartate**: dominio proprio (serve un dominio e l'accesso al DNS; resta l'evoluzione se il recapito dà problemi); attendere l'esito di consegna nella richiesta (rallenta e non cambia cosa si può fare in caso di errore).
+
+## D-016 · Ogni promemoria si segna prima di inviarlo
+
+- **Data**: 2026-11-05
+- **Decisione**: il job fa un UPDATE condizionato (`reminder_*_sent_at IS NULL`) e invia l'email solo se ha vinto lui. Un invio fallito non viene ritentato.
+- **Motivo**: garantisce «una sola volta» anche con riesecuzioni o due esecuzioni sovrapposte; perdere un promemoria è meno grave che mandarne due.
+- **Alternative scartate**: segnare dopo l'invio (rischio di doppio invio se il segno fallisce); coda con ritentativi (complessità non giustificata).
+
+## D-017 · Modifica degli slot da parte del partecipante
+
+- **Data**: 2026-11-05
+- **Decisione**: la scadenza del blocco non cambia; una prenotazione confermata resta confermata anche se l'importo sale (il saldo mostra la differenza); una in attesa il cui nuovo importo è già coperto diventa confermata; l'importo si ricalcola con le quote correnti dell'edizione; gli slot di giorni passati li cambia solo l'admin.
+- **Motivo**: indicazioni del maintainer. Tornare in attesa avrebbe fatto scadere, e liberare i posti, a chi ha già pagato quasi tutto. La conferma automatica evita che una prenotazione già pagata scada.
+- **Alternative scartate**: tornare `in_attesa_pagamento` con un nuovo blocco; rifiutare le modifiche sulle confermate; mantenere le quote del momento dell'iscrizione (richiederebbe di salvarle per ogni prenotazione).
+
+## D-018 · Disdetta senza pagamenti: la prenotazione si rimuove
+
+- **Data**: 2026-11-05
+- **Decisione**: senza alcun pagamento registrato la disdetta elimina la prenotazione (e i suoi slot); con pagamenti passa a `disdetta_richiesta`. La persona resta registrata e può iscriversi di nuovo. In entrambi i casi parte l'email di conferma.
+- **Motivo**: indicazione del maintainer («si rimuove e basta»): non c'è nulla da rimborsare, quindi nessun passaggio dall'admin.
+- **Conseguenza accettata**: si perde la traccia dei testi legali accettati per quella prenotazione, perché non è mai stato versato nulla.
+- **Alternative scartate**: uno stato finale dedicato (stato in più da gestire nelle viste e nei CSV); passare comunque da `disdetta_richiesta` (lavoro inutile per l'admin).
+
+## D-019 · Dopo il deploy il workflow sveglia l'app per far partire le migrazioni
+
+- **Data**: 2026-11-05
+- **Decisione**: `deploy.yml` chiama `/api/health` con ritentativi dopo l'applicazione del Bicep. Le migrazioni restano all'avvio dell'app (D-010) e il job non migra.
+- **Motivo**: con zero repliche nessuno avvierebbe l'app, e quindi le migrazioni, fino alla prima visita; il job orario girerebbe con il codice nuovo su uno schema vecchio. Far migrare anche il job riaprirebbe la gara sulle migrazioni che D-010 evita.
+- **Alternative scartate**: migrazioni nel job; controllo dello schema dentro il job (più codice per lo stesso risultato).

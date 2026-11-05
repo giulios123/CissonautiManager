@@ -30,6 +30,9 @@ cd frontend && npm test
 cd backend && uv run ruff check . && uv run ruff format --check .
 cd frontend && npm run lint
 
+# Job dei promemoria di pagamento (in produzione gira ogni ora come Container Apps Job)
+cd backend && uv run python -m app.jobs.send_reminders
+
 # Migrazioni
 cd backend && uv run alembic upgrade head
 cd backend && uv run alembic revision --autogenerate -m "short description"

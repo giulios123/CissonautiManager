@@ -16,7 +16,8 @@
 - L'iscrizione crea una prenotazione `in_attesa_pagamento` che occupa i posti per N giorni (impostazione configurabile).
 - Senza pagamento entro la scadenza diventa `scaduta` e i posti si liberano. La scadenza si valuta al momento della lettura: nessun job schedulato obbligatorio.
 - Diventa `confermata` quando l'admin registra pagamenti che coprono l'importo dovuto.
-- Disdetta: il partecipante la richiede dalla pagina personale, i posti si liberano subito, l'admin rimborsa fuori dal sistema, la segna come `rimborsata` e scrive al partecipante.
+- Disdetta: il partecipante la richiede dalla pagina personale, i posti si liberano subito, l'admin rimborsa fuori dal sistema, la segna come `rimborsata` e scrive al partecipante. Se non c'è alcun pagamento registrato la prenotazione viene semplicemente rimossa, senza passaggio dall'admin.
+- Modifica degli slot: il partecipante può aggiungere e togliere slot finché la prenotazione è `in_attesa_pagamento` o `confermata` (almeno uno slot resta). L'importo si ricalcola e la scadenza del blocco non cambia. Una prenotazione `confermata` resta tale: il saldo mostra la differenza da versare o il credito. Una `in_attesa_pagamento` il cui nuovo importo è già coperto dai pagamenti diventa `confermata`. Gli slot di giorni già trascorsi (Europe/Rome) non si aggiungono né si tolgono dalla pagina personale: solo l'admin può cambiarli.
 
 ## Lista d'attesa
 
@@ -59,7 +60,7 @@
 
 ## Email
 
-Conferma iscrizione con magic link · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
+Conferma iscrizione con magic link · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza, ciascuno una sola volta per blocco; con un blocco sotto le 48 ore parte solo quello a metà; ripartono se la prenotazione viene riattivata) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
 
 ## Fuori scope
 

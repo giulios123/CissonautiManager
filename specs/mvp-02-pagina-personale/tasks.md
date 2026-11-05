@@ -20,7 +20,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test vitest: anteprima e differenza; slot pieno non selezionabile; slot passati disabilitati; dialogo (apre, annulla, conferma); errore 409 mostrato.
 - [ ] **9. Infrastruttura** (SCRITTO, NON VALIDATO: `az` e il compilatore Bicep non erano disponibili in sessione): Bicep (ACS, dominio gestito, job orario), `deploy.yml` con passo di risveglio dell'app dopo il deploy, `infra/README.md`. Il job riceve l'immagine nuova dallo stesso deploy Bicep.
   Test: `az bicep build` senza errori; `what-if`; dopo il deploy il job compare e gira.
-- [ ] **10. Chiusura**: lint e test verdi, migrazioni da zero, aggiornamento di Memory Bank e README, descrizione PR con checklist per organizzatori (ricevere una email vera, cambiare slot, disdire, verificare un promemoria).
+- [x] **10. Chiusura**: lint e test verdi, migrazioni da zero, aggiornamento di Memory Bank e README, descrizione PR con checklist per organizzatori (ricevere una email vera, cambiare slot, disdire, verificare un promemoria).
 
 ## Da verificare a mano (dopo il deploy)
 
