@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { api } from "./api";
+import { useT } from "./i18n";
+import { ROUTES } from "./routes";
 
 export type MealView = { date: string; kind: "lunch" | "dinner"; label: string; past?: boolean };
 
@@ -50,6 +52,7 @@ export type Me = {
   role: "participant" | "admin";
   personal_code: string;
   has_password: boolean;
+  locale?: "it" | "en";
   bookings: BookingView[];
   payment_channels: { code: string; label: string; instructions: string }[];
   waitlist?: WaitlistItem[];
@@ -101,14 +104,15 @@ export function RequireLogin({
   admin?: boolean;
   children: ReactNode;
 }) {
+  const t = useT();
   const state = useMe();
-  if (state.status === "loading") return <main aria-busy="true">Caricamento…</main>;
-  if (state.status === "anonymous") return <Navigate to="/login" replace />;
+  if (state.status === "loading") return <main aria-busy="true">{t("common.loading")}</main>;
+  if (state.status === "anonymous") return <Navigate to={ROUTES.login} replace />;
   if (admin && state.me.role !== "admin") {
     return (
       <main>
-        <h1>Accesso riservato</h1>
-        <p>Questa pagina è riservata agli organizzatori.</p>
+        <h1>{t("auth.restrictedTitle")}</h1>
+        <p>{t("auth.restrictedBody")}</p>
       </main>
     );
   }

@@ -7,6 +7,8 @@ import {
   type RefObject,
 } from "react";
 
+import { useT } from "./i18n";
+
 const TABBABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 
 /**
@@ -18,7 +20,7 @@ export function ConfirmDialog({
   title,
   children,
   confirmLabel,
-  cancelLabel = "No, torno indietro",
+  cancelLabel,
   working = false,
   confirmDisabled = false,
   error = null,
@@ -37,6 +39,7 @@ export function ConfirmDialog({
   onCancel: () => void;
   returnFocusTo?: RefObject<HTMLElement | null>;
 }) {
+  const t = useT();
   const titleId = useId();
   const textId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -88,7 +91,7 @@ export function ConfirmDialog({
         )}
         <div className="actions">
           <button type="button" className="secondary" ref={cancelRef} onClick={onCancel}>
-            {cancelLabel}
+            {cancelLabel ?? t("dialog.back")}
           </button>
           <button
             type="button"

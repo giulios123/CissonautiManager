@@ -5,15 +5,17 @@ import { api } from "../api";
 import { useMe } from "../auth";
 import { intlTag } from "../i18n/locale";
 import { loadAdminGuide, participantGuide, type GuideSection } from "../guide/content";
+import { useI18n, type MessageKey } from "../i18n";
+import { ROUTES } from "../routes";
 
 type Release = { version: string; date: string | null; features: string[]; fixes: string[] };
 type Version = { version: string; built_at: string | null };
 
-const TABS = [
-  { id: "organizers", label: "Organizzatori" },
-  { id: "participants", label: "Partecipanti" },
-  { id: "news", label: "Novità" },
-] as const;
+const TABS: readonly { id: "organizers" | "participants" | "news"; label: MessageKey }[] = [
+  { id: "organizers", label: "guide.tabOrganizers" },
+  { id: "participants", label: "guide.tabParticipants" },
+  { id: "news", label: "guide.tabNews" },
+];
 type TabId = (typeof TABS)[number]["id"];
 
 function formatDate(iso: string | null): string {
@@ -72,6 +74,7 @@ function ReleaseList({ items, title }: { items: string[]; title: string }) {
 }
 
 function ReleaseNotes() {
+  const { t } = useI18n();
   const [releases, setReleases] = useState<Release[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -81,25 +84,22 @@ function ReleaseNotes() {
       .catch(() => setFailed(true));
   }, []);
 
-  if (failed) return <p className="notice error">Non riesco a caricare le novità. Riprova.</p>;
-  if (releases === null) return <p aria-busy="true">Caricamento…</p>;
+  if (failed) return <p className="notice error">{t("guide.newsFailed")}</p>;
+  if (releases === null) return <p aria-busy="true">{t("common.loading")}</p>;
   if (releases.length === 0) {
-    return <p>Le novità compaiono qui dopo il primo rilascio.</p>;
+    return <p>{t("guide.newsEmpty")}</p>;
   }
   return (
     <>
-      <p className="legal">
-        Elenco generato in automatico dai messaggi di commit a ogni rilascio, per questo i testi
-        sono in inglese.
-      </p>
+      <p className="legal">{t("guide.newsNote")}</p>
       {releases.map((release) => (
         <article key={release.version} className="card">
           <h3>
-            Rilascio <span className="mono">{release.version}</span>
+            {t("guide.release")} <span className="mono">{release.version}</span>
             {release.date && <> · {formatDate(release.date)}</>}
           </h3>
-          <ReleaseList items={release.features} title="Novità" />
-          <ReleaseList items={release.fixes} title="Correzioni" />
+          <ReleaseList items={release.features} title={t("guide.features")} />
+          <ReleaseList items={release.fixes} title={t("guide.fixes")} />
         </article>
       ))}
     </>
@@ -107,6 +107,7 @@ function ReleaseNotes() {
 }
 
 function VersionLine() {
+  const { t } = useI18n();
   const [version, setVersion] = useState<Version | null>(null);
   useEffect(() => {
     api<Version>("/api/version")
@@ -114,26 +115,27 @@ function VersionLine() {
       .catch(() => setVersion(null));
   }, []);
   if (!version) return null;
-  if (version.version === "dev") return <p className="legal">Versione di sviluppo.</p>;
+  if (version.version === "dev") return <p className="legal">{t("guide.devVersion")}</p>;
   return (
     <p className="legal">
-      Versione <span className="mono">{version.version.slice(0, 7)}</span>
-      {version.built_at && <> del {formatDate(version.built_at)}</>}
+      {t("guide.version")} <span className="mono">{version.version.slice(0, 7)}</span>
+      {version.built_at && <> {t("guide.builtOn", { date: formatDate(version.built_at) })}</>}
     </p>
   );
 }
 
 function AdminGuide({ initial }: { initial: TabId }) {
+  const { t, locale } = useI18n();
   const [params, setParams] = useSearchParams();
   const requested = params.get("tab");
-  const tab: TabId = TABS.some((t) => t.id === requested) ? (requested as TabId) : initial;
+  const tab: TabId = TABS.some((item) => item.id === requested) ? (requested as TabId) : initial;
   const [adminSections, setAdminSections] = useState<GuideSection[] | null>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const { hash } = useLocation();
 
   useEffect(() => {
-    void loadAdminGuide().then(setAdminSections);
-  }, []);
+    void loadAdminGuide(locale).then(setAdminSections);
+  }, [locale]);
 
   // The sections appear after the page has loaded, so the browser cannot scroll to the anchor.
   const ready = tab === "organizers" ? adminSections !== null : true;
@@ -165,23 +167,23 @@ function AdminGuide({ initial }: { initial: TabId }) {
 
   return (
     <>
-      <div role="tablist" aria-label="Sezioni della guida" className="guide-tabs">
-        {TABS.map((t, index) => (
+      <div role="tablist" aria-label={t("guide.tablist")} className="guide-tabs">
+        {TABS.map((tabItem, index) => (
           <button
-            key={t.id}
+            key={tabItem.id}
             ref={(element) => {
-              tabRefs.current[t.id] = element;
+              tabRefs.current[tabItem.id] = element;
             }}
             type="button"
             role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
-            tabIndex={tab === t.id ? 0 : -1}
-            onClick={() => select(t.id)}
+            id={`tab-${tabItem.id}`}
+            aria-selected={tab === tabItem.id}
+            aria-controls={`panel-${tabItem.id}`}
+            tabIndex={tab === tabItem.id ? 0 : -1}
+            onClick={() => select(tabItem.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
           >
-            {t.label}
+            {t(tabItem.label)}
           </button>
         ))}
       </div>
@@ -190,14 +192,12 @@ function AdminGuide({ initial }: { initial: TabId }) {
           (adminSections ? (
             <Sections sections={adminSections} />
           ) : (
-            <p aria-busy="true">Caricamento…</p>
+            <p aria-busy="true">{t("common.loading")}</p>
           ))}
         {tab === "participants" && (
           <>
-            <p className="lead">
-              È la guida che vedono i partecipanti: utile per aiutare chi te la chiede.
-            </p>
-            <Sections sections={participantGuide} />
+            <p className="lead">{t("guide.participantsIntro")}</p>
+            <Sections sections={participantGuide(locale)} />
           </>
         )}
         {tab === "news" && <ReleaseNotes />}
@@ -207,6 +207,7 @@ function AdminGuide({ initial }: { initial: TabId }) {
 }
 
 export function Guide() {
+  const { t, locale } = useI18n();
   const state = useMe();
   const { hash } = useLocation();
 
@@ -216,19 +217,23 @@ export function Guide() {
     }
   }, [state, hash]);
 
-  if (state.status === "loading") return <main aria-busy="true">Caricamento…</main>;
-  if (state.status === "anonymous") return <Navigate to="/login" replace />;
+  if (state.status === "loading") return <main aria-busy="true">{t("common.loading")}</main>;
+  if (state.status === "anonymous") return <Navigate to={ROUTES.login} replace />;
   const isAdmin = state.me.role === "admin";
 
   return (
     <main className={isAdmin ? "wide" : undefined}>
-      <h1>Guida</h1>
+      <h1>{t("title.guide")}</h1>
       <p>
-        <Link to={isAdmin ? "/admin" : "/me"}>
-          {isAdmin ? "Torna al pannello organizzatori" : "Torna alla tua iscrizione"}
+        <Link to={isAdmin ? ROUTES.admin : ROUTES.me}>
+          {isAdmin ? t("guide.backAdmin") : t("guide.backParticipant")}
         </Link>
       </p>
-      {isAdmin ? <AdminGuide initial="organizers" /> : <Sections sections={participantGuide} />}
+      {isAdmin ? (
+        <AdminGuide initial="organizers" />
+      ) : (
+        <Sections sections={participantGuide(locale)} />
+      )}
       <VersionLine />
     </main>
   );

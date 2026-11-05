@@ -1,12 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { Contribution, Me } from "../auth";
+import { useT, type MessageKey } from "../i18n";
+import { tNow } from "../i18n/messages";
 
-export const KIND_LABELS: Record<Contribution["kind"], string> = {
-  talk: "Talk",
-  topic: "Tema per l'unconference",
-  skill: "Competenza da condividere",
+export const KIND_KEYS: Record<Contribution["kind"], MessageKey> = {
+  talk: "contrib.talk",
+  topic: "contrib.topic",
+  skill: "contrib.skill",
 };
+export const kindLabel = (kind: Contribution["kind"]) => tNow(KIND_KEYS[kind]);
 
 function ContributionForm({
   initial,
@@ -17,6 +20,7 @@ function ContributionForm({
   onSaved: () => Promise<void>;
   onCancel?: () => void;
 }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -30,7 +34,7 @@ function ContributionForm({
       description: String(data.get("description") ?? "").trim() || null,
     };
     if (!json.title) {
-      setError("Scrivi un titolo per il tuo contributo.");
+      setError(t("contrib.titleRequired"));
       return;
     }
     try {
@@ -41,31 +45,33 @@ function ContributionForm({
       if (!initial) form.reset();
       await onSaved();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
     }
   }
 
   return (
     <form
       onSubmit={submit}
-      aria-label={initial ? `Modifica «${initial.title}»` : "Proponi un contributo"}
+      aria-label={
+        initial ? t("contrib.editAria", { title: initial.title }) : t("contrib.proposeAria")
+      }
     >
       <label>
-        Tipo
+        {t("contrib.type")}
         <select name="kind" defaultValue={initial?.kind ?? "talk"}>
-          {Object.entries(KIND_LABELS).map(([value, label]) => (
+          {(Object.keys(KIND_KEYS) as Contribution["kind"][]).map((value) => (
             <option key={value} value={value}>
-              {label}
+              {t(KIND_KEYS[value])}
             </option>
           ))}
         </select>
       </label>
       <label>
-        Titolo
+        {t("contrib.title")}
         <input name="title" maxLength={200} required defaultValue={initial?.title ?? ""} />
       </label>
       <label>
-        Descrizione (facoltativa)
+        {t("contrib.description")}
         <textarea
           name="description"
           rows={2}
@@ -79,10 +85,10 @@ function ContributionForm({
         </p>
       )}
       <div className="actions">
-        <button type="submit">{initial ? "Salva" : "Aggiungi"}</button>
+        <button type="submit">{initial ? t("contrib.save") : t("contrib.add")}</button>
         {onCancel && (
           <button type="button" className="secondary" onClick={onCancel}>
-            Annulla
+            {t("contrib.cancel")}
           </button>
         )}
       </div>
@@ -100,6 +106,7 @@ export function Contributions({
   editable: boolean;
   reload: () => Promise<void>;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const items = me.contributions ?? [];
@@ -112,14 +119,16 @@ export function Contributions({
 
   async function remove(item: Contribution) {
     await api(`/api/me/contributions/${item.id}`, { method: "DELETE" });
-    await saved(`«${item.title}» tolto.`);
+    await saved(t("contrib.removed", { title: item.title }));
   }
 
   return (
     <section className="card" aria-labelledby="contributions-title">
-      <h2 id="contributions-title">Cosa porti al camp</h2>
-      <p>Proponi un talk, un tema per l&apos;unconference o una competenza da condividere.</p>
-      {me.can_bring && <p className="legal">All&apos;iscrizione hai scritto: «{me.can_bring}»</p>}
+      <h2 id="contributions-title">{t("contrib.heading")}</h2>
+      <p>{t("contrib.intro")}</p>
+      {me.can_bring && (
+        <p className="legal">{t("contrib.wroteAtSignup", { text: me.can_bring })}</p>
+      )}
       {items.length > 0 && (
         <ul>
           {items.map((item) =>
@@ -127,21 +136,21 @@ export function Contributions({
               <li key={item.id}>
                 <ContributionForm
                   initial={item}
-                  onSaved={() => saved("Contributo aggiornato.")}
+                  onSaved={() => saved(t("contrib.updated"))}
                   onCancel={() => setEditing(null)}
                 />
               </li>
             ) : (
               <li key={item.id} className="item">
                 <span>
-                  <strong>{KIND_LABELS[item.kind]}</strong>: {item.title}
+                  <strong>{t(KIND_KEYS[item.kind])}</strong>: {item.title}
                   {item.description && ` (${item.description})`}
                 </span>
                 <button type="button" className="secondary" onClick={() => setEditing(item.id)}>
-                  Modifica
+                  {t("contrib.edit")}
                 </button>
                 <button type="button" className="secondary" onClick={() => remove(item)}>
-                  Togli
+                  {t("contrib.remove")}
                 </button>
               </li>
             ),
@@ -153,7 +162,7 @@ export function Contributions({
           {message}
         </p>
       )}
-      {editable && <ContributionForm onSaved={() => saved("Contributo aggiunto.")} />}
+      {editable && <ContributionForm onSaved={() => saved(t("contrib.added"))} />}
     </section>
   );
 }

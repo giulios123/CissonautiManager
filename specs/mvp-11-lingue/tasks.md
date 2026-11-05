@@ -11,9 +11,9 @@ Branch: `claude/relaxed-dijkstra-9z2e5o` (vincolo della sessione). **Dimensione*
   Test: errore in inglese con `Accept-Language: en`, lingua salvata, migrazione da zero e downgrade.
 - [x] **5. Email IT/EN** e `timefmt` per lingua.
   Test: ogni email in inglese, lingua del partecipante rispettata, oggetto con il nome dell'edizione.
-- [ ] **6. Pagine partecipante tradotte**.
+- [x] **6. Pagine partecipante tradotte**.
   Test: iscrizione, accesso e pagina personale in inglese.
-- [ ] **7. Guida**: nuova struttura `{it,en}/{participant,admin}`, guida partecipante in inglese, test di parità, `check-guide.sh`.
+- [x] **7. Guida**: nuova struttura `{it,en}/{participant,admin}`, guida partecipante in inglese, test di parità, `check-guide.sh`.
 - [ ] **8. Chiusura**: lint, test, migrazioni da zero, `progress.md`, `activeContext.md`, `decisions.md`, `domain.md`, `pr-description.md`.
 
 ## Da verificare a mano

@@ -37,6 +37,17 @@ describe("titleFor", () => {
       "/admin/admins": 1,
       "/admin/settings": 1,
     });
-    expect(new Set(paths.map(titleFor)).size).toBe(paths.length);
+    expect(new Set(paths.map((path) => titleFor(path))).size).toBe(paths.length);
+  });
+});
+
+describe("titleFor in English", () => {
+  it.each([
+    ["/register", "Registration · Cissonauti Summer Camp"],
+    ["/me", "Your registration · Cissonauti Summer Camp"],
+    ["/admin/to-collect", "To collect · Cissonauti Summer Camp"],
+    ["/nowhere", "Page not found · Cissonauti Summer Camp"],
+  ])("%s -> %s", (path, title) => {
+    expect(titleFor(path, "en")).toBe(title);
   });
 });

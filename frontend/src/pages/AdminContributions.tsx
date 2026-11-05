@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { statusLabel } from "../booking";
-import { KIND_LABELS } from "./Contributions";
+import { KIND_KEYS, kindLabel } from "./Contributions";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
@@ -38,9 +38,9 @@ export function AdminContributions() {
         Tipo
         <select value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="">Tutti</option>
-          {Object.entries(KIND_LABELS).map(([value, label]) => (
+          {Object.keys(KIND_KEYS).map((value) => (
             <option key={value} value={value}>
-              {label}
+              {kindLabel(value as keyof typeof KIND_KEYS)}
             </option>
           ))}
         </select>
@@ -77,7 +77,7 @@ export function AdminContributions() {
                         </>
                       )}
                     </th>
-                    <td>{KIND_LABELS[row.kind]}</td>
+                    <td>{kindLabel(row.kind)}</td>
                     <td>
                       <Link to={`/admin/registrations/${row.booking_id}`}>
                         {row.first_name} {row.last_name}

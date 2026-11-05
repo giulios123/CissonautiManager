@@ -134,7 +134,7 @@ describe("Guide", () => {
     stub(adminMe);
     const scroll = vi.fn();
     Element.prototype.scrollIntoView = scroll;
-    renderGuide("/guide?tab=organizers#giorni-e-slot");
+    renderGuide("/guide?tab=organizers#days-and-slots");
     await screen.findByRole("heading", { name: "Giorni e slot", level: 2 });
     await waitFor(() => expect(scroll).toHaveBeenCalled());
   });
@@ -152,7 +152,7 @@ describe("links to the guide", () => {
     );
     renderGuide("/admin/days");
     const link = await screen.findByRole("link", { name: "Guida" });
-    expect(link).toHaveAttribute("href", "/guide?tab=organizers#giorni-e-slot");
+    expect(link).toHaveAttribute("href", "/guide?tab=organizers#days-and-slots");
   });
 
   it("is reachable from the personal page", async () => {

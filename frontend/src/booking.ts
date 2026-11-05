@@ -1,4 +1,6 @@
 import { intlTag } from "./i18n/locale";
+import { tNow, translatePlural } from "./i18n/messages";
+import { getLocale } from "./i18n/locale";
 import { computeFee } from "./money";
 
 export type SlotInfo = {
@@ -82,32 +84,33 @@ export const formatDeadline = (isoDateTime: string) =>
   fmt({ dateStyle: "long", timeStyle: "short", timeZone: "Europe/Rome" }).format(
     new Date(isoDateTime),
   );
-const PERIOD_LABELS: Record<string, string> = {
-  morning: "Mattina",
-  afternoon: "Pomeriggio",
-  evening: "Sera",
-};
-export const periodLabel = (period: string) => PERIOD_LABELS[period] ?? period;
+export const periodLabel = (period: string) =>
+  period === "morning" || period === "afternoon" || period === "evening"
+    ? tNow(`period.${period}` as const)
+    : period;
 export const isFull = (slot: SlotInfo) => slot.available !== null && slot.available < 1;
 export const seatsLabel = (slot: SlotInfo) =>
   slot.available === null
-    ? "senza limite di posti"
+    ? tNow("seats.unlimited")
     : slot.available < 1
-      ? "completo"
-      : `${slot.available} posti liberi`;
+      ? tNow("seats.full")
+      : translatePlural(getLocale(), "seats.free", slot.available);
 export const canJoinWaitlist = (slot: SlotInfo) =>
   isFull(slot) && slot.waitlist_free != null && slot.waitlist_free > 0;
 export const hhmm = (time: string) => time.slice(0, 5);
 
-const STATUS_LABELS: Record<string, string> = {
-  in_attesa_pagamento: "In attesa di pagamento",
-  confermata: "Confermata",
-  scaduta: "Scaduta",
-  disdetta_richiesta: "Disdetta richiesta",
-  rimborsata: "Rimborsata",
-  in_lista: "Solo in lista d'attesa",
-};
-export const statusLabel = (status: string) => STATUS_LABELS[status] ?? status;
+const STATUSES = [
+  "in_attesa_pagamento",
+  "confermata",
+  "scaduta",
+  "disdetta_richiesta",
+  "rimborsata",
+  "in_lista",
+] as const;
+export const statusLabel = (status: string) =>
+  (STATUSES as readonly string[]).includes(status)
+    ? tNow(`status.${status as (typeof STATUSES)[number]}` as const)
+    : status;
 
 /** Present in that part of the day: the evening also counts for whoever has morning and
  * afternoon (D-009). */

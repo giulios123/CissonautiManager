@@ -1,5 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { dayBadge, formatDay, formatWeekday, hhmm, periodLabel } from "../booking";
+import { useT } from "../i18n";
+import type { MessageKey } from "../i18n";
 import {
   allSlots,
   clearAll,
@@ -46,10 +48,10 @@ export function PeriodIcon({ period }: { period: string }) {
   );
 }
 
-const QUICK: { period: string; label: string }[] = [
-  { period: "morning", label: "Tutta la mattina" },
-  { period: "afternoon", label: "Tutto il pomeriggio" },
-  { period: "evening", label: "Tutta la sera" },
+const QUICK: { period: string; label: MessageKey }[] = [
+  { period: "morning", label: "picker.allMorning" },
+  { period: "afternoon", label: "picker.allAfternoon" },
+  { period: "evening", label: "picker.allEvening" },
 ];
 
 /**
@@ -68,6 +70,7 @@ export function DayPicker({
   /** Shown above the days, next to the quick choices (e.g. a legend). */
   children?: ReactNode;
 }) {
+  const t = useT();
   const baseId = useId();
   const everything = allSlots(days);
 
@@ -82,7 +85,7 @@ export function DayPicker({
     <div className="day-picker">
       <div className="quick">
         <span className="quick-title" id={`${baseId}-quick`}>
-          Selezione rapida
+          {t("picker.quickTitle")}
         </span>
         <div className="quick-actions" aria-labelledby={`${baseId}-quick`}>
           {QUICK.map(({ period, label }) => {
@@ -96,7 +99,7 @@ export function DayPicker({
                 onClick={() => onChange(toggleBulk(slots, selected))}
               >
                 <PeriodIcon period={period} />
-                {label}
+                {t(label)}
               </button>
             );
           })}
@@ -105,7 +108,7 @@ export function DayPicker({
             className="chip"
             onClick={() => onChange(selectAll(days, selected))}
           >
-            Seleziona tutto
+            {t("picker.selectAll")}
           </button>
           <button
             type="button"
@@ -113,7 +116,7 @@ export function DayPicker({
             onClick={() => onChange(clearAll(days, selected))}
             disabled={everything.every((slot) => slot.disabled || !selected.has(slot.id))}
           >
-            Deseleziona tutto
+            {t("picker.clearAll")}
           </button>
         </div>
       </div>
@@ -171,8 +174,10 @@ export function DayPicker({
               disabled={!day.slots.some((slot) => !slot.disabled)}
               onClick={() => onChange(toggleBulk(day.slots, selected))}
             >
-              Tutta la giornata
-              <span className="sr-only"> di {formatDay(day.date)}</span>
+              {t("picker.wholeDay")}
+              <span className="sr-only">
+                {t("picker.wholeDayOf", { day: formatDay(day.date) })}
+              </span>
             </button>
           </div>
         );

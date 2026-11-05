@@ -14,7 +14,7 @@ MVP 1 completato salvo la verifica dentro Google Sites: iscrizione pubblica, acc
 - `memory-bank/`: contesto del progetto, regole di dominio, decisioni, avanzamento.
 - `specs/`: roadmap e una cartella per ogni MVP con requisiti, design e task.
 - `backend/`: FastAPI (Python 3.12), API sotto `/api`.
-- `frontend/`: React con Vite e TypeScript, servito dal backend. La guida in app è in `frontend/src/guide/` (un file Markdown per sezione).
+- `frontend/`: React con Vite e TypeScript, servito dal backend. La guida in app è in `frontend/src/guide/{it,en}/` (un file Markdown per sezione e per lingua).
 - `scripts/`: script di supporto (note di rilascio, controllo della guida).
 - `infra/`: infrastruttura Azure in Bicep.
 

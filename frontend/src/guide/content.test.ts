@@ -29,10 +29,10 @@ describe("parseSections", () => {
 
 describe("admin guide links", () => {
   it.each([
-    ["/admin", "persone"],
-    ["/admin/days", "giorni-e-slot"],
-    ["/admin/registrations/12", "persone"],
-    ["/admin/activities/3", "attivita"],
+    ["/admin", "people"],
+    ["/admin/days", "days-and-slots"],
+    ["/admin/registrations/12", "people"],
+    ["/admin/activities/3", "activities"],
     ["/admin/report/", "report"],
   ])("%s opens the section %s", (path, slug) => {
     expect(adminGuideSlug(path)).toBe(slug);
@@ -45,18 +45,33 @@ describe("admin guide links", () => {
 });
 
 describe("participant guide", () => {
-  it("is built from the files in the repository", () => {
-    expect(participantGuide.length).toBeGreaterThan(0);
-    for (const section of participantGuide) {
+  it.each(["it", "en"] as const)("is built from the %s files in the repository", (locale) => {
+    const sections = participantGuide(locale);
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
       expect(section.title).not.toBe("");
       expect(section.body).not.toBe("");
     }
+  });
+
+  it("has the same sections, in the same order, in Italian and English", () => {
+    expect(participantGuide("en").map((s) => s.slug)).toEqual(
+      participantGuide("it").map((s) => s.slug),
+    );
+  });
+
+  it("is really translated: no English section repeats the Italian text", () => {
+    const italian = participantGuide("it");
+    participantGuide("en").forEach((section, index) => {
+      expect(section.title).not.toBe(italian[index].title);
+      expect(section.body).not.toBe(italian[index].body);
+    });
   });
 });
 
 describe("admin guide", () => {
   it("has a section for every page of the panel", async () => {
-    const slugs = (await loadAdminGuide()).map((section) => section.slug);
+    const slugs = (await loadAdminGuide("it")).map((section) => section.slug);
     const pages = [
       "/admin",
       "/admin/days",
@@ -74,7 +89,7 @@ describe("admin guide", () => {
   });
 
   it("gives every section a title and a body", async () => {
-    for (const section of await loadAdminGuide()) {
+    for (const section of await loadAdminGuide("it")) {
       expect(section.title).not.toBe("");
       expect(section.body).not.toBe("");
     }

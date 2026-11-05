@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../api";
 import type { Me } from "../auth";
 import { canJoinWaitlist, formatDay, hhmm, periodLabel, type Day } from "../booking";
+import { useT } from "../i18n";
 
 const ACTIVE = new Set(["in_attesa_pagamento", "confermata"]);
 
@@ -10,6 +11,7 @@ const fetchDays = () =>
 
 /** The person's waitlist entries, and the full slots they can still wait for. */
 export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }) {
+  const t = useT();
   const [days, setDays] = useState<Day[] | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,7 +39,7 @@ export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }
     } catch (error) {
       setMessage({
         ok: false,
-        text: error instanceof ApiError ? error.message : "Qualcosa è andato storto. Riprova.",
+        text: error instanceof ApiError ? error.message : t("common.somethingWrong"),
       });
     } finally {
       setDays(await fetchDays().catch(() => days));
@@ -56,38 +58,37 @@ export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }
 
   return (
     <section className="card" aria-labelledby="waitlist-title">
-      <h2 id="waitlist-title">Lista d&apos;attesa</h2>
+      <h2 id="waitlist-title">{t("wl.title")}</h2>
       {entries.length > 0 ? (
         <>
-          <p>Se si libera un posto ti arriva un&apos;email e lo slot diventa tuo.</p>
+          <p>{t("wl.intro")}</p>
           <ul>
             {entries.map((entry) => (
               <li key={entry.id} className="item">
                 <span>
-                  {entry.label}: sei <strong>{entry.position}° in lista</strong>
+                  {t("wl.youAre", { label: entry.label })}{" "}
+                  <strong>{t("wl.positionStrong", { position: entry.position })}</strong>
                 </span>
                 <button
                   type="button"
                   className="secondary"
                   disabled={busy}
-                  onClick={() =>
-                    act(`/api/me/waitlist/${entry.id}`, "DELETE", "Sei uscito dalla lista.")
-                  }
+                  onClick={() => act(`/api/me/waitlist/${entry.id}`, "DELETE", t("wl.left"))}
                 >
-                  Esci dalla lista
+                  {t("wl.leave")}
                 </button>
               </li>
             ))}
           </ul>
           {me.bookings.every((booking) => !ACTIVE.has(booking.status)) && (
-            <p>Finché non si libera un posto non devi pagare nulla.</p>
+            <p>{t("wl.nothingToPay")}</p>
           )}
         </>
       ) : (
-        <p>Questi slot sono al completo, ma puoi metterti in lista.</p>
+        <p>{t("wl.fullButJoin")}</p>
       )}
       {joinable.length > 0 && (
-        <ul aria-label="Slot pieni con lista aperta">
+        <ul aria-label={t("wl.joinableAria")}>
           {joinable.map(({ day, slot }) => (
             <li key={slot.id} className="item">
               <span>
@@ -99,10 +100,10 @@ export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }
                 className="secondary"
                 disabled={busy}
                 onClick={() =>
-                  act("/api/me/waitlist", "POST", "Sei in lista d'attesa.", { slot_id: slot.id })
+                  act("/api/me/waitlist", "POST", t("wl.joined"), { slot_id: slot.id })
                 }
               >
-                Mettiti in lista
+                {t("wl.join")}
               </button>
             </li>
           ))}
