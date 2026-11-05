@@ -19,12 +19,14 @@ from app.domain.presence import has_evening
 from app.email import EmailSender
 from app.models import (
     STATUS_EXPIRED,
+    Activity,
     Booking,
     Edition,
     LegalDocument,
     Participant,
     WaitlistEntry,
 )
+from app.services import activities as activity_service
 from app.services import audit as audit_service
 from app.services import booking_admin as booking_admin_service
 from app.services import booking_changes
@@ -496,8 +498,9 @@ def reactivate_registration(
     now: datetime = Depends(get_now),
 ) -> RegistrationDetail:
     booking = _get_booking(db, booking_id)
+    dropped: list[Activity] = []
     try:
-        booking_admin_service.reactivate(db, sender, admin, booking, now)
+        booking_admin_service.reactivate(db, sender, admin, booking, now, dropped)
     except booking_admin_service.NotExpired as exc:
         raise HTTPException(
             status_code=409, detail="Si può riattivare solo una prenotazione scaduta"
@@ -517,7 +520,8 @@ def reactivate_registration(
             status_code=409, detail=f"Non c'è più posto in questi slot: {labels}"
         ) from exc
     db.refresh(booking)
-    return _detail(db, booking, now)
+    warning = payment_service.dropped_activities_warning(dropped) if dropped else None
+    return _detail(db, booking, now, warning=warning)
 
 
 class SlotsIn(BaseModel):
@@ -579,6 +583,10 @@ def change_registration_slots(
     if result.dropped_meals:
         meals = ", ".join(format_meal(day, kind) for day, kind in result.dropped_meals)
         dropped = f"Tolti anche i pasti senza più presenza: {meals}."
+        warning = f"{warning} {dropped}" if warning else dropped
+    if result.dropped_activities:
+        names = activity_service.labels(result.dropped_activities)
+        dropped = f"Tolte anche le attività senza più presenza: {names}."
         warning = f"{warning} {dropped}" if warning else dropped
     return _detail(db, booking, now, warning=warning)
 

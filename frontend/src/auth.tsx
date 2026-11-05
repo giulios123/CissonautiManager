@@ -27,6 +27,7 @@ export type BookingView = {
   allowed_meals?: MealView[];
   activities?: { id: number; title: string; label: string; price_cents: number }[];
   dropped_meals?: string[];
+  dropped_activities?: string[];
   diet?: string | null;
   allergies?: string | null;
   health_consent_version?: number | null;

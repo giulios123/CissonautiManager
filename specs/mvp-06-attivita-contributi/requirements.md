@@ -32,7 +32,7 @@ Come admin voglio creare le attività del camp, così i partecipanti possono ade
 
 - Quando tolgo lo slot che mi dava titolo a un'attività, allora l'attività cade, l'importo si ricalcola e la conferma me lo dice (stessa regola dei pasti).
 - Quando la prenotazione scade, viene disdetta o rimborsata, allora i suoi posti nelle attività si liberano.
-- Quando l'admin riattiva una prenotazione scaduta, allora serve posto anche nelle sue attività; le attività piene sono indicate e l'admin decide se forzare.
+- Quando una prenotazione scaduta viene riattivata (dall'admin o con un pagamento), allora le attività che nel frattempo si sono riempite cadono, l'importo si ricalcola e la scheda lo segnala con un avviso; la cronologia lo registra. (Cambiato in implementazione rispetto a «l'admin decide se forzare»: stessa regola dei pasti, D-031, e vale anche per la riattivazione da pagamento.)
 
 ## US-4 · Attività dalla scheda admin
 

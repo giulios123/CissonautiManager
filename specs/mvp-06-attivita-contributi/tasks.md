@@ -12,7 +12,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: creazione con giorno fuori edizione rifiutata; modifiche ammesse e rifiutate; eliminazione; cronologia; 403 per un partecipante.
 - [x] **4. Adesione dalla pagina personale**: `change_activities` con lock, `PUT /api/me/booking/activities`, `ActivityPicker`.
   Test: adesione e ritiro con importo ricalcolato; in attesa coperta che diventa confermata; piena rifiutata; non presente rifiutata; giorno passato rifiutato e oggi ammesso; query con l'hint per SQL Server. Frontend: solo attività dove si è presenti, posti liberi.
-- [ ] **5. Attività e cambi della prenotazione**: `change_slots` toglie le attività senza titolo; riattivazione con controllo dei posti.
+- [x] **5. Attività e cambi della prenotazione**: `change_slots` toglie le attività senza titolo; riattivazione con controllo dei posti.
   Test: attività tolta e riportata nella risposta e nella cronologia; posto liberato da scadenza e disdetta; riattivazione rifiutata con attività piena e accettata con «forza».
 - [ ] **6. Attività dalla scheda admin**: `PUT /api/admin/registrations/{id}/activities` con `force`.
   Test: capienza superata solo con `force` e segnalata; giorni passati ammessi; presenza sempre richiesta; cronologia.

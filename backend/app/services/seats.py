@@ -5,7 +5,16 @@ from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.domain.booking import available_seats
-from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING, Booking, BookingSlot, Slot
+from app.models import (
+    STATUS_CONFIRMED,
+    STATUS_EXPIRED,
+    STATUS_PENDING,
+    Activity,
+    Booking,
+    BookingActivity,
+    BookingSlot,
+    Slot,
+)
 
 
 def slots_for_update(slot_ids: Iterable[int], edition_id: int | None = None):
@@ -91,3 +100,30 @@ def free_by_slot(db: Session, slots: Iterable[Slot], now: datetime) -> dict[int,
     slots = list(slots)
     occupied = occupied_by_slot(db, [s.id for s in slots], now)
     return {s.id: available_seats(s.capacity, occupied[s.id]) for s in slots}
+
+
+def occupied_by_activity(db: Session, activity_ids: Iterable[int], now: datetime) -> dict[int, int]:
+    """Seats taken per activity: confirmed bookings plus pending ones still within their hold."""
+    ids = list(activity_ids)
+    rows = db.execute(
+        select(BookingActivity.activity_id, func.count())
+        .join(Booking, Booking.id == BookingActivity.booking_id)
+        .where(
+            BookingActivity.activity_id.in_(ids),
+            or_(
+                Booking.status == STATUS_CONFIRMED,
+                and_(Booking.status == STATUS_PENDING, Booking.hold_expires_at > now),
+            ),
+        )
+        .group_by(BookingActivity.activity_id)
+    ).all()
+    counts = {activity_id: count for activity_id, count in rows}
+    return {activity_id: counts.get(activity_id, 0) for activity_id in ids}
+
+
+def free_by_activity(
+    db: Session, activities: Iterable[Activity], now: datetime
+) -> dict[int, int | None]:
+    activities = list(activities)
+    occupied = occupied_by_activity(db, [a.id for a in activities], now)
+    return {a.id: available_seats(a.capacity, occupied[a.id]) for a in activities}

@@ -79,7 +79,7 @@ export function SlotEditor({
         method: "PUT",
         json: { slot_ids: [...selected] },
       });
-      setDropped(result.dropped_meals ?? []);
+      setDropped([...(result.dropped_meals ?? []), ...(result.dropped_activities ?? [])]);
       await onSaved();
       // The seat I just freed (or took) changes what is available: show the current numbers.
       setEdition(await fetchEdition().catch(() => edition));
@@ -147,7 +147,7 @@ export function SlotEditor({
         <p role="status" className="notice ok">
           Slot aggiornati.
           {dropped.length > 0 &&
-            ` Tolti anche i pasti in cui non ci sei più: ${dropped.join(", ")}.`}
+            ` Tolti anche pasti e attività dei momenti in cui non ci sei più: ${dropped.join(", ")}.`}
         </p>
       )}
       <button type="submit" disabled={!changed || saving}>

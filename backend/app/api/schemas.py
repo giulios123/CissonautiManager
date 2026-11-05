@@ -65,6 +65,7 @@ class BookingView(BaseModel):
     allowed_meals: list[MealView] = []
     # After a change of slots: meals that went because the new slots no longer allow them.
     dropped_meals: list[str] = []
+    dropped_activities: list[str] = []
     # Dietary needs. Allergies are health data: only the person and the admins see them.
     diet: str | None = None
     allergies: str | None = None

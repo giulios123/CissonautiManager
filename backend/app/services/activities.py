@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain.activities import (
@@ -15,7 +15,6 @@ from app.domain.activities import (
     is_eligible,
 )
 from app.domain.booking import (
-    available_seats,
     can_edit_slots,
     effective_status,
     has_free_seat,
@@ -41,7 +40,12 @@ from app.services import audit
 from app.services.amounts import recompute_amount
 from app.services.booking_changes import ChangeResult, NotEditable
 from app.services.payments import paid_total, send_confirmation
-from app.services.seats import expire_overdue, lock_booking
+from app.services.seats import (
+    expire_overdue,
+    free_by_activity,
+    lock_booking,
+    occupied_by_activity,
+)
 from app.timefmt import format_activity, format_euro
 
 PERIOD_ORDER = {PERIOD_MORNING: 0, PERIOD_AFTERNOON: 1, PERIOD_EVENING: 2}
@@ -99,33 +103,6 @@ def activities_for_update(activity_ids: Iterable[int], edition_id: int):
         .with_for_update()
         .with_hint(Activity, "WITH (UPDLOCK, HOLDLOCK)", "mssql")
     )
-
-
-def occupied_by_activity(db: Session, activity_ids: Iterable[int], now: datetime) -> dict[int, int]:
-    """Seats taken per activity: confirmed bookings plus pending ones still within their hold."""
-    ids = list(activity_ids)
-    rows = db.execute(
-        select(BookingActivity.activity_id, func.count())
-        .join(Booking, Booking.id == BookingActivity.booking_id)
-        .where(
-            BookingActivity.activity_id.in_(ids),
-            or_(
-                Booking.status == STATUS_CONFIRMED,
-                and_(Booking.status == STATUS_PENDING, Booking.hold_expires_at > now),
-            ),
-        )
-        .group_by(BookingActivity.activity_id)
-    ).all()
-    counts = {activity_id: count for activity_id, count in rows}
-    return {activity_id: counts.get(activity_id, 0) for activity_id in ids}
-
-
-def free_by_activity(
-    db: Session, activities: Iterable[Activity], now: datetime
-) -> dict[int, int | None]:
-    activities = list(activities)
-    occupied = occupied_by_activity(db, [a.id for a in activities], now)
-    return {a.id: available_seats(a.capacity, occupied[a.id]) for a in activities}
 
 
 def linked_count(db: Session, activity_id: int) -> int:

@@ -23,7 +23,7 @@ from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
 from app.services.passwords import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
 from app.services.registration import InvalidSlots, SlotsFull
-from app.timefmt import format_meal, format_slot
+from app.timefmt import format_activity, format_meal, format_slot
 
 router = APIRouter(prefix="/api", tags=["me"])
 
@@ -258,6 +258,9 @@ def change_my_slots(
     db.refresh(result.booking)
     view = booking_view(result.booking, now)
     view.dropped_meals = [format_meal(day, kind) for day, kind in result.dropped_meals]
+    view.dropped_activities = [
+        format_activity(a.title, a.date, a.period) for a in result.dropped_activities
+    ]
     return view
 
 

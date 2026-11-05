@@ -5,6 +5,7 @@ from typing import Literal
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app.domain.activities import activities_to_drop
 from app.domain.booking import (
     can_edit_slots,
     can_request_cancellation,
@@ -37,7 +38,7 @@ from app.services.amounts import recompute_amount
 from app.services.payments import paid_total, send_confirmation
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
-from app.timefmt import format_euro, format_meal, format_slot
+from app.timefmt import format_activity, format_euro, format_meal, format_slot
 
 
 def close_entries_for(
@@ -149,6 +150,10 @@ def change_slots(
         periods_by_day((s.date, s.period) for s in slots),
     )
     booking.meals = [m for m in booking.meals if (m.date, m.kind) not in dropped]
+    dropped_activities = activities_to_drop(
+        booking.activities, periods_by_day((s.date, s.period) for s in slots)
+    )
+    booking.activities = [a for a in booking.activities if a not in dropped_activities]
     recompute_amount(edition, booking)
     if actor is not None:
         audit.log(
@@ -162,6 +167,7 @@ def change_slots(
                 old_amount,
                 booking.amount_due_cents,
                 sorted(dropped, key=meal_sort_key),
+                dropped_activities,
             ),
             booking.id,
         )
@@ -178,7 +184,12 @@ def change_slots(
     if confirmed_now:
         send_confirmation(sender, booking, total)
     return ChangeResult(
-        booking, confirmed_now, full, [s.id for s in removed], sorted(dropped, key=meal_sort_key)
+        booking,
+        confirmed_now,
+        full,
+        [s.id for s in removed],
+        sorted(dropped, key=meal_sort_key),
+        dropped_activities,
     )
 
 
@@ -196,6 +207,7 @@ def _describe_slot_change(
     old_cents: int,
     new_cents: int,
     dropped_meals: list[tuple[date, str]] | None = None,
+    dropped_activities: list[Activity] | None = None,
 ) -> str:
     parts = ["Slot modificati."]
     if added:
@@ -205,6 +217,9 @@ def _describe_slot_change(
     if dropped_meals:
         meals = ", ".join(format_meal(day, kind) for day, kind in dropped_meals)
         parts.append(f"Tolti anche i pasti: {meals}.")
+    if dropped_activities:
+        names = ", ".join(format_activity(a.title, a.date, a.period) for a in dropped_activities)
+        parts.append(f"Tolte anche le attività: {names}.")
     parts.append(f"Quota: {format_euro(old_cents)} → {format_euro(new_cents)}.")
     if full:
         parts.append(f"Oltre la capienza: {_labels(full)}.")
