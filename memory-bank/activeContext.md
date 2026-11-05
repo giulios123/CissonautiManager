@@ -4,6 +4,10 @@
 
 MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 su `main` e deployati su Azure (PR #4 e #5, task 9 dell'MVP 2 validato): `https://cissonauti-booking.wonderfulbush-cbda30f0.italynorth.azurecontainerapps.io`. MVP 4, 5 e 6 implementati e provati in locale sul branch `claude/quirky-meitner-qn9hwh`, in PR verso `main`; descrizioni per gli organizzatori in `specs/mvp-0{4,5,6}-*/pr-description.md`. Modifiche a `domain.md` dei tre MVP applicate.
 
+## MVP 9 · Guida in app (2026-11-05)
+
+Richiesta del maintainer: guida dopo il login filtrata per ruolo, aggiornata a ogni deploy; note di rilascio solo per gli admin. Spec in `specs/mvp-09-guida/`, confermata. Scelte: note generate dai commit; testi della guida nel repo con controllo CI; l'admin vede tutto, il partecipante solo la sua guida. In lavorazione sul branch `claude/dreamy-ride-bzr112`.
+
 ## Prossimo passo
 
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
