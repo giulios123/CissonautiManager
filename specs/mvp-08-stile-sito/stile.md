@@ -59,10 +59,13 @@ Vincoli che ne derivano:
 | Font di sistema | Montserrat |
 | Titolo in testo «Cissonauti Summer Camp» | logo + nome, appena c'è il permesso |
 
-## Da confermare
+## Confermato dal maintainer (2026-11-05)
 
-1. **Nome dell'evento**: il sito dice «Cissone Summer Camp», l'app dice «Cissonauti Summer Camp» (D-012). Quale va mostrato accanto al logo?
-2. **Palette**: va bene petrolio per link e focus e ambra per il bottone principale?
-3. **Loghi**: chi chiede il permesso alla Pro Loco e se esiste una versione SVG. Quale dei due loghi va nell'intestazione (proposta: quello orizzontale, più adatto al telefono).
-4. **Bottoni**: squadrati come sul sito o con gli angoli leggermente arrotondati come oggi?
-5. Per completare la rilevazione (bottoni e spaziature) servono anche `www.gstatic.com` e `ssl.gstatic.com` tra i domini consentiti, oppure due screenshot del sito.
+1. **Nome**: nell'app resta «Cissonauti Summer Camp» (D-012), anche accanto al logo.
+2. **Palette**: approvata così com'è nella tabella sopra.
+3. **Bottoni**: squadrati come sul sito (`--radius: 0` sui bottoni). I campi seguono la stessa forma per coerenza.
+
+## Ancora aperto
+
+1. **Loghi**: chi chiede il permesso alla Pro Loco e se esiste una versione SVG. Quale dei due loghi va nell'intestazione (proposta: quello orizzontale, più adatto al telefono). Finché manca il permesso, l'intestazione mostra solo il nome in testo (US-3 lo prevede già).
+2. **Spaziature**: per rilevarle servono anche `www.gstatic.com` e `ssl.gstatic.com` tra i domini consentiti, oppure due screenshot del sito. Non blocca: in mancanza si tengono le spaziature attuali dell'app.
