@@ -18,6 +18,14 @@ Un solo gruppo di risorse con: Container App (si spegne quando nessuno la usa), 
 
 Servono Azure CLI e i permessi sull'abbonamento.
 
+Registra i provider di risorse che il Bicep usa. L'identità di deploy ha permessi solo sul gruppo di risorse e non può farlo da sola; `bootstrap.sh` lo fa già, a mano serve:
+
+```bash
+for provider in Microsoft.App Microsoft.Communication Microsoft.OperationalInsights Microsoft.Sql; do
+  az provider register --namespace "$provider" --wait
+done
+```
+
 ```bash
 az login
 az account set --subscription <ID_ABBONAMENTO>
@@ -54,6 +62,16 @@ Su GitHub crea l'ambiente `production` (Settings, Environments) e imposta:
 | Segreto | `ADMIN_PASSWORD` | facoltativa: password iniziale del primo admin |
 
 Se il repository o il pacchetto su GitHub sono privati, aggiungi anche la variabile `GHCR_USERNAME` e il segreto `GHCR_TOKEN` (token con permesso `read:packages`). Se sono pubblici non servono.
+
+## Se il deploy dice MissingSubscriptionRegistration
+
+Il messaggio `The subscription is not registered to use namespace 'Microsoft.Communication'` (o un altro `Microsoft.*`) vuol dire che l'abbonamento non ha registrato quel provider, e le email (Azure Communication Services) non partono. Si risolve una volta sola, con permessi sull'abbonamento:
+
+```bash
+az provider register --namespace Microsoft.Communication --wait
+```
+
+Poi rilancia il deploy dalla scheda Actions («Re-run jobs»): non serve nessuna modifica al codice. Un ambiente creato prima dell'MVP 2 con `bootstrap.sh` non aveva questo provider.
 
 ## Se il server SQL non si crea (RegionDoesNotAllowProvisioning)
 

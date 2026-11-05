@@ -6,7 +6,7 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 
 ## Prossimo passo
 
-1. Passaggio su `main` quando il maintainer lo decide (decisione: tutto insieme a fine sviluppi, nessuna PR intermedia). Prima: CI su SQL Server sul branch, poi `az bicep build`, `what-if` e deploy per validare il task 9 dell'MVP 2 (vedi `infra/README.md`).
+1. MVP 2 e MVP 3 sono su `main` (PR #4). Il primo deploy è fallito per il provider `Microsoft.Communication` non registrato: il maintainer lo registra (`az provider register --namespace Microsoft.Communication --wait`), poi si rilancia il Deploy. Quando è verde si chiude il task 9 dell'MVP 2 e si fanno le prove manuali (email vera, job orario). Ogni nuovo errore di Azure sul Bicep, mai compilato prima, si corregge con una PR piccola.
 2. Prova con le descrizioni di PR per gli organizzatori: `specs/mvp-02-pagina-personale/pr-description.md` e `specs/mvp-03-pannello-admin/pr-description.md`.
 3. MVP 4 (lista d'attesa), dopo il passaggio su `main`. Da chiarire prima: dettagli della priorità per chi porta un +1 (vedi Backlog).
 
