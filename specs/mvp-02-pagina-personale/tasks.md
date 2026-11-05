@@ -12,7 +12,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test: con pagamenti passa a `disdetta_richiesta`; senza pagamenti la prenotazione sparisce (anche `booking_slot`) e la persona resta; posti liberati in entrambi i casi; email inviata una volta; stati vietati; riscrizione dopo disdetta crea nuova prenotazione.
 - [x] **5. Riattivazione e blocco**: la riattivazione in `services/payments.py` reimposta `hold_started_at` e azzera i promemoria; `register` imposta `hold_started_at`.
   Test: dopo la riattivazione i promemoria possono ripartire.
-- [ ] **6. Email reali**: `AcsEmailSender`, `build_email_sender` con `acs`, testi in `app/email/templates.py`, errori solo loggati.
+- [x] **6. Email reali**: `AcsEmailSender`, `build_email_sender` con `acs`, testi in `app/email/templates.py`, errori solo loggati.
   Test con client finto: invio corretto, errore non propagato, avvio rifiutato senza stringa di connessione.
 - [ ] **7. Job promemoria**: `app/jobs/send_reminders.py`.
   Test: mid e final una sola volta; rilancio idempotente; niente su confermata, scaduta, disdetta, coperta; in ritardo solo il finale; riattivata riparte; riepilogo stampato.

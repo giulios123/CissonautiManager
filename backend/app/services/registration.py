@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.domain.booking import effective_status, has_free_seat, hold_deadline
 from app.domain.fees import compute_fee
-from app.email import EmailMessage, EmailSender
+from app.email import EmailSender
+from app.email.templates import already_registered_email, registration_email
 from app.models import (
     STATUS_CONFIRMED,
     STATUS_PENDING,
@@ -16,13 +17,11 @@ from app.models import (
     Participant,
     PaymentChannel,
     Slot,
-    slot_sort_key,
 )
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
-from app.timefmt import format_deadline, format_euro, format_slot
 
 
 class RegistrationClosed(Exception):
@@ -85,32 +84,6 @@ def _has_active_booking(db: Session, participant: Participant, edition: Edition,
     return any(
         effective_status(b.status, b.hold_expires_at, now) in (STATUS_PENDING, STATUS_CONFIRMED)
         for b in bookings
-    )
-
-
-def _email_body(
-    participant: Participant,
-    booking: Booking,
-    channels: list[PaymentChannel],
-    link: str,
-) -> str:
-    slots = "\n".join(
-        f"- {format_slot(s.date, s.period, s.start_time, s.end_time)}"
-        for s in sorted(booking.slots, key=slot_sort_key)
-    )
-    pay = "\n".join(f"- {c.label}: {c.instructions}".rstrip(": ") for c in channels) or (
-        "- Ti scriveremo le istruzioni appena possibile."
-    )
-    return (
-        f"Ciao {participant.first_name},\n\n"
-        "grazie per esserti iscritto al Cissonauti Summer Camp!\n\n"
-        f"I tuoi slot:\n{slots}\n\n"
-        f"Quota da versare: {format_euro(booking.amount_due_cents)}\n"
-        f"Causale: {participant.personal_code}\n"
-        f"Il posto è bloccato fino al {format_deadline(booking.hold_expires_at)}: "
-        "senza pagamento entro quella data si libera.\n\n"
-        f"Come pagare:\n{pay}\n\n"
-        f"Il tuo link personale (vale 30 minuti, si usa una volta sola):\n{link}\n"
     )
 
 
@@ -184,15 +157,11 @@ def register(
 
     raw = auth_service.create_magic_link_token(db, participant, now)
     sender.send(
-        EmailMessage(
-            to=participant.email,
-            subject="Iscrizione al Cissonauti Summer Camp",
-            body=_email_body(
-                participant,
-                booking,
-                enabled_channels(db, edition),
-                auth_service.magic_link_url(settings, raw),
-            ),
+        registration_email(
+            participant,
+            booking,
+            enabled_channels(db, edition),
+            auth_service.magic_link_url(settings, raw),
         )
     )
     return RegistrationResult(created=True, booking=booking, participant=participant)
@@ -202,16 +171,4 @@ def _send_link_only(
     db: Session, sender: EmailSender, settings: Settings, participant: Participant, now: datetime
 ) -> None:
     raw = auth_service.create_magic_link_token(db, participant, now)
-    sender.send(
-        EmailMessage(
-            to=participant.email,
-            subject="Sei già iscritto al Cissonauti Summer Camp",
-            body=(
-                f"Ciao {participant.first_name},\n\n"
-                "risulti già iscritto: non abbiamo creato una nuova iscrizione.\n"
-                "Per vedere la tua pagina personale apri questo link "
-                "(vale 30 minuti, si usa una volta sola):\n"
-                f"{auth_service.magic_link_url(settings, raw)}\n"
-            ),
-        )
-    )
+    sender.send(already_registered_email(participant, auth_service.magic_link_url(settings, raw)))

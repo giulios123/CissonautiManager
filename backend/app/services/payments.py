@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.domain.booking import can_reactivate, hold_deadline
 from app.domain.fees import is_covered
-from app.email import EmailMessage, EmailSender
+from app.email import EmailSender
+from app.email.templates import payment_confirmation_email
 from app.models import (
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
@@ -13,11 +14,9 @@ from app.models import (
     Booking,
     Participant,
     Payment,
-    slot_sort_key,
 )
 from app.services import edition as edition_service
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
-from app.timefmt import format_euro, format_slot
 
 EXPIRED_NO_ROOM = (
     "Pagamento registrato, ma la prenotazione è scaduta e almeno uno slot è ormai pieno: "
@@ -38,23 +37,7 @@ def paid_total(booking: Booking) -> int:
 
 
 def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
-    participant = booking.participant
-    slots = "\n".join(
-        f"- {format_slot(s.date, s.period, s.start_time, s.end_time)}"
-        for s in sorted(booking.slots, key=slot_sort_key)
-    )
-    sender.send(
-        EmailMessage(
-            to=participant.email,
-            subject="Pagamento ricevuto: sei dentro!",
-            body=(
-                f"Ciao {participant.first_name},\n\n"
-                f"abbiamo registrato il tuo pagamento ({format_euro(paid_cents)}): "
-                "la tua iscrizione al Cissonauti Summer Camp è confermata.\n\n"
-                f"I tuoi slot:\n{slots}\n\nCi vediamo presto!\n"
-            ),
-        )
-    )
+    sender.send(payment_confirmation_email(booking, paid_cents))
 
 
 def record_payment(
