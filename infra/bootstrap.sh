@@ -59,14 +59,28 @@ az ad sp show --id "$APP_ID" >/dev/null 2>&1 || az ad sp create --id "$APP_ID" -
 if [[ -z "$(az role assignment list --assignee "$APP_ID" --scope "$SCOPE" --role Contributor --query "[0].id" -o tsv)" ]]; then
   az role assignment create --assignee "$APP_ID" --role Contributor --scope "$SCOPE" --output none
 fi
-if [[ -z "$(az ad app federated-credential list --id "$APP_ID" --query "[?name=='github-${ENVIRONMENT}'].name" -o tsv)" ]]; then
-  az ad app federated-credential create --id "$APP_ID" --parameters "{
-    \"name\": \"github-${ENVIRONMENT}\",
-    \"issuer\": \"https://token.actions.githubusercontent.com\",
-    \"subject\": \"repo:${REPO}:environment:${ENVIRONMENT}\",
-    \"audiences\": [\"api://AzureADTokenExchange\"]
-  }" --output none
-fi
+# GitHub can present the workflow identity in two formats: the classic one with names, or one
+# that also carries the numeric owner and repository IDs. Azure matches the subject exactly, so
+# both are registered.
+OWNER="${REPO%%/*}"
+NAME="${REPO##*/}"
+OWNER_ID="$(gh api "repos/${REPO}" --jq .owner.id)"
+REPO_ID="$(gh api "repos/${REPO}" --jq .id)"
+
+ensure_federated_credential() {
+  local cred_name="$1" subject="$2"
+  if [[ -z "$(az ad app federated-credential list --id "$APP_ID" --query "[?name=='${cred_name}'].name" -o tsv)" ]]; then
+    az ad app federated-credential create --id "$APP_ID" --parameters "{
+      \"name\": \"${cred_name}\",
+      \"issuer\": \"https://token.actions.githubusercontent.com\",
+      \"subject\": \"${subject}\",
+      \"audiences\": [\"api://AzureADTokenExchange\"]
+    }" --output none
+  fi
+}
+
+ensure_federated_credential "github-${ENVIRONMENT}" "repo:${REPO}:environment:${ENVIRONMENT}"
+ensure_federated_credential "github-${ENVIRONMENT}-id" "repo:${OWNER}@${OWNER_ID}/${NAME}@${REPO_ID}:environment:${ENVIRONMENT}"
 
 echo "3/3 GitHub environment, variables and secrets"
 gh api --method PUT "repos/${REPO}/environments/${ENVIRONMENT}" --silent

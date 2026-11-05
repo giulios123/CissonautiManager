@@ -4,6 +4,7 @@ using 'main.bicep'
 param appName = readEnvironmentVariable('APP_NAME', 'cisonauti-booking')
 param image = readEnvironmentVariable('IMAGE')
 param adminEmail = readEnvironmentVariable('ADMIN_EMAIL')
+param sqlLocation = readEnvironmentVariable('SQL_LOCATION', '')
 
 param sqlAdminPassword = readEnvironmentVariable('SQL_ADMIN_PASSWORD')
 param secretKey = readEnvironmentVariable('SECRET_KEY')

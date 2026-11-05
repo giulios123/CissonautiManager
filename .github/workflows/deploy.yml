@@ -56,6 +56,7 @@ jobs:
           APP_NAME: ${{ vars.APP_NAME }}
           IMAGE: ${{ needs.build.outputs.image }}
           ADMIN_EMAIL: ${{ vars.ADMIN_EMAIL }}
+          SQL_LOCATION: ${{ vars.SQL_LOCATION }}
           SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
