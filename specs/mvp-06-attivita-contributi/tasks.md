@@ -4,7 +4,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
 
 **Dimensione**: 10 task.
 
-- [ ] **1. Migrazione 0007**: tabelle `activity`, `booking_activity`, `contribution`.
+- [x] **1. Migrazione 0007**: tabelle `activity`, `booking_activity`, `contribution`.
   Test: upgrade e downgrade da zero.
 - [ ] **2. Regole pure**: `is_eligible`, `activities_to_drop`, `check_join`, `check_activity_edit`, `validate_contribution`, attività in `compute_amount_due`.
   Test: presenza per fascia, sera derivata; attività che cade togliendo lo slot; piena, giorno passato, non presente; prezzo, giorno e fascia fissi con iscritti; capienza sotto gli iscritti rifiutata; eliminazione con iscritti rifiutata; importo con attività gratuite e a pagamento.

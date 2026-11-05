@@ -41,6 +41,12 @@ DIET_VEGETARIAN = "vegetarian"
 DIET_VEGAN = "vegan"
 DIETS = (DIET_OMNIVORE, DIET_VEGETARIAN, DIET_VEGAN)
 
+# What a participant offers to the camp.
+CONTRIB_TALK = "talk"
+CONTRIB_TOPIC = "topic"  # a theme for the unconference
+CONTRIB_SKILL = "skill"
+CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL)
+
 # Why a waitlist entry was closed. Entries are never deleted: the history stays.
 CLOSE_PROMOTED = "promoted"  # the seat went to this person
 CLOSE_LEFT = "left"  # the person left the list
@@ -162,6 +168,10 @@ class Booking(Base):
     meals: Mapped[list["BookingMeal"]] = relationship(
         cascade="all, delete-orphan", order_by="BookingMeal.date"
     )
+    activities: Mapped[list["Activity"]] = relationship(secondary="booking_activity")
+    contributions: Mapped[list["Contribution"]] = relationship(
+        cascade="all, delete-orphan", order_by="Contribution.id"
+    )
 
 
 class BookingSlot(Base):
@@ -179,6 +189,49 @@ class BookingMeal(Base):
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
     date: Mapped[date] = mapped_column(Date, primary_key=True)
     kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
+
+
+class Activity(Base):
+    """Something organised during the camp, on a day and in one part of it (morning, afternoon,
+    evening). Only people present in that part of the day can join."""
+
+    __tablename__ = "activity"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
+    title: Mapped[str] = mapped_column(Unicode(200))
+    description: Mapped[str | None] = mapped_column(UnicodeText)
+    date: Mapped[date] = mapped_column(Date)
+    period: Mapped[str] = mapped_column(Unicode(12))
+    # Free text such as "10:30-12", shown as is.
+    time_label: Mapped[str | None] = mapped_column(Unicode(50))
+    # 0 means free.
+    price_cents: Mapped[int] = mapped_column(Integer, default=0)
+    # None means no limit.
+    capacity: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class BookingActivity(Base):
+    __tablename__ = "booking_activity"
+
+    booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"), primary_key=True)
+    joined_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class Contribution(Base):
+    """A talk, an unconference theme or a skill a participant offers."""
+
+    __tablename__ = "contribution"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"))
+    kind: Mapped[str] = mapped_column(Unicode(16))
+    title: Mapped[str] = mapped_column(Unicode(200))
+    description: Mapped[str | None] = mapped_column(UnicodeText)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 
 class PaymentChannel(Base):
