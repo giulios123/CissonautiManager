@@ -11,7 +11,13 @@ from app.email import EmailSender
 from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING, Booking, Participant
 from app.services import audit
 from app.services.participants import get_by_email, normalize_email
-from app.services.payments import paid_total, revive_expired, send_confirmation
+from app.services.payments import (
+    ALREADY_ACTIVE,
+    REVIVED,
+    paid_total,
+    revive_expired,
+    send_confirmation,
+)
 from app.services.registration import SlotsFull
 from app.services.seats import expire_overdue, free_by_slot
 from app.timefmt import format_deadline
@@ -40,6 +46,10 @@ class InvalidDeadline(Exception):
 
 class NotExpired(Exception):
     pass
+
+
+class AnotherActiveBooking(Exception):
+    """The person signed up again: reactivating this one would leave them with two bookings."""
 
 
 def _shown(value: str | None) -> str:
@@ -122,7 +132,10 @@ def reactivate(
     db.refresh(booking)
     if booking.status != STATUS_EXPIRED:
         raise NotExpired()
-    if not revive_expired(db, booking, now):
+    outcome = revive_expired(db, booking, now)
+    if outcome == ALREADY_ACTIVE:
+        raise AnotherActiveBooking()
+    if outcome != REVIVED:
         free = free_by_slot(db, booking.slots, now)
         raise SlotsFull([s for s in booking.slots if free[s.id] is not None and free[s.id] < 1])
     total = paid_total(booking)

@@ -21,6 +21,39 @@ def slots_for_update(slot_ids: Iterable[int], edition_id: int | None = None):
     return query.with_for_update().with_hint(Slot, "WITH (UPDLOCK, HOLDLOCK)", "mssql")
 
 
+def lock_booking(db: Session, booking_id: int) -> None:
+    """Lock one booking until the end of the transaction, so changes to its payments and status
+    are applied one at a time (two admins voiding payments at once would each see the other's
+    payment as still counting). Like the slot lock, SQL Server needs the explicit hint."""
+    db.execute(
+        select(Booking.id)
+        .where(Booking.id == booking_id)
+        .with_for_update()
+        .with_hint(Booking, "WITH (UPDLOCK, HOLDLOCK)", "mssql")
+    )
+
+
+def has_other_active_booking(db: Session, booking: Booking, now: datetime) -> bool:
+    """True if the same person already has another pending (within its hold) or confirmed
+    booking in the same edition."""
+    return (
+        db.scalar(
+            select(Booking.id)
+            .where(
+                Booking.participant_id == booking.participant_id,
+                Booking.edition_id == booking.edition_id,
+                Booking.id != booking.id,
+                or_(
+                    Booking.status == STATUS_CONFIRMED,
+                    and_(Booking.status == STATUS_PENDING, Booking.hold_expires_at > now),
+                ),
+            )
+            .limit(1)
+        )
+        is not None
+    )
+
+
 def expire_overdue(db: Session, now: datetime) -> None:
     """Write the `scaduta` status for pending bookings past their deadline.
 

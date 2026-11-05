@@ -59,6 +59,9 @@ export function AdminSlotEditor({
         method: "PUT",
         json: { slot_ids: [...selected], force },
       });
+      // Presences changed with this save: reload them so a slot just freed can be picked again.
+      const fresh = await api<{ days: DayRow[] }>("/api/admin/views/slots").catch(() => null);
+      if (fresh) setDays(fresh.days);
       onDone(
         updated,
         `Slot aggiornati. Nuova quota: ${formatEuro(updated.booking.amount_due_cents)}.`,

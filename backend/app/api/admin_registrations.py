@@ -406,6 +406,12 @@ def reactivate_registration(
         raise HTTPException(
             status_code=409, detail="Si può riattivare solo una prenotazione scaduta"
         ) from exc
+    except booking_admin_service.AnotherActiveBooking as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Questa persona ha già un'altra iscrizione attiva: non si può riattivare "
+            "anche questa",
+        ) from exc
     except SlotsFull as exc:
         db.rollback()
         labels = ", ".join(

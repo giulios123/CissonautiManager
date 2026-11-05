@@ -256,6 +256,54 @@ class TestReactivate:
         assert db.get(Booking, booking.id).status == STATUS_EXPIRED
         assert db.scalar(select(AuditLog)) is None
 
+    def test_it_is_refused_when_the_person_has_signed_up_again(
+        self, admin_client, booking, db, clock, make_booking, slot_ids
+    ):
+        self.expire(db, booking, clock)
+        newer = make_booking(booking.participant, [db.get(Slot, slot_ids[(d(14), "morning")])])
+        response = self.reactivate(admin_client, booking)
+        assert response.status_code == 409
+        assert "già un'altra iscrizione attiva" in response.json()["detail"]
+        db.expire_all()
+        assert db.get(Booking, booking.id).status == STATUS_EXPIRED
+        assert db.get(Booking, newer.id).status == STATUS_PENDING
+        assert db.scalar(select(AuditLog)) is None
+
+    def test_a_confirmed_other_booking_blocks_it_too(
+        self, admin_client, booking, db, clock, make_booking, slot_ids
+    ):
+        self.expire(db, booking, clock)
+        make_booking(
+            booking.participant,
+            [db.get(Slot, slot_ids[(d(14), "morning")])],
+            status=STATUS_CONFIRMED,
+        )
+        assert self.reactivate(admin_client, booking).status_code == 409
+
+    def test_an_old_other_booking_that_lapsed_does_not_block_it(
+        self, admin_client, booking, db, clock, make_booking, slot_ids
+    ):
+        self.expire(db, booking, clock)
+        make_booking(
+            booking.participant, [db.get(Slot, slot_ids[(d(14), "morning")])], status=STATUS_EXPIRED
+        )
+        assert self.reactivate(admin_client, booking).status_code == 200
+
+    def test_a_payment_on_an_expired_booking_does_not_revive_it_next_to_another_active_one(
+        self, admin_client, booking, db, clock, make_booking, slot_ids
+    ):
+        self.expire(db, booking, clock)
+        make_booking(booking.participant, [db.get(Slot, slot_ids[(d(14), "morning")])])
+        response = admin_client.post(
+            f"/api/admin/registrations/{booking.id}/payments",
+            json={"amount_cents": 500, "channel": "iban"},
+        )
+        data = response.json()
+        assert response.status_code == 201
+        assert data["booking"]["status"] == STATUS_EXPIRED
+        assert data["booking"]["paid_cents"] == 500  # the payment is kept
+        assert "altra iscrizione attiva" in data["warning"]
+
     @pytest.mark.parametrize("status", [STATUS_CONFIRMED, STATUS_CANCEL_REQUESTED, STATUS_REFUNDED])
     def test_only_an_expired_booking_can_be_reactivated(self, admin_client, booking, db, status):
         booking.status = status

@@ -593,3 +593,99 @@ describe("voiding a payment", () => {
     );
   });
 });
+
+describe("review follow-ups", () => {
+  it("keeps Tab inside the void dialog, reaching the reason field", async () => {
+    const payments = [
+      {
+        id: 11,
+        amount_cents: 400,
+        channel: "iban",
+        paid_on: "2026-07-02",
+        note: null,
+        voided: false,
+        void_reason: null,
+      },
+    ];
+    serve(detailFixture({}, { paid_cents: 400, balance_cents: 700, payments }));
+    renderAt("/admin/iscrizioni/7");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ }));
+    const dialog = within(await screen.findByRole("dialog"));
+    const reason = dialog.getByLabelText("Motivo (obbligatorio)");
+    const cancel = dialog.getByRole("button", { name: "No, torno indietro" });
+    expect(cancel).toHaveFocus();
+    // the confirm button is disabled without a reason, so Cancel is the last control: Tab wraps
+    await user.tab();
+    expect(reason).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(cancel).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(reason).toHaveFocus();
+  });
+
+  it("lets an admin pick again a full slot they have just freed", async () => {
+    const full = {
+      id: 2,
+      period: "afternoon",
+      start_time: "14:00:00",
+      end_time: "18:00:00",
+      capacity: 1,
+      present: 1,
+      free: 0,
+    };
+    const freed = { ...full, present: 0, free: 1 };
+    const morning = {
+      id: 1,
+      period: "morning",
+      start_time: "09:00:00",
+      end_time: "13:00:00",
+      capacity: 25,
+      present: 0,
+      free: 25,
+    };
+    let views = 0;
+    serve(
+      detailFixture(
+        {},
+        {
+          slots: [
+            { id: 2, date: "2026-07-13", period: "afternoon", label: "lun 13/07 pomeriggio" },
+          ],
+        },
+      ),
+      (call) => {
+        if (call.url === "/api/admin/views/slots") {
+          views += 1;
+          return {
+            body: { days: [{ date: "2026-07-13", slots: [morning, views === 1 ? full : freed] }] },
+          };
+        }
+        if (call.method === "PUT") {
+          return {
+            body: detailFixture(
+              {},
+              {
+                slots: [
+                  { id: 1, date: "2026-07-13", period: "morning", label: "lun 13/07 mattina" },
+                ],
+              },
+            ),
+          };
+        }
+        return undefined;
+      },
+    );
+    renderAt("/admin/iscrizioni/7");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Cambia gli slot" }));
+    const form = within(await screen.findByRole("form", { name: "Cambia gli slot" }));
+    await user.click(form.getByRole("checkbox", { name: /Pomeriggio/ })); // leave the full slot
+    await user.click(form.getByRole("checkbox", { name: /Mattina/ })); // and take the morning
+    await user.click(form.getByRole("button", { name: "Salva gli slot" }));
+    await screen.findByRole("status");
+    const afternoon = form.getByRole("checkbox", { name: /Pomeriggio/ });
+    expect(afternoon).toBeEnabled();
+    expect(afternoon).not.toBeChecked();
+  });
+});

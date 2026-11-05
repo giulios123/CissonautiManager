@@ -35,10 +35,21 @@ class ReminderSummary:
 
 
 def _claim(db: Session, booking: Booking, kind: str, now: datetime) -> bool:
-    """Mark the reminder as sent. False if another run got there first."""
+    """Mark the reminder as sent. False if another run got there first, or if the booking changed
+    since it was evaluated (paid, cancelled, hold extended or amount changed): the decision to send
+    was taken on the old state, so it no longer holds."""
     column = Booking.reminder_final_sent_at if kind == "final" else Booking.reminder_mid_sent_at
     result = db.execute(
-        update(Booking).where(Booking.id == booking.id, column.is_(None)).values({column.key: now})
+        update(Booking)
+        .where(
+            Booking.id == booking.id,
+            column.is_(None),
+            Booking.status == STATUS_PENDING,
+            Booking.hold_started_at == booking.hold_started_at,
+            Booking.hold_expires_at == booking.hold_expires_at,
+            Booking.amount_due_cents == booking.amount_due_cents,
+        )
+        .values({column.key: now})
     )
     db.commit()
     return result.rowcount == 1

@@ -5,7 +5,7 @@ from sqlalchemy.dialects import mssql
 
 from app.models import Edition
 from app.services.edition import get_active_edition  # noqa: F401
-from app.services.seats import slots_for_update
+from app.services.seats import lock_booking, slots_for_update
 
 
 def compiled(statement) -> str:
@@ -21,3 +21,14 @@ def test_boolean_filter_is_valid_on_sql_server():
     sql = compiled(select(Edition).where(Edition.is_active == true()))
     assert "IS 1" not in sql
     assert "is_active = 1" in sql
+
+
+def test_booking_lock_uses_an_explicit_hint_on_sql_server():
+    from unittest.mock import MagicMock
+
+    session = MagicMock()
+    lock_booking(session, 7)
+    statement = session.execute.call_args.args[0]
+    sql = compiled(statement)
+    assert "WITH (UPDLOCK, HOLDLOCK)" in sql
+    assert "booking.id = 7" in sql

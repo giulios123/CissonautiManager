@@ -293,3 +293,46 @@ describe("balance and instructions", () => {
     expect(screen.queryByRole("button", { name: /disdetta|slot/i })).not.toBeInTheDocument();
   });
 });
+
+describe("seats after saving", () => {
+  it("lets a participant pick again a full slot they have just freed", async () => {
+    let editions = 0;
+    let saved = false;
+    const afterSave = booking({
+      slots: [
+        { id: 4, date: "2026-07-14", period: "morning", label: "mar 14/07 mattina (09:00-13:00)" },
+      ],
+    });
+    openAt((url, init) => {
+      if (url === "/api/me") return { body: me([saved ? afterSave : booking()]) };
+      if (url === "/api/public/edition") {
+        editions += 1;
+        // slot 1 is full and mine; once I leave it a seat is free
+        const slots =
+          editions === 1
+            ? EDITION.days[1].slots
+            : [slot(1, "morning", 1), ...EDITION.days[1].slots.slice(1)];
+        return {
+          body: {
+            ...EDITION,
+            days: [EDITION.days[0], { ...EDITION.days[1], slots }, EDITION.days[2]],
+          },
+        };
+      }
+      if (url === "/api/me/booking/slots" && init?.method === "PUT") {
+        saved = true;
+        return { body: afterSave };
+      }
+      return { status: 404, body: {} };
+    });
+    const form = await openEditor();
+    const [, monday, tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(monday).getByRole("checkbox", { name: /Mattina/ })); // leave it
+    await userEvent.click(within(tuesday).getByRole("checkbox")); // take Tuesday instead
+    await userEvent.click(form.getByRole("button", { name: "Salva gli slot" }));
+    await form.findByText("Slot aggiornati.");
+    const morning = within(monday).getByRole("checkbox", { name: /Mattina/ });
+    expect(morning).toBeEnabled();
+    expect(morning).not.toBeChecked();
+  });
+});

@@ -67,6 +67,8 @@ export function SlotEditor({
     try {
       await api("/api/me/booking/slots", { method: "PUT", json: { slot_ids: [...selected] } });
       await onSaved();
+      // The seat I just freed (or took) changes what is available: show the current numbers.
+      setEdition(await fetchEdition().catch(() => edition));
       setSaved(true);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");

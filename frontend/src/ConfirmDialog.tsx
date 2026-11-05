@@ -7,6 +7,8 @@ import {
   type RefObject,
 } from "react";
 
+const TABBABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
+
 /**
  * Modal confirmation. Focus starts on the harmless choice, Tab stays inside the dialog, Escape
  * cancels, and focus goes back to `returnFocusTo` when the dialog closes. Render it only while it
@@ -52,9 +54,12 @@ export function ConfirmDialog({
       return;
     }
     if (event.key !== "Tab") return;
-    const buttons = [...(dialogRef.current?.querySelectorAll("button") ?? [])];
-    const first = buttons[0];
-    const last = buttons[buttons.length - 1];
+    // Every enabled control, not only buttons: a dialog can hold a field (the void reason).
+    const controls = [...(dialogRef.current?.querySelectorAll<HTMLElement>(TABBABLE) ?? [])].filter(
+      (element) => !element.hasAttribute("disabled"),
+    );
+    const first = controls[0];
+    const last = controls[controls.length - 1];
     if (event.shiftKey && document.activeElement === first) {
       event.preventDefault();
       last?.focus();

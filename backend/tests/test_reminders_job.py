@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from sqlalchemy import update
 from sqlalchemy.orm import Session
@@ -161,3 +163,34 @@ def test_main_runs_with_settings_from_the_environment(
         send_reminders.main()
     assert len(outbox.sent) == 1
     assert "mid=1" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda b, clock: setattr(b, "status", STATUS_CONFIRMED),
+        lambda b, clock: setattr(b, "status", STATUS_CANCEL_REQUESTED),
+        lambda b, clock: setattr(b, "hold_expires_at", b.hold_expires_at + timedelta(days=3)),
+        lambda b, clock: setattr(b, "amount_due_cents", b.amount_due_cents + 100),
+    ],
+    ids=["paid", "cancelled", "hold extended", "amount changed"],
+)
+def test_a_reminder_is_not_sent_if_the_booking_changed_after_it_was_evaluated(
+    db, booking, outbox, settings, clock, engine, monkeypatch, change
+):
+    clock.advance(hours=36)
+    real_due_reminder = send_reminders.due_reminder
+
+    def racing(*args):
+        kind = real_due_reminder(*args)
+        with Session(engine) as other:  # another request changes the booking in the meantime
+            change(other.get(Booking, booking.id), clock)
+            other.commit()
+        return kind
+
+    monkeypatch.setattr(send_reminders, "due_reminder", racing)
+    summary = run(db, outbox, settings, clock)
+    assert outbox.sent == []
+    assert summary.mid == 0
+    db.expire_all()
+    assert db.get(Booking, booking.id).reminder_mid_sent_at is None  # nothing was consumed

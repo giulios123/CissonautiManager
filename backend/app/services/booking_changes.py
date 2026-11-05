@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.domain.booking import (
@@ -19,6 +19,7 @@ from app.models import (
     STATUS_CANCEL_REQUESTED,
     STATUS_CONFIRMED,
     STATUS_PENDING,
+    AuditLog,
     Booking,
     Edition,
     Participant,
@@ -183,6 +184,11 @@ def request_cancellation(
         booking.cancel_requested_at = now
         outcome = "requested"
     else:
+        # The history must not point at an id that a later booking could reuse (SQLite does):
+        # entries about a removed booking are detached, and keep the person's name in their text.
+        db.execute(
+            update(AuditLog).where(AuditLog.booking_id == booking.id).values(booking_id=None)
+        )
         booking.slots = []
         db.delete(booking)
         outcome = "removed"
@@ -197,7 +203,7 @@ def request_cancellation(
             "cancelled_by_admin",
             f"Disdetta registrata a nome di {participant.first_name} {participant.last_name} "
             f"({participant.email}): {result}",
-            booking.id,
+            None if outcome == "removed" else booking.id,
         )
     db.commit()
     sender.send(cancellation_email(to, first_name, removed=outcome == "removed"))

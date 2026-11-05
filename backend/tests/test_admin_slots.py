@@ -7,12 +7,14 @@ from app.models import (
     STATUS_CANCEL_REQUESTED,
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
+    STATUS_PENDING,
     STATUS_REFUNDED,
     AuditLog,
     Booking,
     Participant,
     Slot,
 )
+from app.services import audit as audit_service
 from tests.helpers import d
 from tests.test_auth import login
 from tests.test_change_slots import available_seats, pay
@@ -169,10 +171,39 @@ class TestCancellation:
         assert db.scalar(select(func.count()).select_from(Booking)) == 0
         assert db.scalar(select(Participant).where(Participant.email == "ada@example.com"))
         entry = db.scalar(select(AuditLog))
-        assert entry.booking_id == booking_id
+        assert entry.booking_id is None  # detached, so a later booking cannot inherit it
         assert "Ada Lovelace" in entry.detail and "ada@example.com" in entry.detail
+        assert audit_service.history(db, booking_id) == []
         assert "rimossa" in entry.detail
         assert len(outbox.sent) == 1
+
+    def test_earlier_history_of_a_removed_booking_is_detached_too_and_not_inherited(
+        self, admin_client, booking, db, slot_ids, make_participant
+    ):
+        old_id = booking.id
+        kept = {
+            "edition_id": booking.edition_id,
+            "hold_expires_at": booking.hold_expires_at,
+            "hold_started_at": booking.hold_started_at,
+            "privacy_document_id": booking.privacy_document_id,
+            "privacy_accepted_at": booking.privacy_accepted_at,
+            "disclaimer_document_id": booking.disclaimer_document_id,
+            "disclaimer_accepted_at": booking.disclaimer_accepted_at,
+        }
+        admin_client.patch(f"/api/admin/registrations/{old_id}", json={"first_name": "Adele"})
+        assert db.scalar(select(AuditLog)).booking_id == old_id
+        assert self.cancel(admin_client, booking).json()["outcome"] == "removed"
+        db.expire_all()
+        entries = db.scalars(select(AuditLog)).all()
+        assert len(entries) == 2 and all(e.booking_id is None for e in entries)
+        # a new booking (on SQLite it takes the freed id) starts with an empty history
+        bob = make_participant("bob@example.com")
+        newer = Booking(participant_id=bob.id, status=STATUS_PENDING, amount_due_cents=1100, **kept)
+        newer.slots = [db.get(Slot, slot_ids[(d(14), MORNING)])]
+        db.add(newer)
+        db.commit()
+        detail = admin_client.get(f"/api/admin/registrations/{newer.id}").json()
+        assert detail["history"] == []
 
     @pytest.mark.parametrize("status", [STATUS_EXPIRED, STATUS_CANCEL_REQUESTED, STATUS_REFUNDED])
     def test_a_closed_booking_cannot_be_cancelled(self, admin_client, booking, db, outbox, status):

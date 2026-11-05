@@ -18,9 +18,19 @@ from app.models import (
 )
 from app.services import audit
 from app.services import edition as edition_service
-from app.services.seats import expire_overdue, free_by_slot, slots_for_update
+from app.services.seats import (
+    expire_overdue,
+    free_by_slot,
+    has_other_active_booking,
+    lock_booking,
+    slots_for_update,
+)
 from app.timefmt import format_euro, status_label
 
+EXPIRED_ALREADY_ACTIVE = (
+    "Pagamento registrato, ma la persona ha già un'altra iscrizione attiva: questa prenotazione "
+    "resta scaduta. Decidi come procedere con la persona."
+)
 EXPIRED_NO_ROOM = (
     "Pagamento registrato, ma la prenotazione è scaduta e almeno uno slot è ormai pieno: "
     "la prenotazione resta scaduta. Decidi come procedere con la persona."
@@ -43,21 +53,29 @@ def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) ->
     sender.send(payment_confirmation_email(booking, paid_cents))
 
 
-def revive_expired(db: Session, booking: Booking, now: datetime) -> bool:
-    """Bring an expired booking back for a new hold, if every one of its slots has a free seat.
+REVIVED = "revived"
+NO_ROOM = "no_room"
+ALREADY_ACTIVE = "already_active"
 
-    The hold starts now and the payment reminders start over. Returns False, changing nothing,
-    when a slot is full.
+
+def revive_expired(db: Session, booking: Booking, now: datetime) -> str:
+    """Bring an expired booking back for a new hold. Returns REVIVED, or why it could not be
+    (changing nothing): NO_ROOM when a slot is full, ALREADY_ACTIVE when the person has signed up
+    again and holds another booking, which would leave them with two.
+
+    The hold starts now and the payment reminders start over.
     """
+    if has_other_active_booking(db, booking, now):
+        return ALREADY_ACTIVE
     slots = list(db.scalars(slots_for_update([s.id for s in booking.slots])))
     if not can_reactivate(free_by_slot(db, slots, now).values()):
-        return False
+        return NO_ROOM
     booking.status = STATUS_PENDING
     booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))
     booking.hold_started_at = now
     booking.reminder_mid_sent_at = None
     booking.reminder_final_sent_at = None
-    return True
+    return REVIVED
 
 
 def record_payment(
@@ -76,6 +94,7 @@ def record_payment(
     An expired booking is revived only if every one of its slots still has a free seat. Otherwise
     the payment is kept and the booking stays expired, with a warning for the admin.
     """
+    lock_booking(db, booking.id)
     expire_overdue(db, now)
     db.refresh(booking)
 
@@ -96,10 +115,11 @@ def record_payment(
     reactivated = False
     warning = None
     if booking.status == STATUS_EXPIRED:
-        if revive_expired(db, booking, now):
+        outcome = revive_expired(db, booking, now)
+        if outcome == REVIVED:
             reactivated = True
         else:
-            warning = EXPIRED_NO_ROOM
+            warning = EXPIRED_ALREADY_ACTIVE if outcome == ALREADY_ACTIVE else EXPIRED_NO_ROOM
 
     confirmed_now = False
     if booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total):
@@ -138,6 +158,7 @@ def void_payment(
     A confirmed booking that the remaining payments no longer cover goes back to waiting for
     payment, with a new hold counted from now (and fresh reminders).
     """
+    lock_booking(db, booking.id)
     expire_overdue(db, now)
     db.refresh(booking)
     payment = next((p for p in booking.payments if p.id == payment_id), None)
