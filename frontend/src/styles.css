@@ -1,14 +1,29 @@
 :root {
-  --fg: #1c1b1a;
-  --bg: #fffdf8;
-  --accent: #0b6b57;
+  /* Palette from the event site (specs/mvp-08-stile-sito/stile.md). */
+  --color-bg: #ffffff;
+  --color-surface: #f9f9f9;
+  --color-text: #1c1c1c;
+  --color-heading: #22383d;
+  --color-primary: #005c68;
+  --color-on-primary: #ffffff;
+  --color-cta: #f4b400;
+  --color-on-cta: #1c1c1c;
+  --color-border: #d6d6d6;
+  --color-border-strong: #757575;
+  --color-error: #8a1c10;
+  --color-error-bg: #fbe4e1;
+  --color-success-bg: #e3f3ec;
+  --color-danger: #9b2c1f;
+  --color-on-danger: #ffffff;
+  --color-backdrop: rgb(0 0 0 / 55%);
+  --radius: 0;
   font-family:
     system-ui,
     -apple-system,
     "Segoe UI",
     sans-serif;
-  color: var(--fg);
-  background: var(--bg);
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 
 * {
@@ -27,11 +42,11 @@ main {
 }
 
 a {
-  color: var(--accent);
+  color: var(--color-primary);
 }
 
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -61,9 +76,9 @@ select {
   margin-top: 0.25rem;
   padding: 0.5rem 0.75rem;
   font: inherit;
-  border: 1px solid #6b6760;
-  border-radius: 0.5rem;
-  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-bg);
 }
 
 input[type="checkbox"] {
@@ -73,8 +88,8 @@ input[type="checkbox"] {
 
 fieldset {
   margin: 1rem 0;
-  border: 1px solid #c9c4ba;
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
 .row {
@@ -94,25 +109,25 @@ button {
   padding: 0.5rem 1.25rem;
   font: inherit;
   font-weight: 600;
-  color: #fff;
-  background: var(--accent);
+  color: var(--color-on-cta);
+  background: var(--color-cta);
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 
 .notice {
   padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius);
 }
 
 .notice.ok {
-  background: #e3f3ec;
+  background: var(--color-success-bg);
 }
 
 .notice.error {
-  background: #fbe4e1;
-  color: #8a1c10;
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 .legal {
@@ -137,9 +152,9 @@ summary {
 .card {
   margin: 1rem 0;
   padding: 0.5rem 1rem;
-  border: 1px solid #c9c4ba;
-  border-radius: 0.5rem;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
 }
 
 main.wide {
@@ -147,7 +162,7 @@ main.wide {
 }
 
 .admin-nav {
-  background: var(--accent);
+  background: var(--color-primary);
 }
 
 .admin-nav nav {
@@ -166,7 +181,7 @@ main.wide {
   align-items: center;
   min-height: 2.75rem;
   padding: 0 0.25rem;
-  color: #fff;
+  color: var(--color-on-primary);
   font: inherit;
   background: none;
   border: 0;
@@ -180,13 +195,13 @@ main.wide {
 }
 
 .admin-nav :focus-visible {
-  outline-color: #fff;
+  outline-color: var(--color-on-primary);
 }
 
 button.secondary {
-  color: var(--accent);
-  background: #fff;
-  border: 2px solid var(--accent);
+  color: var(--color-primary);
+  background: var(--color-bg);
+  border: 2px solid var(--color-primary);
 }
 
 .table-wrap {
@@ -202,7 +217,7 @@ th,
 td {
   padding: 0.5rem;
   text-align: left;
-  border-bottom: 1px solid #ddd8cd;
+  border-bottom: 1px solid var(--color-border);
   vertical-align: top;
 }
 
@@ -215,14 +230,9 @@ dd {
   margin: 0;
 }
 
-button.secondary {
-  color: var(--accent);
-  background: #fff;
-  border: 2px solid var(--accent);
-}
-
 button.danger {
-  background: #9b2c1f;
+  color: var(--color-on-danger);
+  background: var(--color-danger);
 }
 
 button:disabled {
@@ -244,14 +254,14 @@ button:disabled {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgb(0 0 0 / 55%);
+  background: var(--color-backdrop);
 }
 
 [role="dialog"] {
   max-width: 28rem;
   padding: 1.25rem;
-  background: #fff;
-  border-radius: 0.75rem;
+  background: var(--color-bg);
+  border-radius: var(--radius);
 }
 
 a.button {
@@ -260,16 +270,16 @@ a.button {
   min-height: 2.75rem;
   padding: 0.5rem 1.25rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-on-cta);
   text-decoration: none;
-  background: var(--accent);
-  border-radius: 0.5rem;
+  background: var(--color-cta);
+  border-radius: var(--radius);
 }
 
 a.button.secondary {
-  color: var(--accent);
-  background: #fff;
-  border: 2px solid var(--accent);
+  color: var(--color-primary);
+  background: var(--color-bg);
+  border: 2px solid var(--color-primary);
 }
 
 ul.plain {
