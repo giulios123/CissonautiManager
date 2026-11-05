@@ -1,7 +1,13 @@
 from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 
-from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING
+from app.domain.fees import is_covered
+from app.models import (
+    STATUS_CANCEL_REQUESTED,
+    STATUS_CONFIRMED,
+    STATUS_EXPIRED,
+    STATUS_PENDING,
+)
 from app.timefmt import to_rome
 
 
@@ -57,3 +63,20 @@ def can_request_cancellation(status: str) -> bool:
 def is_past_day(day: date, now: datetime) -> bool:
     """True when the day is over in Europe/Rome. Today still counts as not past."""
     return day < to_rome(now).date()
+
+
+def can_refund(status: str, paid_cents: int, refund_cents: int) -> bool:
+    """A refund closes a requested cancellation and cannot exceed what was paid."""
+    return status == STATUS_CANCEL_REQUESTED and 0 <= refund_cents <= paid_cents
+
+
+def can_extend_hold(status: str) -> bool:
+    """Only a booking still waiting for payment has a hold to extend."""
+    return status == STATUS_PENDING
+
+
+def status_after_void(status: str, due_cents: int, paid_cents: int) -> str:
+    """A confirmed booking whose payments no longer cover the amount goes back to waiting."""
+    if status == STATUS_CONFIRMED and not is_covered(due_cents, paid_cents):
+        return STATUS_PENDING
+    return status

@@ -8,6 +8,27 @@ FINAL_REMINDER_BEFORE_DEADLINE = timedelta(hours=24)
 MIN_HOLD_FOR_FINAL_REMINDER = 2 * FINAL_REMINDER_BEFORE_DEADLINE
 
 
+def reminders_to_keep_after_extension(
+    hold_started_at: datetime,
+    new_expires_at: datetime,
+    mid_sent_at: datetime | None,
+    final_sent_at: datetime | None,
+    now: datetime,
+) -> tuple[datetime | None, datetime | None]:
+    """Sent-at marks to keep after an admin extends the hold: (middle, final).
+
+    Extending moves both thresholds later. A reminder already sent whose new threshold is still
+    in the future is due again, so its mark is cleared; one whose new threshold has already
+    passed stays marked, otherwise it would be sent twice.
+    """
+    hold = new_expires_at - hold_started_at
+    mid_threshold = hold_started_at + hold / 2
+    final_threshold = new_expires_at - FINAL_REMINDER_BEFORE_DEADLINE
+    mid = None if mid_threshold > now else mid_sent_at
+    final = None if final_threshold > now else final_sent_at
+    return mid, final
+
+
 def due_reminder(
     hold_started_at: datetime,
     hold_expires_at: datetime,

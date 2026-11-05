@@ -6,7 +6,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
 
 - [x] **1. Migrazione 0004**: colonne rimborso su `booking`, colonne annullamento su `payment`, tabella `audit_log`; `paid_total` e `booking_view` escludono i pagamenti annullati.
   Test: upgrade e downgrade da zero; i saldi dell'MVP 1 restano invariati; un pagamento annullato non conta.
-- [ ] **2. Regole pure**: `has_evening`, `presence_by_slot`, `week_summary`, `review_reason`, `can_remove_admin`, `can_refund`, `status_after_void`.
+- [x] **2. Regole pure**: `has_evening`, `presence_by_slot`, `week_summary`, `review_reason`, `can_remove_admin`, `can_refund`, `status_after_void`.
   Test: sera esplicita, derivata e assente; scadute e disdette escluse dai presenti; ogni motivo di revisione; rimozione di sé, dell'ultimo admin e dell'admin seed rifiutata; rimborso oltre il pagato; confermata che scende sotto il dovuto torna in attesa.
 - [ ] **3. Export CSV**: `app/csv_export.py` e risposta con download.
   Test: separatore e BOM; virgola decimale; fuso Europe/Rome; accenti ed emoji; protezione dalle formule; nome file.
