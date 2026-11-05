@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { api } from "../api";
 import { formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
@@ -37,6 +37,7 @@ function filterParams(status: string, query: string) {
 }
 
 export function AdminRegistrations() {
+  const notice = (useLocation().state as { notice?: string } | null)?.notice;
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [status, setStatus] = useState("");
@@ -62,6 +63,11 @@ export function AdminRegistrations() {
   return (
     <main className="wide">
       <h1>Persone</h1>
+      {notice && (
+        <p role="status" className="notice ok">
+          {notice}
+        </p>
+      )}
       <div className="row filters">
         <label>
           Cerca per nome, email o codice

@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
+import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
 import { AdminEditDetails } from "./AdminEditDetails";
 import { AdminHistory, type HistoryEntry } from "./AdminHistory";
 import { AdminHoldActions } from "./AdminHoldActions";
 import { AdminRefundForm } from "./AdminRefundForm";
+import { AdminSlotEditor } from "./AdminSlotEditor";
 
 export type Detail = {
   participant: {
@@ -36,6 +38,8 @@ const CHANNELS = [
 
 export function AdminRegistrationDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [editingSlots, setEditingSlots] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [failed, setFailed] = useState(false);
   const [amount, setAmount] = useState("");
@@ -51,6 +55,21 @@ export function AdminRegistrationDetail() {
   if (!detail) return <main aria-busy="true">Caricamento…</main>;
 
   const { participant, booking } = detail;
+
+  function afterCancel(result: AdminCancelResult) {
+    if (result.outcome === "removed" || !result.detail) {
+      navigate("/admin", {
+        state: {
+          notice: `Iscrizione di ${participant.first_name} ${participant.last_name} disdetta e rimossa.`,
+        },
+      });
+      return;
+    }
+    showUpdated(
+      result.detail,
+      "Disdetta registrata: i posti sono liberi e la persona è stata avvisata.",
+    );
+  }
 
   function showUpdated(updated: Detail, text: string) {
     setDetail(updated);
@@ -160,6 +179,36 @@ export function AdminRegistrationDetail() {
           </ul>
         )}
       </section>
+
+      {(booking.editable || booking.can_cancel) && (
+        <section aria-labelledby="actions-title">
+          <h2 id="actions-title">Azioni sull&apos;iscrizione</h2>
+          <div className="actions">
+            {booking.editable && (
+              <button
+                type="button"
+                className="secondary"
+                aria-expanded={editingSlots}
+                onClick={() => setEditingSlots((value) => !value)}
+              >
+                {editingSlots ? "Chiudi la modifica degli slot" : "Cambia gli slot"}
+              </button>
+            )}
+            {booking.can_cancel && (
+              <AdminCancelBooking bookingId={booking.id} booking={booking} onDone={afterCancel} />
+            )}
+          </div>
+          {editingSlots && booking.editable && (
+            <AdminSlotEditor
+              bookingId={booking.id}
+              booking={booking}
+              onDone={(updated, text) => {
+                showUpdated(updated, text);
+              }}
+            />
+          )}
+        </section>
+      )}
 
       <AdminHoldActions
         bookingId={booking.id}

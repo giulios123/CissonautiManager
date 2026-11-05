@@ -306,3 +306,190 @@ describe("hold extension and reactivation", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Non c'è più posto");
   });
 });
+
+const slotsView = {
+  days: [
+    {
+      date: "2026-07-13",
+      slots: [
+        {
+          id: 1,
+          period: "morning",
+          start_time: "09:00:00",
+          end_time: "13:00:00",
+          capacity: 25,
+          present: 1,
+          free: 24,
+        },
+        {
+          id: 2,
+          period: "afternoon",
+          start_time: "14:00:00",
+          end_time: "18:00:00",
+          capacity: 1,
+          present: 1,
+          free: 0,
+        },
+        {
+          id: 3,
+          period: "evening",
+          start_time: "19:00:00",
+          end_time: "00:00:00",
+          capacity: null,
+          present: 4,
+          free: null,
+        },
+      ],
+    },
+    {
+      date: "2026-07-14",
+      slots: [
+        {
+          id: 4,
+          period: "morning",
+          start_time: "09:00:00",
+          end_time: "13:00:00",
+          capacity: 25,
+          present: 0,
+          free: 25,
+        },
+      ],
+    },
+  ],
+};
+
+describe("admin slot editor", () => {
+  const open = async (extra?: (call: Call) => Reply | undefined) => {
+    const calls = serve(detailFixture(), (call) =>
+      call.url === "/api/admin/views/slots" ? { body: slotsView } : extra?.(call),
+    );
+    renderAt("/admin/iscrizioni/7");
+    await userEvent.click(await screen.findByRole("button", { name: "Cambia gli slot" }));
+    return { calls, form: within(await screen.findByRole("form", { name: "Cambia gli slot" })) };
+  };
+
+  it("shows presences and starts from the person's own slots", async () => {
+    const { form } = await open();
+    const [monday] = form.getAllByRole("group");
+    expect(within(monday).getByRole("checkbox", { name: /Mattina/ })).toBeChecked();
+    expect(
+      within(monday).getByRole("checkbox", { name: /Mattina.*1\/25 presenti/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(monday).getByRole("checkbox", { name: /Sera.*4 presenti, senza limite/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not let a full slot be added until the capacity is forced", async () => {
+    const { form } = await open();
+    const [monday] = form.getAllByRole("group");
+    const full = within(monday).getByRole("checkbox", { name: /Pomeriggio.*completo/ });
+    expect(full).toBeDisabled();
+    await userEvent.click(form.getByRole("checkbox", { name: /Forza oltre la capienza/ }));
+    expect(full).toBeEnabled();
+  });
+
+  it("sends the chosen slots and the force flag, then shows the new amount", async () => {
+    const updated = detailFixture(
+      { warning: "Attenzione: capienza superata in lun 13/07 pomeriggio." },
+      { amount_due_cents: 1200 },
+    );
+    const { calls, form } = await open((call) =>
+      call.method === "PUT" ? { body: updated } : undefined,
+    );
+    const [monday, tuesday] = form.getAllByRole("group");
+    await userEvent.click(form.getByRole("checkbox", { name: /Forza oltre la capienza/ }));
+    await userEvent.click(within(monday).getByRole("checkbox", { name: /Pomeriggio/ }));
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    await userEvent.click(form.getByRole("button", { name: "Salva gli slot" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Nuova quota: 12,00");
+    expect(calls.find((call) => call.method === "PUT")).toMatchObject({
+      url: "/api/admin/registrations/7/slots",
+      body: { slot_ids: [1, 2, 4], force: true },
+    });
+    expect(screen.getByText(/capienza superata/)).toBeInTheDocument();
+  });
+
+  it("shows the server's refusal", async () => {
+    const { form } = await open((call) =>
+      call.method === "PUT"
+        ? { status: 409, body: { detail: "Questi slot sono al completo: lun 13/07 pomeriggio." } }
+        : undefined,
+    );
+    await userEvent.click(form.getByRole("button", { name: "Salva gli slot" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("al completo");
+  });
+
+  it("is not offered when the booking can no longer change", async () => {
+    serve(detailFixture({}, { status: "rimborsata", editable: false, can_cancel: false }));
+    renderAt("/admin/iscrizioni/7");
+    await screen.findByRole("heading", { name: "Ada Lovelace" });
+    expect(screen.queryByRole("button", { name: "Cambia gli slot" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Disdici a nome della persona" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("admin cancellation", () => {
+  const ask = async () => {
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Disdici a nome della persona" }),
+    );
+    return within(await screen.findByRole("dialog"));
+  };
+
+  it("asks first, saying what happens to payments, and does nothing if you go back", async () => {
+    const calls = serve(detailFixture({}, { paid_cents: 500, balance_cents: 600 }));
+    renderAt("/admin/iscrizioni/7");
+    const dialog = await ask();
+    expect(dialog.getByText(/Ha già versato 5,00/)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole("button", { name: "No, torno indietro" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+  });
+
+  it("keeps the booking on screen when a refund is still to be recorded", async () => {
+    const after = detailFixture(
+      {},
+      { status: "disdetta_richiesta", paid_cents: 500, editable: false, can_cancel: false },
+    );
+    const calls = serve(detailFixture({}, { paid_cents: 500, balance_cents: 600 }), (call) =>
+      call.method === "POST" ? { body: { outcome: "requested", detail: after } } : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    const dialog = await ask();
+    await userEvent.click(dialog.getByRole("button", { name: "Sì, disdico" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Disdetta registrata");
+    expect(calls.find((call) => call.method === "POST")?.url).toBe(
+      "/api/admin/registrations/7/cancel",
+    );
+    expect(screen.getByRole("form", { name: "Segna come rimborsata" })).toBeInTheDocument();
+  });
+
+  it("goes back to the list when the booking was removed, and says so there", async () => {
+    serve(detailFixture(), (call) => {
+      if (call.method === "POST") return { body: { outcome: "removed", detail: null } };
+      if (call.url.startsWith("/api/admin/registrations?")) return { body: [] };
+      return undefined;
+    });
+    renderAt("/admin/iscrizioni/7");
+    const dialog = await ask();
+    expect(dialog.getByText(/viene rimossa/)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole("button", { name: "Sì, disdico" }));
+    expect(await screen.findByRole("heading", { name: "Persone" })).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent("Ada Lovelace disdetta e rimossa");
+  });
+
+  it("keeps the dialog open with the server's message on failure", async () => {
+    serve(detailFixture(), (call) =>
+      call.method === "POST"
+        ? { status: 409, body: { detail: "Questa iscrizione non si può più disdire" } }
+        : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    const dialog = await ask();
+    await userEvent.click(dialog.getByRole("button", { name: "Sì, disdico" }));
+    expect(await dialog.findByRole("alert")).toHaveTextContent("non si può più disdire");
+  });
+});

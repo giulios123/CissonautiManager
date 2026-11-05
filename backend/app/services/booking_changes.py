@@ -25,10 +25,12 @@ from app.models import (
     Slot,
     slot_sort_key,
 )
+from app.services import audit
 from app.services import edition as edition_service
 from app.services.payments import paid_total, send_confirmation
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
+from app.timefmt import format_euro, format_slot
 
 
 class NotEditable(Exception):
@@ -70,12 +72,15 @@ def change_slots(
     slot_ids: list[int],
     now: datetime,
     force: bool = False,
+    allow_past: bool = False,
+    actor: Participant | None = None,
 ) -> ChangeResult:
     """Replace the slots of a pending or confirmed booking and recompute the amount due.
 
     The hold deadline never changes, and a confirmed booking stays confirmed whatever the new
     amount (the balance shows what is left to pay, or the credit). Seats are checked only for
-    the slots being added. `force` is for admins: it allows past days and full slots.
+    the slots being added. The next arguments are for admins: `force` accepts full slots,
+    `allow_past` accepts days already over, and `actor` records the change in the audit log.
     """
     expire_overdue(db, now)
     db.refresh(booking)
@@ -93,7 +98,7 @@ def change_slots(
     added = [s for s in slots if s.id not in current]
     removed = [s for sid, s in current.items() if sid not in wanted]
 
-    if not force and any(is_past_day(s.date, now) for s in added + removed):
+    if not (force or allow_past) and any(is_past_day(s.date, now) for s in added + removed):
         raise PastDay()
     free = free_by_slot(db, added, now)
     full = [s for s in added if not has_free_seat(free[s.id])]
@@ -102,10 +107,19 @@ def change_slots(
 
     edition = db.get(Edition, booking.edition_id)
     assert edition is not None
+    old_amount = booking.amount_due_cents
     booking.slots = sorted(slots, key=slot_sort_key)
     booking.amount_due_cents = compute_fee(
         [s.date for s in slots], edition.base_fee_cents, edition.per_day_fee_cents
     )
+    if actor is not None:
+        audit.log(
+            db,
+            actor,
+            "slots_changed",
+            _describe_slot_change(added, removed, full, old_amount, booking.amount_due_cents),
+            booking.id,
+        )
 
     # Fewer days can bring the amount down to what was already paid: the booking is then done.
     total = paid_total(booking)
@@ -118,17 +132,43 @@ def change_slots(
     return ChangeResult(booking, confirmed_now, full)
 
 
+def _labels(slots: list[Slot]) -> str:
+    return ", ".join(
+        format_slot(s.date, s.period, s.start_time, s.end_time)
+        for s in sorted(slots, key=slot_sort_key)
+    )
+
+
+def _describe_slot_change(
+    added: list[Slot], removed: list[Slot], full: list[Slot], old_cents: int, new_cents: int
+) -> str:
+    parts = ["Slot modificati."]
+    if added:
+        parts.append(f"Aggiunti: {_labels(added)}.")
+    if removed:
+        parts.append(f"Tolti: {_labels(removed)}.")
+    parts.append(f"Quota: {format_euro(old_cents)} → {format_euro(new_cents)}.")
+    if full:
+        parts.append(f"Oltre la capienza: {_labels(full)}.")
+    return " ".join(parts)
+
+
 CancelOutcome = Literal["removed", "requested"]
 
 
 def request_cancellation(
-    db: Session, sender: EmailSender, booking: Booking, now: datetime
+    db: Session,
+    sender: EmailSender,
+    booking: Booking,
+    now: datetime,
+    actor: Participant | None = None,
 ) -> CancelOutcome:
     """Cancel a pending or confirmed booking; its seats are free right away.
 
     With no payment on record the booking is simply removed (the person stays registered and can
     sign up again). Otherwise it becomes `disdetta_richiesta`, and an admin refunds outside the
-    system and closes it.
+    system and closes it. With an `actor` (an admin cancelling on someone's behalf) the action is
+    recorded in the audit log, with the person's name since the booking itself may be gone.
     """
     expire_overdue(db, now)
     db.refresh(booking)
@@ -146,6 +186,19 @@ def request_cancellation(
         booking.slots = []
         db.delete(booking)
         outcome = "removed"
+    if actor is not None:
+        participant = booking.participant
+        result = (
+            "iscrizione rimossa, nessun pagamento" if outcome == "removed" else "disdetta richiesta"
+        )
+        audit.log(
+            db,
+            actor,
+            "cancelled_by_admin",
+            f"Disdetta registrata a nome di {participant.first_name} {participant.last_name} "
+            f"({participant.email}): {result}",
+            booking.id,
+        )
     db.commit()
     sender.send(cancellation_email(to, first_name, removed=outcome == "removed"))
     return outcome

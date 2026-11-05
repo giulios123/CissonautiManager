@@ -19,10 +19,11 @@ from app.email import EmailSender
 from app.models import STATUS_EXPIRED, Booking, LegalDocument, Participant
 from app.services import audit as audit_service
 from app.services import booking_admin as booking_admin_service
+from app.services import booking_changes
 from app.services import edition as edition_service
 from app.services import payments as payment_service
 from app.services import refunds as refund_service
-from app.services.registration import SlotsFull
+from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue
 from app.timefmt import ROME, format_euro, format_slot, status_label, to_rome
 
@@ -415,3 +416,87 @@ def reactivate_registration(
         ) from exc
     db.refresh(booking)
     return _detail(db, booking, now)
+
+
+class SlotsIn(BaseModel):
+    slot_ids: list[int] = Field(max_length=60)
+    # Accept a slot that is already full.
+    force: bool = False
+
+
+@router.put("/{booking_id}/slots")
+def change_registration_slots(
+    booking_id: int,
+    body: SlotsIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        result = booking_changes.change_slots(
+            db,
+            sender,
+            booking,
+            body.slot_ids,
+            now,
+            force=body.force,
+            allow_past=True,
+            actor=admin,
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except booking_changes.EmptySelection as exc:
+        raise HTTPException(
+            status_code=422, detail="Scegli almeno uno slot. Per rinunciare usa la disdetta"
+        ) from exc
+    except InvalidSlots as exc:
+        raise HTTPException(status_code=422, detail="Gli slot scelti non sono validi") from exc
+    except SlotsFull as exc:
+        db.rollback()
+        labels = ", ".join(
+            format_slot(s.date, s.period, s.start_time, s.end_time) for s in exc.slots
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=f"Questi slot sono al completo: {labels}. Per aggiungerli comunque spunta "
+            "«Forza oltre la capienza».",
+        ) from exc
+    db.refresh(booking)
+    warning = None
+    if result.over_capacity:
+        labels = ", ".join(
+            format_slot(s.date, s.period, s.start_time, s.end_time) for s in result.over_capacity
+        )
+        warning = f"Attenzione: capienza superata in {labels}."
+    return _detail(db, booking, now, warning=warning)
+
+
+class CancelOut(BaseModel):
+    outcome: str
+    # None when the booking was removed altogether.
+    detail: RegistrationDetail | None = None
+
+
+@router.post("/{booking_id}/cancel")
+def cancel_registration(
+    booking_id: int,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> CancelOut:
+    booking = _get_booking(db, booking_id)
+    try:
+        outcome = booking_changes.request_cancellation(db, sender, booking, now, actor=admin)
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più disdire"
+        ) from exc
+    if outcome == "removed":
+        return CancelOut(outcome=outcome)
+    db.refresh(booking)
+    return CancelOut(outcome=outcome, detail=_detail(db, booking, now))

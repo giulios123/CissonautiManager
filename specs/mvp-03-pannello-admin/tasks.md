@@ -24,7 +24,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: passaggio a `rimborsata` con importo, data e nota; oltre il pagato rifiutato; stato non valido rifiutato; nessuna email inviata; cronologia scritta.
 - [x] **10. Modifica anagrafica, proroga e riattivazione manuale**: `PATCH` e `reactivate`.
   Test: email duplicata rifiutata; proroga ricalcola i promemoria; riattivazione con e senza posto; cronologia scritta.
-- [ ] **11. Slot e disdetta da admin**: `PUT .../slots` con `force`, `POST .../cancel`.
+- [x] **11. Slot e disdetta da admin**: `PUT .../slots` con `force`, `POST .../cancel`.
   Test: capienza superata solo con `force` e segnalata; giorni passati ammessi; importo ricalcolato; disdetta per conto del partecipante con email; cronologia scritta.
 - [ ] **12. Annullamento dei pagamenti**: servizio, endpoint e azione nella scheda.
   Test: motivo obbligatorio; non conta nel pagato; confermata torna in attesa con nuovo blocco; doppio annullamento rifiutato; cronologia scritta.
