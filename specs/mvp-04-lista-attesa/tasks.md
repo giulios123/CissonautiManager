@@ -14,7 +14,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: slot misti (prenotazione più voci); soli slot in lista (nessuna `Booking`, testi salvati, magic link inviato); lista riempita o slot liberato nel frattempo (nessun salvataggio); persona già in lista trattata come D-005.
 - [x] **5. Servizio di promozione ed email**: `promote_freed` nei tre casi (in attesa, confermata, nuova prenotazione).
   Test: in attesa con importo ricalcolato e scadenza allungata, promemoria ricalcolati come una proroga; confermata che resta tale con saldo positivo e compare in «Da verificare»; nuova prenotazione con testi legali della voce; due posti liberi promuovono due persone; voci della stessa persona su altri slot intatte; giorno passato senza promozione; email inviata dopo il commit.
-- [ ] **6. Agganci**: disdetta, cambio slot (partecipante e admin), disdetta admin, aumento di capienza; chiusura `booked` e `cancelled` delle voci.
+- [x] **6. Agganci**: disdetta, cambio slot (partecipante e admin), disdetta admin, aumento di capienza; chiusura `booked` e `cancelled` delle voci.
   Test: un caso per ogni evento che libera un posto; la disdetta chiude le voci e lo scrive nell'email; chi prenota da sé lo slot esce dalla lista; «forza» dell'admin non promuove nessuno.
 - [ ] **7. Job orario**: passo di promozione dopo le scadenze in `send_reminders`.
   Test: prenotazione scaduta che libera il posto al primo in lista; due esecuzioni sovrapposte non assegnano lo stesso posto due volte; riepilogo nei log.

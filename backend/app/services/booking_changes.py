@@ -16,6 +16,8 @@ from app.domain.fees import compute_fee, is_covered
 from app.email import EmailSender
 from app.email.templates import cancellation_email
 from app.models import (
+    CLOSE_BOOKED,
+    CLOSE_CANCELLED,
     STATUS_CANCEL_REQUESTED,
     STATUS_CONFIRMED,
     STATUS_PENDING,
@@ -24,6 +26,7 @@ from app.models import (
     Edition,
     Participant,
     Slot,
+    WaitlistEntry,
     slot_sort_key,
 )
 from app.services import audit
@@ -32,6 +35,25 @@ from app.services.payments import paid_total, send_confirmation
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 from app.timefmt import format_euro, format_slot
+
+
+def close_entries_for(
+    db: Session, participant_id: int, slot_ids: list[int] | None, reason: str, now: datetime
+) -> int:
+    """Close the person's active waitlist entries (on these slots, or all of them).
+    Returns how many were closed. The caller commits."""
+    query = select(WaitlistEntry).where(
+        WaitlistEntry.participant_id == participant_id, WaitlistEntry.closed_at.is_(None)
+    )
+    if slot_ids is not None:
+        if not slot_ids:
+            return 0
+        query = query.where(WaitlistEntry.slot_id.in_(slot_ids))
+    entries = list(db.scalars(query))
+    for entry in entries:
+        entry.closed_at = now
+        entry.close_reason = reason
+    return len(entries)
 
 
 class NotEditable(Exception):
@@ -52,6 +74,8 @@ class ChangeResult:
     confirmed_now: bool = False
     # Slots that went over capacity because an admin forced the change.
     over_capacity: list[Slot] = field(default_factory=list)
+    # Slots taken off the booking: their seats can go to the waitlist.
+    removed_slot_ids: list[int] = field(default_factory=list)
 
 
 def get_current_booking(db: Session, participant: Participant) -> Booking | None:
@@ -122,6 +146,9 @@ def change_slots(
             booking.id,
         )
 
+    # Someone who takes a slot they were waiting for leaves its waitlist.
+    close_entries_for(db, booking.participant_id, [s.id for s in added], CLOSE_BOOKED, now)
+
     # Fewer days can bring the amount down to what was already paid: the booking is then done.
     total = paid_total(booking)
     confirmed_now = booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total)
@@ -130,7 +157,7 @@ def change_slots(
     db.commit()
     if confirmed_now:
         send_confirmation(sender, booking, total)
-    return ChangeResult(booking, confirmed_now, full)
+    return ChangeResult(booking, confirmed_now, full, [s.id for s in removed])
 
 
 def _labels(slots: list[Slot]) -> str:
@@ -177,6 +204,8 @@ def request_cancellation(
         raise NotEditable()
     # Read before a possible delete: the email goes out after the commit.
     to, first_name = booking.participant.email, booking.participant.first_name
+    # Cancelling means not coming: the person's waitlist entries go too.
+    left_waitlist = close_entries_for(db, booking.participant_id, None, CLOSE_CANCELLED, now)
 
     outcome: CancelOutcome
     if booking.payments:
@@ -206,5 +235,9 @@ def request_cancellation(
             None if outcome == "removed" else booking.id,
         )
     db.commit()
-    sender.send(cancellation_email(to, first_name, removed=outcome == "removed"))
+    sender.send(
+        cancellation_email(
+            to, first_name, removed=outcome == "removed", left_waitlist=left_waitlist > 0
+        )
+    )
     return outcome

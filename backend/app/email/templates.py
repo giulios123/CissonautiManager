@@ -5,7 +5,9 @@ from app.models import Booking, Participant, PaymentChannel, Slot, slot_sort_key
 from app.timefmt import format_deadline, format_euro, format_slot
 
 
-def cancellation_email(to: str, first_name: str, removed: bool) -> EmailMessage:
+def cancellation_email(
+    to: str, first_name: str, removed: bool, left_waitlist: bool = False
+) -> EmailMessage:
     """Confirmation of a cancellation. `removed` means no payment was ever registered."""
     if removed:
         details = (
@@ -24,6 +26,7 @@ def cancellation_email(to: str, first_name: str, removed: bool) -> EmailMessage:
             f"Ciao {first_name},\n\n"
             "abbiamo registrato la tua disdetta e i tuoi posti sono stati liberati.\n\n"
             f"{details}\n"
+            + ("\nSei uscito anche dalle liste d'attesa in cui eri.\n" if left_waitlist else "")
         ),
     )
 

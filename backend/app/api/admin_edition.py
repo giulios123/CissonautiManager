@@ -1,14 +1,17 @@
-from datetime import date, time
+from datetime import date, datetime, time
 from typing import Literal, Self
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.orm import Session
 
+from app.config import Settings
 from app.db import get_db
-from app.deps import require_admin
+from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
+from app.email import EmailSender
 from app.models import Edition, LegalDocument, PaymentChannel, slot_sort_key
 from app.services import edition as edition_service
+from app.services import waitlist as waitlist_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -131,7 +134,13 @@ def get_edition(db: Session = Depends(get_db)) -> EditionOut:
 
 
 @router.put("/edition")
-def put_edition(body: EditionIn, db: Session = Depends(get_db)) -> EditionOut:
+def put_edition(
+    body: EditionIn,
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
+    now: datetime = Depends(get_now),
+) -> EditionOut:
     try:
         edition = edition_service.save_edition(db, body.model_dump())
     except edition_service.SlotsInUseError as exc:
@@ -140,6 +149,11 @@ def put_edition(body: EditionIn, db: Session = Depends(get_db)) -> EditionOut:
             status_code=409,
             detail=f"Non puoi togliere giorni con slot già prenotati: {days}",
         ) from exc
+    # A larger capacity (or a higher waitlist share) can free seats for people waiting.
+    waitlist_service.promote_freed(
+        db, sender, settings, waitlist_service.slots_with_waiting_people(db, edition), now
+    )
+    db.refresh(edition)
     return _edition_out(db, edition)
 
 

@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.api.public import ChannelPublic
 from app.api.schemas import BookingView, booking_view
+from app.config import Settings
 from app.db import get_db
-from app.deps import current_user, get_email_sender, get_now
+from app.deps import current_user, get_email_sender, get_now, get_settings_dep
 from app.email import EmailSender
 from app.models import Booking, Participant, WaitlistEntry
 from app.services import booking_changes
@@ -161,6 +162,7 @@ def change_my_slots(
     user: Participant = Depends(current_user),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> BookingView | JSONResponse:
     booking = booking_changes.get_current_booking(db, user)
@@ -195,6 +197,8 @@ def change_my_slots(
                 "full_slot_ids": [s.id for s in exc.slots],
             },
         )
+    waitlist_service.promote_freed(db, sender, settings, result.removed_slot_ids, now)
+    db.refresh(result.booking)
     return booking_view(result.booking, now)
 
 
@@ -207,15 +211,18 @@ def cancel_my_booking(
     user: Participant = Depends(current_user),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> CancelOut:
     booking = booking_changes.get_current_booking(db, user)
     if booking is None:
         raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    freed = [s.id for s in booking.slots]
     try:
         outcome = booking_changes.request_cancellation(db, sender, booking, now)
     except booking_changes.NotEditable as exc:
         raise HTTPException(
             status_code=409, detail="Questa iscrizione non si può più disdire"
         ) from exc
+    waitlist_service.promote_freed(db, sender, settings, freed, now)
     return CancelOut(outcome=outcome)

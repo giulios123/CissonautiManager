@@ -10,9 +10,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.schemas import BookingView, booking_view
+from app.config import Settings
 from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
-from app.deps import get_email_sender, get_now, require_admin
+from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.domain.booking import occupies_seats
 from app.domain.presence import has_evening
 from app.email import EmailSender
@@ -23,6 +24,7 @@ from app.services import booking_changes
 from app.services import edition as edition_service
 from app.services import payments as payment_service
 from app.services import refunds as refund_service
+from app.services import waitlist as waitlist_service
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue
 from app.timefmt import ROME, format_euro, format_slot, status_label, to_rome
@@ -437,6 +439,7 @@ def change_registration_slots(
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> RegistrationDetail:
     booking = _get_booking(db, booking_id)
@@ -471,6 +474,7 @@ def change_registration_slots(
             detail=f"Questi slot sono al completo: {labels}. Per aggiungerli comunque spunta "
             "«Forza oltre la capienza».",
         ) from exc
+    waitlist_service.promote_freed(db, sender, settings, result.removed_slot_ids, now)
     db.refresh(booking)
     warning = None
     if result.over_capacity:
@@ -493,15 +497,18 @@ def cancel_registration(
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> CancelOut:
     booking = _get_booking(db, booking_id)
+    freed = [s.id for s in booking.slots]
     try:
         outcome = booking_changes.request_cancellation(db, sender, booking, now, actor=admin)
     except booking_changes.NotEditable as exc:
         raise HTTPException(
             status_code=409, detail="Questa iscrizione non si può più disdire"
         ) from exc
+    waitlist_service.promote_freed(db, sender, settings, freed, now)
     if outcome == "removed":
         return CancelOut(outcome=outcome)
     db.refresh(booking)
