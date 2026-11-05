@@ -122,15 +122,19 @@ export function Registration() {
       };
     }),
   }));
-  const chosen = edition.days.flatMap((day) =>
-    day.slots
-      .filter((slot) => selected.has(slot.id))
-      .map((slot) => ({
-        id: slot.id,
-        label: `${formatDayShort(day.date)} · ${periodLabel(slot.period)}`,
-        waiting: fullIds.has(slot.id),
-      })),
-  );
+  const chosenDays = edition.days
+    .map((day) => ({
+      date: day.date,
+      label: formatDayShort(day.date),
+      slots: day.slots
+        .filter((slot) => selected.has(slot.id))
+        .map((slot) => ({
+          id: slot.id,
+          period: periodLabel(slot.period),
+          waiting: fullIds.has(slot.id),
+        })),
+    }))
+    .filter((day) => day.slots.length > 0);
   const first = edition.days[0]?.date;
   const last = edition.days[edition.days.length - 1]?.date;
 
@@ -281,31 +285,36 @@ export function Registration() {
           <div className="summary-head">
             <h2>Il tuo riepilogo</h2>
             <span className="count" aria-live="polite">
-              {chosen.length} {chosen.length === 1 ? "turno" : "turni"}
+              {selected.size} {selected.size === 1 ? "turno" : "turni"} · {chosenDays.length}{" "}
+              {chosenDays.length === 1 ? "giorno" : "giorni"}
             </span>
           </div>
-          {chosen.length > 0 && (
+          {chosenDays.length > 0 && (
             <ul className="plain summary-list">
-              {chosen.map((item) => (
-                <li key={item.id}>
-                  <span>
-                    {item.label}
-                    {item.waiting && <em> · lista d&apos;attesa</em>}
+              {chosenDays.map((day) => (
+                <li key={day.date}>
+                  <span className="summary-day">{day.label}</span>
+                  <span className="summary-slots">
+                    {day.slots.map((slot) => (
+                      <button
+                        type="button"
+                        key={slot.id}
+                        className={`summary-pill${slot.waiting ? " waiting" : ""}`}
+                        title={slot.waiting ? "Lista d'attesa" : undefined}
+                        aria-label={`Togli ${day.label} · ${slot.period}${slot.waiting ? " · lista d'attesa" : ""}`}
+                        onClick={() =>
+                          setSelected((current) => {
+                            const next = new Set(current);
+                            next.delete(slot.id);
+                            return next;
+                          })
+                        }
+                      >
+                        {slot.period}
+                        <span aria-hidden="true"> ×</span>
+                      </button>
+                    ))}
                   </span>
-                  <button
-                    type="button"
-                    className="icon"
-                    aria-label={`Togli ${item.label}`}
-                    onClick={() =>
-                      setSelected((current) => {
-                        const next = new Set(current);
-                        next.delete(item.id);
-                        return next;
-                      })
-                    }
-                  >
-                    ×
-                  </button>
                 </li>
               ))}
             </ul>
