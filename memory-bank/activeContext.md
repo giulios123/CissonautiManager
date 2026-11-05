@@ -12,6 +12,10 @@ Richiesta del maintainer: guida dopo il login filtrata per ruolo, aggiornata a o
 
 Richiesta del maintainer: un modo veloce per l'admin di controllare il conto e segnare le quote come coperte. «Da verificare» resta per le anomalie (con zero versato una iscrizione in attesa non vi compare, per regola). Spec in `specs/mvp-10-incassi/`, confermata. Scelte concordate: pagina nuova «Da incassare»; canale scelto una volta; tasto rapido sul saldo intero con link alla scheda per altri importi; un clic con annullo visibile per 10 secondi; email di conferma differita di 30 secondi (colonne su `payment`, migrazione 0010, rete di sicurezza nel job orario); ricerca per causale; scadute incluse in coda. Spec confermata dal maintainer, completato sul branch `claude/brave-babbage-ttfx6u` (D-040), descrizione PR in `specs/mvp-10-incassi/pr-description.md`. Da fare: provare in produzione l'email dopo 30 secondi.
 
+## MVP 11-13 · Lingue, admin in inglese, email di iscrizione (2026-11-05)
+
+Richiesta del maintainer: interfaccia in italiano e inglese, indirizzi in inglese (gli italiani funzionano solo se scritti a mano e reindirizzano), testo della mail di conferma modificabile e immagine di sfondo con «I'm nome cognome and I'll be at evento from data to data». Scelte: PNG generato dal server; lingua da browser e selettore, salvata sul partecipante; email nella sua lingua; guida in due lingue. Spec in `specs/mvp-11-lingue/`, `mvp-12-admin-inglese/`, `mvp-13-email-iscrizione/`. Regola nuova in `AGENTS.md`: ogni funzione futura è bilingue. Piano approvato; si parte dall'MVP 11 sul branch `claude/relaxed-dijkstra-9z2e5o`.
+
 ## Prossimo passo
 
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.

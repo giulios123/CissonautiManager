@@ -62,6 +62,7 @@ docker build -t cissonauti-booking .
 - Ogni modifica allo schema passa da una migrazione Alembic.
 - Nessun segreto nel repo: configurazione tramite variabili d'ambiente con un `.env.example`.
 - Ogni modifica a una funzione visibile (pagine in `frontend/src/pages/`, API in `backend/app/api/`) aggiorna la sezione giusta della guida in `frontend/src/guide/` (`partecipante/` o `admin/`, un file Markdown in italiano per sezione). Il controllo `Guide` della CI fallisce se una PR tocca pagine o API senza toccare la guida; se non cambia nulla di visibile, si salta con la label `senza-guida`. La guida si pubblica con ogni deploy, le note di rilascio sono generate dai commit (Conventional Commits fatti bene = note leggibili).
+- **Bilingue da subito**: ogni funzione nuova o modificata nasce in italiano e in inglese (testi della UI nei dizionari `frontend/src/i18n/{it,en}.ts`, messaggi del server e email nel catalogo `backend/app/i18n.py`, guida in `frontend/src/guide/{it,en}/`). Gli indirizzi (rotte) sono solo in inglese, definiti in `frontend/src/routes.ts`; un alias italiano esiste solo se serve a non rompere link già in circolazione. Una PR che aggiunge testi in una lingua sola non è completa.
 - `memory-bank/domain.md` è la fonte di verità: se una spec la contraddice, vince `domain.md` finché non viene aggiornato con il consenso del maintainer.
 
 ## Come iniziare ogni sessione
