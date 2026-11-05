@@ -121,6 +121,9 @@ class RegistrationDetail(BaseModel):
     refund: RefundOut | None = None
     history: list[HistoryEntry] = []
     warning: str | None = None
+    # Set only by the response to a new payment: the one that request created, so a client can
+    # undo exactly that payment even if another admin pays the same booking at the same time.
+    payment_id: int | None = None
     lunch_price_cents: int = 0
     dinner_price_cents: int = 0
     activity_offers: list[ActivityOffer] = []
@@ -448,7 +451,9 @@ def add_payment(
     if result.email_due_at is not None:
         _send_confirmations_later(request)
     db.refresh(booking)
-    return _detail(db, booking, now, warning=result.warning)
+    detail = _detail(db, booking, now, warning=result.warning)
+    detail.payment_id = result.payment.id
+    return detail
 
 
 @router.post("/{booking_id}/refund")

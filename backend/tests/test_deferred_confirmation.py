@@ -103,3 +103,8 @@ def test_a_payment_that_does_not_confirm_sends_nothing_even_with_the_flag(
     assert app.state.scheduled == []
     clock.advance(minutes=5)
     assert confirmations(outbox) == []
+
+
+def test_the_response_names_the_payment_it_created(admin_client, booking, db):
+    response = pay(admin_client, booking, defer_confirmation_email=True)
+    assert response.json()["payment_id"] == db.scalars(select(Payment)).one().id

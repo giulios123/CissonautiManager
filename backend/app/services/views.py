@@ -176,7 +176,12 @@ def collect_rows(db: Session, now: datetime) -> list[CollectRow]:
     expire_overdue(db, now)
     db.commit()
     keyed: list[tuple[tuple, CollectRow]] = []
-    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+    bookings = db.scalars(
+        select(Booking)
+        .where(Booking.edition_id == edition.id)
+        .options(selectinload(Booking.participant), selectinload(Booking.payments))
+    )
+    for booking in bookings:
         status = effective_status(booking.status, booking.hold_expires_at, now)
         paid = paid_total(booking)
         group = collect_group(status, booking.amount_due_cents, paid)

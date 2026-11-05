@@ -19,7 +19,9 @@ type Row = {
   hold_expires_at: string;
 };
 
-type Done = { paymentId: number; amountCents: number };
+// The row is kept with the payment, so it stays on screen until its own undo window ends,
+// whatever the list says after a refresh.
+type Done = { paymentId: number; amountCents: number; row: Row };
 
 const CHANNELS = [
   ["revolut", "Revolut"],
@@ -67,6 +69,7 @@ export function AdminCollect() {
   const [query, setQuery] = useState("");
   const [channel, setChannel] = useState(savedChannel);
   const [done, setDone] = useState<Record<number, Done>>({});
+  const doneRef = useRef<Record<number, Done>>({});
   const [busy, setBusy] = useState<Set<number>>(new Set());
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [message, setMessage] = useState("");
@@ -75,7 +78,17 @@ export function AdminCollect() {
   const load = useCallback(() => {
     api<Row[]>("/api/admin/views/to-collect")
       .then((loaded) => {
-        setRows(loaded);
+        // Rows paid a moment ago are no longer listed by the server but must stay in place
+        // until their undo window is over.
+        setRows((previous) => {
+          const next = [...loaded];
+          for (const { row } of Object.values(doneRef.current)) {
+            if (next.some((r) => r.booking_id === row.booking_id)) continue;
+            const at = previous?.findIndex((r) => r.booking_id === row.booking_id) ?? -1;
+            next.splice(at < 0 ? next.length : Math.min(at, next.length), 0, row);
+          }
+          return next;
+        });
         setFailed(false);
       })
       .catch(() => setFailed(true));
@@ -105,9 +118,18 @@ export function AdminCollect() {
     });
   }
 
-  function finish(id: number) {
+  function updateDone(change: (current: Record<number, Done>) => Record<number, Done>) {
+    doneRef.current = change(doneRef.current);
+    setDone(doneRef.current);
+  }
+
+  /** End of a row's undo window: settled rows leave the list, undone ones come back. */
+  function finish(id: number, settled: boolean) {
     timers.current.delete(id);
-    setDone((current) => without(current, id));
+    // A settled row is removed before its paid state is cleared, or it would flash back as
+    // payable and could be paid twice while the list reloads.
+    if (settled) setRows((current) => current?.filter((r) => r.booking_id !== id) ?? current);
+    updateDone((current) => without(current, id));
     load();
   }
 
@@ -124,16 +146,18 @@ export function AdminCollect() {
           defer_confirmation_email: true,
         },
       });
-      const latest = detail.booking.payments
-        .filter((payment) => !payment.voided)
-        .reduce((a, b) => (b.id > a.id ? b : a));
-      setDone((current) => ({
+      if (detail.payment_id == null) throw new Error("missing payment id");
+      updateDone((current) => ({
         ...current,
-        [row.booking_id]: { paymentId: latest.id, amountCents: row.balance_cents },
+        [row.booking_id]: {
+          paymentId: detail.payment_id as number,
+          amountCents: row.balance_cents,
+          row,
+        },
       }));
       timers.current.set(
         row.booking_id,
-        setTimeout(() => finish(row.booking_id), UNDO_WINDOW_MS),
+        setTimeout(() => finish(row.booking_id, true), UNDO_WINDOW_MS),
       );
       setMessage(
         `Pagamento di ${formatEuro(row.balance_cents)} registrato per ${name}.` +
@@ -160,7 +184,7 @@ export function AdminCollect() {
       const timer = timers.current.get(row.booking_id);
       if (timer) clearTimeout(timer);
       setMessage(`Pagamento annullato per ${name}.`);
-      finish(row.booking_id);
+      finish(row.booking_id, false);
     } catch (error) {
       setErrors((current) => ({
         ...current,

@@ -37,8 +37,14 @@ let calls: Call[];
 let listing: ReturnType<typeof row>[];
 let failPayment: boolean;
 
+// The booking lists a higher payment id than the one just created, as if another admin had paid
+// the same booking: undo must use the id the server returned, not the highest one.
 function detail(payments: { id: number; voided: boolean }[], warning: string | null = null) {
-  return { booking: { payments }, warning };
+  return {
+    booking: { payments: [...payments, { id: 99, voided: false }] },
+    warning,
+    payment_id: 41,
+  };
 }
 
 beforeEach(() => {
@@ -242,5 +248,33 @@ describe("to collect view", () => {
     await waitFor(() => expect(screen.queryByText("CSC-GGSU")).not.toBeInTheDocument());
     expect(screen.queryByRole("button", { name: /Annulla il pagamento/ })).not.toBeInTheDocument();
     expect(screen.getByText("CSC-G8AX")).toBeInTheDocument();
+  });
+
+  it("keeps each paid row until its own undo window ends", async () => {
+    renderPage();
+    await screen.findByText("CSC-GGSU");
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    fireEvent.click(screen.getByRole("button", { name: /Segna pagato per Ada/ }));
+    await screen.findByText("Pagato 11,00 €");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Segna pagato per Grace/ }));
+    await screen.findByText("Pagato 19,00 €");
+    // The server no longer lists either of them.
+    listing = [];
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_500);
+    });
+    // Ada's window is over, Grace's has five more seconds: her row is still there with Annulla.
+    await waitFor(() => expect(screen.queryByText("CSC-GGSU")).not.toBeInTheDocument());
+    expect(screen.getByText("Pagato 19,00 €")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Annulla il pagamento di Grace/ }),
+    ).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    await waitFor(() => expect(screen.queryByText("CSC-G8AX")).not.toBeInTheDocument());
   });
 });
