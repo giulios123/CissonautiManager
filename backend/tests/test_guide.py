@@ -55,6 +55,12 @@ class TestReleaseNotes:
         write_notes(settings, tmp_path, "{not json")
         assert admin_client.get("/api/admin/release-notes").json() == {"releases": []}
 
+    def test_invalid_entry_means_no_releases(self, admin_client, settings, tmp_path):
+        write_notes(settings, tmp_path, '{"releases": [{}]}')
+        response = admin_client.get("/api/admin/release-notes")
+        assert response.status_code == 200
+        assert response.json() == {"releases": []}
+
     def test_unexpected_shape_means_no_releases(self, admin_client, settings, tmp_path):
         write_notes(settings, tmp_path, '{"releases": "oops"}')
         assert admin_client.get("/api/admin/release-notes").json() == {"releases": []}

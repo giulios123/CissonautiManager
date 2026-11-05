@@ -8,4 +8,6 @@ I pasti non si scelgono all'iscrizione: si aggiungono dopo, dalla tua pagina, co
 
 ### Esigenze alimentari
 
-Sotto i pasti trovi «Esigenze alimentari». Il regime (onnivoro, vegetariano, vegano) si salva subito. Per **allergie e intolleranze** serve il consenso al trattamento dei dati sanitari: leggilo e spuntalo prima di salvare. Le vedono solo gli organizzatori, mai le email. Se togli il consenso, le allergie scritte vengono cancellate.
+Sotto i pasti trovi «Esigenze alimentari». Scegli il regime (onnivoro, vegetariano, vegano) e, se serve, scrivi **allergie e intolleranze**: per queste serve il consenso al trattamento dei dati sanitari, che puoi leggere e spuntare lì. Poi premi **«Salva esigenze alimentari»**: finché non lo fai, niente viene salvato.
+
+Le allergie le vedono solo gli organizzatori, mai le email. Se salvi senza consenso, le allergie scritte vengono cancellate.
