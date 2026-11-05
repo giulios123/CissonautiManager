@@ -253,3 +253,21 @@ button:disabled {
   background: #fff;
   border-radius: 0.75rem;
 }
+
+a.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: var(--accent);
+  border-radius: 0.5rem;
+}
+
+a.button.secondary {
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+}

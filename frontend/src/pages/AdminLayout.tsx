@@ -14,7 +14,7 @@ export function AdminLayout() {
       <header className="admin-nav">
         <nav aria-label="Pannello organizzatori">
           <NavLink to="/admin" end>
-            Iscrizioni
+            Persone
           </NavLink>
           <NavLink to="/admin/impostazioni">Impostazioni</NavLink>
           <button type="button" className="link" onClick={logout}>

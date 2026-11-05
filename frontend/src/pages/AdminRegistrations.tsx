@@ -3,14 +3,17 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
+import { CsvButton } from "./CsvButton";
 
 type Row = {
   id: number;
   first_name: string;
   last_name: string;
   email: string;
+  phone: string | null;
   personal_code: string;
   days: number;
+  evenings: number;
   status: string;
   amount_due_cents: number;
   paid_cents: number;
@@ -26,6 +29,13 @@ const STATUSES = [
   "rimborsata",
 ];
 
+function filterParams(status: string, query: string) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (query.trim()) params.set("q", query.trim());
+  return params;
+}
+
 export function AdminRegistrations() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -33,11 +43,8 @@ export function AdminRegistrations() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (status) params.set("status", status);
-    if (query.trim()) params.set("q", query.trim());
     let cancelled = false;
-    api<Row[]>(`/api/admin/registrations?${params}`)
+    api<Row[]>(`/api/admin/registrations?${filterParams(status, query)}`)
       .then((loaded) => {
         if (!cancelled) {
           setRows(loaded);
@@ -54,7 +61,7 @@ export function AdminRegistrations() {
 
   return (
     <main className="wide">
-      <h1>Iscrizioni</h1>
+      <h1>Persone</h1>
       <div className="row filters">
         <label>
           Cerca per nome, email o codice
@@ -80,13 +87,18 @@ export function AdminRegistrations() {
       ) : (
         <>
           <p aria-live="polite">{rows.length} iscrizioni</p>
+          <p>
+            <CsvButton path="/api/admin/registrations" params={filterParams(status, query)} />
+          </p>
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th scope="col">Persona</th>
+                  <th scope="col">Telefono</th>
                   <th scope="col">Codice</th>
                   <th scope="col">Giorni</th>
+                  <th scope="col">Sere</th>
                   <th scope="col">Stato</th>
                   <th scope="col">Dovuto</th>
                   <th scope="col">Versato</th>
@@ -104,8 +116,10 @@ export function AdminRegistrations() {
                       <br />
                       <small>{row.email}</small>
                     </th>
+                    <td>{row.phone ?? "-"}</td>
                     <td>{row.personal_code}</td>
                     <td>{row.days}</td>
+                    <td>{row.evenings}</td>
                     <td>{statusLabel(row.status)}</td>
                     <td>{formatEuro(row.amount_due_cents)}</td>
                     <td>{formatEuro(row.paid_cents)}</td>

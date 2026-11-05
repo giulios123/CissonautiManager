@@ -20,8 +20,10 @@ const row = {
   first_name: "Ada",
   last_name: "Lovelace",
   email: "ada@example.com",
+  phone: "+39 333 1234567",
   personal_code: "CSC-7K3P",
   days: 2,
+  evenings: 1,
   status: "in_attesa_pagamento",
   amount_due_cents: 1200,
   paid_cents: 0,
@@ -102,6 +104,22 @@ describe("admin area", () => {
     const tableRow = cell.closest("tr")!;
     expect(within(tableRow).getByText("In attesa di pagamento")).toBeInTheDocument();
     expect(within(tableRow).getAllByText(/12,00/)).toHaveLength(2);
+  });
+
+  it("shows phone and evenings and offers the CSV with the same filters", async () => {
+    stub((_m, url) => ({ body: url === "/api/me" ? admin : [row] }));
+    renderAt("/admin");
+    const cell = await screen.findByRole("link", { name: /Ada Lovelace/ });
+    const tableRow = cell.closest("tr")!;
+    expect(within(tableRow).getByText("+39 333 1234567")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Sere" })).toBeInTheDocument();
+    const csv = screen.getByRole("link", { name: "Scarica CSV" });
+    expect(csv).toHaveAttribute("href", "/api/admin/registrations?format=csv");
+    await userEvent.type(screen.getByLabelText(/Cerca/), "ada");
+    expect(screen.getByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
+      "href",
+      "/api/admin/registrations?q=ada&format=csv",
+    );
   });
 
   it("filters the list by search text", async () => {

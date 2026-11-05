@@ -1,20 +1,25 @@
+from collections import defaultdict
 from datetime import date, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.schemas import BookingView, booking_view
+from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_email_sender, get_now, require_admin
+from app.domain.booking import occupies_seats
+from app.domain.presence import has_evening
 from app.email import EmailSender
 from app.models import STATUS_EXPIRED, Booking, LegalDocument, Participant
 from app.services import edition as edition_service
 from app.services import payments as payment_service
 from app.services.seats import expire_overdue
-from app.timefmt import to_rome
+from app.timefmt import status_label, to_rome
 
 router = APIRouter(
     prefix="/api/admin/registrations", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -28,8 +33,10 @@ class RegistrationRow(BaseModel):
     first_name: str
     last_name: str
     email: str
+    phone: str | None
     personal_code: str
     days: int
+    evenings: int
     status: str
     amount_due_cents: int
     paid_cents: int
@@ -69,6 +76,16 @@ class PaymentIn(BaseModel):
     note: str | None = Field(default=None, max_length=1000)
 
 
+def _evenings(booking: Booking, status: str) -> int:
+    """Days on which the person is present in the evening, booked or derived (D-009)."""
+    if not occupies_seats(status):
+        return 0
+    periods: dict[date, set[str]] = defaultdict(set)
+    for slot in booking.slots:
+        periods[slot.date].add(slot.period)
+    return sum(1 for day_periods in periods.values() if has_evening(day_periods))
+
+
 def _row(booking: Booking, now: datetime) -> RegistrationRow:
     view = booking_view(booking, now)
     participant = booking.participant
@@ -77,8 +94,10 @@ def _row(booking: Booking, now: datetime) -> RegistrationRow:
         first_name=participant.first_name,
         last_name=participant.last_name,
         email=participant.email,
+        phone=participant.phone,
         personal_code=participant.personal_code,
         days=len({s.date for s in booking.slots}),
+        evenings=_evenings(booking, view.status),
         status=view.status,
         amount_due_cents=view.amount_due_cents,
         paid_cents=view.paid_cents,
@@ -123,42 +142,83 @@ def _get_booking(db: Session, booking_id: int) -> Booking:
     return booking
 
 
-@router.get("")
+def _csv_rows(rows: list[RegistrationRow]):
+    for row in rows:
+        yield [
+            row.first_name,
+            row.last_name,
+            row.email,
+            row.phone,
+            row.personal_code,
+            row.days,
+            row.evenings,
+            status_label(row.status),
+            Amount(row.amount_due_cents),
+            Amount(row.paid_cents),
+            Amount(row.balance_cents),
+            row.hold_expires_at if row.status == "in_attesa_pagamento" else None,
+            row.created_at,
+        ]
+
+
+CSV_HEADER = [
+    "Nome",
+    "Cognome",
+    "Email",
+    "Telefono",
+    "Codice",
+    "Giorni",
+    "Sere",
+    "Stato",
+    "Dovuto",
+    "Versato",
+    "Saldo",
+    "Scadenza blocco",
+    "Iscritto il",
+]
+
+
+@router.get("", response_model=None)
 def list_registrations(
     status: Status | None = None,
     q: str | None = Query(default=None, max_length=100),
+    fmt: Literal["json", "csv"] = Query(default="json", alias="format"),
     db: Session = Depends(get_db),
     now: datetime = Depends(get_now),
-) -> list[RegistrationRow]:
+) -> list[RegistrationRow] | Response:
     expire_overdue(db, now)
     db.commit()
     edition = edition_service.get_active_edition(db)
     if edition is None:
-        return []
-    query = (
-        select(Booking)
-        .join(Participant, Participant.id == Booking.participant_id)
-        .where(Booking.edition_id == edition.id)
-        .order_by(Booking.created_at.desc(), Booking.id.desc())
-    )
-    if status:
-        query = query.where(Booking.status == status)
-    if q and q.strip():
-        needle = q.strip().lower()
-        query = query.where(
-            or_(
-                *[
-                    func.lower(column).contains(needle, autoescape=True)
-                    for column in (
-                        Participant.first_name,
-                        Participant.last_name,
-                        Participant.email,
-                        Participant.personal_code,
-                    )
-                ]
-            )
+        rows: list[RegistrationRow] = []
+    else:
+        query = (
+            select(Booking)
+            .join(Participant, Participant.id == Booking.participant_id)
+            .where(Booking.edition_id == edition.id)
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
         )
-    return [_row(b, now) for b in db.scalars(query)]
+        if status:
+            query = query.where(Booking.status == status)
+        if q and q.strip():
+            needle = q.strip().lower()
+            query = query.where(
+                or_(
+                    *[
+                        func.lower(column).contains(needle, autoescape=True)
+                        for column in (
+                            Participant.first_name,
+                            Participant.last_name,
+                            Participant.email,
+                            Participant.personal_code,
+                        )
+                    ]
+                )
+            )
+        rows = [_row(b, now) for b in db.scalars(query)]
+    if fmt == "csv":
+        return csv_response(csv_filename("persone", now), CSV_HEADER, _csv_rows(rows))
+    return rows
 
 
 @router.get("/{booking_id}")

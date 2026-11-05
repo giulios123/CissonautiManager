@@ -7,6 +7,19 @@ _WEEKDAYS = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"]
 _PERIODS = {"morning": "mattina", "afternoon": "pomeriggio", "evening": "sera"}
 
 
+STATUS_LABELS = {
+    "in_attesa_pagamento": "In attesa di pagamento",
+    "confermata": "Confermata",
+    "scaduta": "Scaduta",
+    "disdetta_richiesta": "Disdetta richiesta",
+    "rimborsata": "Rimborsata",
+}
+
+
+def status_label(status: str) -> str:
+    return STATUS_LABELS.get(status, status)
+
+
 def to_rome(value: datetime) -> datetime:
     return value.astimezone(ROME)
 
