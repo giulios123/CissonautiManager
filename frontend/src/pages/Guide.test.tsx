@@ -63,9 +63,11 @@ describe("Guide", () => {
     const urls = stub(participantMe);
     renderGuide();
     expect(await screen.findByRole("heading", { name: "Guida", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Iscriversi", level: 2 })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Iscriversi al camp", level: 2 }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("tablist")).toBeNull();
-    expect(screen.queryByRole("heading", { name: "Persone" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Persone e scheda iscrizione" })).toBeNull();
     expect(screen.getByRole("link", { name: "Torna alla tua iscrizione" })).toHaveAttribute(
       "href",
       "/io",
@@ -80,8 +82,10 @@ describe("Guide", () => {
     const tabs = await screen.findAllByRole("tab");
     expect(tabs.map((tab) => tab.textContent)).toEqual(["Organizzatori", "Partecipanti", "Novità"]);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
-    expect(await screen.findByRole("heading", { name: "Persone", level: 2 })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Iscriversi" })).toBeNull();
+    expect(
+      await screen.findByRole("heading", { name: "Persone e scheda iscrizione", level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Iscriversi al camp" })).toBeNull();
   });
 
   it("shows the participants guide in its tab", async () => {
@@ -89,14 +93,14 @@ describe("Guide", () => {
     renderGuide();
     await userEvent.click(await screen.findByRole("tab", { name: "Partecipanti" }));
     expect(
-      await screen.findByRole("heading", { name: "Iscriversi", level: 2 }),
+      await screen.findByRole("heading", { name: "Iscriversi al camp", level: 2 }),
     ).toBeInTheDocument();
   });
 
   it("loads the release notes only when the tab is opened", async () => {
     const urls = stub(adminMe);
     renderGuide();
-    await screen.findByRole("heading", { name: "Persone", level: 2 });
+    await screen.findByRole("heading", { name: "Persone e scheda iscrizione", level: 2 });
     expect(urls).not.toContain("/api/admin/release-notes");
 
     await userEvent.click(screen.getByRole("tab", { name: "Novità" }));

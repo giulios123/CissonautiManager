@@ -14,7 +14,7 @@ Branch: `claude/dreamy-ride-bzr112` (vincolo di push della sessione). **Dimensio
   Test: partecipante senza schede e senza chiamata alle novità; admin con tre schede; novità vuote; tastiera sulle schede; anonimo a `/accedi`.
 - [x] **7. Link**: da pagina personale e menu admin con sezione contestuale; titolo di pagina.
   Test: `titleFor("/guida")`; link con la sezione giusta.
-- [ ] **8. Testi**: guida partecipante e organizzatori, controllata sulle pagine reali.
+- [x] **8. Testi**: guida partecipante e organizzatori, controllata sulle pagine reali.
 - [ ] **9. Regola e CI**: `AGENTS.md`, job `guide`.
 - [ ] **10. Chiusura**: lint e test verdi, build Docker con `APP_VERSION`, `progress.md`, `activeContext.md`, `decisions.md`, `README.md`, `pr-description.md`.
 

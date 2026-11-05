@@ -1,4 +1,10 @@
-import { adminGuideLink, adminGuideSlug, parseSections, participantGuide } from "./content";
+import {
+  adminGuideLink,
+  adminGuideSlug,
+  loadAdminGuide,
+  parseSections,
+  participantGuide,
+} from "./content";
 
 describe("parseSections", () => {
   it("orders by file name and takes slug and title from the file", () => {
@@ -42,6 +48,32 @@ describe("participant guide", () => {
   it("is built from the files in the repository", () => {
     expect(participantGuide.length).toBeGreaterThan(0);
     for (const section of participantGuide) {
+      expect(section.title).not.toBe("");
+      expect(section.body).not.toBe("");
+    }
+  });
+});
+
+describe("admin guide", () => {
+  it("has a section for every page of the panel", async () => {
+    const slugs = (await loadAdminGuide()).map((section) => section.slug);
+    const pages = [
+      "/admin",
+      "/admin/giorni",
+      "/admin/settimana",
+      "/admin/pasti",
+      "/admin/attivita",
+      "/admin/contributi",
+      "/admin/report",
+      "/admin/da-verificare",
+      "/admin/amministratori",
+      "/admin/impostazioni",
+    ];
+    for (const page of pages) expect(slugs).toContain(adminGuideSlug(page));
+  });
+
+  it("gives every section a title and a body", async () => {
+    for (const section of await loadAdminGuide()) {
       expect(section.title).not.toBe("");
       expect(section.body).not.toBe("");
     }
