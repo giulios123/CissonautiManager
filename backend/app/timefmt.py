@@ -16,6 +16,10 @@ STATUS_LABELS = {
 }
 
 
+def period_label(period: str) -> str:
+    return _PERIODS.get(period, period).capitalize()
+
+
 def status_label(status: str) -> str:
     return STATUS_LABELS.get(status, status)
 

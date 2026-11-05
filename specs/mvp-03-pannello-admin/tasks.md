@@ -12,7 +12,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: separatore e BOM; virgola decimale; fuso Europe/Rome; accenti ed emoji; protezione dalle formule; nome file.
 - [x] **4. Vista per persona**: `GET /api/admin/views/people` (+ CSV) e pagina.
   Test: filtri e ricerca; presenza serale derivata; CSV uguale alle righe filtrate; 403 per un partecipante.
-- [ ] **5. Vista per giorno e slot**: endpoint (+ CSV) e pagina.
+- [x] **5. Vista per giorno e slot**: endpoint (+ CSV) e pagina.
   Test: presenti, capienza e liberi; sera derivata marcata; scadute e disdette escluse; sera senza limite.
 - [ ] **6. Settimana aggregata**: endpoint (+ CSV) e pagina.
   Test: conteggi per periodo; persone distinte; giorni vuoti a zero.

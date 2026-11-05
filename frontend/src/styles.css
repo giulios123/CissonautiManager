@@ -271,3 +271,15 @@ a.button.secondary {
   background: #fff;
   border: 2px solid var(--accent);
 }
+
+ul.plain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+caption {
+  padding: 0.5rem 0;
+  font-weight: 700;
+  text-align: left;
+}
