@@ -33,7 +33,8 @@
 ## Importi
 
 - Quota di partecipazione: quota base + importo per ogni giorno con almeno uno slot prenotato, sera compresa (un giorno con la sola sera conta, per ora). Default 10 € + 1 €/giorno, configurabili.
-- Pranzi e cene: adesione per singolo giorno, prezzo flat per pasto configurabile. La presenza di giorno permette di aderire al pranzo e la presenza serale alla cena; chi prenota l'intero giorno (mattina e pomeriggio) conta anche per la sera. L'adesione ai pasti non avviene all'iscrizione: si fa dopo, dalla pagina personale, e si può cambiare.
+- Pranzi e cene: adesione per singolo giorno, due prezzi flat configurabili (uno per il pranzo, uno per la cena). Per il pranzo serve almeno uno slot di giorno (mattina o pomeriggio); per la cena la presenza serale, e chi prenota l'intero giorno (mattina e pomeriggio) conta anche per la sera. L'adesione ai pasti non avviene all'iscrizione: si fa dopo, dalla pagina personale, e si può cambiare con le stesse regole degli slot (giorni passati solo l'admin). Togliere uno slot fa cadere i pasti a cui non si ha più titolo, con ricalcolo dell'importo.
+- Totale dovuto = quota di partecipazione + pranzi e cene, ai prezzi correnti dell'edizione.
 - Attività: create dall'admin, gratuite o a pagamento, capienza opzionale.
 - Saldo del partecipante = totale dovuto meno pagamenti registrati.
 
@@ -56,11 +57,11 @@
 
 - Campi di iscrizione: nome, cognome, email, telefono (opzionale), "chi ti ha invitato?" (testo libero, opzionale), "cosa puoi portare al camp?" (testo libero).
 - Checkbox obbligatorie: informativa privacy e accettazione dello scarico di responsabilità. Entrambi i testi sono configurabili dall'admin e la versione accettata viene salvata con data e ora.
-- Allergie e intolleranze sono dati sanitari: consenso specifico e visibilità solo agli admin.
+- Esigenze alimentari: il regime (onnivoro, vegetariano, vegano) si salva senza consenso. Allergie e intolleranze sono dati sanitari: si salvano solo con un consenso specifico, il cui testo è configurabile dall'admin e versionato (si salvano versione, data e ora); togliere il consenso le cancella. Le vedono solo la persona e gli admin, mai nelle email. Stanno sulla prenotazione e spariscono con essa.
 
 ## Pannello admin
 
-- Impostazioni: date, slot e orari, capienze, giorni di blocco, percentuale della lista d'attesa, quote, prezzi dei pasti, canali e istruzioni di pagamento, testi legali, gestione degli admin.
+- Impostazioni: date, slot e orari, capienze, giorni di blocco, percentuale della lista d'attesa, quote, prezzi di pranzo e cena, canali e istruzioni di pagamento, testi legali (compreso il consenso per i dati sanitari), gestione degli admin.
 - Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da verificare. Export CSV per ogni vista. La presenza serale di chi ha prenotato l'intero giorno è derivata (D-009) e nelle viste è indicata come tale.
 - L'admin può modificare a mano qualsiasi iscrizione, comprese le disdette che il partecipante non riesce a fare. Può superare la capienza di uno slot solo con una conferma esplicita.
 - Ogni modifica manuale dell'admin è registrata (chi, quando, cosa) e compare nella cronologia della scheda.

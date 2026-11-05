@@ -199,3 +199,24 @@
 - **Decisione**: in «Persone» chi è solo in lista compare con stato «Solo in lista d'attesa», senza scheda (la scheda è per prenotazione); la lista si gestisce da «Giorni e slot», dove l'admin può togliere una voce senza email, con cronologia.
 - **Motivo**: evita una seconda scheda per persona per un caso raro.
 - **Alternative scartate**: scheda per persona (nuova pagina e nuovi endpoint, fuori dalla dimensione dell'MVP).
+
+## D-029 · Un solo punto calcola l'importo dovuto
+
+- **Data**: 2026-11-05
+- **Decisione**: `services/amounts.recompute_amount` scrive `amount_due_cents` da slot e pasti, ai prezzi correnti dell'edizione (come D-017). La usano iscrizione, cambio slot, pasti e promozione dalla lista; l'MVP 6 vi aggiungerà le attività. Prezzi segnaposto: pranzo 8 €, cena 12 €.
+- **Motivo**: con più voci di costo, calcoli sparsi divergerebbero.
+- **Alternative scartate**: salvare un importo per riga (pasto, slot) e sommarlo (più dati per lo stesso risultato).
+
+## D-030 · Dati sanitari sulla prenotazione, consenso che non blocca l'iscrizione
+
+- **Data**: 2026-11-05
+- **Decisione**: regime, allergie e consenso stanno su `booking`, non su `participant`. Il consenso è un testo legale versionato (`health`) ma fuori dai testi che aprono le iscrizioni: senza testo pubblicato si indica solo il regime. Il CSV dei pasti chiede conferma prima del download perché contiene dati sanitari.
+- **Motivo**: i dati valgono per un'edizione e spariscono con la prenotazione rimossa (minimizzazione); i pasti non devono fermare le iscrizioni.
+- **Alternative scartate**: dati sulla persona (resterebbero da un anno all'altro); consenso obbligatorio per iscriversi (non tutti hanno allergie).
+
+## D-031 · I pasti cadono da soli quando cambia la presenza
+
+- **Data**: 2026-11-05
+- **Decisione**: togliere uno slot fa cadere i pasti a cui non si ha più titolo; la risposta e la cronologia lo dicono. Vale anche per l'admin, che per dare un pasto deve prima dare la presenza.
+- **Motivo**: bloccare il cambio di slot finché non si tolgono i pasti a mano sarebbe un passaggio in più senza vantaggi.
+- **Alternative scartate**: rifiutare il cambio di slot; lasciare pasti senza presenza (conteggi sbagliati per la cucina).

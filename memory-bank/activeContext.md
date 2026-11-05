@@ -2,12 +2,13 @@
 
 ## Ora
 
-MVP 4 (lista d'attesa) implementato e provato in locale sul branch `claude/quirky-meitner-qn9hwh`; descrizione PR in `specs/mvp-04-lista-attesa/pr-description.md`. Spec di MVP 4, 5 e 6 confermate dal maintainer («confermo tutto»): modifiche a `domain.md` dell'MVP 4 applicate. In corso: MVP 5 (pranzi e cene). Aperti e non bloccanti: task 15 dell'MVP 1 e task 9 dell'MVP 2.
+MVP 4 (lista d'attesa) e MVP 5 (pranzi e cene) implementati e provati in locale sul branch `claude/quirky-meitner-qn9hwh`; descrizioni PR in `specs/mvp-04-lista-attesa/pr-description.md` e `specs/mvp-05-pranzi-cene/pr-description.md`. Modifiche a `domain.md` di entrambi applicate. Aperti e non bloccanti: task 15 dell'MVP 1 e task 9 dell'MVP 2.
 
 ## Prossimo passo
 
-1. MVP 5, poi MVP 6 (il 6 usa il calcolo unico dell'importo del 5).
-2. CI su SQL Server sul branch e validazione del task 9 dell'MVP 2 (serve anche al job orario che promuove dalla lista dopo una scadenza).
+1. MVP 6 (attività e contributi), spec già confermata: usa `recompute_amount` e la regola «cade se perdi il titolo» dei pasti.
+2. CI su SQL Server sul branch (migrazioni 0005 e 0006 mai girate su SQL Server) e validazione del task 9 dell'MVP 2.
+3. Importi definitivi di pranzo e cena (oggi 8 € e 12 €, segnaposto).
 
 ## Scelte del maintainer per MVP 4-6 (2026-11-05)
 

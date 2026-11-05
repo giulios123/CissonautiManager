@@ -9,7 +9,7 @@
 | 2 | Pagina personale | codice fatto e provato in locale (task 1-8), infrastruttura Azure scritta ma non validata (task 9), chiusura documentale fatta (task 10) |
 | 3 | Pannello admin completo | codice fatto e provato in locale (task 1-12), chiusura documentale fatta (task 13); si porta su `main` insieme al task 9 dell'MVP 2 |
 | 4 | Lista d'attesa | codice fatto e provato in locale (task 1-9) |
-| 5 | Pranzi e cene | da fare |
+| 5 | Pranzi e cene | codice fatto e provato in locale (task 1-10) |
 | 6 | Attività e contributi | da fare |
 | 7 | Inviti e report | da fare |
 
@@ -30,6 +30,8 @@
 - **Non verificato (MVP 3)**: CI su SQL Server (le query nuove sono semplici, ma la CI non è ancora girata sul branch); apertura dei CSV in Excel o Numbers veri (provato solo il contenuto dei file); uso con molti iscritti.
 - **MVP 4**, provato end to end in locale con browser da telefono (DB nuovo da migrazioni 0001-0005, capienza 1 e lista al 100%): Ada prende l'ultimo posto; Bea trova lo slot «completo, spunta per entrare in lista», si iscrive solo in lista (nessuna quota), riceve l'email e vede «1° in lista» nella pagina personale; Ada disdice e Bea riceve «Si è liberato un posto» con quota, causale e scadenza, e la sua pagina mostra la prenotazione in attesa; pannello con «Persone», «Giorni e slot» e percentuale nelle Impostazioni. Downgrade e upgrade della 0005 senza errori.
 - **Non verificato (MVP 4)**: CI su SQL Server; promozione dopo una scadenza con il job che gira davvero su Azure; due promozioni concorrenti sullo stesso slot (lock provato solo su SQLite); email vere.
+- **MVP 5**, provato end to end in locale con browser da telefono (DB nuovo da migrazioni 0001-0006, prezzi 8 € e 12 €, consenso sanitario pubblicato): il modulo pubblico non chiede i pasti; dalla pagina personale pranzo e cena di lunedì con anteprima (11 € → 31 €); allergie rifiutate senza consenso e salvate con il consenso; togliendo la sera cade la cena con avviso; vista «Pasti» con regimi, allergie e CSV; colonne Pranzi e Cene in «Settimana». Downgrade e upgrade della 0006 senza errori.
+- **Non verificato (MVP 5)**: CI su SQL Server; CSV dei pasti aperto in Excel vero; importi definitivi dei pasti.
 - **B0**: l'MVP 2 non è completo (task 9 aperto). Il maintainer ha chiesto di procedere e di validare tutto insieme al passaggio su `main`.
 
 ## Bug corretti fuori MVP

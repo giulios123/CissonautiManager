@@ -22,7 +22,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: conteggi per giorno e pasto; scadute e disdette escluse; conteggio per regime con «senza indicazione»; allergie con nome; CSV con una riga per persona; avviso prima del download.
 - [x] **9. Settimana**: colonne pranzi e cene nella vista e nel CSV.
   Test: conteggi per giorno; giorni senza pasti a zero; totali.
-- [ ] **10. Chiusura**: lint e test verdi, migrazioni da zero, Memory Bank (modifiche a `domain.md` approvate, `decisions.md`), README, descrizione PR con checklist per organizzatori.
+- [x] **10. Chiusura**: lint e test verdi, migrazioni da zero, Memory Bank (modifiche a `domain.md` approvate, `decisions.md`), README, descrizione PR con checklist per organizzatori.
 
 ## Da verificare a mano
 
