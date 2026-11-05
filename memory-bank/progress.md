@@ -11,7 +11,7 @@
 | 4 | Lista d'attesa | codice fatto e provato in locale (task 1-9), in PR verso `main` |
 | 5 | Pranzi e cene | codice fatto e provato in locale (task 1-10), in PR verso `main` |
 | 6 | Attività e contributi | codice fatto e provato in locale (task 1-10), in PR verso `main` |
-| 7 | Inviti e report | spec riallineata sul codice di `main`, in attesa di conferma |
+| 7 | Inviti e report | fatto e provato in locale (task 1-9) |
 | 8 | Stile del sito | fatto e provato in locale (task 1-7) |
 
 ## Verifiche manuali
@@ -41,6 +41,8 @@
 - **MVP 8**, provato in locale con Chromium (telefono iPhone 13 e computer a 1280 px, DB nuovo da migrazioni, edizione di prova con due iscritti): iscrizione, accesso, pagina personale, pannello (Persone, Giorni e slot, scheda). Iscrizione dentro un iframe ospitato su un finto `sites.google.com` con la CSP vera: classe `in-frame`, sfondo trasparente, intestazione ridotta senza logo, Montserrat caricato. Nessuno scorrimento orizzontale, controlli alti almeno 44 px, nessun errore in console. Gli script di prova sono rimasti fuori dal repo (servono un backend con dati), contrariamente a quanto previsto dal design.
 - **MVP 8, rifinitura** (richiesta del maintainer dopo la prova): «Esci» della pagina personale diventa secondario; gli stati della prenotazione sono etichette colorate (`StatusBadge`), con il testo sempre presente e contrasti AA controllati da `theme.test.ts`. Provato in browser con iscrizioni in attesa, confermate, disdette e rimborsate.
 - **MVP 8, audit** (2026-11-05, dopo l'unione con gli MVP 4-6): 15/20 prima, 18/20 dopo; 12 problemi corretti (titoli di pagina, menu admin su telefono, numerazione doppia, tabelle senza nome, anello di focus sui campi data, bordi laterali colorati, aree di tocco, dettagli). Report in `specs/mvp-08-stile-sito/audit.md`. Il rilevatore di Impeccable non è stato eseguito (binario esterno negato dalla sessione): i controlli sono misurati con Playwright.
+- **MVP 7**, provato end to end in locale con browser (DB nuovo da migrazioni 0001-0008, edizione con capienza 2, due persone in lista): Luca 1° e Sara 2°; verificato il +1 di Sara da «Giorni e slot» e le posizioni si scambiano subito (anche nella pagina personale di Luca: 2°); la scheda mostra chi ha verificato e quando, la cronologia lo registra; disdetta di un iscritto: Sara riceve l'email del posto liberato e Luca passa 1°. Report: sezioni e numeri coerenti con le altre viste (test di integrazione), nessuno scorrimento laterale da telefono, stampa su 4 pagine A4 senza menu né pulsanti.
+- **Non verificato (MVP 7)**: CI su SQL Server con la migrazione 0008; apertura del CSV del report in Excel o Numbers veri; report con dati veri di un'edizione.
 - **Non verificato (MVP 8)**: embed nel sito Google vero; Safari e Firefox; spaziature del sito (CSS di Google Sites non raggiungibile dalla sessione).
 
 ## Bug corretti fuori MVP

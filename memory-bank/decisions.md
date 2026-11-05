@@ -255,3 +255,12 @@
 - **Decisione**: (1) ogni rotta ha un `document.title` proprio («Pagina · Cissonauti Summer Camp»), calcolato in `frontend/src/pageTitle.ts`; (2) il menu del pannello è una riga che scorre di lato e porta in vista la voce corrente, invece di andare a capo su più righe; (3) gli stati delle prenotazioni sono etichette colorate senza bordo laterale; un test impedisce bordi laterali spessi.
 - **Motivo**: emersi dall'audit dell'MVP 8: il titolo uguale ovunque non rispetta WCAG 2.4.2; con 10 voci il menu occupava più di metà schermo su telefono.
 - **Alternative scartate**: menu a tendina (un tocco in più per ogni cambio di vista, per chi usa il pannello tutto il giorno); due righe di menu (non bastano per 10 voci con aree di tocco da 44 px).
+
+## D-037 · Priorità +1 calcolata alla promozione, verifica sul partecipante, report a lettura
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) l'ordine della lista si calcola ogni volta (`queue(entries, priority_ids)`): prima i +1 verificati, poi gli altri, dentro ogni gruppo per ordine di arrivo; nessuna posizione è salvata, quindi una verifica fatta dopo l'ingresso vale subito; (2) la verifica sta sul partecipante (`plus_one_verified_at`, `plus_one_verified_by_id`) e si imposta per id partecipante, perché chi è solo in lista non ha una prenotazione né una scheda (D-028); cade da sola se «invitato da» si svuota; (3) il report non ha tabelle: `load_report` legge tutto e `edition_report` conta, con presenze, pasti e attività divisi in confermate e in attesa e il dovuto scomposto in quota, pasti e attività con una riga «differenza» che assorbe i prezzi cambiati dopo le iscrizioni (D-017); (4) CSV del report in formato lungo (`sezione;voce;confermate;in attesa;totale`); (5) allergie solo come numero.
+- **Motivo**: indicazioni del maintainer; la priorità non deve dipendere da una posizione salvata che andrebbe riscritta a ogni cambio; il report deve coincidere con le altre viste e non esporre dati sanitari.
+- **Alternative scartate**: posizione salvata (da ricalcolare a ogni verifica e uscita); verifica sulla prenotazione (esclude chi è solo in lista); posti riservati ai +1 (scelta del maintainer: nessun posto riservato); tabella di snapshot del report (due fonti di verità).
+- **Limiti noti**: con più edizioni la verifica andrebbe spostata (Backlog); chi scende di posizione non riceve avvisi (Backlog dell'MVP 4).
+

@@ -9,7 +9,7 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
 2. Dopo il merge il deploy applica le migrazioni 0005-0007 all'avvio: il primo avvio a freddo può essere lento (circa 4 minuti con la PR #5).
 3. Prove manuali in produzione con le checklist di MVP 2-6: email vera nella casella e fuori dallo spam, il job `cissonauti-booking-reminders` che gira ogni ora (portale Azure, «Execution history»), viste e CSV con dati veri, lista d'attesa che si sblocca dopo una scadenza.
-4. MVP 7 (inviti e report): spec in `specs/mvp-07-inviti-report/`, in attesa di conferma; il +1 si verifica con una spunta dell'admin (decisione del 2026-11-05).
+4. MVP 7 (inviti e report): fatto, vedi sotto.
 5. Importi definitivi di pranzo e cena (oggi 8 € e 12 €, segnaposto).
 
 ## Scelte del maintainer per MVP 4-6 (2026-11-05)
@@ -41,9 +41,9 @@ Risposte del maintainer (2026-11-05), spec confermate:
 
 MVP 8 completato sul branch `claude/nifty-hawking-mgu6fa` (D-035), descrizione PR in `specs/mvp-08-stile-sito/pr-description.md`. Da provare nel sito Google vero dopo il deploy. Le pagine degli MVP 4-7 devono usare i token di `styles.css`, senza colori scritti a mano (lo controlla `theme.test.ts`).
 
-Prossimo passo: conferma del maintainer sulla spec riallineata dell'MVP 7 (B1.5), poi implementazione.
+MVP 7 completato sul branch `claude/nifty-hawking-mgu6fa` (D-037), descrizione PR in `specs/mvp-07-inviti-report/pr-description.md`. Con questo la roadmap degli MVP è finita: resta il passaggio su `main` e le prove manuali in produzione (checklist delle PR degli MVP 2-8).
 
-Domande aperte sull'MVP 7: la verifica del +1 sta sul partecipante e con più edizioni andrà spostata (accettato, nel Backlog); la scomposizione del dovuto nel report usa i prezzi correnti, con una riga «scarto» se sono cambiati dopo le iscrizioni.
+Scelte confermate dal maintainer sull'MVP 7: la verifica del +1 sta sul partecipante (con più edizioni andrà spostata, Backlog); la scomposizione del dovuto nel report usa i prezzi correnti, con una riga «differenza» se sono cambiati dopo le iscrizioni.
 
 ## Risolto il 2026-11-05 (conferma del maintainer)
 
