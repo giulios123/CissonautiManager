@@ -1,5 +1,8 @@
 """Sends the payment reminders that are due. Run hourly: `python -m app.jobs.send_reminders`.
 
+It also hands the seats freed by expired holds to the first people on the waitlists: expiry is
+evaluated on read, so nothing else would notice it and send the email.
+
 The web app scales to zero, so a separate scheduled job wakes up, sends what is due and exits.
 Each reminder is marked as sent with a conditional UPDATE before the email goes out, so a
 rerun (or two overlapping runs) never sends the same reminder twice. The price of that is that
@@ -20,7 +23,9 @@ from app.domain.reminders import due_reminder
 from app.email import EmailSender, build_email_sender
 from app.email.templates import reminder_email
 from app.models import STATUS_PENDING, Booking, Edition, PaymentChannel
+from app.services import edition as edition_service
 from app.services import registration as registration_service
+from app.services import waitlist as waitlist_service
 from app.services.payments import paid_total
 from app.services.seats import expire_overdue
 
@@ -32,6 +37,7 @@ class ReminderSummary:
     examined: int = 0
     mid: int = 0
     final: int = 0
+    promoted: int = 0
 
 
 def _claim(db: Session, booking: Booking, kind: str, now: datetime) -> bool:
@@ -100,7 +106,17 @@ def send_due_reminders(
             summary.final += 1
         else:
             summary.mid += 1
+    summary.promoted = promote_open_slots(db, sender, settings, now)
     return summary
+
+
+def promote_open_slots(db: Session, sender: EmailSender, settings: Settings, now: datetime) -> int:
+    """Give the seats freed by expired holds to the people waiting. Returns how many."""
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return 0
+    slot_ids = waitlist_service.slots_with_waiting_people(db, edition)
+    return len(waitlist_service.promote_freed(db, sender, settings, slot_ids, now))
 
 
 def main() -> None:
@@ -112,7 +128,11 @@ def main() -> None:
         summary = send_due_reminders(db, sender, settings, utcnow())
     engine.dispose()
     logger.info(
-        "Reminders: examined=%d mid=%d final=%d", summary.examined, summary.mid, summary.final
+        "Reminders: examined=%d mid=%d final=%d; waitlist promotions=%d",
+        summary.examined,
+        summary.mid,
+        summary.final,
+        summary.promoted,
     )
 
 
