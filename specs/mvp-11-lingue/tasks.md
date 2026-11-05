@@ -9,7 +9,7 @@ Branch: `claude/relaxed-dijkstra-9z2e5o` (vincolo della sessione). **Dimensione*
   Test: rilevamento (`?lang`, storage, browser), selettore, parità delle chiavi, `localStorage` che lancia.
 - [x] **4. Backend**: migrazione 0011, `locale` in registrazione e `PUT /api/me/locale`, `AppError` e catalogo, conversione degli 81 messaggi.
   Test: errore in inglese con `Accept-Language: en`, lingua salvata, migrazione da zero e downgrade.
-- [ ] **5. Email IT/EN** e `timefmt` per lingua.
+- [x] **5. Email IT/EN** e `timefmt` per lingua.
   Test: ogni email in inglese, lingua del partecipante rispettata, oggetto con il nome dell'edizione.
 - [ ] **6. Pagine partecipante tradotte**.
   Test: iscrizione, accesso e pagina personale in inglese.

@@ -11,6 +11,8 @@ from contextvars import ContextVar
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from app.email_texts import EMAIL_MESSAGES
+
 LOCALES = ("it", "en")
 DEFAULT_LOCALE = "it"
 
@@ -409,3 +411,5 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "Wrong email or password",
     },
 }
+
+MESSAGES.update(EMAIL_MESSAGES)
