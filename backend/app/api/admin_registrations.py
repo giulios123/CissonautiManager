@@ -33,6 +33,7 @@ from app.services import booking_changes
 from app.services import edition as edition_service
 from app.services import meals as meals_service
 from app.services import payments as payment_service
+from app.services import plus_one as plus_one_service
 from app.services import refunds as refund_service
 from app.services import waitlist as waitlist_service
 from app.services.registration import InvalidSlots, SlotsFull
@@ -78,6 +79,9 @@ class ParticipantView(BaseModel):
     invited_by: str | None
     can_bring: str | None
     personal_code: str
+    # An admin confirmed that `invited_by` is who invited them: they go first on the waitlists.
+    plus_one_verified_at: datetime | None = None
+    plus_one_verified_by: str | None = None
 
 
 class LegalAcceptance(BaseModel):
@@ -231,6 +235,8 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
             invited_by=participant.invited_by,
             can_bring=participant.can_bring,
             personal_code=participant.personal_code,
+            plus_one_verified_at=participant.plus_one_verified_at,
+            plus_one_verified_by=plus_one_service.verified_by_name(db, participant),
         ),
         booking=view,
         privacy=LegalAcceptance(version=privacy.version, accepted_at=booking.privacy_accepted_at),

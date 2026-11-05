@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.api import admin_activities as admin_activities_api
 from app.api import admin_admins as admin_admins_api
 from app.api import admin_edition as admin_edition_api
+from app.api import admin_participants as admin_participants_api
 from app.api import admin_registrations as admin_registrations_api
 from app.api import admin_views as admin_views_api
 from app.api import admin_waitlist as admin_waitlist_api
@@ -82,6 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_edition_api.router)
     app.include_router(admin_registrations_api.router)
     app.include_router(admin_views_api.router)
+    app.include_router(admin_participants_api.router)
     app.include_router(admin_waitlist_api.router)
     app.include_router(public_api.router)
 

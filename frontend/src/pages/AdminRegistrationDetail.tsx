@@ -14,9 +14,13 @@ import { AdminRefundForm } from "./AdminRefundForm";
 import { AdminSlotEditor } from "./AdminSlotEditor";
 import { ActivityPicker } from "./ActivityPicker";
 import { MealEditor } from "./MealEditor";
+import { PlusOneToggle } from "./PlusOneToggle";
 
 export type Detail = {
   participant: {
+    id?: number;
+    plus_one_verified_at?: string | null;
+    plus_one_verified_by?: string | null;
     first_name: string;
     last_name: string;
     email: string;
@@ -87,6 +91,12 @@ export function AdminRegistrationDetail() {
     );
   }
 
+  function reload() {
+    api<Detail>(`/api/admin/registrations/${id}`)
+      .then(setDetail)
+      .catch(() => setNotice({ ok: false, text: "Non riesco ad aggiornare la scheda." }));
+  }
+
   function showUpdated(updated: Detail, text: string) {
     setDetail(updated);
     setNotice({ ok: true, text });
@@ -154,6 +164,20 @@ export function AdminRegistrationDetail() {
           <dd>{participant.phone ?? "-"}</dd>
           <dt>Invitato da</dt>
           <dd>{participant.invited_by ?? "-"}</dd>
+          {participant.id !== undefined && (
+            <>
+              <dt>Invitato</dt>
+              <dd>
+                <PlusOneToggle
+                  participantId={participant.id}
+                  invitedBy={participant.invited_by}
+                  verifiedAt={participant.plus_one_verified_at ?? null}
+                  verifiedBy={participant.plus_one_verified_by ?? null}
+                  onChanged={reload}
+                />
+              </dd>
+            </>
+          )}
           <dt>Cosa porta al camp</dt>
           <dd className="legal">{participant.can_bring ?? "-"}</dd>
           <dt>Causale</dt>

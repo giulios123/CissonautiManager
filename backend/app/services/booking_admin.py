@@ -16,7 +16,7 @@ from app.models import (
     Booking,
     Participant,
 )
-from app.services import audit
+from app.services import audit, plus_one
 from app.services.participants import get_by_email, normalize_email
 from app.services.payments import (
     ALREADY_ACTIVE,
@@ -104,6 +104,7 @@ def update_details(
         audit.log(
             db, admin, "details_changed", "Dati modificati. " + "; ".join(differences), booking.id
         )
+        plus_one.drop_if_uninvited(db, admin, participant)
 
     if new_expires is not None:
         old_deadline = booking.hold_expires_at
