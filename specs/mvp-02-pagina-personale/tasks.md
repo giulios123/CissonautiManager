@@ -8,7 +8,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test: stati modificabili; giorno passato in Europe/Rome a cavallo della mezzanotte; promemoria a metà; finale; sovrapposizione sotto 48 ore; in ritardo solo il finale; già inviati; scaduta.
 - [x] **3. Modifica slot (servizio e API)**: `change_slots` e `PUT /api/me/booking/slots`.
   Test: aggiunta con posto; aggiunta su slot pieno 409; rimozione libera il posto; slot già miei non bloccano su capienza piena; selezione vuota; importo ricalcolato con giorni distinti; scadenza invariata; confermata resta confermata con saldo da versare e con credito; stati vietati; giorno passato; accesso senza sessione 401.
-- [ ] **4. Disdetta (servizio e API)**: `request_cancellation`, `POST /api/me/booking/cancel`, email di conferma.
+- [x] **4. Disdetta (servizio e API)**: `request_cancellation`, `POST /api/me/booking/cancel`, email di conferma.
   Test: con pagamenti passa a `disdetta_richiesta`; senza pagamenti la prenotazione sparisce (anche `booking_slot`) e la persona resta; posti liberati in entrambi i casi; email inviata una volta; stati vietati; riscrizione dopo disdetta crea nuova prenotazione.
 - [ ] **5. Riattivazione e blocco**: la riattivazione in `services/payments.py` reimposta `hold_started_at` e azzera i promemoria; `register` imposta `hold_started_at`.
   Test: dopo la riattivazione i promemoria possono ripartire.

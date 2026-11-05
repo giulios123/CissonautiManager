@@ -1,13 +1,22 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.booking import can_edit_slots, effective_status, has_free_seat, is_past_day
+from app.domain.booking import (
+    can_edit_slots,
+    can_request_cancellation,
+    effective_status,
+    has_free_seat,
+    is_past_day,
+)
 from app.domain.fees import compute_fee, is_covered
 from app.email import EmailSender
+from app.email.templates import cancellation_email
 from app.models import (
+    STATUS_CANCEL_REQUESTED,
     STATUS_CONFIRMED,
     STATUS_PENDING,
     Booking,
@@ -107,3 +116,36 @@ def change_slots(
     if confirmed_now:
         send_confirmation(sender, booking, total)
     return ChangeResult(booking, confirmed_now, full)
+
+
+CancelOutcome = Literal["removed", "requested"]
+
+
+def request_cancellation(
+    db: Session, sender: EmailSender, booking: Booking, now: datetime
+) -> CancelOutcome:
+    """Cancel a pending or confirmed booking; its seats are free right away.
+
+    With no payment on record the booking is simply removed (the person stays registered and can
+    sign up again). Otherwise it becomes `disdetta_richiesta`, and an admin refunds outside the
+    system and closes it.
+    """
+    expire_overdue(db, now)
+    db.refresh(booking)
+    if not can_request_cancellation(effective_status(booking.status, booking.hold_expires_at, now)):
+        raise NotEditable()
+    # Read before a possible delete: the email goes out after the commit.
+    to, first_name = booking.participant.email, booking.participant.first_name
+
+    outcome: CancelOutcome
+    if booking.payments:
+        booking.status = STATUS_CANCEL_REQUESTED
+        booking.cancel_requested_at = now
+        outcome = "requested"
+    else:
+        booking.slots = []
+        db.delete(booking)
+        outcome = "removed"
+    db.commit()
+    sender.send(cancellation_email(to, first_name, removed=outcome == "removed"))
+    return outcome

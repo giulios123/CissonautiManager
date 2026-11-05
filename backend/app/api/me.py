@@ -126,3 +126,26 @@ def change_my_slots(
             },
         )
     return booking_view(result.booking, now)
+
+
+class CancelOut(BaseModel):
+    outcome: str
+
+
+@router.post("/me/booking/cancel")
+def cancel_my_booking(
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> CancelOut:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        outcome = booking_changes.request_cancellation(db, sender, booking, now)
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più disdire"
+        ) from exc
+    return CancelOut(outcome=outcome)
