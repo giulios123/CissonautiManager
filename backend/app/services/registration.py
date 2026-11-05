@@ -21,7 +21,7 @@ from app.models import (
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
-from app.services.seats import expire_overdue, free_by_slot
+from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 from app.timefmt import format_deadline, format_euro, format_slot
 
 
@@ -141,14 +141,7 @@ def register(
         return RegistrationResult(created=False, booking=None, participant=existing)
 
     # Lock the chosen slots so two concurrent registrations cannot take the last seat together.
-    slots = list(
-        db.scalars(
-            select(Slot)
-            .where(Slot.id.in_(wanted_ids), Slot.edition_id == edition.id)
-            .order_by(Slot.id)
-            .with_for_update()
-        )
-    )
+    slots = list(db.scalars(slots_for_update(wanted_ids, edition.id)))
     if len(slots) != len(wanted_ids):
         raise InvalidSlots()
     free = free_by_slot(db, slots, now)

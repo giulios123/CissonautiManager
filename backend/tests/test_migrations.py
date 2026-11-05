@@ -7,6 +7,7 @@ from sqlalchemy import inspect
 
 import app.models  # noqa: F401
 from app.db import Base, make_engine
+from tests.conftest import reset_database
 
 
 @pytest.fixture
@@ -19,7 +20,7 @@ def alembic_config(database_url) -> Config:
 @pytest.fixture
 def empty_database(database_url):
     engine = make_engine(database_url)
-    Base.metadata.drop_all(engine)
+    reset_database(engine)
     engine.dispose()
 
 

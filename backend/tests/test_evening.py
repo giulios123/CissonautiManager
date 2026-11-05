@@ -5,9 +5,10 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import select, text
 
-from app.db import Base, make_engine
+from app.db import make_engine
 from app.domain.booking import available_seats, can_reactivate, has_free_seat
 from app.models import Slot
+from tests.conftest import reset_database
 from tests.helpers import d, payload
 from tests.test_admin_edition import PAYLOAD
 
@@ -107,7 +108,11 @@ class TestEveningHours:
         assert len([s for s in slots if s["period"] == "evening"]) == 3
 
 
-SLOT_INSERT = "INSERT INTO slot (id, edition_id, date, period, start_time, end_time, capacity)"
+# No explicit ids: SQL Server identity columns reject them.
+SLOT_INSERT = "INSERT INTO slot (edition_id, date, period, start_time, end_time, capacity)"
+EDITION_ID = "(SELECT MIN(id) FROM edition)"
+MORNING = f" VALUES ({EDITION_ID}, :day, 'morning', '09:00:00', '13:00:00', 25)"
+EVENING = f" VALUES ({EDITION_ID}, :day, 'evening', '19:00:00', '00:00:00', NULL)"
 
 
 class TestMigration0002:
@@ -115,19 +120,19 @@ class TestMigration0002:
         config = Config("alembic.ini")
         config.set_main_option("sqlalchemy.url", database_url)
         engine = make_engine(database_url)
-        Base.metadata.drop_all(engine)
+        reset_database(engine)
         command.upgrade(config, "0001")
         with engine.begin() as conn:
             conn.execute(
                 text(
-                    "INSERT INTO edition (id, name, morning_start, morning_end, afternoon_start,"
+                    "INSERT INTO edition (name, morning_start, morning_end, afternoon_start,"
                     " afternoon_end, default_capacity, hold_days, base_fee_cents,"
-                    " per_day_fee_cents, is_active) VALUES (1, 'Old', '09:00:00', '13:00:00',"
+                    " per_day_fee_cents, is_active) VALUES ('Old', '09:00:00', '13:00:00',"
                     " '14:00:00', '18:00:00', 25, 3, 1000, 100, 1)"
                 )
             )
             conn.execute(
-                text(SLOT_INSERT + " VALUES (1, 1, :day, 'morning', '09:00:00', '13:00:00', 25)"),
+                text(SLOT_INSERT + MORNING),
                 {"day": date(2026, 7, 13)},
             )
         command.upgrade(config, "0002")
@@ -136,7 +141,7 @@ class TestMigration0002:
         assert str(row[0]).startswith("19:00") and str(row[1]).startswith("00:00")
         with engine.begin() as conn:
             conn.execute(
-                text(SLOT_INSERT + " VALUES (2, 1, :day, 'evening', '19:00:00', '00:00:00', NULL)"),
+                text(SLOT_INSERT + EVENING),
                 {"day": date(2026, 7, 13)},
             )
         command.downgrade(config, "0001")

@@ -8,6 +8,19 @@ from app.domain.booking import available_seats
 from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING, Booking, BookingSlot, Slot
 
 
+def slots_for_update(slot_ids: Iterable[int], edition_id: int | None = None):
+    """Select slots and lock them until the end of the transaction.
+
+    SQLAlchemy's `with_for_update()` is ignored on SQL Server, which has no FOR UPDATE: it needs
+    the explicit UPDLOCK hint. HOLDLOCK keeps the lock until commit. Both are kept so the query
+    stays correct on other databases too.
+    """
+    query = select(Slot).where(Slot.id.in_(list(slot_ids))).order_by(Slot.id)
+    if edition_id is not None:
+        query = query.where(Slot.edition_id == edition_id)
+    return query.with_for_update().with_hint(Slot, "WITH (UPDLOCK, HOLDLOCK)", "mssql")
+
+
 def expire_overdue(db: Session, now: datetime) -> None:
     """Write the `scaduta` status for pending bookings past their deadline.
 

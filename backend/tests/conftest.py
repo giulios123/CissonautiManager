@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime, time, timedelta
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,14 @@ class FakeClock:
         self.current += timedelta(**kwargs)
 
 
+def reset_database(engine: Engine) -> None:
+    """Empty the database. The SQL Server test database is shared between tests, so the Alembic
+    version table must go too, or a later migration test would think it is already migrated."""
+    Base.metadata.drop_all(engine)
+    with engine.begin() as connection:
+        connection.execute(text("DROP TABLE IF EXISTS alembic_version"))
+
+
 @pytest.fixture
 def database_url(tmp_path) -> str:
     """SQLite by default; set TEST_DATABASE_URL to run the suite on SQL Server."""
@@ -60,10 +68,10 @@ def settings(tmp_path, database_url) -> Settings:
 @pytest.fixture
 def engine(database_url) -> Engine:
     engine = make_engine(database_url)
-    Base.metadata.drop_all(engine)
+    reset_database(engine)
     Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)
+    reset_database(engine)
     engine.dispose()
 
 

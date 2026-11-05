@@ -5,9 +5,9 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Integer,
-    String,
-    Text,
     Time,
+    Unicode,
+    UnicodeText,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -36,7 +36,7 @@ class Edition(Base):
     __tablename__ = "edition"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(200))
+    name: Mapped[str] = mapped_column(Unicode(200))
     start_date: Mapped[date | None] = mapped_column(Date)
     end_date: Mapped[date | None] = mapped_column(Date)
     morning_start: Mapped[time] = mapped_column(Time, default=time(9, 0))
@@ -62,7 +62,7 @@ class Slot(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
     date: Mapped[date] = mapped_column(Date)
-    period: Mapped[str] = mapped_column(String(12))
+    period: Mapped[str] = mapped_column(Unicode(12))
     start_time: Mapped[time] = mapped_column(Time)
     end_time: Mapped[time] = mapped_column(Time)
     # None means no limit (the evening slot).
@@ -75,15 +75,15 @@ class Participant(Base):
     __tablename__ = "participant"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    first_name: Mapped[str] = mapped_column(String(100))
-    last_name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(320), unique=True)
-    phone: Mapped[str | None] = mapped_column(String(50))
-    invited_by: Mapped[str | None] = mapped_column(String(200))
-    can_bring: Mapped[str | None] = mapped_column(Text)
-    personal_code: Mapped[str] = mapped_column(String(16), unique=True)
-    role: Mapped[str] = mapped_column(String(16), default=ROLE_PARTICIPANT)
-    password_hash: Mapped[str | None] = mapped_column(String(255))
+    first_name: Mapped[str] = mapped_column(Unicode(100))
+    last_name: Mapped[str] = mapped_column(Unicode(100))
+    email: Mapped[str] = mapped_column(Unicode(320), unique=True)
+    phone: Mapped[str | None] = mapped_column(Unicode(50))
+    invited_by: Mapped[str | None] = mapped_column(Unicode(200))
+    can_bring: Mapped[str | None] = mapped_column(UnicodeText)
+    personal_code: Mapped[str] = mapped_column(Unicode(16), unique=True)
+    role: Mapped[str] = mapped_column(Unicode(16), default=ROLE_PARTICIPANT)
+    password_hash: Mapped[str | None] = mapped_column(Unicode(255))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 
@@ -93,9 +93,9 @@ class LegalDocument(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
-    kind: Mapped[str] = mapped_column(String(16))
+    kind: Mapped[str] = mapped_column(Unicode(16))
     version: Mapped[int] = mapped_column(Integer)
-    body: Mapped[str] = mapped_column(Text)
+    body: Mapped[str] = mapped_column(UnicodeText)
     published_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 
@@ -105,7 +105,7 @@ class Booking(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
     participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
-    status: Mapped[str] = mapped_column(String(32), default=STATUS_PENDING)
+    status: Mapped[str] = mapped_column(Unicode(32), default=STATUS_PENDING)
     hold_expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
     amount_due_cents: Mapped[int] = mapped_column(Integer)
     privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
@@ -134,9 +134,9 @@ class PaymentChannel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
-    code: Mapped[str] = mapped_column(String(32))
-    label: Mapped[str] = mapped_column(String(100))
-    instructions: Mapped[str] = mapped_column(Text, default="")
+    code: Mapped[str] = mapped_column(Unicode(32))
+    label: Mapped[str] = mapped_column(Unicode(100))
+    instructions: Mapped[str] = mapped_column(UnicodeText, default="")
     enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -147,9 +147,9 @@ class Payment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"))
     amount_cents: Mapped[int] = mapped_column(Integer)
-    channel: Mapped[str] = mapped_column(String(32))
+    channel: Mapped[str] = mapped_column(Unicode(32))
     paid_on: Mapped[date] = mapped_column(Date)
-    note: Mapped[str | None] = mapped_column(Text)
+    note: Mapped[str | None] = mapped_column(UnicodeText)
     recorded_by_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
@@ -161,7 +161,7 @@ class MagicLinkToken(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
-    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    token_hash: Mapped[str] = mapped_column(Unicode(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
     used_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
 
@@ -171,7 +171,7 @@ class AuthSession(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
-    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    token_hash: Mapped[str] = mapped_column(Unicode(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 

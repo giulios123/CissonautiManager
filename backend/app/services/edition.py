@@ -1,6 +1,6 @@
 from datetime import date, time, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -32,7 +32,7 @@ class SlotsInUseError(Exception):
 
 
 def get_active_edition(db: Session) -> Edition | None:
-    return db.scalar(select(Edition).where(Edition.is_active.is_(True)).order_by(Edition.id.desc()))
+    return db.scalar(select(Edition).where(Edition.is_active == true()).order_by(Edition.id.desc()))
 
 
 def _daterange(start: date, end: date):

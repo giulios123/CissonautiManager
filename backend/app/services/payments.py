@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.booking import can_reactivate, hold_deadline
@@ -14,11 +13,10 @@ from app.models import (
     Booking,
     Participant,
     Payment,
-    Slot,
     slot_sort_key,
 )
 from app.services import edition as edition_service
-from app.services.seats import expire_overdue, free_by_slot
+from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 from app.timefmt import format_euro, format_slot
 
 EXPIRED_NO_ROOM = (
@@ -95,14 +93,7 @@ def record_payment(
     reactivated = False
     warning = None
     if booking.status == STATUS_EXPIRED:
-        slots = list(
-            db.scalars(
-                select(Slot)
-                .where(Slot.id.in_([s.id for s in booking.slots]))
-                .order_by(Slot.id)
-                .with_for_update()
-            )
-        )
+        slots = list(db.scalars(slots_for_update([s.id for s in booking.slots])))
         if can_reactivate(free_by_slot(db, slots, now).values()):
             booking.status = STATUS_PENDING
             booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))

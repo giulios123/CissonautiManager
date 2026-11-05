@@ -19,7 +19,8 @@
 
 - **MVP 1a**, provato end to end in locale con browser (DB nuovo da migrazioni): login admin con password, creazione edizione e testi legali, iscrizione da telefono (10 € + 2 giorni = 12 €), magic link dall'email in console, pagina personale, registrazione pagamento con conferma, cookie httpOnly/Lax di 14 giorni, header CSP.
 - **Slot serale (task 13)**: provato in browser su DB nuovo da migrazioni 0001 e 0002; la sera si prenota senza limite di posti e la sola sera costa 11 €.
-- **Non verificato**: test su SQL Server (nessun Docker in sessione, li esegue la CI al primo push), build dell'immagine Docker, embed reale in Google Sites, email reali.
+- **CI su SQL Server**: ha trovato 4 problemi che SQLite nascondeva (D-011), tutti corretti. Immagine Docker: costruita dalla CI.
+- **Non verificato**: embed reale in Google Sites, email reali.
 
 ## Bug corretti fuori MVP
 
