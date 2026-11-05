@@ -12,6 +12,15 @@ describe("App routing", () => {
     expect(screen.getByRole("heading", { name: "Cissonauti Summer Camp" })).toBeInTheDocument();
   });
 
+  it("sets a different title on each page", () => {
+    render(
+      <MemoryRouter initialEntries={["/iscrizione"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(document.title).toBe("Iscrizione · Cissonauti Summer Camp");
+  });
+
   it("shows a not found page for unknown routes", () => {
     render(
       <MemoryRouter initialEntries={["/non-esiste"]}>

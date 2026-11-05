@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
-import { formatDay, hhmm, periodLabel, statusLabel } from "../booking";
+import { formatDay, hhmm, periodLabel } from "../booking";
+import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
+import { PlusOneToggle } from "./PlusOneToggle";
 
 type Person = {
   booking_id: number;
@@ -17,6 +19,9 @@ type Waiting = {
   first_name: string;
   last_name: string;
   email: string;
+  participant_id?: number;
+  plus_one?: boolean;
+  invited_by?: string | null;
 };
 type SlotRow = {
   id: number;
@@ -129,7 +134,7 @@ export function AdminSlots() {
                                   {person.first_name} {person.last_name}
                                 </Link>{" "}
                                 <small>
-                                  {statusLabel(person.status)}
+                                  <StatusBadge status={person.status} />
                                   {person.derived && ", sera dell'intero giorno"}
                                 </small>
                               </li>
@@ -143,8 +148,37 @@ export function AdminSlots() {
                         ) : (
                           <ol className="plain">
                             {(slot.waitlist ?? []).map((person) => (
-                              <li key={person.entry_id}>
-                                {person.position}. {person.first_name} {person.last_name}{" "}
+                              <li key={person.entry_id} className="item">
+                                <span>
+                                  {person.position}. {person.first_name} {person.last_name}
+                                  {person.plus_one && (
+                                    <>
+                                      {" "}
+                                      <span className="tag">+1</span>
+                                    </>
+                                  )}
+                                  {person.invited_by && (
+                                    <>
+                                      <br />
+                                      <small>
+                                        invitato da {person.invited_by}
+                                        {!person.plus_one && ", da verificare"}
+                                      </small>
+                                    </>
+                                  )}
+                                </span>
+                                {person.participant_id !== undefined &&
+                                  (person.invited_by || person.plus_one) && (
+                                    <span className="item-actions">
+                                      <PlusOneToggle
+                                        compact
+                                        participantId={person.participant_id}
+                                        invitedBy={person.invited_by ?? null}
+                                        verified={Boolean(person.plus_one)}
+                                        onChanged={() => void load()}
+                                      />
+                                    </span>
+                                  )}
                                 <button
                                   type="button"
                                   className="secondary"

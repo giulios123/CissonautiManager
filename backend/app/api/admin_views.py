@@ -1,4 +1,5 @@
 from collections import Counter
+from dataclasses import asdict
 from datetime import date, datetime, time
 from itertools import groupby
 from typing import Literal
@@ -14,6 +15,7 @@ from app.deps import get_now, require_admin
 from app.domain.meals import diet_counts, meal_counts_by_day
 from app.domain.presence import presence_by_slot, week_summary
 from app.models import MEAL_DINNER, MEAL_LUNCH
+from app.services import report_export
 from app.services import views as views_service
 from app.services import waitlist as waitlist_service
 from app.timefmt import meal_label, period_label, status_label
@@ -35,11 +37,17 @@ class SlotPerson(BaseModel):
 
 class WaitingPerson(BaseModel):
     entry_id: int
+    # The person, for actions that are about them and not about a booking (they may have none).
+    participant_id: int
+    # Place in the real promotion order: verified +1s come first (MVP 7).
     position: int
     first_name: str
     last_name: str
     email: str
     since: datetime
+    # An admin verified that they were invited by `invited_by`.
+    plus_one: bool = False
+    invited_by: str | None = None
 
 
 class SlotPresenceOut(BaseModel):
@@ -104,11 +112,14 @@ def slots_view(
                     waitlist=[
                         WaitingPerson(
                             entry_id=entry.id,
+                            participant_id=entry.participant_id,
                             position=position,
                             first_name=entry.participant.first_name,
                             last_name=entry.participant.last_name,
                             email=entry.participant.email,
                             since=entry.created_at,
+                            plus_one=entry.participant.plus_one_verified_at is not None,
+                            invited_by=entry.participant.invited_by,
                         )
                         for position, entry in enumerate(queues.get(slot.id, []), start=1)
                     ],
@@ -127,6 +138,8 @@ def slots_view(
                 status_label(person.status),
                 person.derived,
                 None,
+                None,
+                None,
             ]
             for day in days
             for slot in day.slots
@@ -142,6 +155,8 @@ def slots_view(
                 "In lista d'attesa",
                 False,
                 waiting.position,
+                waiting.plus_one,
+                waiting.invited_by,
             ]
             for day in days
             for slot in day.slots
@@ -157,6 +172,8 @@ def slots_view(
             "Stato",
             "Sera derivata",
             "Posizione in lista",
+            "+1 verificato",
+            "Invitato da",
         ]
         return csv_response(csv_filename("giorni-slot", now), header, rows)
     return SlotsViewOut(days=days)
@@ -465,3 +482,28 @@ def payments_review(
         )
         for r in rows
     ]
+
+
+@router.get("/report", response_model=None)
+def report_view(
+    fmt: Format = Query(default="json", alias="format"),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> dict | Response:
+    """The numbers of the edition on one page. Allergies appear only as a count (health data)."""
+    data = views_service.load_report(db, now)
+    if fmt == "csv":
+        return csv_response(
+            csv_filename("report", now),
+            report_export.HEADER,
+            report_export.report_rows(data.report),
+        )
+    edition = data.edition
+    return {
+        "edition": (
+            {"name": edition.name, "start_date": edition.start_date, "end_date": edition.end_date}
+            if edition
+            else None
+        ),
+        **asdict(data.report),
+    }

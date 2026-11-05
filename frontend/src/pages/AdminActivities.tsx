@@ -224,6 +224,7 @@ export function AdminActivities() {
           </p>
           <div className="table-wrap">
             <table>
+              <caption className="sr-only">Attività dell'edizione</caption>
               <thead>
                 <tr>
                   <th scope="col">Attività</th>

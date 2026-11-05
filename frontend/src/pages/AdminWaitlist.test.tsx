@@ -93,4 +93,36 @@ describe("waitlist in the admin panel", () => {
     expect(within(row).getByText("Solo in lista d'attesa")).toBeInTheDocument();
     expect(within(row).getByText("2 slot")).toBeInTheDocument();
   });
+
+  it("shows the +1 first with its label and lets the admin verify an invited person", async () => {
+    let waitlist: unknown[] = [{ ...bea, participant_id: 31, invited_by: "Eve", plus_one: false }];
+    const calls = stubAdminApi((call) => {
+      if (call.url === "/api/admin/views/slots") return { body: slotsView(waitlist) };
+      if (call.url === "/api/admin/participants/31/plus-one" && call.method === "PUT") {
+        waitlist = [{ ...bea, participant_id: 31, invited_by: "Eve", plus_one: true }];
+        return { body: { participant_id: 31, verified: true } };
+      }
+      return undefined;
+    });
+    renderAt("/admin/giorni");
+    const row = (await screen.findByText(/invitato da Eve, da verificare/)).closest(
+      "tr",
+    ) as HTMLElement;
+    expect(within(row).queryByText("+1")).not.toBeInTheDocument();
+    await userEvent.click(within(row).getByRole("checkbox", { name: "+1 verificato" }));
+    await waitFor(() => expect(within(row).getByText("+1")).toBeInTheDocument());
+    expect(screen.getByText(/invitato da Eve$/)).toBeInTheDocument();
+    expect(calls.find((c) => c.method === "PUT")?.body).toEqual({ verified: true });
+  });
+
+  it("offers no verification to someone who named nobody", async () => {
+    stubAdminApi((call) =>
+      call.url === "/api/admin/views/slots"
+        ? { body: slotsView([{ ...bea, participant_id: 31, invited_by: null, plus_one: false }]) }
+        : undefined,
+    );
+    renderAt("/admin/giorni");
+    await screen.findByText(/1\. Bea Neri/);
+    expect(screen.queryByRole("checkbox", { name: "+1 verificato" })).not.toBeInTheDocument();
+  });
 });

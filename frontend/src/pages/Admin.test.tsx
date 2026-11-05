@@ -102,6 +102,7 @@ describe("admin area", () => {
     renderAt("/admin");
     const cell = await screen.findByRole("link", { name: /Ada Lovelace/ });
     const tableRow = cell.closest("tr")!;
+    expect(screen.getByRole("table", { name: "Persone iscritte" })).toBeInTheDocument();
     expect(within(tableRow).getByText("In attesa di pagamento")).toBeInTheDocument();
     expect(within(tableRow).getAllByText(/12,00/)).toHaveLength(2);
   });

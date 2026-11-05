@@ -1,7 +1,7 @@
 """Waitlist for full slots: joining, leaving and, when a seat frees up, promotion."""
 
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -95,7 +95,21 @@ def active_entries(db: Session, slot_ids: Iterable[int]) -> dict[int, list[Waitl
         )
     ):
         grouped[entry.slot_id].append(entry)
-    return {slot_id: queue(entries) for slot_id, entries in grouped.items()}
+    priority = verified_plus_ones(db, {e.participant_id for es in grouped.values() for e in es})
+    return {slot_id: queue(entries, priority) for slot_id, entries in grouped.items()}
+
+
+def verified_plus_ones(db: Session, participant_ids: Collection[int]) -> set[int]:
+    """Which of these people an admin verified as a +1: they go first in every list (MVP 7)."""
+    if not participant_ids:
+        return set()
+    return set(
+        db.scalars(
+            select(Participant.id).where(
+                Participant.id.in_(participant_ids), Participant.plus_one_verified_at.is_not(None)
+            )
+        )
+    )
 
 
 def entries_of(db: Session, participant: Participant, edition: Edition) -> list[WaitlistEntry]:
@@ -324,6 +338,7 @@ def _promote_slot(db: Session, edition: Edition, slot_id: int, now: datetime) ->
         db.flush()
         close(entry, CLOSE_PROMOTED, now)
         entry.promoted_booking_id = booking.id
+        entry.promoted_as_plus_one = entry.participant.plus_one_verified_at is not None
         promotions.append(Promotion(entry, slot, booking, kind))
         free = free_by_slot(db, [slot], now)[slot.id]
     return promotions

@@ -57,6 +57,7 @@ export function AdminContributions() {
           </p>
           <div className="table-wrap">
             <table>
+              <caption className="sr-only">Contributi offerti</caption>
               <thead>
                 <tr>
                   <th scope="col">Contributo</th>

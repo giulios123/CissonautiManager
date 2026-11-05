@@ -93,3 +93,47 @@ def test_detail_lists_the_persons_entries(admin_client, db, queue, make_booking)
     assert [(w["label"], w["position"]) for w in detail["waitlist"]] == [
         ("lun 13/07 mattina (09:00-13:00)", 2)
     ]
+
+
+def test_a_verified_plus_one_is_shown_first_with_the_real_position(admin_client, db, queue, clock):
+    target, first, second = queue
+    cid = second.participant
+    cid.invited_by = "Bea"
+    cid.plus_one_verified_at = clock()
+    first.participant.invited_by = "Grace"  # named but not verified
+    db.commit()
+
+    days = admin_client.get("/api/admin/views/slots").json()["days"]
+    monday = next(s for s in days[0]["slots"] if s["id"] == target.id)
+
+    assert [(w["first_name"], w["position"], w["plus_one"]) for w in monday["waitlist"]] == [
+        ("Cid", 1, True),
+        ("Bea", 2, False),
+    ]
+    cid_row, bea_row = monday["waitlist"]
+    assert cid_row["participant_id"] == cid.id and cid_row["invited_by"] == "Bea"
+    assert bea_row["invited_by"] == "Grace"
+
+
+def test_nobody_verified_keeps_the_arrival_order_and_no_plus_one(admin_client, queue):
+    target, first, second = queue
+    days = admin_client.get("/api/admin/views/slots").json()["days"]
+    monday = next(s for s in days[0]["slots"] if s["id"] == target.id)
+    assert [w["plus_one"] for w in monday["waitlist"]] == [False, False]
+    assert [w["invited_by"] for w in monday["waitlist"]] == [None, None]
+
+
+def test_the_csv_shows_the_plus_one_and_who_invited_them(admin_client, db, queue, clock):
+    target, first, second = queue
+    second.participant.invited_by = "Bea"
+    second.participant.plus_one_verified_at = clock()
+    db.commit()
+    header, *rows = parse(admin_client.get("/api/admin/views/slots?format=csv"))
+    waiting = [dict(zip(header, r, strict=True)) for r in rows if r[6] == "In lista d'attesa"]
+    assert [(w["Nome"], w["Posizione in lista"], w["+1 verificato"]) for w in waiting] == [
+        ("Cid", "1", "sì"),
+        ("Bea", "2", "no"),
+    ]
+    assert waiting[0]["Invitato da"] == "Bea"
+    people = [dict(zip(header, r, strict=True)) for r in rows if r[6] != "In lista d'attesa"]
+    assert all(p["+1 verificato"] == "" and p["Invitato da"] == "" for p in people)

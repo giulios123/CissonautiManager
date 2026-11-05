@@ -1,8 +1,16 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 
 export function AdminLayout() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  // On a phone the menu scrolls sideways: keep the current page in view.
+  useEffect(() => {
+    const current = document.querySelector<HTMLElement>('.admin-nav a[aria-current="page"]');
+    current?.scrollIntoView?.({ inline: "center", block: "nearest" });
+  }, [pathname]);
 
   async function logout() {
     await api("/api/auth/logout", { method: "POST" });
@@ -11,7 +19,7 @@ export function AdminLayout() {
 
   return (
     <>
-      <header className="admin-nav">
+      <div className="admin-nav">
         <nav aria-label="Pannello organizzatori">
           <NavLink to="/admin" end>
             Persone
@@ -21,6 +29,7 @@ export function AdminLayout() {
           <NavLink to="/admin/pasti">Pasti</NavLink>
           <NavLink to="/admin/attivita">Attività</NavLink>
           <NavLink to="/admin/contributi">Contributi</NavLink>
+          <NavLink to="/admin/report">Report</NavLink>
           <NavLink to="/admin/da-verificare">Da verificare</NavLink>
           <NavLink to="/admin/amministratori">Admin</NavLink>
           <NavLink to="/admin/impostazioni">Impostazioni</NavLink>
@@ -28,7 +37,7 @@ export function AdminLayout() {
             Esci
           </button>
         </nav>
-      </header>
+      </div>
       <Outlet />
     </>
   );

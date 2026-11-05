@@ -241,3 +241,26 @@
 - **Decisione**: tabella `contribution` legata alla prenotazione, tre tipi (talk, tema, competenza), più contributi per persona, modificabili solo da chi li ha scritti. Nella vista admin quelli di prenotazioni non attive restano, segnati. Si aggiungono solo con un'iscrizione in attesa o confermata.
 - **Motivo**: valgono per un'edizione e spariscono con la prenotazione rimossa; il meccanismo dell'unconference resta da definire (Backlog).
 - **Alternative scartate**: estendere il campo libero «cosa puoi portare» (non filtrabile né esportabile per tipo).
+
+## D-035 · Stile del sito: token CSS, font self-hosted e modalità iframe
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) tutti i colori sono token su `:root` in `frontend/src/styles.css`, con la palette del sito Cissone Eventi (petrolio `#005C68` per link e focus, ambra `#F4B400` solo come sfondo del bottone principale); un test vitest controlla i contrasti AA e che non ci siano colori fuori da `:root`; (2) Montserrat è incluso nella build con `@fontsource/montserrat` (pesi 400, 600, 700); (3) dentro un iframe la pagina aggiunge la classe `in-frame` a `<html>`, ha lo sfondo trasparente e un'intestazione ridotta al solo nome; (4) bottoni e campi squadrati (`--radius: 0`); (5) il logo di Cissone è nel bundle con il permesso della Pro Loco e non rientra nella licenza MIT (nota nel README).
+- **Motivo**: indicazioni del maintainer; il modulo di iscrizione deve sembrare parte del sito che lo incorpora. I font serviti dall'app evitano richieste a Google Fonts (privacy dei visitatori) e cambi alla CSP. L'ambra su bianco ha contrasto 1,85:1, quindi non può fare da testo, bordo informativo o focus.
+- **Alternative scartate**: Google Fonts dal CDN (richieste a terzi, CSP da allargare); framework CSS (dipendenza in più per un foglio di stile piccolo); nascondere del tutto l'intestazione nell'iframe (il maintainer ha scelto quella ridotta); modalità scura (esclusa dal maintainer).
+
+## D-036 · Titolo per pagina e menu admin scorrevole
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) ogni rotta ha un `document.title` proprio («Pagina · Cissonauti Summer Camp»), calcolato in `frontend/src/pageTitle.ts`; (2) il menu del pannello è una riga che scorre di lato e porta in vista la voce corrente, invece di andare a capo su più righe; (3) gli stati delle prenotazioni sono etichette colorate senza bordo laterale; un test impedisce bordi laterali spessi.
+- **Motivo**: emersi dall'audit dell'MVP 8: il titolo uguale ovunque non rispetta WCAG 2.4.2; con 10 voci il menu occupava più di metà schermo su telefono.
+- **Alternative scartate**: menu a tendina (un tocco in più per ogni cambio di vista, per chi usa il pannello tutto il giorno); due righe di menu (non bastano per 10 voci con aree di tocco da 44 px).
+
+## D-037 · Priorità +1 calcolata alla promozione, verifica sul partecipante, report a lettura
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) l'ordine della lista si calcola ogni volta (`queue(entries, priority_ids)`): prima i +1 verificati, poi gli altri, dentro ogni gruppo per ordine di arrivo; nessuna posizione è salvata, quindi una verifica fatta dopo l'ingresso vale subito; (2) la verifica sta sul partecipante (`plus_one_verified_at`, `plus_one_verified_by_id`) e si imposta per id partecipante, perché chi è solo in lista non ha una prenotazione né una scheda (D-028); cade da sola se «invitato da» si svuota; (3) il report non ha tabelle: `load_report` legge tutto e `edition_report` conta, con presenze, pasti e attività divisi in confermate e in attesa e il dovuto scomposto in quota, pasti e attività con una riga «differenza» che assorbe i prezzi cambiati dopo le iscrizioni (D-017); (4) CSV del report in formato lungo (`sezione;voce;confermate;in attesa;totale`); (5) allergie solo come numero; (6) «promossi che erano +1» legge `waitlist_entry.promoted_as_plus_one`, salvato al momento della promozione (migrazione 0009), così verificare o togliere la verifica dopo non riscrive il passato; (7) `load_report` carica le collezioni delle prenotazioni in blocco (`selectinload`), un test controlla che le query non crescano con le prenotazioni.
+- **Motivo**: indicazioni del maintainer; la priorità non deve dipendere da una posizione salvata che andrebbe riscritta a ogni cambio; il report deve coincidere con le altre viste e non esporre dati sanitari.
+- **Alternative scartate**: posizione salvata (da ricalcolare a ogni verifica e uscita); verifica sulla prenotazione (esclude chi è solo in lista); posti riservati ai +1 (scelta del maintainer: nessun posto riservato); tabella di snapshot del report (due fonti di verità).
+- **Limiti noti**: con più edizioni la verifica andrebbe spostata (Backlog); chi scende di posizione non riceve avvisi (Backlog dell'MVP 4).
+

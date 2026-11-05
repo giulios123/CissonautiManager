@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
-import { formatDay, formatDeadline, statusLabel } from "../booking";
+import { formatDay, formatDeadline } from "../booking";
+import { StatusBadge } from "../StatusBadge";
 import { type ActivityOffer, type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
@@ -13,9 +14,13 @@ import { AdminRefundForm } from "./AdminRefundForm";
 import { AdminSlotEditor } from "./AdminSlotEditor";
 import { ActivityPicker } from "./ActivityPicker";
 import { MealEditor } from "./MealEditor";
+import { PlusOneToggle } from "./PlusOneToggle";
 
 export type Detail = {
   participant: {
+    id?: number;
+    plus_one_verified_at?: string | null;
+    plus_one_verified_by?: string | null;
     first_name: string;
     last_name: string;
     email: string;
@@ -86,6 +91,12 @@ export function AdminRegistrationDetail() {
     );
   }
 
+  function reload() {
+    api<Detail>(`/api/admin/registrations/${id}`)
+      .then(setDetail)
+      .catch(() => setNotice({ ok: false, text: "Non riesco ad aggiornare la scheda." }));
+  }
+
   function showUpdated(updated: Detail, text: string) {
     setDetail(updated);
     setNotice({ ok: true, text });
@@ -153,6 +164,21 @@ export function AdminRegistrationDetail() {
           <dd>{participant.phone ?? "-"}</dd>
           <dt>Invitato da</dt>
           <dd>{participant.invited_by ?? "-"}</dd>
+          {participant.id !== undefined && (
+            <>
+              <dt>Invitato</dt>
+              <dd>
+                <PlusOneToggle
+                  participantId={participant.id}
+                  invitedBy={participant.invited_by}
+                  verified={Boolean(participant.plus_one_verified_at)}
+                  verifiedAt={participant.plus_one_verified_at ?? null}
+                  verifiedBy={participant.plus_one_verified_by ?? null}
+                  onChanged={reload}
+                />
+              </dd>
+            </>
+          )}
           <dt>Cosa porta al camp</dt>
           <dd className="legal">{participant.can_bring ?? "-"}</dd>
           <dt>Causale</dt>
@@ -169,7 +195,9 @@ export function AdminRegistrationDetail() {
       </section>
 
       <section aria-labelledby="booking">
-        <h2 id="booking">Iscrizione: {statusLabel(booking.status)}</h2>
+        <h2 id="booking">
+          Iscrizione: <StatusBadge status={booking.status} />
+        </h2>
         <ul>
           {booking.slots.map((slot) => (
             <li key={slot.label}>{slot.label}</li>

@@ -62,8 +62,10 @@ export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }
           <p>Se si libera un posto ti arriva un&apos;email e lo slot diventa tuo.</p>
           <ul>
             {entries.map((entry) => (
-              <li key={entry.id}>
-                {entry.label}: sei <strong>{entry.position}° in lista</strong>{" "}
+              <li key={entry.id} className="item">
+                <span>
+                  {entry.label}: sei <strong>{entry.position}° in lista</strong>
+                </span>
                 <button
                   type="button"
                   className="secondary"
@@ -87,9 +89,11 @@ export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }
       {joinable.length > 0 && (
         <ul aria-label="Slot pieni con lista aperta">
           {joinable.map(({ day, slot }) => (
-            <li key={slot.id}>
-              {formatDay(day.date)}, {periodLabel(slot.period).toLowerCase()}{" "}
-              {hhmm(slot.start_time)}-{hhmm(slot.end_time)}{" "}
+            <li key={slot.id} className="item">
+              <span>
+                {formatDay(day.date)}, {periodLabel(slot.period).toLowerCase()}{" "}
+                {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
+              </span>
               <button
                 type="button"
                 className="secondary"

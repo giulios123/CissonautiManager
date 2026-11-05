@@ -132,12 +132,14 @@ export function Contributions({
                 />
               </li>
             ) : (
-              <li key={item.id}>
-                <strong>{KIND_LABELS[item.kind]}</strong>: {item.title}
-                {item.description && ` (${item.description})`}{" "}
+              <li key={item.id} className="item">
+                <span>
+                  <strong>{KIND_LABELS[item.kind]}</strong>: {item.title}
+                  {item.description && ` (${item.description})`}
+                </span>
                 <button type="button" className="secondary" onClick={() => setEditing(item.id)}>
                   Modifica
-                </button>{" "}
+                </button>
                 <button type="button" className="secondary" onClick={() => remove(item)}>
                   Togli
                 </button>

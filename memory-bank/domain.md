@@ -24,10 +24,11 @@
 
 - Quando uno slot è pieno si entra in lista d'attesa per quello slot, dal modulo pubblico o dalla pagina personale. Dal modulo ci si può iscrivere anche con soli slot pieni: la persona è registrata senza prenotazione e i testi legali accettati restano salvati sulla voce in lista.
 - Dimensione massima: capienza × percentuale (default 20%, configurabile), arrotondato per difetto. La sera, senza limite di posti, non ha lista.
-- Quando si libera un posto (disdetta, slot tolto, aumento di capienza, scadenza), il primo in lista per ordine di arrivo riceve lo slot e un'email:
+- Quando si libera un posto (disdetta, slot tolto, aumento di capienza, scadenza), il primo +1 verificato in lista, poi gli altri per ordine di arrivo, riceve lo slot e un'email:
   - prenotazione `in_attesa_pagamento`: lo slot si aggiunge, l'importo si ricalcola e la scadenza diventa la più lontana tra quella attuale e N giorni da ora;
   - prenotazione `confermata`: lo slot si aggiunge e resta confermata, con la differenza nel saldo (come per il cambio degli slot);
   - nessuna prenotazione attiva: ne nasce una nuova `in_attesa_pagamento` con blocco di N giorni.
+- Il +1 è chi ha indicato chi l'ha invitato («chi ti ha invitato?») e ha il legame confermato da un admin con una spunta, dalla scheda o da «Giorni e slot». La priorità cambia l'ordine, non il limite della lista: con la lista piena nemmeno un +1 entra. Tra +1 vale l'ordine di arrivo. Se «chi ti ha invitato?» viene svuotato, la verifica cade. Chi scende di posizione non riceve avvisi.
 - Chi disdice esce anche dalle liste d'attesa. Chi prenota da sé uno slot per cui aspettava esce da quella lista. I giorni passati non promuovono nessuno.
 
 ## Importi
@@ -63,7 +64,7 @@
 ## Pannello admin
 
 - Impostazioni: date, slot e orari, capienze, giorni di blocco, percentuale della lista d'attesa, quote, prezzi di pranzo e cena, canali e istruzioni di pagamento, testi legali (compreso il consenso per i dati sanitari), gestione degli admin.
-- Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da verificare. Export CSV per ogni vista. La presenza serale di chi ha prenotato l'intero giorno è derivata (D-009) e nelle viste è indicata come tale.
+- Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da verificare, report di riepilogo dell'edizione (iscrizioni, presenze, pasti, attività, contributi, lista d'attesa, incassi, con confermate e in attesa di pagamento separate; le allergie solo come numero; anche in stampa). Export CSV per ogni vista. La presenza serale di chi ha prenotato l'intero giorno è derivata (D-009) e nelle viste è indicata come tale.
 - L'admin può modificare a mano qualsiasi iscrizione, comprese le disdette che il partecipante non riesce a fare. Può superare la capienza di uno slot solo con una conferma esplicita.
 - Ogni modifica manuale dell'admin è registrata (chi, quando, cosa) e compare nella cronologia della scheda.
 
@@ -77,4 +78,4 @@ Pagamenti integrati, app native, menu personalizzati, più edizioni contemporane
 
 ## Questioni aperte
 
-Importi definitivi, aspetti legali (in attesa di parere), meccanismo dell'unconference, eventuali prelazioni per chi ha già partecipato, gestione esplicita del +1.
+Importi definitivi, aspetti legali (in attesa di parere), meccanismo dell'unconference, eventuali prelazioni per chi ha già partecipato.

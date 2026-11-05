@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import { statusLabel } from "../booking";
+import { StatusBadge } from "../StatusBadge";
 import { formatEuro } from "../money";
 import { CsvButton } from "./CsvButton";
 
@@ -71,7 +71,9 @@ export function AdminReview() {
                       <small>{row.personal_code}</small>
                     </th>
                     <td>{row.reason_label}</td>
-                    <td>{statusLabel(row.status)}</td>
+                    <td>
+                      <StatusBadge status={row.status} />
+                    </td>
                     <td>{formatEuro(row.amount_due_cents)}</td>
                     <td>{formatEuro(row.paid_cents)}</td>
                     <td>{formatEuro(row.balance_cents)}</td>

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import { priceLabel, seatsLabel, type Activity } from "../activities";
-import { formatDay, periodLabel, statusLabel } from "../booking";
+import { formatDay, periodLabel } from "../booking";
+import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
 
 type Person = {
@@ -70,7 +71,9 @@ export function AdminActivityDetail() {
                       <small>{person.email}</small>
                     </th>
                     <td>{person.phone ?? "-"}</td>
-                    <td>{statusLabel(person.status)}</td>
+                    <td>
+                      <StatusBadge status={person.status} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -8,5 +8,11 @@ export default defineConfig({
     proxy: { "/api": "http://localhost:8000" },
   },
   build: { outDir: "dist" },
-  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.ts"] },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test-setup.ts"],
+    // Lets theme.test.ts read the stylesheet as text.
+    css: { include: [/styles\.css/] },
+  },
 });
