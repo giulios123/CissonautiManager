@@ -7,7 +7,7 @@ Su `booking`:
 | Campo | Scopo |
 |-------|-------|
 | `refund_cents` (nullable int) | importo rimborsato |
-| `refunded_at` | quando |
+| `refunded_on` (data) | giorno del rimborso, scelto dall'admin |
 | `refund_note` | nota |
 | `refunded_by_id` | admin che l'ha registrato |
 
@@ -45,6 +45,7 @@ Le presenze contano solo prenotazioni che occupano posti (`occupies_seats`, valu
 
 - `app/services/views.py`: query delle viste (persone, slot, settimana, da verificare) con lettura su `expire_overdue` come oggi.
 - `app/services/admins.py`: elenco, aggiunta (promuove o crea) e rimozione degli admin.
+- Pagina «Admin» alla rotta `/admin/amministratori`.
 - `app/services/booking_changes.py` (da MVP 2): `change_slots(..., force=True)` per l'admin, `reactivate_manually`.
 - `app/services/refunds.py`: `record_refund`.
 - `app/services/payments.py`: `void_payment`.
@@ -54,7 +55,7 @@ Le presenze contano solo prenotazioni che occupano posti (`occupies_seats`, valu
 
 | Metodo e path | Scopo |
 |---------------|-------|
-| `GET /api/admin/views/people` | vista per persona (`?status=&q=&format=csv`) |
+| `GET /api/admin/registrations` | vista per persona, già esistente ed estesa con telefono e sere (`?status=&q=&format=csv`) |
 | `GET /api/admin/views/slots` | giorno e slot (`?format=csv`) |
 | `GET /api/admin/views/week` | settimana aggregata (`?format=csv`) |
 | `GET /api/admin/views/payments-review` | pagamenti da verificare (`?format=csv`) |

@@ -28,7 +28,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: capienza superata solo con `force` e segnalata; giorni passati ammessi; importo ricalcolato; disdetta per conto del partecipante con email; cronologia scritta.
 - [x] **12. Annullamento dei pagamenti**: servizio, endpoint e azione nella scheda.
   Test: motivo obbligatorio; non conta nel pagato; confermata torna in attesa con nuovo blocco; doppio annullamento rifiutato; cronologia scritta.
-- [ ] **13. Chiusura**: lint e test verdi, migrazioni da zero, aggiornamento di Memory Bank e README, descrizione PR con checklist per organizzatori.
+- [x] **13. Chiusura**: lint e test verdi, migrazioni da zero, aggiornamento di Memory Bank e README, descrizione PR con checklist per organizzatori.
 
 ## Da verificare a mano
 

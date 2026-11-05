@@ -31,7 +31,8 @@ Come admin voglio l'elenco di tutti gli iscritti, "come un Excel navigabile".
   - `confermata` con saldo positivo (importo salito dopo una modifica);
   - `confermata` con credito (importo sceso);
   - `disdetta_richiesta` con pagamenti da rimborsare;
-  - `in_attesa_pagamento` con pagamenti parziali.
+  - `in_attesa_pagamento` con pagamenti parziali;
+  - `disdetta_richiesta` senza pagamenti, ancora da chiudere (rimborso 0).
 - Quando una prenotazione risolve il problema (saldo a zero, rimborso fatto), allora esce dalla vista.
 - Quando premo «Scarica CSV», allora ottengo l'elenco con i motivi.
 

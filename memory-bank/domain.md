@@ -16,6 +16,7 @@
 - L'iscrizione crea una prenotazione `in_attesa_pagamento` che occupa i posti per N giorni (impostazione configurabile).
 - Senza pagamento entro la scadenza diventa `scaduta` e i posti si liberano. La scadenza si valuta al momento della lettura: nessun job schedulato obbligatorio.
 - Diventa `confermata` quando l'admin registra pagamenti che coprono l'importo dovuto.
+- Rimborso: l'admin segna come `rimborsata` una disdetta richiesta registrando importo (mai oltre quanto versato), data e nota. Non parte nessuna email: scrive lui alla persona.
 - Disdetta: il partecipante la richiede dalla pagina personale, i posti si liberano subito, l'admin rimborsa fuori dal sistema, la segna come `rimborsata` e scrive al partecipante. Se non c'è alcun pagamento registrato la prenotazione viene semplicemente rimossa, senza passaggio dall'admin.
 - Modifica degli slot: il partecipante può aggiungere e togliere slot finché la prenotazione è `in_attesa_pagamento` o `confermata` (almeno uno slot resta). L'importo si ricalcola e la scadenza del blocco non cambia. Una prenotazione `confermata` resta tale: il saldo mostra la differenza da versare o il credito. Una `in_attesa_pagamento` il cui nuovo importo è già coperto dai pagamenti diventa `confermata`. Gli slot di giorni già trascorsi (Europe/Rome) non si aggiungono né si tolgono dalla pagina personale: solo l'admin può cambiarli.
 
@@ -37,6 +38,7 @@
 - Nessuna integrazione: Revolut, Satispay, PayPal, IBAN. Istruzioni per canale configurabili dall'admin.
 - Causale generata dal sistema con un codice personale (es. `CSC-7K3P`). Il codice serve solo come causale, mai per accedere.
 - L'admin registra un pagamento (importo, canale, data, nota) con un clic dalla scheda del partecipante.
+- Un pagamento registrato per errore non si cancella: si annulla scrivendo un motivo. Resta in elenco, barrato, e non conta più nel saldo. Se la prenotazione era `confermata` e non è più coperta, torna `in_attesa_pagamento` con un nuovo blocco.
 
 ## Accesso
 
@@ -44,7 +46,7 @@
 - Magic link: token monouso valido 30 minuti, apre la pagina personale in una finestra normale (fuori dall'iframe). Dopo il login un cookie di sessione httpOnly, Secure, SameSite=Lax dura 14 giorni. Chi non ha un cookie valido può richiedere un nuovo link inserendo l'email.
 - Password (opzionale): oltre al magic link si può accedere con email e password. La password si imposta dalla pagina personale dopo un accesso con magic link; il magic link resta sempre disponibile come recupero.
 - Pagina personale: modifica degli slot, adesione a pranzi, cene e attività, esigenze alimentari, contributi offerti (talk, temi per l'unconference, competenze), saldo e istruzioni di pagamento, richiesta di disdetta.
-- Admin: stessa app, ruolo `admin`. Gli admin si aggiungono e rimuovono dal pannello, senza limite di numero. Il primo admin viene creato da variabile d'ambiente.
+- Admin: stessa app, ruolo `admin`. Gli admin si aggiungono e rimuovono dal pannello, senza limite di numero. Il primo admin viene creato da variabile d'ambiente e non si rimuove dal pannello (si cambia da lì); non si può rimuovere se stessi né l'ultimo admin.
 
 ## Dati e privacy
 
@@ -55,8 +57,9 @@
 ## Pannello admin
 
 - Impostazioni: date, slot e orari, capienze, giorni di blocco, percentuale della lista d'attesa, quote, prezzi dei pasti, canali e istruzioni di pagamento, testi legali, gestione degli admin.
-- Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da verificare. Export CSV per ogni vista.
-- L'admin può modificare a mano qualsiasi iscrizione, comprese le disdette che il partecipante non riesce a fare.
+- Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da verificare. Export CSV per ogni vista. La presenza serale di chi ha prenotato l'intero giorno è derivata (D-009) e nelle viste è indicata come tale.
+- L'admin può modificare a mano qualsiasi iscrizione, comprese le disdette che il partecipante non riesce a fare. Può superare la capienza di uno slot solo con una conferma esplicita.
+- Ogni modifica manuale dell'admin è registrata (chi, quando, cosa) e compare nella cronologia della scheda.
 
 ## Email
 

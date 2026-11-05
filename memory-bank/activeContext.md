@@ -2,17 +2,13 @@
 
 ## Ora
 
-MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 implementato sul branch `claude/magical-gauss-vbss2u` (task 1-8 e 10; backend 262 test, frontend 49 test, lint verdi, provato in browser da telefono). Resta il task 9: infrastruttura Azure (ACS, job orario) scritta ma mai validata.
+MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 implementati sul branch `claude/magical-gauss-vbss2u` (backend 470 test, frontend 96 test, lint verdi, provati in browser da telefono). Aperto solo il task 9 dell'MVP 2: infrastruttura Azure (ACS, job orario) scritta ma mai validata.
 
 ## Prossimo passo
 
-1. Il maintainer valida il task 9: `az bicep build`, `what-if`, deploy, poi controlla l'email vera e l'esecuzione oraria del job (vedi `infra/README.md`).
-2. Revisione della PR dell'MVP 2 con la checklist in `specs/mvp-02-pagina-personale/pr-description.md`.
-3. MVP 3 (13 task, `specs/mvp-03-pannello-admin/`): parte dopo la chiusura dell'MVP 2. Le sue modifiche a `domain.md` sono approvate e si applicano alla chiusura.
-
-## Scelte già prese per le spec
-
-- MVP 3 resta unico (13 task, sopra la soglia di circa 10): punto di taglio naturale dopo il task 7.
+1. Passaggio su `main` quando il maintainer lo decide (decisione: tutto insieme a fine sviluppi, nessuna PR intermedia). Prima: CI su SQL Server sul branch, poi `az bicep build`, `what-if` e deploy per validare il task 9 dell'MVP 2 (vedi `infra/README.md`).
+2. Prova con le descrizioni di PR per gli organizzatori: `specs/mvp-02-pagina-personale/pr-description.md` e `specs/mvp-03-pannello-admin/pr-description.md`.
+3. MVP 4 (lista d'attesa), dopo il passaggio su `main`. Da chiarire prima: dettagli della priorità per chi porta un +1 (vedi Backlog).
 
 ## Risolto il 2026-11-05 (conferma del maintainer)
 
@@ -22,11 +18,14 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 - La proroga della scadenza resta nell'MVP 3; l'importo dovuto modificabile a mano resta nel Backlog.
 - Modifiche a `domain.md` approvate (5 per l'MVP 2, 6 per l'MVP 3): si applicano in chiusura di ciascun MVP.
 
-## Stato dell'MVP 2
+## Stato degli MVP 2 e 3
 
-Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/mvp-02-...`, per il vincolo di push della sessione). Decisioni D-014 a D-019 in `decisions.md`; le 5 modifiche approvate sono già in `domain.md`.
+Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/...`, per il vincolo di push della sessione). Decisioni D-014 a D-019 (MVP 2) e D-020 a D-024 (MVP 3) in `decisions.md`; le modifiche a `domain.md` approvate sono applicate.
 
 ## Domande aperte
+
+- MVP 3: l'admin non può cambiare a mano l'importo dovuto (sconti, organizzatori gratis): resta nel Backlog.
+- MVP 3: se un admin cambia gli slot a una persona, a lei non parte nessuna email (Backlog).
 
 - Il dominio gestito Azure può finire nella posta indesiderata: se succede, serve un dominio proprio (Backlog).
 - La pagina pubblica di iscrizione permette di scegliere giorni già passati: bloccarli durante l'evento? (Backlog).

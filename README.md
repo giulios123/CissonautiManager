@@ -6,7 +6,7 @@ L'app serve a sapere quante persone ci sono ogni giorno nello spazio, ai pasti e
 
 ## Stato
 
-MVP 1 completato salvo la verifica dentro Google Sites: iscrizione pubblica, accesso con magic link o password, impostazioni dell'edizione, elenco iscrizioni e registrazione dei pagamenti, deploy su Azure. MVP 2 (pagina personale) implementato: il partecipante cambia i suoi slot, vede il saldo e disdice da solo, le email partono davvero e due promemoria di pagamento escono da un job orario. Lo stato aggiornato è in [`memory-bank/progress.md`](memory-bank/progress.md), la roadmap in [`specs/ROADMAP.md`](specs/ROADMAP.md).
+MVP 1 completato salvo la verifica dentro Google Sites: iscrizione pubblica, accesso con magic link o password, impostazioni dell'edizione, elenco iscrizioni e registrazione dei pagamenti, deploy su Azure. MVP 2 (pagina personale) implementato: il partecipante cambia i suoi slot, vede il saldo e disdice da solo, le email partono davvero e due promemoria di pagamento escono da un job orario. MVP 3 (pannello admin) implementato: viste per persona, giorno e slot, settimana e pagamenti da verificare con export CSV, gestione degli admin, rimborsi, modifica manuale delle iscrizioni e annullamento dei pagamenti, con cronologia. Lo stato aggiornato è in [`memory-bank/progress.md`](memory-bank/progress.md), la roadmap in [`specs/ROADMAP.md`](specs/ROADMAP.md).
 
 ## Come è organizzato il repo
 

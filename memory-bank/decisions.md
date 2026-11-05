@@ -135,3 +135,38 @@
 - **Decisione**: `deploy.yml` chiama `/api/health` con ritentativi dopo l'applicazione del Bicep. Le migrazioni restano all'avvio dell'app (D-010) e il job non migra.
 - **Motivo**: con zero repliche nessuno avvierebbe l'app, e quindi le migrazioni, fino alla prima visita; il job orario girerebbe con il codice nuovo su uno schema vecchio. Far migrare anche il job riaprirebbe la gara sulle migrazioni che D-010 evita.
 - **Alternative scartate**: migrazioni nel job; controllo dello schema dentro il job (più codice per lo stesso risultato).
+
+## D-020 · CSV pensati per Excel in italiano
+
+- **Data**: 2026-11-05
+- **Decisione**: separatore `;`, UTF-8 con BOM, importi con la virgola decimale (negativi con il segno), date e ore in Europe/Rome. Le celle di testo che iniziano con `=`, `+`, `-` o `@` hanno un apice davanti (anti formule), tranne i numeri di telefono, che restano come scritti.
+- **Motivo**: Excel con impostazioni italiane apre il file senza passaggi di importazione e senza rovinare accenti e importi; le iscrizioni contengono testo libero scritto dai partecipanti.
+- **Alternative scartate**: `,` come separatore (Excel italiano non lo riconosce); niente BOM (accenti rotti); nessuna protezione dalle formule (rischio con testo libero); apice anche sui telefoni (resterebbe visibile in Excel).
+
+## D-021 · Pagamenti annullati, non cancellati
+
+- **Data**: 2026-11-05
+- **Decisione**: un pagamento sbagliato si annulla con un motivo obbligatorio (`voided_at`, `void_reason`). Resta in elenco e in cronologia ma non conta nel pagato, in nessun punto (saldo, promemoria, rimborso). Una prenotazione `confermata` non più coperta torna `in_attesa_pagamento` con un nuovo blocco; l'importo non cambia mai da solo il suo stato in altri casi.
+- **Motivo**: i soldi non devono sparire senza traccia; il blocco nuovo evita di far scadere subito chi aveva pagato.
+- **Alternative scartate**: cancellare la riga (nessuna traccia); lasciare la prenotazione confermata senza i soldi.
+
+## D-022 · Cronologia delle modifiche manuali in una tabella a parte
+
+- **Data**: 2026-11-05
+- **Decisione**: tabella `audit_log` (chi, quando, azione, testo). `booking_id` non è una chiave esterna: la cronologia deve sopravvivere a una prenotazione rimossa, e per questo il testo riporta nome ed email della persona. Si scrive solo per azioni dell'admin.
+- **Motivo**: «chi ha cambiato cosa» serve agli organizzatori tra loro; un campo per ogni modifica sulle tabelle esistenti sarebbe sparso e incompleto.
+- **Alternative scartate**: campi `modified_by` sparsi; chiave esterna con cancellazione a cascata (perderebbe la traccia delle disdette senza pagamenti).
+
+## D-023 · Rimborso, disdetta e riattivazione da parte dell'admin
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) il rimborso registra importo (da 0 a quanto versato), data e nota e non manda email; con importo 0 si chiude una disdetta in cui non è mai stato versato nulla (succede se i pagamenti sono stati tutti annullati); (2) la disdetta a nome della persona segue le regole di quella del partecipante; (3) la riattivazione manuale richiede posto in tutti gli slot e, se i pagamenti coprono già la quota, conferma subito; (4) l'admin può sempre modificare giorni passati, mentre «forza» riguarda solo gli slot pieni.
+- **Motivo**: indicazioni di `domain.md` (rimborso fuori dal sistema) e della spec; una disdetta aperta deve poter sempre essere chiusa.
+- **Alternative scartate**: email automatica di rimborso (lo scrive l'admin); impedire la riattivazione quando c'è un solo slot pieno (la scelta resta all'admin con «forza» sugli slot).
+
+## D-024 · Regole di rimozione degli admin e proroga del blocco
+
+- **Data**: 2026-11-05
+- **Decisione**: non si rimuove se stessi, l'admin definito da `ADMIN_EMAIL` (verrebbe ripromosso all'avvio) né l'ultimo admin; chi perde il ruolo lo perde subito, anche con una sessione già aperta, e la sua iscrizione resta. La proroga del blocco vale solo per `in_attesa_pagamento` e solo in avanti; dopo la proroga si azzerano solo i promemoria la cui nuova soglia è ancora futura (altrimenti uno già ricevuto partirebbe due volte).
+- **Motivo**: evitare di restare senza admin e modifiche che non reggono al riavvio; i promemoria devono restare «una volta sola».
+- **Conseguenza accettata**: due admin che si rimuovono a vicenda nello stesso istante potrebbero lasciare zero admin (se `ADMIN_EMAIL` è impostata, il primo admin torna al riavvio).
