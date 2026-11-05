@@ -338,6 +338,7 @@ def _promote_slot(db: Session, edition: Edition, slot_id: int, now: datetime) ->
         db.flush()
         close(entry, CLOSE_PROMOTED, now)
         entry.promoted_booking_id = booking.id
+        entry.promoted_as_plus_one = entry.participant.plus_one_verified_at is not None
         promotions.append(Promotion(entry, slot, booking, kind))
         free = free_by_slot(db, [slot], now)[slot.id]
     return promotions

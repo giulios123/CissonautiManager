@@ -121,3 +121,51 @@ def test_the_priority_never_lets_a_plus_one_into_a_full_list(
     with pytest.raises(WaitlistRefused) as refused:
         join(db, dina, target.id, clock(), legal)
     assert refused.value.reason == "list_full"
+
+
+def test_a_promotion_remembers_whether_the_person_was_a_verified_plus_one(
+    db, two_waiting, outbox, settings, clock
+):
+    target, fillers, ada, bob, ada_entry, bob_entry = two_waiting
+    bob.plus_one_verified_at = clock()
+    db.commit()
+    free_one(db, fillers)
+    promote_freed(db, outbox, settings, [target.id], clock())
+    db.refresh(bob_entry)
+    assert bob_entry.close_reason == CLOSE_PROMOTED and bob_entry.promoted_as_plus_one is True
+
+
+def test_verifying_or_unverifying_after_the_promotion_changes_nothing(
+    db, two_waiting, outbox, settings, clock
+):
+    target, fillers, ada, bob, ada_entry, bob_entry = two_waiting
+    free_one(db, fillers)
+    promote_freed(db, outbox, settings, [target.id], clock())  # Ada, not verified
+    db.refresh(ada_entry)
+    assert ada_entry.promoted_as_plus_one is False
+    ada.invited_by = "Grace"
+    ada.plus_one_verified_at = clock()  # verified only afterwards
+    db.commit()
+    db.refresh(ada_entry)
+    assert ada_entry.promoted_as_plus_one is False
+    # And the report keeps saying so.
+    from app.services import views as views_service
+
+    report = views_service.load_report(db, clock()).report
+    assert (report.waitlist.promoted, report.waitlist.promoted_plus_one) == (1, 0)
+
+
+def test_taking_the_verification_back_later_keeps_a_past_plus_one(
+    db, two_waiting, outbox, settings, clock
+):
+    target, fillers, ada, bob, ada_entry, bob_entry = two_waiting
+    bob.plus_one_verified_at = clock()
+    db.commit()
+    free_one(db, fillers)
+    promote_freed(db, outbox, settings, [target.id], clock())
+    bob.plus_one_verified_at = None
+    db.commit()
+    from app.services import views as views_service
+
+    report = views_service.load_report(db, clock()).report
+    assert (report.waitlist.promoted, report.waitlist.promoted_plus_one) == (1, 1)

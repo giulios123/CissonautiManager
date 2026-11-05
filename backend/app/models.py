@@ -306,6 +306,9 @@ class WaitlistEntry(Base):
     closed_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     close_reason: Mapped[str | None] = mapped_column(Unicode(16))
     promoted_booking_id: Mapped[int | None] = mapped_column(Integer)
+    # Whether the person was a verified +1 at the moment of the promotion: the report counts
+    # this, so that verifying someone later does not rewrite what happened.
+    promoted_as_plus_one: Mapped[bool] = mapped_column(Boolean, default=False)
     privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
     privacy_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
     disclaimer_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))

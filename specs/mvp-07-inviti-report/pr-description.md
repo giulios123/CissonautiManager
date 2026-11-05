@@ -27,5 +27,5 @@ Chi è stato invitato da un partecipante (il +1) passa avanti nelle liste d'atte
 - [ ] Da telefono la pagina non scorre di lato; le tabelle larghe scorrono da sole.
 
 ## Note tecniche
-- Migrazione 0008: due colonne su `participant`.
+- Migrazioni 0008 (due colonne su `participant`) e 0009 (`waitlist_entry.promoted_as_plus_one`).
 - Decisione D-037 in `memory-bank/decisions.md`; modifiche a `domain.md` applicate (priorità +1, vista Report).

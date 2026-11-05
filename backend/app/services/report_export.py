@@ -72,9 +72,14 @@ def report_rows(report: EditionReport) -> list[Row]:
     )
 
     section = "Attività"
+    if not report.activities:
+        rows.append(_plain(section, "Nessuna attività", 0))
     for activity in report.activities:
         title = format_activity(activity.title, activity.day, activity.period)
         rows.append(_split(section, title, activity.joined))
+        rows.append(_plain(section, f"Prezzo: {activity.title}", Amount(activity.price_cents)))
+        capacity = "senza limite" if activity.capacity is None else activity.capacity
+        rows.append(_plain(section, f"Capienza: {activity.title}", capacity))
         rows.append(
             _plain(section, f"Incasso atteso: {activity.title}", Amount(activity.expected_cents))
         )
@@ -88,7 +93,11 @@ def report_rows(report: EditionReport) -> list[Row]:
     rows += [
         _plain(section, "Ancora in lista", wl.waiting),
         _plain(section, "Promossi", wl.promoted),
-        _plain(section, "Promossi che erano +1 verificati", wl.promoted_plus_one),
+        _plain(
+            section,
+            "Promossi che erano +1 verificati al momento della promozione",
+            wl.promoted_plus_one,
+        ),
         _plain(section, "Usciti da soli", wl.left),
         _plain(section, "Tolti da un admin", wl.removed),
         _plain(section, "Annullati per disdetta", wl.cancelled),

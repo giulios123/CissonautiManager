@@ -74,7 +74,7 @@ class ActivityFacts:
 @dataclass(frozen=True)
 class WaitlistFacts:
     close_reason: str | None  # None while the entry is still waiting
-    plus_one: bool  # the person is a verified +1
+    plus_one: bool  # the person was a verified +1 when the seat was given to them
 
 
 @dataclass(frozen=True)

@@ -370,7 +370,9 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
             { key: "promoted", label: "Promossi", value: waitlist.promoted },
             {
               key: "plus",
-              label: <span className="indent">di cui +1 verificati</span>,
+              label: (
+                <span className="indent">di cui +1 verificati al momento della promozione</span>
+              ),
               value: waitlist.promoted_plus_one,
             },
             { key: "left", label: "Usciti da soli", value: waitlist.left },

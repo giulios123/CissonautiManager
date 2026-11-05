@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.domain.booking import effective_status, occupies_seats
 from app.domain.payments_review import REASON_LABELS, review_reason
@@ -270,7 +270,17 @@ def load_report(db: Session, now: datetime) -> ReportData:
     db.commit()
     bookings: list[BookingFacts] = []
     payments: list[PaymentFacts] = []
-    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+    # The report reads five collections of every booking: load them in bulk, not one by one.
+    everything = (
+        selectinload(Booking.payments),
+        selectinload(Booking.slots),
+        selectinload(Booking.meals),
+        selectinload(Booking.activities),
+        selectinload(Booking.contributions),
+    )
+    for booking in db.scalars(
+        select(Booking).where(Booking.edition_id == edition.id).options(*everything)
+    ):
         status = effective_status(booking.status, booking.hold_expires_at, now)
         bookings.append(
             BookingFacts(
@@ -294,7 +304,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
         for a in db.scalars(select(Activity).where(Activity.edition_id == edition.id))
     ]
     waitlist = [
-        WaitlistFacts(entry.close_reason, entry.participant.plus_one_verified_at is not None)
+        WaitlistFacts(entry.close_reason, entry.promoted_as_plus_one)
         for entry in db.scalars(
             select(WaitlistEntry)
             .join(Slot, Slot.id == WaitlistEntry.slot_id)

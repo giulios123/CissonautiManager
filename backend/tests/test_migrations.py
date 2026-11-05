@@ -178,3 +178,68 @@ def test_migration_0008_leaves_existing_participants_unverified(
     assert tuple(row) == ("Bob", None, None)
     assert "plus_one_verified_at" not in columns
     assert invited_by == "Bob"
+
+
+def test_migration_0009_marks_existing_promotions_as_not_plus_one(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0008")
+    engine = make_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO edition (name, start_date, end_date, morning_start, morning_end,"
+                " afternoon_start, afternoon_end, evening_start, evening_end, default_capacity,"
+                " hold_days, base_fee_cents, per_day_fee_cents, is_active, waitlist_percent,"
+                " lunch_price_cents, dinner_price_cents) VALUES ('Camp', '2026-07-13',"
+                " '2026-07-17', '09:00:00', '13:00:00', '14:00:00', '18:00:00', '19:00:00',"
+                " '00:00:00', 25, 3, 1000, 100, 1, 20, 800, 1200)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO participant (first_name, last_name, email, personal_code, role,"
+                " created_at) VALUES ('Ada', 'Lovelace', 'ada@example.com', 'CSC-AAAA',"
+                " 'participant', '2026-07-01 10:00:00')"
+            )
+        )
+        edition_id = connection.execute(text("SELECT id FROM edition")).scalar_one()
+        participant_id = connection.execute(text("SELECT id FROM participant")).scalar_one()
+        connection.execute(
+            text(
+                "INSERT INTO slot (edition_id, date, period, start_time, end_time, capacity)"
+                " VALUES (:e, '2026-07-13', 'morning', '09:00:00', '13:00:00', 10)"
+            ),
+            {"e": edition_id},
+        )
+        slot_id = connection.execute(text("SELECT id FROM slot")).scalar_one()
+        for kind in ("privacy", "disclaimer"):
+            connection.execute(
+                text(
+                    "INSERT INTO legal_document (edition_id, kind, version, body, published_at)"
+                    " VALUES (:e, :k, 1, 'testo', '2026-07-01 09:00:00')"
+                ),
+                {"e": edition_id, "k": kind},
+            )
+        doc_id = connection.execute(text("SELECT MIN(id) FROM legal_document")).scalar_one()
+        connection.execute(
+            text(
+                "INSERT INTO waitlist_entry (slot_id, participant_id, created_at, closed_at,"
+                " close_reason, privacy_document_id, privacy_accepted_at, disclaimer_document_id,"
+                " disclaimer_accepted_at) VALUES (:s, :p, '2026-07-01 10:00:00',"
+                " '2026-07-02 10:00:00', 'promoted', :d, '2026-07-01 10:00:00', :d,"
+                " '2026-07-01 10:00:00')"
+            ),
+            {"s": slot_id, "p": participant_id, "d": doc_id},
+        )
+    command.upgrade(alembic_config, "0009")
+    with engine.connect() as connection:
+        flag = connection.execute(
+            text("SELECT promoted_as_plus_one FROM waitlist_entry")
+        ).scalar_one()
+    command.downgrade(alembic_config, "0008")
+    with engine.connect() as connection:
+        columns = {c["name"] for c in inspect(connection).get_columns("waitlist_entry")}
+    engine.dispose()
+    assert not flag
+    assert "promoted_as_plus_one" not in columns

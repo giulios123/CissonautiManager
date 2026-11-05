@@ -3,7 +3,7 @@ import io
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import event, select
 
 from app.models import (
     CLOSE_PROMOTED,
@@ -15,6 +15,7 @@ from app.models import (
     Contribution,
     Slot,
 )
+from app.services import views as views_service
 from tests.helpers import d
 from tests.test_auth import login
 from tests.test_change_slots import pay
@@ -78,6 +79,7 @@ def camp(db, edition, make_participant, make_booking, add_entry, clock):
     eve.plus_one_verified_at = clock()
     promoted = add_entry(slot(db, 14), eve, clock() - timedelta(hours=3))
     promoted.closed_at, promoted.close_reason = clock(), CLOSE_PROMOTED
+    promoted.promoted_as_plus_one = True  # she was a verified +1 when she got the seat
     add_entry(slot(db, 14), make_participant("fay@example.com", first_name="Fay"), clock())
     db.commit()
     return {"ada": ada, "bob": bob, "cid": cid}
@@ -233,3 +235,68 @@ class TestAccessAndEmpty:
 
     def test_an_anonymous_visitor_is_refused(self, client, edition):
         assert get(client).status_code == 401
+
+
+class TestActivitiesInTheCsv:
+    def test_price_and_capacity_are_there_for_each_activity(self, admin_client, camp):
+        _h, *rows = parse(get(admin_client, "csv"))
+        price = next(r for r in rows if r[1] == "Prezzo: Trekking")
+        capacity = next(r for r in rows if r[1] == "Capienza: Trekking")
+        assert price[4] == "15,00"
+        assert capacity[4] == "10"
+
+    def test_a_free_activity_without_limit_says_so(self, admin_client, db, edition, camp):
+        db.add(
+            Activity(
+                edition_id=edition.id, title="Quiz", date=d(14), period="evening", price_cents=0
+            )
+        )
+        db.commit()
+        _h, *rows = parse(get(admin_client, "csv"))
+        assert next(r for r in rows if r[1] == "Prezzo: Quiz")[4] == "0,00"
+        assert next(r for r in rows if r[1] == "Capienza: Quiz")[4] == "senza limite"
+
+    def test_without_activities_the_section_is_still_there_at_zero(self, admin_client, edition):
+        _h, *rows = parse(get(admin_client, "csv"))
+        assert [r for r in rows if r[0] == "Attività"] == [
+            ["Attività", "Nessuna attività", "", "", "0"]
+        ]
+
+
+def count_selects(db, action):
+    seen = []
+
+    def record(conn, cursor, statement, *args):
+        if statement.lstrip().upper().startswith("SELECT"):
+            seen.append(statement)
+
+    engine = db.get_bind()
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        action()
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+    return len(seen)
+
+
+def test_the_report_does_not_run_more_queries_when_there_are_more_bookings(
+    db, edition, make_participant, make_booking, clock
+):
+    counter = iter(range(1000))
+
+    def add(n):
+        for _ in range(n):
+            i = next(counter)
+            person = make_participant(f"p{i}@x.example", first_name=f"P{i}")
+            booking = make_booking(person, [slot(db, 13), slot(db, 14)])
+            booking.meals = [BookingMeal(date=d(13), kind="lunch")]
+            booking.contributions = [Contribution(kind="skill", title=f"S{i}")]
+            db.commit()
+            pay(db, booking, 100)
+
+    add(2)
+    few = count_selects(db, lambda: views_service.load_report(db, clock()))
+    db.expire_all()
+    add(8)
+    many = count_selects(db, lambda: views_service.load_report(db, clock()))
+    assert many == few
