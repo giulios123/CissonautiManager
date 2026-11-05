@@ -35,6 +35,8 @@ export type Detail = {
   refund: { amount_cents: number; refunded_on: string | null; note: string | null } | null;
   history: HistoryEntry[];
   warning: string | null;
+  // Only in the response to a new payment: the payment that request created.
+  payment_id?: number | null;
   waitlist?: { id: number; label: string; position: number; created_at: string }[];
   lunch_price_cents?: number;
   dinner_price_cents?: number;

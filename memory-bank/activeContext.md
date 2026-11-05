@@ -8,6 +8,10 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 
 Richiesta del maintainer: guida dopo il login filtrata per ruolo, aggiornata a ogni deploy; note di rilascio solo per gli admin. Spec in `specs/mvp-09-guida/`, confermata. Scelte: note generate dai commit; testi della guida nel repo con controllo CI; l'admin vede tutto, il partecipante solo la sua guida (D-039). Completato sul branch `claude/dreamy-ride-bzr112`, descrizione PR in `specs/mvp-09-guida/pr-description.md`. Da fare: far leggere i testi agli organizzatori; creare la label `senza-guida` su GitHub.
 
+## MVP 10 · Incassi (2026-11-05)
+
+Richiesta del maintainer: un modo veloce per l'admin di controllare il conto e segnare le quote come coperte. «Da verificare» resta per le anomalie (con zero versato una iscrizione in attesa non vi compare, per regola). Spec in `specs/mvp-10-incassi/`, confermata. Scelte concordate: pagina nuova «Da incassare»; canale scelto una volta; tasto rapido sul saldo intero con link alla scheda per altri importi; un clic con annullo visibile per 10 secondi; email di conferma differita di 30 secondi (colonne su `payment`, migrazione 0010, rete di sicurezza nel job orario); ricerca per causale; scadute incluse in coda. Spec confermata dal maintainer, completato sul branch `claude/brave-babbage-ttfx6u` (D-040), descrizione PR in `specs/mvp-10-incassi/pr-description.md`. Da fare: provare in produzione l'email dopo 30 secondi.
+
 ## Prossimo passo
 
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.

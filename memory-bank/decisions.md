@@ -281,3 +281,11 @@
 - **Motivo**: richiesta del maintainer: guida filtrata per ruolo, aggiornata a ogni deploy, note solo per gli admin. Tenere i testi nel repo li fa rivedere nelle PR insieme al codice.
 - **Alternative scartate**: guida salvata nel database o modificabile dal pannello (due fonti di verità, nessuna revisione); note scritte a mano (lavoro in più a ogni PR); API che serve la guida admin solo agli admin (complessità senza segreti da proteggere); controllo di CI dentro `ci.yml` (la label non rilancerebbe solo quel controllo).
 - **Limiti noti**: il controllo di CI verifica che la guida sia stata toccata, non che sia giusta; le note sono in inglese perché lo sono i commit (Backlog); la prima volta le note compaiono dopo il primo deploy con questa versione.
+
+## D-040 · Vista «Da incassare» con email di conferma differita e salvata nel database
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) pagina `/admin/da-incassare` con tasto «Segna pagato» che registra il saldo intero e annullo visibile per 10 secondi, riusando registrazione e annullo dei pagamenti; (2) con il flag `defer_confirmation_email` la prenotazione si conferma subito ma l'email parte dopo 30 secondi: la scadenza sta su `payment` (`confirmation_email_due_at`, `confirmation_email_sent_at`, migrazione 0010); (3) la esegue un timer in processo (`app.state.run_later`), con rete di sicurezza nel job orario; l'invio è reclamato con un UPDATE condizionale, come i promemoria; (4) dalla scheda l'email resta immediata.
+- **Motivo**: richiesta del maintainer: controllare il conto e segnare le quote in fila, con rimedio a un clic sbagliato. L'app scala a zero, quindi un timer solo in memoria può perdere l'email.
+- **Alternative scartate**: solo timer in memoria (email perse a ogni riavvio); coda o job ogni minuto (infrastruttura in più); ritardare l'email anche dalla scheda (scelta del maintainer: solo dalla vista); conferma con dialogo a ogni riga (più lento per chi controlla il conto).
+- **Limiti noti**: se il timer si perde l'email arriva al passaggio orario successivo; un errore di consegna non si ritenta; con due admin sulla stessa riga il tasto registra l'importo mostrato.

@@ -90,6 +90,11 @@ def app(settings, engine, outbox, clock) -> FastAPI:
     application = create_app(settings)
     application.state.email_sender = outbox
     application.state.clock = clock
+    # Deferred work is collected instead of started on a timer: tests run it when they choose.
+    application.state.scheduled = []
+    application.state.run_later = lambda delay, task: application.state.scheduled.append(
+        (delay, task)
+    )
     return application
 
 

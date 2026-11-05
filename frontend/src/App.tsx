@@ -9,6 +9,7 @@ import { AdminLayout } from "./pages/AdminLayout";
 import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
 import { AdminReport } from "./pages/AdminReport";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
+import { AdminCollect } from "./pages/AdminCollect";
 import { AdminReview } from "./pages/AdminReview";
 import { AdminSlots } from "./pages/AdminSlots";
 import { AdminWeek } from "./pages/AdminWeek";
@@ -72,6 +73,7 @@ export function App() {
           <Route path="attivita/:id" element={<AdminActivityDetail />} />
           <Route path="contributi" element={<AdminContributions />} />
           <Route path="report" element={<AdminReport />} />
+          <Route path="da-incassare" element={<AdminCollect />} />
           <Route path="da-verificare" element={<AdminReview />} />
           <Route path="amministratori" element={<AdminAdmins />} />
           <Route path="impostazioni" element={<AdminSettings />} />

@@ -1,8 +1,9 @@
+import logging
 from collections import defaultdict
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, Field, StringConstraints
 from sqlalchemy import func, or_, select
@@ -39,6 +40,8 @@ from app.services import waitlist as waitlist_service
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue
 from app.timefmt import ROME, format_euro, format_meal, format_slot, status_label, to_rome
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/admin/registrations", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -118,6 +121,9 @@ class RegistrationDetail(BaseModel):
     refund: RefundOut | None = None
     history: list[HistoryEntry] = []
     warning: str | None = None
+    # Set only by the response to a new payment: the one that request created, so a client can
+    # undo exactly that payment even if another admin pays the same booking at the same time.
+    payment_id: int | None = None
     lunch_price_cents: int = 0
     dinner_price_cents: int = 0
     activity_offers: list[ActivityOffer] = []
@@ -150,6 +156,8 @@ class PaymentIn(BaseModel):
     channel: Literal["revolut", "satispay", "paypal", "iban"]
     paid_on: date | None = None
     note: str | None = Field(default=None, max_length=1000)
+    # The "to collect" view asks for the confirmation email to wait, to leave time to undo.
+    defer_confirmation_email: bool = False
 
 
 def _evenings(booking: Booking, status: str) -> int:
@@ -397,8 +405,29 @@ def get_registration(
     return _detail(db, _get_booking(db, booking_id), now)
 
 
+def _send_confirmations_later(request: Request) -> None:
+    """Ask the app to send the deferred confirmation emails once their delay is over.
+
+    The delay is in the database too, and the hourly job sends what this timer misses (the app
+    scales to zero), so a lost timer only means a later email, never a missing one.
+    """
+    app = request.app
+
+    def run() -> None:
+        try:
+            with app.state.session_factory() as db:
+                payment_service.send_due_confirmations(
+                    db, app.state.email_sender, app.state.clock()
+                )
+        except Exception:
+            logger.exception("Deferred confirmation emails failed")
+
+    app.state.run_later(payment_service.CONFIRMATION_EMAIL_DELAY.total_seconds(), run)
+
+
 @router.post("/{booking_id}/payments", status_code=201)
 def add_payment(
+    request: Request,
     booking_id: int,
     body: PaymentIn,
     admin: Participant = Depends(require_admin),
@@ -417,9 +446,14 @@ def add_payment(
         paid_on=body.paid_on or to_rome(now).date(),
         note=body.note,
         now=now,
+        defer_confirmation_email=body.defer_confirmation_email,
     )
+    if result.email_due_at is not None:
+        _send_confirmations_later(request)
     db.refresh(booking)
-    return _detail(db, booking, now, warning=result.warning)
+    detail = _detail(db, booking, now, warning=result.warning)
+    detail.payment_id = result.payment.id
+    return detail
 
 
 @router.post("/{booking_id}/refund")

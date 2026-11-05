@@ -26,7 +26,7 @@ from app.models import STATUS_PENDING, Booking, Edition, PaymentChannel
 from app.services import edition as edition_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
-from app.services.payments import paid_total
+from app.services.payments import paid_total, send_due_confirmations
 from app.services.seats import expire_overdue
 
 logger = logging.getLogger("app.jobs.send_reminders")
@@ -38,6 +38,7 @@ class ReminderSummary:
     mid: int = 0
     final: int = 0
     promoted: int = 0
+    confirmations: int = 0
 
 
 def _claim(db: Session, booking: Booking, kind: str, now: datetime) -> bool:
@@ -107,6 +108,8 @@ def send_due_reminders(
         else:
             summary.mid += 1
     summary.promoted = promote_open_slots(db, sender, settings, now)
+    # Safety net for the confirmation emails whose timer was lost (restart, scale to zero).
+    summary.confirmations = send_due_confirmations(db, sender, now)
     return summary
 
 
@@ -128,11 +131,12 @@ def main() -> None:
         summary = send_due_reminders(db, sender, settings, utcnow())
     engine.dispose()
     logger.info(
-        "Reminders: examined=%d mid=%d final=%d; waitlist promotions=%d",
+        "Reminders: examined=%d mid=%d final=%d; waitlist promotions=%d; confirmations=%d",
         summary.examined,
         summary.mid,
         summary.final,
         summary.promoted,
+        summary.confirmations,
     )
 
 

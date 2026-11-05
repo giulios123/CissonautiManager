@@ -49,6 +49,7 @@ const ADMIN_PAGES: Record<string, string> = {
   "/admin/attivita": "attivita",
   "/admin/contributi": "contributi",
   "/admin/report": "report",
+  "/admin/da-incassare": "da-incassare",
   "/admin/da-verificare": "da-verificare",
   "/admin/amministratori": "amministratori",
   "/admin/impostazioni": "impostazioni",

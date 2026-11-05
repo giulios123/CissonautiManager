@@ -266,6 +266,10 @@ class Payment(Base):
     voided_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     voided_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     void_reason: Mapped[str | None] = mapped_column(UnicodeText)
+    # Set when the confirmation email is deferred (the "to collect" view): it goes out once the
+    # due time has passed, unless the payment is voided first.
+    confirmation_email_due_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    confirmation_email_sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
 
     booking: Mapped[Booking] = relationship(back_populates="payments")
 

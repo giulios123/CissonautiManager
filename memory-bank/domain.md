@@ -45,6 +45,7 @@
 - Nessuna integrazione: Revolut, Satispay, PayPal, IBAN. Istruzioni per canale configurabili dall'admin.
 - Causale generata dal sistema con un codice personale (es. `CSC-7K3P`). Il codice serve solo come causale, mai per accedere.
 - L'admin registra un pagamento (importo, canale, data, nota) con un clic dalla scheda del partecipante.
+- Dalla vista «da incassare» l'admin registra in un clic il saldo intero, sul canale scelto e con la data di oggi; l'importo diverso si registra dalla scheda. Per 10 secondi può annullare subito, e in questo caso l'email di conferma parte dopo 30 secondi (dalla scheda parte subito): un annullo entro i 10 secondi non la fa partire, dopo i 30 secondi non si ritira.
 - Un pagamento registrato per errore non si cancella: si annulla scrivendo un motivo. Resta in elenco, barrato, e non conta più nel saldo. Se la prenotazione era `confermata` e non è più coperta, torna `in_attesa_pagamento` con un nuovo blocco.
 
 ## Accesso
@@ -64,7 +65,7 @@
 ## Pannello admin
 
 - Impostazioni: date, slot e orari, capienze, giorni di blocco, percentuale della lista d'attesa, quote, prezzi di pranzo e cena, canali e istruzioni di pagamento, testi legali (compreso il consenso per i dati sanitari), gestione degli admin.
-- Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da verificare, report di riepilogo dell'edizione (iscrizioni, presenze, pasti, attività, contributi, lista d'attesa, incassi, con confermate e in attesa di pagamento separate; le allergie solo come numero; anche in stampa). Export CSV per ogni vista. La presenza serale di chi ha prenotato l'intero giorno è derivata (D-009) e nelle viste è indicata come tale.
+- Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da incassare (iscrizioni in attesa o con un saldo da versare, con ricerca per causale), pagamenti da verificare, report di riepilogo dell'edizione (iscrizioni, presenze, pasti, attività, contributi, lista d'attesa, incassi, con confermate e in attesa di pagamento separate; le allergie solo come numero; anche in stampa). Export CSV per ogni vista. La presenza serale di chi ha prenotato l'intero giorno è derivata (D-009) e nelle viste è indicata come tale.
 - L'admin può modificare a mano qualsiasi iscrizione, comprese le disdette che il partecipante non riesce a fare. Può superare la capienza di uno slot solo con una conferma esplicita.
 - Ogni modifica manuale dell'admin è registrata (chi, quando, cosa) e compare nella cronologia della scheda.
 
