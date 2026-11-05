@@ -7,7 +7,7 @@ Branch: `claude/relaxed-dijkstra-9z2e5o` (vincolo della sessione). **Dimensione*
   Test: `canonicalPath`, redirect che conserva query e hash, CSP su `/register` e `/iscrizione`, magic link `/login/verify`.
 - [x] **3. Core i18n**: dizionari, provider, rilevamento, selettore, formattatori.
   Test: rilevamento (`?lang`, storage, browser), selettore, parità delle chiavi, `localStorage` che lancia.
-- [ ] **4. Backend**: migrazione 0011, `locale` in registrazione e `PUT /api/me/locale`, `AppError` e catalogo, conversione degli 81 messaggi.
+- [x] **4. Backend**: migrazione 0011, `locale` in registrazione e `PUT /api/me/locale`, `AppError` e catalogo, conversione degli 81 messaggi.
   Test: errore in inglese con `Accept-Language: en`, lingua salvata, migrazione da zero e downgrade.
 - [ ] **5. Email IT/EN** e `timefmt` per lingua.
   Test: ogni email in inglese, lingua del partecipante rispettata, oggetto con il nome dell'edizione.

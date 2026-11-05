@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_now, require_admin
+from app.i18n import t
 from app.models import Activity, Edition, Participant
 from app.services import activities as activity_service
 from app.services import edition as edition_service
@@ -22,10 +23,10 @@ Format = Literal["json", "csv"]
 Text = Annotated[str, StringConstraints(strip_whitespace=True)]
 
 REFUSALS = {
-    "outside_edition": "Il giorno deve essere tra le date dell'edizione",
-    "fixed_with_people": "Con persone già iscritte non si cambiano prezzo, giorno e fascia",
-    "capacity_below_people": "La capienza non può scendere sotto il numero di iscritti",
-    "has_people": "Un'attività con iscritti non si elimina",
+    "outside_edition": "activity.outside_edition",
+    "fixed_with_people": "activity.fixed_with_people",
+    "capacity_below_people": "activity.capacity_below_people",
+    "has_people": "activity.has_people",
 }
 
 
@@ -68,7 +69,7 @@ class ActivityDetailOut(ActivityOut):
 def _edition(db: Session) -> Edition:
     edition = edition_service.get_active_edition(db)
     if edition is None:
-        raise HTTPException(status_code=404, detail="Configura prima l'edizione")
+        raise HTTPException(status_code=404, detail=t("edition.not_configured_first"))
     return edition
 
 
@@ -171,7 +172,7 @@ def create_activity(
         activity = activity_service.create(db, admin, _edition(db), _data(body))
     except activity_service.ActivityRefused as exc:
         db.rollback()
-        raise HTTPException(status_code=422, detail=REFUSALS[exc.reason]) from exc
+        raise HTTPException(status_code=422, detail=t(REFUSALS[exc.reason])) from exc
     return _out(activity, activity.capacity, 0)
 
 
@@ -204,7 +205,7 @@ def update_activity(
         activity_service.update(db, admin, _edition(db), activity, _data(body), now)
     except activity_service.ActivityRefused as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail=REFUSALS[exc.reason]) from exc
+        raise HTTPException(status_code=409, detail=t(REFUSALS[exc.reason])) from exc
     free = activity_service.free_by_activity(db, [activity], now)[activity.id]
     joined = activity_service.occupied_by_activity(db, [activity.id], now)[activity.id]
     return _out(activity, free, joined)
@@ -221,11 +222,11 @@ def delete_activity(
         activity_service.delete(db, admin, activity)
     except activity_service.ActivityRefused as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail=REFUSALS[exc.reason]) from exc
+        raise HTTPException(status_code=409, detail=t(REFUSALS[exc.reason])) from exc
 
 
 def _get(db: Session, activity_id: int) -> Activity:
     try:
         return activity_service.get_activity(db, _edition(db), activity_id)
     except activity_service.ActivityNotFound as exc:
-        raise HTTPException(status_code=404, detail="Attività non trovata") from exc
+        raise HTTPException(status_code=404, detail=t("activity.not_found")) from exc

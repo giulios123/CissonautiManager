@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_now, require_admin
+from app.i18n import t
 from app.models import Participant
 from app.services import waitlist as waitlist_service
 
@@ -23,4 +24,4 @@ def remove_from_waitlist(
     try:
         waitlist_service.remove(db, admin, entry_id, now)
     except waitlist_service.EntryNotFound as exc:
-        raise HTTPException(status_code=404, detail="Voce della lista non trovata") from exc
+        raise HTTPException(status_code=404, detail=t("waitlist.entry_not_found")) from exc

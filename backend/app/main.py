@@ -23,6 +23,7 @@ from app.api import public as public_api
 from app.config import Settings, get_settings
 from app.db import get_db, make_engine, make_session_factory, utcnow
 from app.email import build_email_sender
+from app.i18n import LocaleMiddleware
 from app.services.participants import ensure_admin
 
 logger = logging.getLogger(__name__)
@@ -99,6 +100,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_waitlist_api.router)
     app.include_router(guide_api.router)
     app.include_router(public_api.router)
+
+    app.add_middleware(LocaleMiddleware)
 
     @app.middleware("http")
     async def frame_policy(request: Request, call_next):

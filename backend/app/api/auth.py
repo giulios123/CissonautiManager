@@ -13,14 +13,13 @@ from app.deps import (
     get_settings_dep,
 )
 from app.email import EmailSender
+from app.i18n import t
 from app.models import ROLE_ADMIN, Participant
 from app.services import auth as auth_service
 from app.services.participants import get_by_email
 from app.services.passwords import verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-
-MAGIC_LINK_REQUESTED = "Se l'email è registrata riceverai un link per entrare."
 
 
 class MagicLinkRequest(BaseModel):
@@ -70,7 +69,7 @@ def request_magic_link(
     if participant is not None:
         auth_service.send_magic_link(db, sender, settings, participant, now)
     # Same answer whether or not the email exists: do not reveal who is registered.
-    return {"message": MAGIC_LINK_REQUESTED}
+    return {"message": t("auth.link_sent")}
 
 
 @router.post("/verify")
@@ -83,7 +82,7 @@ def verify_magic_link(
 ) -> LoginResult:
     participant = auth_service.consume_magic_link(db, body.token, now)
     if participant is None:
-        raise HTTPException(status_code=400, detail="Link non valido o scaduto")
+        raise HTTPException(status_code=400, detail=t("auth.link_invalid"))
     set_session_cookie(response, settings, auth_service.create_session(db, participant, now))
     return login_result(participant)
 
@@ -100,7 +99,7 @@ def login_with_password(
     stored_hash = participant.password_hash if participant else None
     # One generic error for unknown email, no password set and wrong password.
     if participant is None or not verify_password(stored_hash, body.password):
-        raise HTTPException(status_code=401, detail="Email o password non corretti")
+        raise HTTPException(status_code=401, detail=t("auth.bad_credentials"))
     set_session_cookie(response, settings, auth_service.create_session(db, participant, now))
     return login_result(participant)
 

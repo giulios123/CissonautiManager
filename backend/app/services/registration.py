@@ -62,6 +62,8 @@ class RegistrationData:
     disclaimer_version: int
     # Full slots the person wants to wait for.
     waitlist_slot_ids: list[int] = field(default_factory=list)
+    # Language of the person: "it" or "en".
+    locale: str = "it"
 
 
 @dataclass
@@ -122,6 +124,8 @@ def register(
     expire_overdue(db, now)
 
     existing = get_by_email(db, data.email)
+    if existing is not None:
+        existing.locale = data.locale  # they filled the form in this language
     if existing is not None and (
         _has_active_booking(db, existing, edition, now)
         or waitlist_service.entries_of(db, existing, edition)
@@ -148,6 +152,7 @@ def register(
             invited_by=data.invited_by or None,
             can_bring=data.can_bring,
             personal_code=new_unique_personal_code(db),
+            locale=data.locale,
         )
         db.add(participant)
         db.flush()
