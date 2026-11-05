@@ -248,3 +248,10 @@
 - **Decisione**: (1) tutti i colori sono token su `:root` in `frontend/src/styles.css`, con la palette del sito Cissone Eventi (petrolio `#005C68` per link e focus, ambra `#F4B400` solo come sfondo del bottone principale); un test vitest controlla i contrasti AA e che non ci siano colori fuori da `:root`; (2) Montserrat è incluso nella build con `@fontsource/montserrat` (pesi 400, 600, 700); (3) dentro un iframe la pagina aggiunge la classe `in-frame` a `<html>`, ha lo sfondo trasparente e un'intestazione ridotta al solo nome; (4) bottoni e campi squadrati (`--radius: 0`); (5) il logo di Cissone è nel bundle con il permesso della Pro Loco e non rientra nella licenza MIT (nota nel README).
 - **Motivo**: indicazioni del maintainer; il modulo di iscrizione deve sembrare parte del sito che lo incorpora. I font serviti dall'app evitano richieste a Google Fonts (privacy dei visitatori) e cambi alla CSP. L'ambra su bianco ha contrasto 1,85:1, quindi non può fare da testo, bordo informativo o focus.
 - **Alternative scartate**: Google Fonts dal CDN (richieste a terzi, CSP da allargare); framework CSS (dipendenza in più per un foglio di stile piccolo); nascondere del tutto l'intestazione nell'iframe (il maintainer ha scelto quella ridotta); modalità scura (esclusa dal maintainer).
+
+## D-036 · Titolo per pagina e menu admin scorrevole
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) ogni rotta ha un `document.title` proprio («Pagina · Cissonauti Summer Camp»), calcolato in `frontend/src/pageTitle.ts`; (2) il menu del pannello è una riga che scorre di lato e porta in vista la voce corrente, invece di andare a capo su più righe; (3) gli stati delle prenotazioni sono etichette colorate senza bordo laterale; un test impedisce bordi laterali spessi.
+- **Motivo**: emersi dall'audit dell'MVP 8: il titolo uguale ovunque non rispetta WCAG 2.4.2; con 10 voci il menu occupava più di metà schermo su telefono.
+- **Alternative scartate**: menu a tendina (un tocco in più per ogni cambio di vista, per chi usa il pannello tutto il giorno); due righe di menu (non bastano per 10 voci con aree di tocco da 44 px).

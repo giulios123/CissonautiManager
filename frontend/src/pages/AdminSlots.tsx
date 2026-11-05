@@ -144,8 +144,10 @@ export function AdminSlots() {
                         ) : (
                           <ol className="plain">
                             {(slot.waitlist ?? []).map((person) => (
-                              <li key={person.entry_id}>
-                                {person.position}. {person.first_name} {person.last_name}{" "}
+                              <li key={person.entry_id} className="item">
+                                <span>
+                                  {person.position}. {person.first_name} {person.last_name}
+                                </span>
                                 <button
                                   type="button"
                                   className="secondary"

@@ -1,8 +1,16 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 
 export function AdminLayout() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  // On a phone the menu scrolls sideways: keep the current page in view.
+  useEffect(() => {
+    const current = document.querySelector<HTMLElement>('.admin-nav a[aria-current="page"]');
+    current?.scrollIntoView?.({ inline: "center", block: "nearest" });
+  }, [pathname]);
 
   async function logout() {
     await api("/api/auth/logout", { method: "POST" });

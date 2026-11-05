@@ -57,6 +57,10 @@ describe("theme tokens", () => {
     expect(outsideRoot).not.toMatch(/(^|[\s;{])(color|outline(-color)?):[^;]*var\(--color-cta\)/m);
   });
 
+  it("has no colored side stripes on cards, notices or badges", () => {
+    expect(css).not.toMatch(/border-(left|right)(-width)?:\s*([2-9]|\d{2,})px/);
+  });
+
   it("defines colors only in :root", () => {
     const outsideRoot = css.replace(/:root\s*{[^}]*}/, "").replace(/\/\*[\s\S]*?\*\//g, "");
     expect(outsideRoot).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/);
