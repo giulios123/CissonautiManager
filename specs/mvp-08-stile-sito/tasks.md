@@ -4,7 +4,7 @@ Branch di implementazione: `feat/mvp-08-stile-sito`. Indipendente dall'MVP 7: pu
 
 **Dimensione**: 7 task.
 
-- [ ] **1. Raccolta dello stile** (bloccante): screenshot, colori, font, forma dei componenti e logo in `specs/mvp-08-stile-sito/stile.md`; conferma del maintainer. Colori, font e loghi rilevati il 2026-11-05 (vedi `stile.md`); palette, nome «Cissonauti» e bottoni squadrati confermati. Resta solo il permesso per i loghi, che non blocca i task 2-5.
+- [x] **1. Raccolta dello stile** (bloccante): screenshot, colori, font, forma dei componenti e logo in `specs/mvp-08-stile-sito/stile.md`; conferma del maintainer. Colori, font e loghi rilevati il 2026-11-05 (vedi `stile.md`); palette, nome «Cissonauti» e bottoni squadrati confermati. Permesso per il logo dato dalla Pro Loco tramite il maintainer.
   Richiede `sites.google.com` tra i domini consentiti dall'ambiente, oppure i materiali forniti a mano.
 - [x] **2. Token CSS**: palette su `:root`, tutti i colori scritti a mano sostituiti.
   Test: vitest sul contrasto delle coppie testo/sfondo, bottone/testo e bordo dei campi/sfondo; `grep` senza colori fuori da `:root`; test esistenti verdi.
@@ -16,7 +16,7 @@ Branch di implementazione: `feat/mvp-08-stile-sito`. Indipendente dall'MVP 7: pu
   Test: tabelle scorrevoli a 390 px senza scorrimento della pagina; test esistenti verdi.
 - [x] **6. Intestazione e modalità iframe**: `SiteHeader` con logo, classe `in-frame`.
   Test vitest: intestazione completa fuori dall'iframe e ridotta (nome senza logo) con `in-frame`; logo con `alt`; nome in testo se il logo manca.
-- [ ] **7. Verifica visiva e chiusura**: screenshot Playwright a 390 e 1280 px, anche dentro un iframe di prova, confrontati con il sito; lint e test verdi; Memory Bank aggiornata (`progress.md`, `activeContext.md`, `decisions.md`); descrizione PR con checklist per organizzatori.
+- [x] **7. Verifica visiva e chiusura**: screenshot Playwright a 390 e 1280 px, anche dentro un iframe di prova, confrontati con il sito; lint e test verdi; Memory Bank aggiornata (`progress.md`, `activeContext.md`, `decisions.md`); descrizione PR con checklist per organizzatori.
 
 ## Da verificare a mano
 

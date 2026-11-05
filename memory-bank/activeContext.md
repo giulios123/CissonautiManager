@@ -22,7 +22,9 @@ Risposte del maintainer (2026-11-05), spec confermate:
 - MVP 7: un +1 verificato non entra oltre il limite della lista; il report distingue confermate e in attesa di pagamento.
 - MVP 8: nessuna modalità scura; dentro l'iframe intestazione ridotta (solo il nome, senza logo).
 
-Prossimo passo: MVP 8 dal task 2 (non dipende dagli MVP 4-7); MVP 7 dopo la chiusura degli MVP 4-6, riallineando prima le ipotesi del design.
+MVP 8 completato sul branch `claude/nifty-hawking-mgu6fa` (D-026), descrizione PR in `specs/mvp-08-stile-sito/pr-description.md`. Da provare nel sito Google vero dopo il deploy. Le pagine degli MVP 4-7 devono usare i token di `styles.css`, senza colori scritti a mano (lo controlla `theme.test.ts`).
+
+Prossimo passo: MVP 7 dopo la chiusura degli MVP 4-6, riallineando prima le ipotesi del design.
 
 ## Risolto il 2026-11-05 (conferma del maintainer)
 

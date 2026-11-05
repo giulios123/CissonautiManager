@@ -1,0 +1,24 @@
+# MVP 8 · Stile del sito Cissone Eventi
+
+## Cosa c'è
+L'app prende l'aspetto del sito Cissone Eventi: font Montserrat, petrolio del logo per link e focus, ambra per il bottone principale, bottoni e campi squadrati, logo di Cissone in alto. Dentro l'iframe del sito il modulo di iscrizione ha lo sfondo trasparente e un'intestazione ridotta al solo nome, così non ripete quella del sito. Testi, pagine e funzioni non cambiano.
+
+## Da provare a mano (per gli organizzatori)
+
+**Dentro il sito**
+- [ ] Apri la pagina del sito che contiene l'iscrizione, dal telefono e dal computer: il modulo sembra parte della pagina (stesso font, stessi colori, niente riquadro di colore diverso).
+- [ ] In alto nel modulo c'è solo la scritta piccola «Cissonauti Summer Camp», senza logo.
+- [ ] Fai un'iscrizione completa dal sito: tutto funziona come prima.
+
+**Fuori dal sito**
+- [ ] Apri il link dell'email: in alto vedi il logo di Cissone e «Cissonauti Summer Camp», con una riga gialla sotto.
+- [ ] Nella pagina personale i bottoni principali sono gialli con testo scuro, quelli secondari bianchi con il bordo petrolio, «Richiedi disdetta» è rosso.
+- [ ] Nel pannello organizzatori la barra del menu è petrolio, la voce aperta è sottolineata, le tabelle hanno l'intestazione grigia e le righe alterne.
+
+**Accessibilità**
+- [ ] Compila il modulo di iscrizione usando solo la tastiera (Tab, spazio, Invio): vedi sempre dove sei grazie al bordo petrolio.
+- [ ] Da telefono la pagina non scorre di lato e i bottoni si premono facilmente.
+
+## Note
+- Il logo è della Pro Loco di Cissone, usato con il suo permesso: è scritto nel README.
+- Le spaziature del sito non sono state rilevate (il CSS di Google Sites non era raggiungibile): restano quelle dell'app.

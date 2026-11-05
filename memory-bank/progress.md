@@ -12,7 +12,7 @@
 | 5 | Pranzi e cene | da fare |
 | 6 | Attività e contributi | da fare |
 | 7 | Inviti e report | spec confermata, da fare dopo gli MVP 4-6 |
-| 8 | Stile del sito | spec confermata, task 1 fatto salvo il permesso per i loghi; pronto per il task 2 |
+| 8 | Stile del sito | fatto e provato in locale (task 1-7) |
 
 ## Verifiche manuali
 
@@ -30,6 +30,9 @@
 - **MVP 3**, provato end to end in locale con browser da telefono (DB nuovo da migrazioni, edizione 3-9 novembre, tre iscritti con pagamenti diversi): voci del pannello; elenco Persone con telefono e sere e CSV scaricato (BOM, `;`, importi con la virgola, fuso di Roma); «Giorni e slot» con la sera dell'intero giorno marcata; «Settimana» con totale delle persone diverse; «Da verificare» con credito e pagamento parziale; aggiunta di un admin nuovo e rimozione con dialogo di conferma (focus sul tasto sicuro); admin attuale non rimovibile con spiegazione; proroga del blocco letta in ora di Roma; modifica dati e di slot (anche un giorno passato) con cronologia; annullamento di un pagamento che riporta la prenotazione in attesa; disdetta a nome della persona e rimborso (parte dall'importo versato); «Da verificare» che si svuota da sola.
 - **Non verificato (MVP 3)**: CI su SQL Server (le query nuove sono semplici, ma la CI non è ancora girata sul branch); apertura dei CSV in Excel o Numbers veri (provato solo il contenuto dei file); uso con molti iscritti.
 - **B0**: l'MVP 2 non è completo (task 9 aperto). Il maintainer ha chiesto di procedere e di validare tutto insieme al passaggio su `main`.
+
+- **MVP 8**, provato in locale con Chromium (telefono iPhone 13 e computer a 1280 px, DB nuovo da migrazioni, edizione di prova con due iscritti): iscrizione, accesso, pagina personale, pannello (Persone, Giorni e slot, scheda). Iscrizione dentro un iframe ospitato su un finto `sites.google.com` con la CSP vera: classe `in-frame`, sfondo trasparente, intestazione ridotta senza logo, Montserrat caricato. Nessuno scorrimento orizzontale, controlli alti almeno 44 px, nessun errore in console. Gli script di prova sono rimasti fuori dal repo (servono un backend con dati), contrariamente a quanto previsto dal design.
+- **Non verificato (MVP 8)**: embed nel sito Google vero; Safari e Firefox; spaziature del sito (CSS di Google Sites non raggiungibile dalla sessione).
 
 ## Bug corretti fuori MVP
 
