@@ -90,10 +90,10 @@ def render_card(
     width, height = base.size
     margin = round(width * 0.06)
     max_text_width = width - 2 * margin
-    max_block_height = round(height * 0.5)
+    max_block_height = round(height * 0.32)
 
     probe = ImageDraw.Draw(base)
-    size = max(round(height / 9), 12)
+    size = max(round(height / 12), 12)
     while True:
         font = ImageFont.truetype(str(FONT_PATH), size)
         lines = _wrap(probe, text, font, max_text_width)

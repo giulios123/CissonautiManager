@@ -25,6 +25,7 @@ from app.models import (
 )
 from app.services import auth as auth_service
 from app.services import edition as edition_service
+from app.services import email_templates as email_templates_service
 from app.services import waitlist as waitlist_service
 from app.services.amounts import recompute_amount
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
@@ -175,9 +176,10 @@ def register(
     link = auth_service.magic_link_url(settings, raw)
     waitlisted = [e.slot for e in entries]
     if booking is not None:
+        extras = email_templates_service.registration_extras(db, edition, participant)
         sender.send(
             registration_email(
-                participant, booking, enabled_channels(db, edition), link, waitlisted
+                participant, booking, enabled_channels(db, edition), link, waitlisted, extras
             )
         )
     else:

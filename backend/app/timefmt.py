@@ -9,6 +9,36 @@ _WEEKDAYS = {
     "it": ["lun", "mar", "mer", "gio", "ven", "sab", "dom"],
     "en": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 }
+_MONTHS_LONG = {
+    "it": [
+        "gennaio",
+        "febbraio",
+        "marzo",
+        "aprile",
+        "maggio",
+        "giugno",
+        "luglio",
+        "agosto",
+        "settembre",
+        "ottobre",
+        "novembre",
+        "dicembre",
+    ],
+    "en": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ],
+}
 _MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 _PERIODS = {
     "it": {"morning": "mattina", "afternoon": "pomeriggio", "evening": "sera"},
@@ -106,3 +136,9 @@ def format_meal(day: date, kind: str, locale: str | None = None) -> str:
 def format_activity(title: str, day: date, period: str, locale: str | None = None) -> str:
     loc = _loc(locale)
     return f"{title} ({format_day_short(day, loc)} {_period(period, loc)})"
+
+
+def format_long_date(day: date, locale: str | None = None) -> str:
+    """ "10 luglio 2027" / "10 July 2027": the date as it is written in a sentence."""
+    loc = _loc(locale)
+    return f"{day.day} {_MONTHS_LONG[loc][day.month - 1]} {day.year}"

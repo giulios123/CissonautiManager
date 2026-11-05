@@ -4,13 +4,17 @@ Every email is written in the language of its recipient (`participant.locale`). 
 in `app/email_texts.py`; this module only assembles it.
 """
 
-from app.email.base import EmailMessage
+import html
+import re
+
+from app.email.base import EmailAttachment, EmailMessage, RegistrationExtras
 from app.i18n import channel_label, normalize_locale, t
 from app.models import Booking, Participant, PaymentChannel, Slot, slot_sort_key
 from app.timefmt import format_deadline, format_euro, format_slot
 
 # The brand name does not change with the language.
 EVENT_NAME = "Cissonauti Summer Camp"
+CARD_CONTENT_ID = "registration-card"
 
 
 def _greeting(first_name: str, loc: str) -> str:
@@ -63,35 +67,71 @@ def cancellation_email(
     )
 
 
+_URL = re.compile(r"https?://[^\s<>\"]+")
+
+
+def _html(text: str, card_alt: str) -> str:
+    """The plain text as a simple HTML email, with the picture on top. All text is escaped."""
+    safe = html.escape(text)
+    safe = _URL.sub(lambda m: f'<a href="{m.group(0)}">{m.group(0)}</a>', safe)
+    picture = (
+        f'<p style="margin:0 0 16px"><img src="cid:{CARD_CONTENT_ID}" '
+        f'alt="{html.escape(card_alt)}" '
+        'style="display:block;width:100%;max-width:600px;height:auto;border-radius:8px"></p>'
+    )
+    return (
+        '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;'
+        'color:#22363b;max-width:600px">'
+        + picture
+        + "<div>"
+        + safe.replace("\n", "<br>")
+        + "</div></div>"
+    )
+
+
 def registration_email(
     participant: Participant,
     booking: Booking,
     channels: list[PaymentChannel],
     link: str,
     waitlisted: list[Slot] | None = None,
+    extras: RegistrationExtras | None = None,
 ) -> EmailMessage:
     loc = normalize_locale(participant.locale)
+    extras = extras or RegistrationExtras()
+    intro = extras.body or (
+        _greeting(participant.first_name, loc).rstrip("\n")
+        + "\n\n"
+        + t("email.registration.thanks", loc, event=EVENT_NAME)
+    )
+    body = (
+        intro
+        + "\n\n"
+        + f"{t('email.your_slots', loc)}\n{_slot_lines(booking.slots, loc)}\n\n"
+        + t("email.registration.fee", loc, amount=format_euro(booking.amount_due_cents, loc))
+        + "\n"
+        + t("email.reference", loc, code=participant.personal_code)
+        + "\n"
+        + t(
+            "email.hold_until",
+            loc,
+            deadline=format_deadline(booking.hold_expires_at, loc),
+        )
+        + "\n\n"
+        + _waitlist_section(waitlisted or [], loc)
+        + f"{t('email.how_to_pay', loc)}\n{_payment_lines(channels, loc)}\n\n"
+        + _personal_link(link, loc)
+    )
+    subject = extras.subject or t("email.registration.subject", loc, event=EVENT_NAME)
+    if extras.card_png is None:
+        return EmailMessage(to=participant.email, subject=subject, body=body)
     return EmailMessage(
         to=participant.email,
-        subject=t("email.registration.subject", loc, event=EVENT_NAME),
-        body=(
-            _greeting(participant.first_name, loc)
-            + t("email.registration.thanks", loc, event=EVENT_NAME)
-            + "\n\n"
-            + f"{t('email.your_slots', loc)}\n{_slot_lines(booking.slots, loc)}\n\n"
-            + t("email.registration.fee", loc, amount=format_euro(booking.amount_due_cents, loc))
-            + "\n"
-            + t("email.reference", loc, code=participant.personal_code)
-            + "\n"
-            + t(
-                "email.hold_until",
-                loc,
-                deadline=format_deadline(booking.hold_expires_at, loc),
-            )
-            + "\n\n"
-            + _waitlist_section(waitlisted or [], loc)
-            + f"{t('email.how_to_pay', loc)}\n{_payment_lines(channels, loc)}\n\n"
-            + _personal_link(link, loc)
+        subject=subject,
+        body=body,
+        html=_html(body, extras.card_text),
+        attachments=(
+            EmailAttachment("card.png", "image/png", extras.card_png, content_id=CARD_CONTENT_ID),
         ),
     )
 

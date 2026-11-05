@@ -177,4 +177,28 @@ ADMIN_MESSAGES: dict[str, dict[str, str]] = {
             "the booking stays expired. Decide how to proceed with the person."
         ),
     },
+    "emailtpl.unknown_placeholder": {
+        "it": "Segnaposto sconosciuto: {names}. Puoi usare solo: {allowed}.",
+        "en": "Unknown placeholder: {names}. You can only use: {allowed}.",
+    },
+    "emailtpl.invalid_color": {
+        "it": "Il colore deve essere scritto come #rrggbb, ad esempio #ffffff.",
+        "en": "The color must be written as #rrggbb, for example #ffffff.",
+    },
+    "emailtpl.image_too_big": {
+        "it": "L'immagine è troppo grande: al massimo 5 MB.",
+        "en": "The image is too big: 5 MB at most.",
+    },
+    "emailtpl.image_wrong_format": {
+        "it": "Formato non supportato: usa una foto JPEG, PNG o WebP.",
+        "en": "Unsupported format: use a JPEG, PNG or WebP picture.",
+    },
+    "emailtpl.image_not_an_image": {
+        "it": "Il file non è un'immagine valida.",
+        "en": "The file is not a valid image.",
+    },
+    "emailtpl.test_sent": {
+        "it": "Email di prova inviata a {email}.",
+        "en": "Test email sent to {email}.",
+    },
 }
