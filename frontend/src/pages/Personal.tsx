@@ -5,6 +5,7 @@ import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
+import { MealEditor } from "./MealEditor";
 import { SlotEditor } from "./SlotEditor";
 import { Waitlist } from "./Waitlist";
 
@@ -41,6 +42,8 @@ function BookingCard({
   onCancelled: (outcome: CancelOutcome) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
+  const [editingMeals, setEditingMeals] = useState(false);
+  const meals = booking.meals ?? [];
   const pending = booking.status === "in_attesa_pagamento";
   const confirmedWithBalance = booking.status === "confermata" && booking.balance_cents > 0;
   return (
@@ -98,6 +101,38 @@ function BookingCard({
           La disdetta è conclusa e il rimborso è stato gestito.{" "}
           <Link to="/iscrizione">Iscriviti di nuovo</Link>
         </p>
+      )}
+      {(booking.editable || meals.length > 0) && (
+        <section aria-labelledby={`meals-${booking.id}`}>
+          <h3 id={`meals-${booking.id}`}>Pranzi e cene</h3>
+          {meals.length === 0 ? (
+            <p>Nessun pasto scelto.</p>
+          ) : (
+            <ul>
+              {meals.map((meal) => (
+                <li key={`${meal.date}:${meal.kind}`}>{meal.label}</li>
+              ))}
+            </ul>
+          )}
+          {booking.editable && (
+            <button
+              type="button"
+              className="secondary"
+              aria-expanded={editingMeals}
+              onClick={() => setEditingMeals((value) => !value)}
+            >
+              {editingMeals ? "Chiudi i pasti" : "Scegli pranzi e cene"}
+            </button>
+          )}
+          {editingMeals && booking.editable && (
+            <MealEditor
+              booking={booking}
+              lunchCents={me.lunch_price_cents ?? 0}
+              dinnerCents={me.dinner_price_cents ?? 0}
+              onSaved={reload}
+            />
+          )}
+        </section>
       )}
       {booking.payments.length > 0 && (
         <details>

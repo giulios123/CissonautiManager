@@ -391,3 +391,60 @@ describe("waitlist", () => {
     );
   });
 });
+
+describe("meals", () => {
+  const allowed = [
+    { date: "2026-07-13", kind: "lunch" as const, label: "pranzo di lun 13/07", past: false },
+    { date: "2026-07-13", kind: "dinner" as const, label: "cena di lun 13/07", past: false },
+    { date: "2026-07-12", kind: "lunch" as const, label: "pranzo di dom 12/07", past: true },
+  ];
+  const withMeals = (meals: typeof allowed = []) => ({
+    ...me([booking({ allowed_meals: allowed, meals })]),
+    lunch_price_cents: 800,
+    dinner_price_cents: 1200,
+  });
+
+  it("previews the new amount and saves the chosen meals", async () => {
+    const state = { me: withMeals() };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/meals" && init?.method === "PUT") {
+        state.me = withMeals([allowed[1]]);
+        return { body: state.me.bookings[0] };
+      }
+      return { status: 404, body: {} };
+    });
+    expect(await screen.findByText("Nessun pasto scelto.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Scegli pranzi e cene" }));
+    const form = within(await screen.findByRole("form", { name: "Scegli pranzi e cene" }));
+    expect(form.getByRole("checkbox", { name: /Pranzo · giorno passato/ })).toBeDisabled();
+    await userEvent.click(form.getByRole("checkbox", { name: "Cena" }));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent(
+      "Nuova quota: 23,00 € (12,00 € in più di ora)",
+    );
+    await userEvent.click(form.getByRole("button", { name: "Salva i pasti" }));
+    expect(await screen.findByText("cena di lun 13/07")).toBeInTheDocument();
+    expect(calls.find((c) => c.method === "PUT")?.body).toEqual({
+      meals: [{ date: "2026-07-13", kind: "dinner" }],
+    });
+  });
+
+  it("shows the server error", async () => {
+    openAt((url, init) => {
+      if (url === "/api/me") return { body: withMeals() };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/meals" && init?.method === "PUT")
+        return {
+          status: 422,
+          body: { detail: "Puoi scegliere un pasto solo quando sei presente" },
+        };
+      return { status: 404, body: {} };
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Scegli pranzi e cene" }));
+    const form = within(await screen.findByRole("form", { name: "Scegli pranzi e cene" }));
+    await userEvent.click(form.getByRole("checkbox", { name: /^Pranzo$/ }));
+    await userEvent.click(form.getByRole("button", { name: "Salva i pasti" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("solo quando sei presente");
+  });
+});

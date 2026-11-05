@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -15,6 +16,7 @@ from app.email import EmailSender
 from app.models import Booking, Participant, WaitlistEntry
 from app.services import booking_changes
 from app.services import edition as edition_service
+from app.services import meals as meals_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
 from app.services.passwords import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
@@ -44,6 +46,8 @@ class MeOut(BaseModel):
     bookings: list[BookingView]
     payment_channels: list[ChannelPublic]
     waitlist: list[WaitlistView] = []
+    lunch_price_cents: int | None = None
+    dinner_price_cents: int | None = None
 
 
 class PasswordIn(BaseModel):
@@ -86,6 +90,8 @@ def get_me(
         bookings=[booking_view(b, now) for b in bookings],
         payment_channels=channels,
         waitlist=waitlist,
+        lunch_price_cents=edition.lunch_price_cents if edition else None,
+        dinner_price_cents=edition.dinner_price_cents if edition else None,
     )
 
 
@@ -202,6 +208,46 @@ def change_my_slots(
     view = booking_view(result.booking, now)
     view.dropped_meals = [format_meal(day, kind) for day, kind in result.dropped_meals]
     return view
+
+
+class MealIn(BaseModel):
+    date: date
+    kind: Literal["lunch", "dinner"]
+
+
+class MealsIn(BaseModel):
+    meals: list[MealIn] = Field(max_length=200)
+
+
+MEAL_REFUSALS = {
+    "not_allowed": "Puoi scegliere un pasto solo nei giorni e nelle fasce in cui sei presente",
+    "past_day": "I pasti di giorni già passati non si possono cambiare: scrivi a chi organizza",
+}
+
+
+@router.put("/me/booking/meals")
+def change_my_meals(
+    body: MealsIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> BookingView:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        result = meals_service.change_meals(
+            db, sender, booking, [(m.date, m.kind) for m in body.meals], now
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except meals_service.MealsRefused as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=MEAL_REFUSALS[exc.reason]) from exc
+    return booking_view(result.booking, now)
 
 
 class CancelOut(BaseModel):

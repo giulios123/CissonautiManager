@@ -35,6 +35,7 @@ export function SlotEditor({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dropped, setDropped] = useState<string[]>([]);
 
   useEffect(() => {
     fetchEdition()
@@ -74,7 +75,11 @@ export function SlotEditor({
     }
     setSaving(true);
     try {
-      await api("/api/me/booking/slots", { method: "PUT", json: { slot_ids: [...selected] } });
+      const result = await api<BookingView>("/api/me/booking/slots", {
+        method: "PUT",
+        json: { slot_ids: [...selected] },
+      });
+      setDropped(result.dropped_meals ?? []);
       await onSaved();
       // The seat I just freed (or took) changes what is available: show the current numbers.
       setEdition(await fetchEdition().catch(() => edition));
@@ -141,6 +146,8 @@ export function SlotEditor({
       {saved && (
         <p role="status" className="notice ok">
           Slot aggiornati.
+          {dropped.length > 0 &&
+            ` Tolti anche i pasti in cui non ci sei più: ${dropped.join(", ")}.`}
         </p>
       )}
       <button type="submit" disabled={!changed || saving}>

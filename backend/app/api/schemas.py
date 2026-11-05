@@ -1,11 +1,18 @@
+from collections.abc import Iterable
 from datetime import date, datetime
 
 from pydantic import BaseModel
 
-from app.domain.booking import can_edit_slots, can_request_cancellation, effective_status
+from app.domain.booking import (
+    can_edit_slots,
+    can_request_cancellation,
+    effective_status,
+    is_past_day,
+)
 from app.domain.fees import balance_cents
-from app.models import Booking, active_payments, slot_sort_key
-from app.timefmt import format_slot
+from app.domain.meals import allowed_meals, periods_by_day
+from app.models import MEAL_DINNER, MEAL_LUNCH, Booking, active_payments, slot_sort_key
+from app.timefmt import format_meal, format_slot
 
 
 class SlotView(BaseModel):
@@ -13,6 +20,14 @@ class SlotView(BaseModel):
     date: date
     period: str
     label: str
+
+
+class MealView(BaseModel):
+    date: date
+    kind: str
+    label: str
+    # The day is over (Europe/Rome): only an admin can change this meal.
+    past: bool = False
 
 
 class PaymentView(BaseModel):
@@ -37,6 +52,9 @@ class BookingView(BaseModel):
     can_cancel: bool
     slots: list[SlotView]
     payments: list[PaymentView]
+    meals: list[MealView] = []
+    # Meals the person's presence allows, whether chosen or not.
+    allowed_meals: list[MealView] = []
     # After a change of slots: meals that went because the new slots no longer allow them.
     dropped_meals: list[str] = []
 
@@ -64,6 +82,10 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             )
             for s in slots
         ],
+        meals=_meal_views(((m.date, m.kind) for m in booking.meals), now),
+        allowed_meals=_meal_views(
+            allowed_meals(periods_by_day((s.date, s.period) for s in booking.slots)), now
+        ),
         # Admins see voided payments too (struck through); participants only the ones that count.
         payments=[
             PaymentView(
@@ -78,3 +100,13 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             for p in (booking.payments if include_notes else active_payments(booking))
         ],
     )
+
+
+MEAL_ORDER = {MEAL_LUNCH: 0, MEAL_DINNER: 1}
+
+
+def _meal_views(meals: Iterable[tuple[date, str]], now: datetime) -> list[MealView]:
+    return [
+        MealView(date=day, kind=kind, label=format_meal(day, kind), past=is_past_day(day, now))
+        for day, kind in sorted(meals, key=lambda m: (m[0], MEAL_ORDER.get(m[1], 9)))
+    ]

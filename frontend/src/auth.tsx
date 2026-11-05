@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { api } from "./api";
 
+export type MealView = { date: string; kind: "lunch" | "dinner"; label: string; past?: boolean };
+
 export type BookingView = {
   id: number;
   status: string;
@@ -21,6 +23,9 @@ export type BookingView = {
     voided?: boolean;
     void_reason?: string | null;
   }[];
+  meals?: MealView[];
+  allowed_meals?: MealView[];
+  dropped_meals?: string[];
 };
 
 export type WaitlistItem = {
@@ -43,6 +48,8 @@ export type Me = {
   bookings: BookingView[];
   payment_channels: { code: string; label: string; instructions: string }[];
   waitlist?: WaitlistItem[];
+  lunch_price_cents?: number | null;
+  dinner_price_cents?: number | null;
 };
 
 type MeState = { status: "loading" } | { status: "anonymous" } | { status: "user"; me: Me };
