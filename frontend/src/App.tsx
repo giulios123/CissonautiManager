@@ -2,6 +2,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import { RequireLogin } from "./auth";
 import { AdminAdmins } from "./pages/AdminAdmins";
 import { AdminActivities } from "./pages/AdminActivities";
+import { AdminActivityDetail } from "./pages/AdminActivityDetail";
 import { AdminMeals } from "./pages/AdminMeals";
 import { AdminLayout } from "./pages/AdminLayout";
 import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
@@ -59,6 +60,7 @@ export function App() {
         <Route path="settimana" element={<AdminWeek />} />
         <Route path="pasti" element={<AdminMeals />} />
         <Route path="attivita" element={<AdminActivities />} />
+        <Route path="attivita/:id" element={<AdminActivityDetail />} />
         <Route path="da-verificare" element={<AdminReview />} />
         <Route path="amministratori" element={<AdminAdmins />} />
         <Route path="impostazioni" element={<AdminSettings />} />

@@ -79,3 +79,36 @@ describe("activities admin page", () => {
     );
   });
 });
+
+describe("activity detail page", () => {
+  it("lists the people with a CSV download", async () => {
+    stubAdminApi((call) =>
+      call.url === "/api/admin/activities/3"
+        ? {
+            body: {
+              ...hike,
+              people: [
+                {
+                  booking_id: 7,
+                  first_name: "Ada",
+                  last_name: "Lovelace",
+                  email: "ada@example.com",
+                  phone: "+39 333",
+                  status: "confermata",
+                },
+              ],
+            },
+          }
+        : undefined,
+    );
+    renderAt("/admin/attivita/3");
+    expect(await screen.findByRole("heading", { name: "Escursione" })).toBeInTheDocument();
+    expect(screen.getByText(/1 \/ 2, 1 posti liberi/)).toBeInTheDocument();
+    const row = screen.getByRole("link", { name: "Ada Lovelace" }).closest("tr") as HTMLElement;
+    expect(within(row).getByText("Confermata")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
+      "href",
+      "/api/admin/activities/3?format=csv",
+    );
+  });
+});
