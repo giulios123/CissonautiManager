@@ -170,6 +170,8 @@ class TestWeekView:
             "evening": 0,
             "evening_derived": 0,
             "people": 0,
+            "lunches": 0,
+            "dinners": 0,
         }
 
     def test_total_counts_each_person_once_across_days(self, admin_client, db, camp):
@@ -191,10 +193,12 @@ class TestWeekView:
             "Sera",
             "di cui sera derivata",
             "Persone",
+            "Pranzi",
+            "Cene",
         ]
-        assert rows[0] == ["13/07/2026", "2", "1", "2", "1", "3"]
+        assert rows[0] == ["13/07/2026", "2", "1", "2", "1", "3", "0", "0"]
         assert len(rows) == 5 + 1
-        assert rows[-1][0] == "Totale persone diverse" and rows[-1][-1] == "3"
+        assert rows[-1][0] == "Totale (persone diverse)" and rows[-1][5] == "3"
 
     def test_admins_only(self, client, outbox, make_participant, edition):
         assert client.get("/api/admin/views/week").status_code == 401
@@ -203,7 +207,12 @@ class TestWeekView:
         assert client.get("/api/admin/views/week").status_code == 403
 
     def test_without_an_edition_it_is_empty(self, admin_client):
-        assert admin_client.get("/api/admin/views/week").json() == {"days": [], "total_people": 0}
+        assert admin_client.get("/api/admin/views/week").json() == {
+            "days": [],
+            "total_people": 0,
+            "total_lunches": 0,
+            "total_dinners": 0,
+        }
 
 
 class TestPaymentsReview:

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.csv_export import Amount, Cell, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_now, require_admin
-from app.domain.meals import diet_counts
+from app.domain.meals import diet_counts, meal_counts_by_day
 from app.domain.presence import presence_by_slot, week_summary
 from app.models import MEAL_DINNER, MEAL_LUNCH
 from app.services import views as views_service
@@ -254,11 +254,15 @@ class WeekDayOut(BaseModel):
     evening: int
     evening_derived: int
     people: int
+    lunches: int = 0
+    dinners: int = 0
 
 
 class WeekOut(BaseModel):
     days: list[WeekDayOut]
     total_people: int
+    total_lunches: int = 0
+    total_dinners: int = 0
 
 
 @router.get("/week", response_model=None)
@@ -268,7 +272,11 @@ def week_view(
     now: datetime = Depends(get_now),
 ) -> WeekOut | Response:
     data = views_service.load_presence(db, now)
-    summary = week_summary(data.rows, {slot.date for slot in data.slots})
+    day_list = {slot.date for slot in data.slots}
+    summary = week_summary(data.rows, day_list)
+    meals = meal_counts_by_day(
+        ((r.day, r.kind) for r in views_service.load_meals(db, now).rows), day_list
+    )
     days = [
         WeekDayOut(
             date=s.day,
@@ -277,18 +285,41 @@ def week_view(
             evening=s.evening,
             evening_derived=s.evening_derived,
             people=s.people,
+            lunches=meals[s.day][MEAL_LUNCH],
+            dinners=meals[s.day][MEAL_DINNER],
         )
         for s in summary
     ]
     total = len({row.person_id for row in data.rows})
+    lunches = sum(d.lunches for d in days)
+    dinners = sum(d.dinners for d in days)
     if fmt == "csv":
-        header = ["Giorno", "Mattina", "Pomeriggio", "Sera", "di cui sera derivata", "Persone"]
-        rows: list[list[Cell]] = [
-            [d.date, d.morning, d.afternoon, d.evening, d.evening_derived, d.people] for d in days
+        header = [
+            "Giorno",
+            "Mattina",
+            "Pomeriggio",
+            "Sera",
+            "di cui sera derivata",
+            "Persone",
+            "Pranzi",
+            "Cene",
         ]
-        rows.append(["Totale persone diverse", None, None, None, None, total])
+        rows: list[list[Cell]] = [
+            [
+                d.date,
+                d.morning,
+                d.afternoon,
+                d.evening,
+                d.evening_derived,
+                d.people,
+                d.lunches,
+                d.dinners,
+            ]
+            for d in days
+        ]
+        rows.append(["Totale (persone diverse)", None, None, None, None, total, lunches, dinners])
         return csv_response(csv_filename("settimana", now), header, rows)
-    return WeekOut(days=days, total_people=total)
+    return WeekOut(days=days, total_people=total, total_lunches=lunches, total_dinners=dinners)
 
 
 class ReviewRowOut(BaseModel):

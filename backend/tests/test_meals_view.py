@@ -116,3 +116,25 @@ def test_participants_cannot_see_the_meals_view(client, outbox, make_participant
     make_participant("ada@example.com")
     login(client, outbox)
     assert client.get("/api/admin/views/meals").status_code == 403
+
+
+def test_week_counts_lunches_and_dinners(admin_client, db, make_participant, make_booking):
+    eater(
+        db,
+        make_participant,
+        make_booking,
+        "ada@example.com",
+        "Ada",
+        [(13, "lunch"), (13, "dinner")],
+    )
+    eater(db, make_participant, make_booking, "bob@example.com", "Bob", [(13, "lunch")])
+    week = admin_client.get("/api/admin/views/week").json()
+    monday, tuesday = week["days"][0], week["days"][1]
+    assert (monday["lunches"], monday["dinners"]) == (2, 1)
+    assert (tuesday["lunches"], tuesday["dinners"]) == (0, 0)
+    assert (week["total_lunches"], week["total_dinners"]) == (2, 1)
+    header, *rows = parse(admin_client.get("/api/admin/views/week?format=csv"))
+    first = dict(zip(header, rows[0], strict=True))
+    assert (first["Pranzi"], first["Cene"]) == ("2", "1")
+    total = dict(zip(header, rows[-1], strict=True))
+    assert (total["Pranzi"], total["Cene"]) == ("2", "1")
