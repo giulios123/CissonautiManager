@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
+from app.domain.booking import is_past_day
 from app.email import EmailSender
 from app.models import slot_sort_key
 from app.services import edition as edition_service
@@ -34,6 +35,7 @@ class SlotAvailability(BaseModel):
 
 class DayOut(BaseModel):
     date: date
+    past: bool
     slots: list[SlotAvailability]
 
 
@@ -131,6 +133,7 @@ def get_public_edition(
     days = [
         DayOut(
             date=day,
+            past=is_past_day(day, now),
             slots=[
                 SlotAvailability(
                     id=s.id,

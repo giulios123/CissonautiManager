@@ -42,7 +42,8 @@ La logica di stato resta in `effective_status`; il job non decide da solo se una
   3. per i soli slot **aggiunti** verifica i posti con `free_by_slot` e `has_free_seat`; gli slot già miei non contano come nuova occupazione;
   4. rifiuta giorni passati (salvo `force`, usato solo dall'admin);
   5. ricalcola `amount_due_cents` con `compute_fee` sull'insieme finale;
-  6. non tocca stato né `hold_expires_at`.
+  6. non tocca `hold_expires_at` né lo stato, salvo un caso: una prenotazione `in_attesa_pagamento` il cui nuovo importo è già coperto dai pagamenti diventa `confermata` (con l'email di conferma);
+  7. l'importo si ricalcola con le quote correnti dell'edizione.
 - `request_cancellation(db, sender, booking, now) -> CancelOutcome`: senza pagamenti registrati elimina `booking_slot` e `booking` (esito `removed`); con pagamenti stato `disdetta_richiesta` e `cancel_requested_at` (esito `requested`). In entrambi i casi i dati dell'email si leggono prima dell'eliminazione e l'email di conferma parte dopo il commit.
 
 Errori di dominio: `SlotsFull`, `InvalidSlots`, `NotEditable`, `PastDay`, `EmptySelection`.
@@ -103,4 +104,5 @@ La prenotazione su cui si agisce è quella più recente del partecipante nell'ed
 - Dominio gestito Azure per l'email, evoluzione a dominio proprio.
 - Segno l'invio prima di spedire (al più una volta, mai doppio).
 - Importo che sale su prenotazione confermata: resta confermata.
+- Il ricalcolo usa le quote correnti dell'edizione: se l'admin le cambia dopo l'iscrizione, la prima modifica degli slot allinea l'importo alle nuove quote.
 - Disdetta senza pagamenti: la prenotazione si elimina (si perde la traccia dei testi legali accettati, accettato perché non è mai stato versato nulla).

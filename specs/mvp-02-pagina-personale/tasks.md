@@ -6,7 +6,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test: upgrade e downgrade da zero; il backfill riempie `hold_started_at` su una riga esistente.
 - [ ] **2. Regole pure**: `can_edit_slots`, `can_request_cancellation`, `is_past_day`, `due_reminder`.
   Test: stati modificabili; giorno passato in Europe/Rome a cavallo della mezzanotte; promemoria a metà; finale; sovrapposizione sotto 48 ore; in ritardo solo il finale; già inviati; scaduta.
-- [ ] **3. Modifica slot (servizio e API)**: `change_slots` e `PUT /api/me/booking/slots`.
+- [x] **3. Modifica slot (servizio e API)**: `change_slots` e `PUT /api/me/booking/slots`.
   Test: aggiunta con posto; aggiunta su slot pieno 409; rimozione libera il posto; slot già miei non bloccano su capienza piena; selezione vuota; importo ricalcolato con giorni distinti; scadenza invariata; confermata resta confermata con saldo da versare e con credito; stati vietati; giorno passato; accesso senza sessione 401.
 - [ ] **4. Disdetta (servizio e API)**: `request_cancellation`, `POST /api/me/booking/cancel`, email di conferma.
   Test: con pagamenti passa a `disdetta_richiesta`; senza pagamenti la prenotazione sparisce (anche `booking_slot`) e la persona resta; posti liberati in entrambi i casi; email inviata una volta; stati vietati; riscrizione dopo disdetta crea nuova prenotazione.

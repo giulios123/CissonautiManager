@@ -23,6 +23,7 @@ Come partecipante voglio cambiare i miei slot senza scrivere agli organizzatori.
 - Quando modifico gli slot, allora la scadenza del blocco non cambia.
 - Quando la prenotazione è `confermata` e l'importo sale, allora resta `confermata` e il saldo mostra la differenza da versare.
 - Quando la prenotazione è `confermata` e l'importo scende, allora resta `confermata` e il saldo mostra il credito.
+- Quando la prenotazione è `in_attesa_pagamento` e il nuovo importo è già coperto dai pagamenti registrati, allora diventa `confermata` e parte l'email di conferma pagamento.
 - Quando lo stato è `scaduta`, `disdetta_richiesta` o `rimborsata`, allora la modifica è rifiutata.
 - Prima di salvare vedo l'anteprima del nuovo importo e della differenza.
 - Quando lo slot è nel passato (giorno già trascorso in Europe/Rome), allora il partecipante non può né aggiungerlo né toglierlo; solo l'admin può cambiarlo (MVP 3).

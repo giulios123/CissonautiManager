@@ -37,7 +37,7 @@ def paid_total(booking: Booking) -> int:
     return sum(p.amount_cents for p in booking.payments)
 
 
-def _send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
+def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
     participant = booking.participant
     slots = "\n".join(
         f"- {format_slot(s.date, s.period, s.start_time, s.end_time)}"
@@ -108,7 +108,7 @@ def record_payment(
 
     db.commit()
     if confirmed_now:
-        _send_confirmation(sender, booking, total)
+        send_confirmation(sender, booking, total)
     return PaymentResult(payment, confirmed_now, reactivated, warning)
 
 
