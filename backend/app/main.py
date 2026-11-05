@@ -1,5 +1,6 @@
 import logging
-from collections.abc import AsyncIterator
+import threading
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -45,6 +46,13 @@ def _mount_frontend(app: FastAPI, static_dir: Path) -> None:
         return FileResponse(index)
 
 
+def _run_later(delay_seconds: float, task: Callable[[], None]) -> None:
+    """Run `task` in a background thread after a delay. Replaced by tests."""
+    timer = threading.Timer(delay_seconds, task)
+    timer.daemon = True
+    timer.start()
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
 
@@ -68,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.session_factory = make_session_factory(app.state.engine)
     app.state.email_sender = build_email_sender(settings)
     app.state.clock = utcnow
+    app.state.run_later = _run_later
 
     @app.get("/api/health")
     def health(db: Session = Depends(get_db)) -> dict[str, str]:

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.domain.booking import can_reactivate, has_free_seat, hold_deadline, status_after_void
@@ -42,12 +43,18 @@ EXPIRED_NO_ROOM = (
 )
 
 
+# How long the confirmation email of a quick payment waits, so a mistaken click can be undone.
+CONFIRMATION_EMAIL_DELAY = timedelta(seconds=30)
+
+
 @dataclass
 class PaymentResult:
     payment: Payment
     confirmed_now: bool
     reactivated: bool
     warning: str | None
+    # Set when the confirmation email was deferred instead of sent.
+    email_due_at: datetime | None = None
     # Activities dropped on reactivation because they had no seat left.
     dropped_activities: list[Activity] = field(default_factory=list)
 
@@ -112,8 +119,13 @@ def record_payment(
     paid_on: date,
     note: str | None,
     now: datetime,
+    defer_confirmation_email: bool = False,
 ) -> PaymentResult:
     """Register a payment and update the booking: confirm it when covered, revive it if expired.
+
+    With `defer_confirmation_email` the confirmation email is not sent here: its due time is
+    stored on the payment and `send_due_confirmations` sends it later, unless the payment is
+    voided in the meantime.
 
     An expired booking is revived only if every one of its slots still has a free seat. Otherwise
     the payment is kept and the booking stays expired, with a warning for the admin.
@@ -153,10 +165,61 @@ def record_payment(
         booking.status = STATUS_CONFIRMED
         confirmed_now = True
 
+    email_due_at = None
+    if confirmed_now and defer_confirmation_email:
+        email_due_at = now + CONFIRMATION_EMAIL_DELAY
+        payment.confirmation_email_due_at = email_due_at
+
     db.commit()
-    if confirmed_now:
+    if confirmed_now and not defer_confirmation_email:
         send_confirmation(sender, booking, total)
-    return PaymentResult(payment, confirmed_now, reactivated, warning, dropped)
+    return PaymentResult(
+        payment,
+        confirmed_now,
+        reactivated,
+        warning,
+        email_due_at=email_due_at,
+        dropped_activities=dropped,
+    )
+
+
+def send_due_confirmations(db: Session, sender: EmailSender, now: datetime) -> int:
+    """Send the deferred confirmation emails that are due. Returns how many went out.
+
+    Each one is claimed with a conditional UPDATE before sending, so two runs (the timer of the
+    web app and the hourly job) never send the same email twice. A voided payment never sends,
+    and neither does a booking that is no longer confirmed. A failed delivery is not retried.
+    """
+    due = db.scalars(
+        select(Payment).where(
+            Payment.confirmation_email_due_at <= now,
+            Payment.confirmation_email_sent_at.is_(None),
+            Payment.voided_at.is_(None),
+        )
+    ).all()
+    sent = 0
+    for payment in due:
+        claimed = db.execute(
+            update(Payment)
+            .where(
+                Payment.id == payment.id,
+                Payment.confirmation_email_sent_at.is_(None),
+                Payment.voided_at.is_(None),
+            )
+            .values(confirmation_email_sent_at=now)
+        )
+        db.commit()
+        if claimed.rowcount != 1:
+            continue
+        booking = db.get(Booking, payment.booking_id)
+        if booking is None:
+            continue
+        db.refresh(booking)
+        if booking.status != STATUS_CONFIRMED:
+            continue
+        send_confirmation(sender, booking, paid_total(booking))
+        sent += 1
+    return sent
 
 
 def dropped_activities_warning(dropped: list[Activity]) -> str:
