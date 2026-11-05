@@ -1,6 +1,6 @@
 """Waitlist rules for full slots. Pure functions, no database."""
 
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, Protocol
@@ -14,6 +14,7 @@ PromotionKind = Literal["add_to_pending", "add_to_confirmed", "new_booking"]
 
 class QueuedEntry(Protocol):
     id: int
+    participant_id: int
     created_at: datetime
 
 
@@ -55,17 +56,25 @@ def can_join(
     return JoinCheck(True)
 
 
-def queue[E: QueuedEntry](entries: Iterable[E]) -> list[E]:
-    """Promotion order: first come, first served (the id breaks ties on the same instant).
-
-    This is where a priority (the +1 of MVP 7) will plug in.
-    """
-    return sorted(entries, key=lambda e: (e.created_at, e.id))
+def can_verify_plus_one(invited_by: str | None) -> bool:
+    """A +1 is someone who says who invited them: with the field empty there is nothing to check."""
+    return bool(invited_by and invited_by.strip())
 
 
-def position(entries: Iterable[QueuedEntry], entry_id: int) -> int:
+def queue[E: QueuedEntry](
+    entries: Iterable[E], priority_ids: Collection[int] = frozenset()
+) -> list[E]:
+    """Promotion order: verified +1s first (`priority_ids` holds their participant ids), then
+    everyone else; inside each group first come, first served (the id breaks ties on the same
+    instant). The priority changes the order, never who can join the list."""
+    return sorted(entries, key=lambda e: (e.participant_id not in priority_ids, e.created_at, e.id))
+
+
+def position(
+    entries: Iterable[QueuedEntry], entry_id: int, priority_ids: Collection[int] = frozenset()
+) -> int:
     """1-based position of an entry among the active entries of its slot."""
-    for index, entry in enumerate(queue(entries), start=1):
+    for index, entry in enumerate(queue(entries, priority_ids), start=1):
         if entry.id == entry_id:
             return index
     raise ValueError(f"entry {entry_id} is not in the queue")

@@ -5,6 +5,7 @@ import pytest
 
 from app.domain.waitlist import (
     can_join,
+    can_verify_plus_one,
     hold_after_promotion,
     position,
     promotion_kind,
@@ -26,6 +27,7 @@ NOW = datetime(2026, 7, 1, 10, 0, tzinfo=UTC)
 class Entry:
     id: int
     created_at: datetime
+    participant_id: int = 0
 
 
 @pytest.mark.parametrize(
@@ -108,3 +110,45 @@ def test_hold_after_promotion_never_shortens_the_deadline():
 )
 def test_promotion_kind(status, kind):
     assert promotion_kind(status) == kind
+
+
+def test_queue_puts_a_verified_plus_one_before_someone_who_arrived_earlier():
+    early = Entry(1, NOW, participant_id=10)
+    plus_one = Entry(2, NOW + timedelta(hours=3), participant_id=20)
+    assert [e.id for e in queue([early, plus_one], priority_ids={20})] == [2, 1]
+
+
+def test_queue_keeps_arrival_order_inside_each_group():
+    first = Entry(1, NOW, participant_id=10)
+    second = Entry(2, NOW + timedelta(minutes=1), participant_id=11)
+    plus_one_late = Entry(3, NOW + timedelta(hours=2), participant_id=20)
+    plus_one_early = Entry(4, NOW + timedelta(hours=1), participant_id=21)
+    ordered = queue([second, plus_one_late, first, plus_one_early], priority_ids={20, 21})
+    assert [e.id for e in ordered] == [4, 3, 1, 2]
+
+
+def test_queue_breaks_a_tie_between_plus_ones_by_id():
+    a = Entry(5, NOW, participant_id=20)
+    b = Entry(3, NOW, participant_id=21)
+    assert [e.id for e in queue([a, b], priority_ids={20, 21})] == [3, 5]
+
+
+def test_queue_without_priority_is_unchanged():
+    entries = [Entry(1, NOW + timedelta(minutes=5), 10), Entry(2, NOW, 20)]
+    assert queue(entries) == queue(entries, priority_ids=frozenset())
+    assert [e.id for e in queue(entries)] == [2, 1]
+
+
+def test_position_follows_the_priority():
+    entries = [Entry(1, NOW, 10), Entry(2, NOW + timedelta(hours=1), 20)]
+    assert position(entries, 2) == 2
+    assert position(entries, 2, priority_ids={20}) == 1
+    assert position(entries, 1, priority_ids={20}) == 2
+
+
+@pytest.mark.parametrize(
+    ("invited_by", "expected"),
+    [("Ada", True), ("  Ada Lovelace ", True), ("", False), ("   ", False), (None, False)],
+)
+def test_a_plus_one_needs_someone_who_invited_them(invited_by, expected):
+    assert can_verify_plus_one(invited_by) is expected

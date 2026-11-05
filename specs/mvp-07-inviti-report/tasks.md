@@ -6,7 +6,7 @@ Branch di implementazione: `feat/mvp-07-inviti-report` (se la sessione non può 
 
 - [x] **1. Migrazione 0008**: `plus_one_verified_at` e `plus_one_verified_by_id` su `participant`.
   Test: upgrade e downgrade da zero (anche con 0001-0007); i partecipanti esistenti risultano non verificati.
-- [ ] **2. Regole pure della priorità**: `queue` e `position` con `priority_ids`, `can_verify_plus_one`.
+- [x] **2. Regole pure della priorità**: `queue` e `position` con `priority_ids`, `can_verify_plus_one`.
   Test: verificato arrivato dopo passa davanti a non verificato arrivato prima; parità tra verificati per data e poi per id; nessun verificato = ordine di oggi (test esistenti invariati); `position` coerente con `queue`; testo vuoto o di soli spazi rifiutato.
 - [ ] **3. Priorità nelle liste**: `active_entries` carica i verificati e li passa a `queue`.
   Test: liberando un posto viene promosso il +1 verificato; una verifica fatta dopo l'ingresso vale alla promozione successiva; togliendo la verifica torna l'ordine di arrivo; il limite della lista non cambia (con la lista piena nemmeno un +1 entra); `position_of` e la pagina personale seguono; email e promozione come nell'MVP 4.
