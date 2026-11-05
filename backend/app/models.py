@@ -112,6 +112,10 @@ class Participant(Base):
     personal_code: Mapped[str] = mapped_column(Unicode(16), unique=True)
     role: Mapped[str] = mapped_column(Unicode(16), default=ROLE_PARTICIPANT)
     password_hash: Mapped[str | None] = mapped_column(Unicode(255))
+    # An admin confirmed that `invited_by` names who really invited this person (a +1): the
+    # waitlist then puts them first (MVP 7). Empty means not verified.
+    plus_one_verified_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    plus_one_verified_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 

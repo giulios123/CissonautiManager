@@ -4,7 +4,7 @@ Branch di implementazione: `feat/mvp-07-inviti-report` (se la sessione non può 
 
 **Dimensione**: 9 task, sotto la soglia di circa 10. Punto di taglio naturale, se serve: task 1-5 (priorità +1) contro task 6-8 (report).
 
-- [ ] **1. Migrazione 0008**: `plus_one_verified_at` e `plus_one_verified_by_id` su `participant`.
+- [x] **1. Migrazione 0008**: `plus_one_verified_at` e `plus_one_verified_by_id` su `participant`.
   Test: upgrade e downgrade da zero (anche con 0001-0007); i partecipanti esistenti risultano non verificati.
 - [ ] **2. Regole pure della priorità**: `queue` e `position` con `priority_ids`, `can_verify_plus_one`.
   Test: verificato arrivato dopo passa davanti a non verificato arrivato prima; parità tra verificati per data e poi per id; nessun verificato = ordine di oggi (test esistenti invariati); `position` coerente con `queue`; testo vuoto o di soli spazi rifiutato.

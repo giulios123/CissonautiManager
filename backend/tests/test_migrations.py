@@ -148,3 +148,33 @@ def test_migration_0006_sets_the_placeholder_meal_prices(
     command.downgrade(alembic_config, "0005")
     engine.dispose()
     assert tuple(prices) == (800, 1200)
+
+
+def test_migration_0008_leaves_existing_participants_unverified(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0007")
+    engine = make_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO participant (first_name, last_name, email, personal_code, role,"
+                " invited_by, created_at) VALUES ('Ada', 'Lovelace', 'ada@example.com',"
+                " 'CSC-AAAA', 'participant', 'Bob', '2026-07-01 10:00:00')"
+            )
+        )
+    command.upgrade(alembic_config, "0008")
+    with engine.connect() as connection:
+        row = connection.execute(
+            text(
+                "SELECT invited_by, plus_one_verified_at, plus_one_verified_by_id FROM participant"
+            )
+        ).one()
+    command.downgrade(alembic_config, "0007")
+    with engine.connect() as connection:
+        columns = {c["name"] for c in inspect(connection).get_columns("participant")}
+        invited_by = connection.execute(text("SELECT invited_by FROM participant")).scalar_one()
+    engine.dispose()
+    assert tuple(row) == ("Bob", None, None)
+    assert "plus_one_verified_at" not in columns
+    assert invited_by == "Bob"
