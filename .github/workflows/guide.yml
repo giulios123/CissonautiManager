@@ -1,0 +1,23 @@
+name: Guide
+
+# Separate from CI so that adding the `senza-guida` label re-runs only this check.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  guide:
+    name: Guide updated with the change
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check the guide
+        env:
+          SKIP_GUIDE_CHECK: ${{ contains(github.event.pull_request.labels.*.name, 'senza-guida') && '1' || '' }}
+          BASE_REF: ${{ github.base_ref }}
+        run: git diff --name-only "origin/${BASE_REF}...HEAD" | ./scripts/check-guide.sh

@@ -26,7 +26,7 @@ Rendering con `marked`: i testi sono del repo, non input utente. Il sorgente non
 
 ## Regola e CI
 
-Job `guide` in `ci.yml` solo su `pull_request`: se il diff tocca `frontend/src/pages/` o `backend/app/api/` ma non `frontend/src/guide/`, fallisce; salta con la label `senza-guida`. Regola in `AGENTS.md`.
+Workflow `guide.yml` (separato da `ci.yml`, così la label `senza-guida` rilancia solo questo controllo) su `pull_request`: se il diff (esclusi i test) tocca `frontend/src/pages/` o `backend/app/api/` ma non `frontend/src/guide/`, fallisce; salta con la label `senza-guida`. Regola in `AGENTS.md`.
 
 ## Rischi
 
