@@ -22,7 +22,7 @@ Rendering con `marked`: i testi sono del repo, non input utente. Il sorgente non
 
 `scripts/release_notes.py`: `build_notes(commits)` pura. Legge `git log --first-parent`: ogni merge su `main` è un rilascio; i commit unitari sono quelli del ramo (`merge^1..merge^2`). Tiene `feat`, `fix`, `perf`; toglie prefisso e scope; ultimi 30 rilasci. Commit diretti su `main` senza merge formano un rilascio a sé.
 
-`deploy.yml`: `fetch-depth: 0`, genera il JSON in `backend/app/`, `Dockerfile` riceve `APP_VERSION` e `BUILT_AT` come `ARG` → `ENV`. `release_notes.json` è in `.gitignore`.
+`deploy.yml`: `fetch-depth: 0`, genera il JSON in `backend/`, `Dockerfile` riceve `APP_VERSION` e `BUILT_AT` come `ARG` → `ENV`. `release_notes.json` è in `.gitignore`.
 
 ## Regola e CI
 

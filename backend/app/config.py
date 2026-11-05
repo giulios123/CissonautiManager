@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     email_from: str = "noreply@example.com"
     acs_connection_string: str | None = None
 
+    # Set by the deploy (Docker build args): which commit is running and when it was built.
+    app_version: str = "dev"
+    built_at: str | None = None
+    # JSON with the release notes, generated at deploy time by scripts/release_notes.py.
+    release_notes_path: str = "release_notes.json"
+
     # Directory with the built frontend. Served by the backend when it exists.
     static_dir: str = Field(default="static")
 
