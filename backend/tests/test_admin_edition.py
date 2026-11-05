@@ -186,3 +186,17 @@ class TestLegalDocuments:
             "/api/admin/legal-documents", json={"kind": "privacy", "body": ""}
         )
         assert response.status_code == 422
+
+
+class TestWaitlistPercent:
+    def test_default_is_20_and_it_can_change(self, admin_client):
+        assert admin_client.put("/api/admin/edition", json=PAYLOAD).json()["waitlist_percent"] == 20
+        saved = admin_client.put("/api/admin/edition", json=dict(PAYLOAD, waitlist_percent=40))
+        assert saved.json()["waitlist_percent"] == 40
+
+    def test_out_of_range_is_rejected(self, admin_client):
+        for value in (-1, 101):
+            response = admin_client.put(
+                "/api/admin/edition", json=dict(PAYLOAD, waitlist_percent=value)
+            )
+            assert response.status_code == 422

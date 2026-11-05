@@ -39,6 +39,8 @@ class EditionIn(BaseModel):
     # Seats per morning and afternoon slot. The evening has no limit.
     default_capacity: int = Field(default=25, ge=1, le=10000)
     hold_days: int = Field(default=3, ge=1, le=60)
+    # Waitlist length of a full slot, as a percentage of its capacity (rounded down).
+    waitlist_percent: int = Field(default=20, ge=0, le=100)
     base_fee_cents: int = Field(default=1000, ge=0)
     per_day_fee_cents: int = Field(default=100, ge=0)
 

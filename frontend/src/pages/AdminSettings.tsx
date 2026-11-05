@@ -17,6 +17,7 @@ type Edition = {
   evening_end: string;
   default_capacity: number;
   hold_days: number;
+  waitlist_percent?: number;
   base_fee_cents: number;
   per_day_fee_cents: number;
   slots: unknown[];
@@ -76,6 +77,7 @@ function EditionSection({
           evening_end: text("evening_end"),
           default_capacity: Number(text("default_capacity")),
           hold_days: Number(text("hold_days")),
+          waitlist_percent: Number(text("waitlist_percent")),
           base_fee_cents: base,
           per_day_fee_cents: perDay,
         },
@@ -186,6 +188,17 @@ function EditionSection({
             min={1}
             required
             defaultValue={edition?.hold_days ?? 3}
+          />
+        </label>
+        <label>
+          Lista d&apos;attesa (% dei posti)
+          <input
+            type="number"
+            name="waitlist_percent"
+            min={0}
+            max={100}
+            required
+            defaultValue={edition?.waitlist_percent ?? 20}
           />
         </label>
       </div>
