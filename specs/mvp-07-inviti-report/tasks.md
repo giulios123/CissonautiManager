@@ -8,7 +8,7 @@ Branch di implementazione: `feat/mvp-07-inviti-report` (se la sessione non può 
   Test: upgrade e downgrade da zero (anche con 0001-0007); i partecipanti esistenti risultano non verificati.
 - [x] **2. Regole pure della priorità**: `queue` e `position` con `priority_ids`, `can_verify_plus_one`.
   Test: verificato arrivato dopo passa davanti a non verificato arrivato prima; parità tra verificati per data e poi per id; nessun verificato = ordine di oggi (test esistenti invariati); `position` coerente con `queue`; testo vuoto o di soli spazi rifiutato.
-- [ ] **3. Priorità nelle liste**: `active_entries` carica i verificati e li passa a `queue`.
+- [x] **3. Priorità nelle liste**: `active_entries` carica i verificati e li passa a `queue`.
   Test: liberando un posto viene promosso il +1 verificato; una verifica fatta dopo l'ingresso vale alla promozione successiva; togliendo la verifica torna l'ordine di arrivo; il limite della lista non cambia (con la lista piena nemmeno un +1 entra); `position_of` e la pagina personale seguono; email e promozione come nell'MVP 4.
 - [ ] **4. Verifica del +1 da admin**: servizio, `PUT /api/admin/participants/{id}/plus-one`, estensione della scheda, spunta nella scheda e in «Giorni e slot».
   Test: verifica e rimozione salvate con chi e quando; 422 senza «invitato da»; 404 persona sconosciuta; 403 per un partecipante; cronologia scritta, anche senza prenotazione; svuotare «invitato da» dalla modifica dati fa cadere la verifica; vitest sulla spunta (etichetta, stato, errore).
