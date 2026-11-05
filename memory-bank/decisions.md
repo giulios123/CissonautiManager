@@ -264,3 +264,11 @@
 - **Alternative scartate**: posizione salvata (da ricalcolare a ogni verifica e uscita); verifica sulla prenotazione (esclude chi è solo in lista); posti riservati ai +1 (scelta del maintainer: nessun posto riservato); tabella di snapshot del report (due fonti di verità).
 - **Limiti noti**: con più edizioni la verifica andrebbe spostata (Backlog); chi scende di posizione non riceve avvisi (Backlog dell'MVP 4).
 
+
+## D-038 · Design system Cissone al posto dello stile del sito Google
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) tutta l'app usa il design system «Cissone Summer Camp» (README del design system): carta crema, petrolio `#335c67`, ambra `#ffbc42` solo come riempimento, mattone `#a84c4c` per enfasi ed errori, Montserrat 800 maiuscolo per i titoli, Figtree per il testo, JetBrains Mono per orari e codici, pulsanti a pillola, schede bianche con raggio 12-20 px e ombre calde; sostituisce la palette dell'MVP 8 (D-036 resta valida per il resto); (2) la scelta delle giornate è il componente condiviso `DayPicker` (iscrizione, pagina personale, scheda admin): tessere cliccabili ovunque, «Tutta la giornata» per giorno, selezione rapida per fascia; le azioni di gruppo non aggiungono mai uno slot completo; (3) l'iscrizione ha un riepilogo laterale (barra in basso su telefono).
+- **Motivo**: feedback del maintainer sul mockup; stessa configurazione, colori del design system.
+- **Alternative scartate**: percorso in 3 passi del mockup (cambia il flusso e i test, nel Backlog); accordion per giorno su telefono (l'elenco di tessere è già compatto).
+- **Nota audit**: Impeccable `detect` segnala solo `cream-palette`: la carta crema è prescritta dal design system, quindi accettata.

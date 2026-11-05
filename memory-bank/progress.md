@@ -44,6 +44,7 @@
 - **MVP 7**, provato end to end in locale con browser (DB nuovo da migrazioni 0001-0008, edizione con capienza 2, due persone in lista): Luca 1° e Sara 2°; verificato il +1 di Sara da «Giorni e slot» e le posizioni si scambiano subito (anche nella pagina personale di Luca: 2°); la scheda mostra chi ha verificato e quando, la cronologia lo registra; disdetta di un iscritto: Sara riceve l'email del posto liberato e Luca passa 1°. Report: sezioni e numeri coerenti con le altre viste (test di integrazione), nessuno scorrimento laterale da telefono, stampa su 4 pagine A4 senza menu né pulsanti.
 - **Non verificato (MVP 7)**: CI su SQL Server con la migrazione 0008; apertura del CSV del report in Excel o Numbers veri; report con dati veri di un'edizione.
 - **Non verificato (MVP 8)**: embed nel sito Google vero; Safari e Firefox; spaziature del sito (CSS di Google Sites non raggiungibile dalla sessione).
+- **Design system Cissone** (2026-11-05): token, font e componenti dell'intera interfaccia, nuovo selettore giornate (D-038). Audit con `npx impeccable detect` sull'iscrizione: kicker, schede annidate e riga orfana corretti; resta solo `cream-palette`, voluta. **Da verificare a mano**: pagine admin, pagina personale e stampa del report con la nuova grafica; Safari e Firefox; logo SVG del design system (qui resta il PNG).
 
 ## Bug corretti fuori MVP
 

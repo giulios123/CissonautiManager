@@ -3,15 +3,16 @@ import { api, ApiError } from "../api";
 import {
   canJoinWaitlist,
   feePreview,
-  formatDay,
+  formatDayShort,
   formatDeadline,
-  hhmm,
   isFull,
   periodLabel,
   seatsLabel,
   type Day,
 } from "../booking";
+import type { PickerDay } from "../daySelection";
 import { formatEuro } from "../money";
+import { DayPicker } from "./DayPicker";
 
 type Channel = { code: string; label: string; instructions: string };
 type Legal = { version: number; body: string };
@@ -106,14 +107,32 @@ export function Registration() {
     edition.per_day_fee_cents ?? 0,
   );
 
-  function toggle(id: number, checked: boolean) {
-    setSelected((current) => {
-      const next = new Set(current);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  }
+  const pickerDays: PickerDay[] = edition.days.map((day) => ({
+    date: day.date,
+    slots: day.slots.map((slot) => {
+      const full = isFull(slot);
+      return {
+        id: slot.id,
+        period: slot.period,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        full,
+        disabled: full && !canJoinWaitlist(slot),
+        hint: full ? fullSlotLabel(slot) : seatsLabel(slot),
+      };
+    }),
+  }));
+  const chosen = edition.days.flatMap((day) =>
+    day.slots
+      .filter((slot) => selected.has(slot.id))
+      .map((slot) => ({
+        id: slot.id,
+        label: `${formatDayShort(day.date)} · ${periodLabel(slot.period)}`,
+        waiting: fullIds.has(slot.id),
+      })),
+  );
+  const first = edition.days[0]?.date;
+  const last = edition.days[edition.days.length - 1]?.date;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,39 +191,125 @@ export function Registration() {
   }
 
   return (
-    <main>
+    <main className="wide">
       <h1>{edition.name}</h1>
-      <p>
-        Scegli i momenti in cui vuoi venire. Il posto resta bloccato per {edition.hold_days} giorni:
-        per confermarlo basta pagare la quota.
+      <p className="lead">
+        Scegli i momenti in cui vuoi venire. Puoi scegliere più giorni e più fasce orarie.
       </p>
-      <form onSubmit={submit} noValidate={false}>
-        <fieldset>
-          <legend>Quando vieni</legend>
-          {edition.days.map((day) => (
-            <fieldset key={day.date}>
-              <legend>{formatDay(day.date)}</legend>
-              {day.slots.map((slot) => {
-                const full = isFull(slot);
-                const disabled = full && !canJoinWaitlist(slot);
-                return (
-                  <label className="check" key={slot.id}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(slot.id)}
-                      disabled={disabled}
-                      onChange={(e) => toggle(slot.id, e.target.checked)}
-                    />
-                    <span>
-                      {periodLabel(slot.period)} {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
-                      {" · "}
-                      {full ? fullSlotLabel(slot) : seatsLabel(slot)}
-                    </span>
-                  </label>
-                );
-              })}
-            </fieldset>
-          ))}
+      {first && last && (
+        <p className="meta">
+          <span className="chip static">
+            {formatDayShort(first)} – {formatDayShort(last)}
+          </span>
+        </p>
+      )}
+      <div className="hold-banner">
+        <p className="hold-title">Il tuo posto resta bloccato per {edition.hold_days} giorni</p>
+        <ol className="steps">
+          <li>Scegli i turni</li>
+          <li>Inserisci i tuoi dati</li>
+          <li>
+            <strong>Paga la quota</strong> per confermare
+          </li>
+        </ol>
+      </div>
+      <form id="registration" onSubmit={submit} noValidate={false} className="with-summary">
+        <div className="form-main">
+          <section aria-labelledby="when-title">
+            <h2 id="when-title">Quando vieni</h2>
+            <DayPicker days={pickerDays} selected={selected} onChange={setSelected} />
+          </section>
+
+          <fieldset>
+            <legend>I tuoi dati</legend>
+            <div className="row">
+              <label>
+                Nome
+                <input name="first_name" autoComplete="given-name" required maxLength={100} />
+              </label>
+              <label>
+                Cognome
+                <input name="last_name" autoComplete="family-name" required maxLength={100} />
+              </label>
+            </div>
+            <label>
+              Email
+              <input type="email" name="email" autoComplete="email" required />
+            </label>
+            <label>
+              Telefono (facoltativo)
+              <input type="tel" name="phone" autoComplete="tel" maxLength={50} />
+            </label>
+            <label>
+              Chi ti ha invitato? (facoltativo)
+              <input name="invited_by" maxLength={200} />
+            </label>
+            <label>
+              Cosa puoi portare al camp?
+              <textarea name="can_bring" rows={3} required maxLength={2000} />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Consensi</legend>
+            <details>
+              <summary>Leggi l'informativa privacy</summary>
+              <p className="legal">{privacy.body}</p>
+            </details>
+            <label className="check">
+              <input type="checkbox" name="accept_privacy" required />
+              Ho letto e accetto l'informativa privacy
+            </label>
+            <details>
+              <summary>Leggi lo scarico di responsabilità</summary>
+              <p className="legal">{disclaimer.body}</p>
+            </details>
+            <label className="check">
+              <input type="checkbox" name="accept_disclaimer" required />
+              Ho letto e accetto lo scarico di responsabilità
+            </label>
+          </fieldset>
+
+          {error && (
+            <p role="alert" tabIndex={-1} ref={errorRef} className="notice error">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <aside className="summary" aria-label="Il tuo riepilogo">
+          <div className="summary-head">
+            <h2>Il tuo riepilogo</h2>
+            <span className="count" aria-live="polite">
+              {chosen.length} {chosen.length === 1 ? "turno" : "turni"}
+            </span>
+          </div>
+          {chosen.length > 0 && (
+            <ul className="plain summary-list">
+              {chosen.map((item) => (
+                <li key={item.id}>
+                  <span>
+                    {item.label}
+                    {item.waiting && <em> · lista d&apos;attesa</em>}
+                  </span>
+                  <button
+                    type="button"
+                    className="icon"
+                    aria-label={`Togli ${item.label}`}
+                    onClick={() =>
+                      setSelected((current) => {
+                        const next = new Set(current);
+                        next.delete(item.id);
+                        return next;
+                      })
+                    }
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <p aria-live="polite" className="fee">
             {toBook.size === 0 && toWait.length > 0 ? (
               "Solo lista d'attesa: per ora non devi pagare nulla."
@@ -220,66 +325,11 @@ export function Registration() {
               </>
             )}
           </p>
-        </fieldset>
-
-        <fieldset>
-          <legend>I tuoi dati</legend>
-          <div className="row">
-            <label>
-              Nome
-              <input name="first_name" autoComplete="given-name" required maxLength={100} />
-            </label>
-            <label>
-              Cognome
-              <input name="last_name" autoComplete="family-name" required maxLength={100} />
-            </label>
-          </div>
-          <label>
-            Email
-            <input type="email" name="email" autoComplete="email" required />
-          </label>
-          <label>
-            Telefono (facoltativo)
-            <input type="tel" name="phone" autoComplete="tel" maxLength={50} />
-          </label>
-          <label>
-            Chi ti ha invitato? (facoltativo)
-            <input name="invited_by" maxLength={200} />
-          </label>
-          <label>
-            Cosa puoi portare al camp?
-            <textarea name="can_bring" rows={3} required maxLength={2000} />
-          </label>
-        </fieldset>
-
-        <fieldset>
-          <legend>Consensi</legend>
-          <details>
-            <summary>Leggi l'informativa privacy</summary>
-            <p className="legal">{privacy.body}</p>
-          </details>
-          <label className="check">
-            <input type="checkbox" name="accept_privacy" required />
-            Ho letto e accetto l'informativa privacy
-          </label>
-          <details>
-            <summary>Leggi lo scarico di responsabilità</summary>
-            <p className="legal">{disclaimer.body}</p>
-          </details>
-          <label className="check">
-            <input type="checkbox" name="accept_disclaimer" required />
-            Ho letto e accetto lo scarico di responsabilità
-          </label>
-        </fieldset>
-
-        {error && (
-          <p role="alert" tabIndex={-1} ref={errorRef} className="notice error">
-            {error}
-          </p>
-        )}
-        <button type="submit" disabled={sending}>
-          {sending ? "Invio in corso…" : "Iscriviti"}
-        </button>
+          <p className="summary-note">La prenotazione è confermata solo dopo il pagamento.</p>
+          <button type="submit" form="registration" disabled={sending}>
+            {sending ? "Invio in corso…" : "Iscriviti"}
+          </button>
+        </aside>
       </form>
     </main>
   );

@@ -54,6 +54,22 @@ export function toRomeLocalInput(iso: string): string {
   return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
 }
 
+const shortDayFormat = new Intl.DateTimeFormat("it-IT", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+const monthFormat = new Intl.DateTimeFormat("it-IT", { month: "short", timeZone: "UTC" });
+
+/** "sab 21 nov", for compact lists. */
+export const formatDayShort = (isoDate: string) =>
+  shortDayFormat.format(new Date(`${isoDate}T00:00:00Z`)).replace(/\./g, "");
+/** Month and day number for the date badge: "nov", 21. */
+export const dayBadge = (isoDate: string) => ({
+  month: monthFormat.format(new Date(`${isoDate}T00:00:00Z`)).replace(/\./g, ""),
+  day: Number(isoDate.slice(8, 10)),
+});
 export const formatDay = (isoDate: string) => dayFormat.format(new Date(`${isoDate}T00:00:00Z`));
 export const formatDeadline = (isoDateTime: string) => deadlineFormat.format(new Date(isoDateTime));
 const PERIOD_LABELS: Record<string, string> = {

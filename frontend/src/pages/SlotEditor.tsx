@@ -5,15 +5,14 @@ import {
   canJoinWaitlist,
   extrasPreview,
   feePreview,
-  formatDay,
-  hhmm,
   isFull,
-  periodLabel,
   seatsLabel,
   type Day,
   type PricedExtras,
 } from "../booking";
+import type { PickerDay } from "../daySelection";
 import { formatEuro } from "../money";
+import { DayPicker } from "./DayPicker";
 
 type PublicEdition = {
   base_fee_cents: number | null;
@@ -61,16 +60,6 @@ export function SlotEditor({
   const delta = fee - booking.amount_due_cents;
   const changed = selected.size !== original.size || [...selected].some((id) => !original.has(id));
 
-  function toggle(id: number, checked: boolean) {
-    setSaved(false);
-    setSelected((current) => {
-      const next = new Set(current);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  }
-
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -99,39 +88,38 @@ export function SlotEditor({
     }
   }
 
+  const pickerDays: PickerDay[] = edition.days.map((day) => ({
+    date: day.date,
+    slots: day.slots.map((slot) => {
+      const mine = original.has(slot.id);
+      return {
+        id: slot.id,
+        period: slot.period,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        full: isFull(slot),
+        disabled: Boolean(day.past) || (isFull(slot) && !mine && !selected.has(slot.id)),
+        hint: day.past
+          ? "giorno passato"
+          : isFull(slot) && mine
+            ? "il tuo posto"
+            : canJoinWaitlist(slot)
+              ? "completo, puoi metterti in lista d'attesa"
+              : seatsLabel(slot),
+      };
+    }),
+  }));
+
   return (
     <form onSubmit={save} aria-label="Modifica i tuoi slot">
-      {edition.days.map((day) => (
-        <fieldset key={day.date}>
-          <legend>{formatDay(day.date)}</legend>
-          {day.slots.map((slot) => {
-            const mine = original.has(slot.id);
-            const disabled = Boolean(day.past) || (isFull(slot) && !mine && !selected.has(slot.id));
-            const hint = day.past
-              ? "giorno passato"
-              : isFull(slot) && mine
-                ? "il tuo posto"
-                : canJoinWaitlist(slot)
-                  ? "completo, puoi metterti in lista d'attesa"
-                  : seatsLabel(slot);
-            return (
-              <label className="check" key={slot.id}>
-                <input
-                  type="checkbox"
-                  checked={selected.has(slot.id)}
-                  disabled={disabled}
-                  onChange={(e) => toggle(slot.id, e.target.checked)}
-                />
-                <span>
-                  {periodLabel(slot.period)} {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
-                  {" · "}
-                  {hint}
-                </span>
-              </label>
-            );
-          })}
-        </fieldset>
-      ))}
+      <DayPicker
+        days={pickerDays}
+        selected={selected}
+        onChange={(next) => {
+          setSaved(false);
+          setSelected(next);
+        }}
+      />
       <p aria-live="polite" className="fee">
         Nuova quota: <strong>{formatEuro(fee)}</strong>
         {delta !== 0 && (
