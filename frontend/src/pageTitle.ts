@@ -7,6 +7,7 @@ const TITLES: Record<string, string> = {
   "/accedi": "Accedi",
   "/accedi/verifica": "Entra nella tua pagina",
   "/io": "La tua iscrizione",
+  "/guida": "Guida",
   "/admin": "Persone",
   "/admin/giorni": "Giorni e slot",
   "/admin/settimana": "Settimana",

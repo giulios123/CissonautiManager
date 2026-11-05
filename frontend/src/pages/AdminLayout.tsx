@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
+import { adminGuideLink } from "../guide/content";
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ export function AdminLayout() {
           <NavLink to="/admin/da-verificare">Da verificare</NavLink>
           <NavLink to="/admin/amministratori">Admin</NavLink>
           <NavLink to="/admin/impostazioni">Impostazioni</NavLink>
+          <Link to={adminGuideLink(pathname)}>Guida</Link>
           <button type="button" className="link" onClick={logout}>
             Esci
           </button>

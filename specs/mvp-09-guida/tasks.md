@@ -8,11 +8,11 @@ Branch: `claude/dreamy-ride-bzr112` (vincolo di push della sessione). **Dimensio
 - [x] **3. Script delle note**: `scripts/release_notes.py`.
   Test: merge come rilascio, filtro dei tipi, scope tolto, ordine, limite di 30, commit diretto.
 - [x] **4. Deploy e Dockerfile**: `fetch-depth: 0`, generazione, `APP_VERSION` e `BUILT_AT`; `.gitignore`, `.env.example`.
-- [ ] **5. Contenuti**: `content.ts` e `parseSections`, dipendenza `marked`.
+- [x] **5. Contenuti**: `content.ts` e `parseSections`, dipendenza `marked`.
   Test: ordinamento, titolo dalla prima riga, slug, file senza titolo.
-- [ ] **6. Pagina `/guida`**: filtro per ruolo, schede admin, versione.
+- [x] **6. Pagina `/guida`**: filtro per ruolo, schede admin, versione.
   Test: partecipante senza schede e senza chiamata alle novità; admin con tre schede; novità vuote; tastiera sulle schede; anonimo a `/accedi`.
-- [ ] **7. Link**: da pagina personale e menu admin con sezione contestuale; titolo di pagina.
+- [x] **7. Link**: da pagina personale e menu admin con sezione contestuale; titolo di pagina.
   Test: `titleFor("/guida")`; link con la sezione giusta.
 - [ ] **8. Testi**: guida partecipante e organizzatori, controllata sulle pagine reali.
 - [ ] **9. Regola e CI**: `AGENTS.md`, job `guide`.

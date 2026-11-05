@@ -1163,3 +1163,57 @@ button.icon:hover:not(:disabled) {
     text-decoration: none;
   }
 }
+
+.guide-index ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-index a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.guide-section {
+  scroll-margin-top: 1rem;
+}
+
+.guide-body > :first-child {
+  margin-top: 0;
+}
+
+.guide-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 1rem 0;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.guide-tabs button[role="tab"] {
+  padding: 0.5rem 1rem;
+  color: var(--color-primary);
+  background: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.guide-tabs button[role="tab"][aria-selected="true"] {
+  color: var(--color-heading);
+  border-bottom-color: var(--color-primary);
+}
+
+.guide-tabs button[role="tab"]:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+}
+
+h4 {
+  margin: 1rem 0 0.25rem;
+  color: var(--color-heading);
+  font-size: 0.9375rem;
+}

@@ -330,6 +330,9 @@ export function Personal() {
       {me.bookings.some((b) => b.editable) && <Contributions me={me} editable reload={reload} />}
       <Waitlist me={me} reload={reload} />
       <PasswordForm hasPassword={me.has_password} />
+      <p>
+        <Link to="/guida">Come funziona: la guida</Link>
+      </p>
       <button type="button" className="secondary" onClick={logout}>
         Esci
       </button>
