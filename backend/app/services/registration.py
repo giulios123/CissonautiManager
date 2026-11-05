@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from sqlalchemy import select
@@ -8,18 +8,25 @@ from app.config import Settings
 from app.domain.booking import effective_status, has_free_seat, hold_deadline
 from app.domain.fees import compute_fee
 from app.email import EmailSender
-from app.email.templates import already_registered_email, registration_email
+from app.email.templates import (
+    already_registered_email,
+    registration_email,
+    waitlist_joined_email,
+)
 from app.models import (
     STATUS_CONFIRMED,
     STATUS_PENDING,
     Booking,
     Edition,
+    LegalDocument,
     Participant,
     PaymentChannel,
     Slot,
+    WaitlistEntry,
 )
 from app.services import auth as auth_service
 from app.services import edition as edition_service
+from app.services import waitlist as waitlist_service
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 
@@ -53,6 +60,8 @@ class RegistrationData:
     slot_ids: list[int]
     privacy_version: int
     disclaimer_version: int
+    # Full slots the person wants to wait for.
+    waitlist_slot_ids: list[int] = field(default_factory=list)
 
 
 @dataclass
@@ -60,6 +69,7 @@ class RegistrationResult:
     created: bool
     booking: Booking | None
     participant: Participant
+    waitlist: list[WaitlistEntry] = field(default_factory=list)
 
 
 def is_registration_open(db: Session, edition: Edition | None) -> bool:
@@ -106,15 +116,21 @@ def register(
         raise LegalTextsChanged()
 
     wanted_ids = set(data.slot_ids)
+    waitlist_ids = set(data.waitlist_slot_ids) - wanted_ids
+    if not wanted_ids and not waitlist_ids:
+        raise InvalidSlots()
     expire_overdue(db, now)
 
     existing = get_by_email(db, data.email)
-    if existing is not None and _has_active_booking(db, existing, edition, now):
+    if existing is not None and (
+        _has_active_booking(db, existing, edition, now)
+        or waitlist_service.entries_of(db, existing, edition)
+    ):
         _send_link_only(db, sender, settings, existing, now)
         return RegistrationResult(created=False, booking=None, participant=existing)
 
     # Lock the chosen slots so two concurrent registrations cannot take the last seat together.
-    slots = list(db.scalars(slots_for_update(wanted_ids, edition.id)))
+    slots = list(db.scalars(slots_for_update(wanted_ids, edition.id))) if wanted_ids else []
     if len(slots) != len(wanted_ids):
         raise InvalidSlots()
     free = free_by_slot(db, slots, now)
@@ -136,6 +152,45 @@ def register(
         db.add(participant)
         db.flush()
 
+    booking = None
+    if slots:
+        booking = _new_booking(db, edition, participant, slots, privacy, disclaimer, now)
+    legal = waitlist_service.LegalAcceptance(privacy.id, now, disclaimer.id, now)
+    # A refusal (the list filled up, or a seat freed meanwhile) aborts the whole registration.
+    try:
+        entries = [
+            waitlist_service.join(db, participant, slot_id, now, legal)
+            for slot_id in sorted(waitlist_ids)
+        ]
+    except waitlist_service.EntryNotFound as exc:
+        raise InvalidSlots() from exc
+    db.commit()
+
+    raw = auth_service.create_magic_link_token(db, participant, now)
+    link = auth_service.magic_link_url(settings, raw)
+    waitlisted = [e.slot for e in entries]
+    if booking is not None:
+        sender.send(
+            registration_email(
+                participant, booking, enabled_channels(db, edition), link, waitlisted
+            )
+        )
+    else:
+        sender.send(waitlist_joined_email(participant, waitlisted, link))
+    return RegistrationResult(
+        created=True, booking=booking, participant=participant, waitlist=entries
+    )
+
+
+def _new_booking(
+    db: Session,
+    edition: Edition,
+    participant: Participant,
+    slots: list[Slot],
+    privacy: LegalDocument,
+    disclaimer: LegalDocument,
+    now: datetime,
+) -> Booking:
     booking = Booking(
         edition_id=edition.id,
         participant_id=participant.id,
@@ -153,18 +208,8 @@ def register(
     )
     booking.slots = slots
     db.add(booking)
-    db.commit()
-
-    raw = auth_service.create_magic_link_token(db, participant, now)
-    sender.send(
-        registration_email(
-            participant,
-            booking,
-            enabled_channels(db, edition),
-            auth_service.magic_link_url(settings, raw),
-        )
-    )
-    return RegistrationResult(created=True, booking=booking, participant=participant)
+    db.flush()
+    return booking
 
 
 def _send_link_only(

@@ -78,7 +78,9 @@ class RegistrationIn(BaseModel):
     can_bring: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)
     ]
-    slot_ids: list[int] = Field(min_length=1, max_length=60)
+    slot_ids: list[int] = Field(default_factory=list, max_length=60)
+    # Full slots to wait for: someone can register with these only.
+    waitlist_slot_ids: list[int] = Field(default_factory=list, max_length=60)
     accept_privacy: bool
     accept_disclaimer: bool
     privacy_version: int
@@ -86,6 +88,8 @@ class RegistrationIn(BaseModel):
 
     @model_validator(mode="after")
     def check_acceptances(self) -> Self:
+        if not self.slot_ids and not self.waitlist_slot_ids:
+            raise ValueError("Scegli almeno uno slot")
         if not self.accept_privacy:
             raise ValueError("Per iscriverti devi accettare l'informativa privacy")
         if not self.accept_disclaimer:
@@ -97,6 +101,13 @@ class BookedSlot(BaseModel):
     date: date
     period: str
     label: str
+
+
+class WaitlistedSlot(BaseModel):
+    date: date
+    period: str
+    label: str
+    position: int
 
 
 class BookingSummary(BaseModel):
@@ -112,6 +123,9 @@ class RegistrationOut(BaseModel):
     result: str
     message: str | None = None
     booking: BookingSummary | None = None
+    personal_code: str | None = None
+    # Slots the person is waiting for, with their place on each list.
+    waitlist: list[WaitlistedSlot] = []
 
 
 def _channels(db: Session, edition) -> list[ChannelPublic]:
@@ -205,16 +219,41 @@ def create_registration(
                 "full_slot_ids": [s.id for s in exc.slots],
             },
         )
+    except waitlist_service.WaitlistRefused as exc:
+        db.rollback()
+        detail = (
+            "Nel frattempo si è liberato un posto in uno slot che avevi messo in lista: "
+            "ricarica la pagina e prenotalo direttamente."
+            if exc.reason == "not_full"
+            else "Nel frattempo una lista d'attesa si è riempita: ricarica la pagina e riprova."
+        )
+        raise HTTPException(status_code=409, detail=detail) from exc
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(
             status_code=409, detail="Esiste già una richiesta in corso, riprova tra poco"
         ) from exc
 
-    if not result.created or result.booking is None:
+    if not result.created:
         return RegistrationOut(
             result="already_registered",
             message="Risulti già iscritto. Ti abbiamo inviato un link per entrare.",
+        )
+    waitlist = [
+        WaitlistedSlot(
+            date=e.slot.date,
+            period=e.slot.period,
+            label=format_slot(e.slot.date, e.slot.period, e.slot.start_time, e.slot.end_time),
+            position=waitlist_service.position_of(db, e),
+        )
+        for e in result.waitlist
+    ]
+    if result.booking is None:
+        return RegistrationOut(
+            result="waitlisted",
+            message="Sei in lista d'attesa. Ti abbiamo inviato un link per entrare.",
+            personal_code=result.participant.personal_code,
+            waitlist=waitlist,
         )
     booking = result.booking
     edition = edition_service.get_active_edition(db)
@@ -236,4 +275,6 @@ def create_registration(
             ],
             payment_channels=_channels(db, edition),
         ),
+        personal_code=result.participant.personal_code,
+        waitlist=waitlist,
     )

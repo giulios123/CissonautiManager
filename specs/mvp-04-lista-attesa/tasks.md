@@ -10,7 +10,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: 25 al 20% fa 5, 3 al 20% fa 0, sera senza lista; ogni motivo di rifiuto di `can_join`; ordine per arrivo a parità di orario; la scadenza non si accorcia mai; giorno passato rifiutato.
 - [x] **3. Lista dalla pagina personale**: servizio `join`/`leave`, `POST` e `DELETE /api/me/waitlist`, `GET /api/me` con posizione, sezione nella pagina.
   Test: ingresso con slot pieno e lista aperta; rifiuto con lista completa, slot libero, slot già prenotato, doppia voce; uscita che fa salire gli altri; pagina con sole voci in lista.
-- [ ] **4. Lista dal modulo pubblico**: `waitlist_slot_ids` in `register`, persona senza prenotazione con testi legali sulla voce, email, riepilogo nel modulo.
+- [x] **4. Lista dal modulo pubblico**: `waitlist_slot_ids` in `register`, persona senza prenotazione con testi legali sulla voce, email, riepilogo nel modulo.
   Test: slot misti (prenotazione più voci); soli slot in lista (nessuna `Booking`, testi salvati, magic link inviato); lista riempita o slot liberato nel frattempo (nessun salvataggio); persona già in lista trattata come D-005.
 - [ ] **5. Servizio di promozione ed email**: `promote_freed` nei tre casi (in attesa, confermata, nuova prenotazione).
   Test: in attesa con importo ricalcolato e scadenza allungata, promemoria già inviato non ripetuto; confermata che resta tale con saldo positivo e compare in «Da verificare»; nuova prenotazione con testi legali della voce; due posti liberi promuovono due persone; voci della stessa persona su altri slot intatte; giorno passato senza promozione; email inviata dopo il commit.
