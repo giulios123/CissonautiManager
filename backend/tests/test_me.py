@@ -117,7 +117,7 @@ def test_me_only_shows_own_bookings(client, db, outbox, make_participant, make_b
 def test_me_lists_enabled_payment_channels(client, outbox, make_participant, edition, admin_client):
     admin_client.put(
         "/api/admin/payment-channels",
-        json=[{"code": "paypal", "instructions": "paypal.me/cisonauti", "enabled": True}],
+        json=[{"code": "paypal", "instructions": "paypal.me/cissonauti", "enabled": True}],
     )
     make_participant("ada@example.com")
     login(client, outbox)

@@ -1,5 +1,5 @@
 [project]
-name = "cisonauti-booking"
+name = "cissonauti-booking"
 version = "0.1.0"
 description = "Registration backend for the Cissonauti Summer Camp"
 requires-python = ">=3.12,<3.13"

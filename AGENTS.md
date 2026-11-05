@@ -35,7 +35,7 @@ cd backend && uv run alembic upgrade head
 cd backend && uv run alembic revision --autogenerate -m "short description"
 
 # Build di produzione (un solo container)
-docker build -t cisonauti-booking .
+docker build -t cissonauti-booking .
 ```
 
 ## Convenzioni di codice
