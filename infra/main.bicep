@@ -10,6 +10,9 @@ param appName string
 
 param location string = resourceGroup().location
 
+@description('Optional region for the SQL server, for when the main region does not accept new SQL servers. Empty means the same as location.')
+param sqlLocation string = ''
+
 @description('Full image reference, for example ghcr.io/owner/repo:abc123.')
 param image string
 
@@ -39,6 +42,7 @@ param emailProvider string = 'console'
 
 var unique = uniqueString(resourceGroup().id)
 var sqlServerName = '${appName}-sql-${unique}'
+var sqlRegion = empty(sqlLocation) ? location : sqlLocation
 var databaseName = 'cisonauti'
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -66,7 +70,7 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
 
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: sqlServerName
-  location: location
+  location: sqlRegion
   properties: {
     administratorLogin: sqlAdminLogin
     administratorLoginPassword: sqlAdminPassword
@@ -89,7 +93,7 @@ resource allowAzureServices 'Microsoft.Sql/servers/firewallRules@2023-08-01-prev
 resource database 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: sqlServer
   name: databaseName
-  location: location
+  location: sqlRegion
   sku: {
     name: 'Basic'
     tier: 'Basic'

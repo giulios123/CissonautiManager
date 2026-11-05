@@ -53,6 +53,29 @@ Su GitHub crea l'ambiente `production` (Settings, Environments) e imposta:
 
 Se il repository o il pacchetto su GitHub sono privati, aggiungi anche la variabile `GHCR_USERNAME` e il segreto `GHCR_TOKEN` (token con permesso `read:packages`). Se sono pubblici non servono.
 
+## Se il server SQL non si crea (RegionDoesNotAllowProvisioning)
+
+Alcuni abbonamenti non possono creare nuovi server SQL in certe regioni. Il resto dell'app può restare dove è: basta mettere il database in un'altra regione europea. Per sapere dove si può creare, prova a creare un server vuoto (non costa nulla) in alcune regioni:
+
+```bash
+for r in westeurope francecentral germanywestcentral swedencentral uksouth italynorth; do
+  n="probe-$RANDOM$RANDOM"
+  if az sql server create -g cisonauti-rg -n "$n" -l "$r" -u probeadmin -p "$(openssl rand -hex 12)Aa1" -o none 2>/dev/null; then
+    echo "$r: ok"; az sql server delete -g cisonauti-rg -n "$n" --yes
+  else
+    echo "$r: no"
+  fi
+done
+```
+
+Poi imposta la regione scelta come variabile dell'ambiente `production` (`SQL_LOCATION`) e rilancia il deploy:
+
+```bash
+gh variable set SQL_LOCATION --env production --repo giulios123/CissonautiManager --body westeurope
+```
+
+Se un deploy precedente ha lasciato un server in stato Failed, eliminalo prima: `az sql server delete -g cisonauti-rg -n <nome> --yes`.
+
 ## Se il login a Azure fallisce (AADSTS700213)
 
 Azure confronta il `subject` della credenziale con quello che GitHub presenta. Il messaggio d'errore nel log del workflow riporta il subject esatto. Alcuni repository lo presentano nel formato con gli ID numerici (`repo:proprietario@ID/repo@ID:environment:production`): in quel caso serve una seconda credenziale con quel subject. `bootstrap.sh` le crea entrambe. A mano:
