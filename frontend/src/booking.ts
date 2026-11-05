@@ -60,6 +60,7 @@ const shortDayFormat = new Intl.DateTimeFormat("it-IT", {
   month: "short",
   timeZone: "UTC",
 });
+const weekdayFormat = new Intl.DateTimeFormat("it-IT", { weekday: "long", timeZone: "UTC" });
 const monthFormat = new Intl.DateTimeFormat("it-IT", { month: "short", timeZone: "UTC" });
 
 /** "sab 21 nov", for compact lists. */
@@ -70,6 +71,11 @@ export const dayBadge = (isoDate: string) => ({
   month: monthFormat.format(new Date(`${isoDate}T00:00:00Z`)).replace(/\./g, ""),
   day: Number(isoDate.slice(8, 10)),
 });
+/** "Venerdì", the weekday alone, for headings that already show the date in a badge. */
+export const formatWeekday = (isoDate: string) => {
+  const name = weekdayFormat.format(new Date(`${isoDate}T00:00:00Z`));
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
 export const formatDay = (isoDate: string) => dayFormat.format(new Date(`${isoDate}T00:00:00Z`));
 export const formatDeadline = (isoDateTime: string) => deadlineFormat.format(new Date(isoDateTime));
 const PERIOD_LABELS: Record<string, string> = {
