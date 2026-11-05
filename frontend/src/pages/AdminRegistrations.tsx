@@ -102,6 +102,7 @@ export function AdminRegistrations() {
           </p>
           <div className="table-wrap">
             <table>
+              <caption className="sr-only">Persone iscritte</caption>
               <thead>
                 <tr>
                   <th scope="col">Persona</th>

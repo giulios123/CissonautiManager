@@ -35,6 +35,7 @@ describe("activities admin page", () => {
     const row = (await screen.findByRole("link", { name: "Escursione" })).closest(
       "tr",
     ) as HTMLElement;
+    expect(screen.getByRole("table", { name: "Attività dell'edizione" })).toBeInTheDocument();
     expect(within(row).getByText("15,00 €")).toBeInTheDocument();
     expect(within(row).getByText("1 / 2")).toBeInTheDocument();
     expect(within(row).getByRole("button", { name: "Elimina" })).toBeDisabled();
@@ -144,6 +145,7 @@ describe("contributions view", () => {
     );
     renderAt("/admin/contributi");
     const old = (await screen.findByText("Vecchio talk")).closest("tr") as HTMLElement;
+    expect(screen.getByRole("table", { name: "Contributi offerti" })).toBeInTheDocument();
     expect(within(old).getByText("iscrizione scaduta")).toBeInTheDocument();
     await userEvent.selectOptions(screen.getByLabelText("Tipo"), "talk");
     await waitFor(() =>

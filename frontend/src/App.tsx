@@ -16,6 +16,7 @@ import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
 import { Verify } from "./pages/Verify";
+import { usePageTitle } from "./pageTitle";
 import { SiteHeader } from "./SiteHeader";
 
 function Home() {
@@ -41,6 +42,7 @@ function NotFound() {
 }
 
 export function App() {
+  usePageTitle();
   return (
     <>
       <SiteHeader />
