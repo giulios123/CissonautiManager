@@ -16,10 +16,12 @@ from app.domain.booking import occupies_seats
 from app.domain.presence import has_evening
 from app.email import EmailSender
 from app.models import STATUS_EXPIRED, Booking, LegalDocument, Participant
+from app.services import audit as audit_service
 from app.services import edition as edition_service
 from app.services import payments as payment_service
+from app.services import refunds as refund_service
 from app.services.seats import expire_overdue
-from app.timefmt import status_label, to_rome
+from app.timefmt import format_euro, status_label, to_rome
 
 router = APIRouter(
     prefix="/api/admin/registrations", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -61,12 +63,33 @@ class LegalAcceptance(BaseModel):
     accepted_at: datetime
 
 
+class RefundOut(BaseModel):
+    amount_cents: int
+    refunded_on: date | None
+    note: str | None
+
+
+class HistoryEntry(BaseModel):
+    at: datetime
+    actor: str
+    action: str
+    detail: str
+
+
 class RegistrationDetail(BaseModel):
     participant: ParticipantView
     booking: BookingView
     privacy: LegalAcceptance
     disclaimer: LegalAcceptance
+    refund: RefundOut | None = None
+    history: list[HistoryEntry] = []
     warning: str | None = None
+
+
+class RefundIn(BaseModel):
+    amount_cents: int = Field(ge=0, le=1_000_000)
+    refunded_on: date | None = None
+    note: str | None = Field(default=None, max_length=1000)
 
 
 class PaymentIn(BaseModel):
@@ -131,6 +154,24 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
         disclaimer=LegalAcceptance(
             version=disclaimer.version, accepted_at=booking.disclaimer_accepted_at
         ),
+        refund=(
+            RefundOut(
+                amount_cents=booking.refund_cents,
+                refunded_on=booking.refunded_on,
+                note=booking.refund_note,
+            )
+            if booking.refund_cents is not None
+            else None
+        ),
+        history=[
+            HistoryEntry(
+                at=entry.at,
+                actor=f"{actor.first_name} {actor.last_name}".strip(),
+                action=entry.action,
+                detail=entry.detail,
+            )
+            for entry, actor in audit_service.history(db, booking.id)
+        ],
         warning=warning,
     )
 
@@ -253,3 +294,34 @@ def add_payment(
     )
     db.refresh(booking)
     return _detail(db, booking, now, warning=result.warning)
+
+
+@router.post("/{booking_id}/refund")
+def add_refund(
+    booking_id: int,
+    body: RefundIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        refund_service.record_refund(
+            db,
+            admin,
+            booking,
+            amount_cents=body.amount_cents,
+            refunded_on=body.refunded_on or to_rome(now).date(),
+            note=body.note,
+        )
+    except refund_service.NotRefundable as exc:
+        raise HTTPException(
+            status_code=409, detail="Si può registrare un rimborso solo su una disdetta richiesta"
+        ) from exc
+    except refund_service.RefundTooHigh as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Il rimborso non può superare quanto versato ({format_euro(exc.paid_cents)})",
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)

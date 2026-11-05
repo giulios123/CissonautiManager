@@ -114,7 +114,7 @@ class Booking(Base):
     reminder_final_sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     cancel_requested_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     refund_cents: Mapped[int | None] = mapped_column(Integer)
-    refunded_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    refunded_on: Mapped[date | None] = mapped_column(Date)
     refund_note: Mapped[str | None] = mapped_column(UnicodeText)
     refunded_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     amount_due_cents: Mapped[int] = mapped_column(Integer)

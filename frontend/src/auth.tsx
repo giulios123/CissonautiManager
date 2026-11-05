@@ -12,7 +12,15 @@ export type BookingView = {
   editable: boolean;
   can_cancel: boolean;
   slots: { id: number; date: string; period: string; label: string }[];
-  payments: { amount_cents: number; channel: string; paid_on: string; note?: string | null }[];
+  payments: {
+    id: number;
+    amount_cents: number;
+    channel: string;
+    paid_on: string;
+    note?: string | null;
+    voided?: boolean;
+    void_reason?: string | null;
+  }[];
 };
 
 export type Me = {

@@ -20,7 +20,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: un caso per motivo; esce dalla vista quando si risolve.
 - [x] **8. Gestione admin**: servizio, endpoint e pagina.
   Test: promozione di un iscritto; creazione di un nuovo admin che entra col magic link; rimozione e i tre rifiuti; nessun limite di numero.
-- [ ] **9. Rimborso**: servizio, endpoint e azione nella scheda.
+- [x] **9. Rimborso**: servizio, endpoint e azione nella scheda.
   Test: passaggio a `rimborsata` con importo, data e nota; oltre il pagato rifiutato; stato non valido rifiutato; nessuna email inviata; cronologia scritta.
 - [ ] **10. Modifica anagrafica, proroga e riattivazione manuale**: `PATCH` e `reactivate`.
   Test: email duplicata rifiutata; proroga ricalcola i promemoria; riattivazione con e senza posto; cronologia scritta.

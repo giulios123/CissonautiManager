@@ -4,8 +4,10 @@ import { api, ApiError } from "../api";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
+import { AdminHistory, type HistoryEntry } from "./AdminHistory";
+import { AdminRefundForm } from "./AdminRefundForm";
 
-type Detail = {
+export type Detail = {
   participant: {
     first_name: string;
     last_name: string;
@@ -18,6 +20,8 @@ type Detail = {
   booking: BookingView;
   privacy: { version: number; accepted_at: string };
   disclaimer: { version: number; accepted_at: string };
+  refund: { amount_cents: number; refunded_on: string | null; note: string | null } | null;
+  history: HistoryEntry[];
   warning: string | null;
 };
 
@@ -145,6 +149,27 @@ export function AdminRegistrationDetail() {
         )}
       </section>
 
+      {detail.refund && (
+        <p className="notice ok">
+          Rimborsati {formatEuro(detail.refund.amount_cents)}
+          {detail.refund.refunded_on && <> il {formatDay(detail.refund.refunded_on)}</>}
+          {detail.refund.note ? ` (${detail.refund.note})` : ""}.
+        </p>
+      )}
+      {booking.status === "disdetta_richiesta" && (
+        <AdminRefundForm
+          bookingId={booking.id}
+          paidCents={booking.paid_cents}
+          onDone={(updated) => {
+            setDetail(updated);
+            setNotice({
+              ok: true,
+              text: "Disdetta chiusa. Ricorda di scrivere tu alla persona.",
+            });
+          }}
+        />
+      )}
+
       <form onSubmit={submit} aria-labelledby="pay-title">
         <h2 id="pay-title">Registra un pagamento</h2>
         <label>
@@ -195,6 +220,8 @@ export function AdminRegistrationDetail() {
           </p>
         )}
       </form>
+
+      <AdminHistory history={detail.history ?? []} />
     </main>
   );
 }

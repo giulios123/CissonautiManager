@@ -17,7 +17,7 @@ depends_on = None
 def upgrade() -> None:
     with op.batch_alter_table("booking") as batch:
         batch.add_column(sa.Column("refund_cents", sa.Integer(), nullable=True))
-        batch.add_column(sa.Column("refunded_at", sa.DateTime(), nullable=True))
+        batch.add_column(sa.Column("refunded_on", sa.Date(), nullable=True))
         batch.add_column(sa.Column("refund_note", sa.UnicodeText(), nullable=True))
         batch.add_column(sa.Column("refunded_by_id", sa.Integer(), nullable=True))
         batch.create_foreign_key(
@@ -56,5 +56,5 @@ def downgrade() -> None:
         batch.drop_constraint("fk_booking_refunded_by_id_participant", type_="foreignkey")
         batch.drop_column("refunded_by_id")
         batch.drop_column("refund_note")
-        batch.drop_column("refunded_at")
+        batch.drop_column("refunded_on")
         batch.drop_column("refund_cents")
