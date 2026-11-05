@@ -10,7 +10,7 @@ Branch di implementazione: `feat/mvp-08-stile-sito`. Indipendente dall'MVP 7: pu
   Test: vitest sul contrasto delle coppie testo/sfondo, bottone/testo e bordo dei campi/sfondo; `grep` senza colori fuori da `:root`; test esistenti verdi.
 - [x] **3. Font e tipografia**: `@fontsource`, scala dei titoli, cifre tabellari negli importi.
   Test: build senza richieste esterne (controllo sul `dist/`); test esistenti verdi.
-- [ ] **4. Componenti**: bottoni, campi, fieldset degli slot, checkbox, messaggi, `ConfirmDialog`.
+- [x] **4. Componenti**: bottoni, campi, fieldset degli slot, checkbox, messaggi, `ConfirmDialog`.
   Test: altezza minima 44 px e focus visibile controllati negli screenshot; test esistenti verdi.
 - [ ] **5. Pannello admin**: navigazione, tabelle, `CsvButton`, scheda della persona.
   Test: tabelle scorrevoli a 390 px senza scorrimento della pagina; test esistenti verdi.

@@ -104,15 +104,24 @@ select {
   background: var(--color-bg);
 }
 
-input[type="checkbox"] {
+input[type="checkbox"],
+input[type="radio"] {
   width: 1.5rem;
   height: 1.5rem;
+  accent-color: var(--color-primary);
 }
 
 fieldset {
   margin: 1rem 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+legend {
+  padding: 0 0.25rem;
+  color: var(--color-heading);
+  font-weight: 700;
 }
 
 .row {
@@ -141,6 +150,7 @@ button {
 
 .notice {
   padding: 0.5rem 0.75rem;
+  border-left: 4px solid var(--color-primary);
   border-radius: var(--radius);
 }
 
@@ -151,6 +161,7 @@ button {
 .notice.error {
   background: var(--color-error-bg);
   color: var(--color-error);
+  border-left-color: var(--color-error);
 }
 
 .legal {
@@ -258,6 +269,17 @@ button.danger {
   background: var(--color-danger);
 }
 
+button:hover:not(:disabled),
+a.button:hover {
+  filter: brightness(0.92);
+}
+
+button.secondary:hover:not(:disabled),
+a.button.secondary:hover {
+  filter: none;
+  background: var(--color-surface);
+}
+
 button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -284,6 +306,7 @@ button:disabled {
   max-width: 28rem;
   padding: 1.25rem;
   background: var(--color-bg);
+  border-top: 4px solid var(--color-primary);
   border-radius: var(--radius);
 }
 
