@@ -22,7 +22,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: promozione di un iscritto; creazione di un nuovo admin che entra col magic link; rimozione e i tre rifiuti; nessun limite di numero.
 - [x] **9. Rimborso**: servizio, endpoint e azione nella scheda.
   Test: passaggio a `rimborsata` con importo, data e nota; oltre il pagato rifiutato; stato non valido rifiutato; nessuna email inviata; cronologia scritta.
-- [ ] **10. Modifica anagrafica, proroga e riattivazione manuale**: `PATCH` e `reactivate`.
+- [x] **10. Modifica anagrafica, proroga e riattivazione manuale**: `PATCH` e `reactivate`.
   Test: email duplicata rifiutata; proroga ricalcola i promemoria; riattivazione con e senza posto; cronologia scritta.
 - [ ] **11. Slot e disdetta da admin**: `PUT .../slots` con `force`, `POST .../cancel`.
   Test: capienza superata solo con `force` e segnalata; giorni passati ammessi; importo ricalcolato; disdetta per conto del partecipante con email; cronologia scritta.

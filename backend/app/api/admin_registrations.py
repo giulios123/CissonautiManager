@@ -1,11 +1,12 @@
 from collections import defaultdict
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.schemas import BookingView, booking_view
@@ -17,11 +18,13 @@ from app.domain.presence import has_evening
 from app.email import EmailSender
 from app.models import STATUS_EXPIRED, Booking, LegalDocument, Participant
 from app.services import audit as audit_service
+from app.services import booking_admin as booking_admin_service
 from app.services import edition as edition_service
 from app.services import payments as payment_service
 from app.services import refunds as refund_service
+from app.services.registration import SlotsFull
 from app.services.seats import expire_overdue
-from app.timefmt import format_euro, status_label, to_rome
+from app.timefmt import ROME, format_euro, format_slot, status_label, to_rome
 
 router = APIRouter(
     prefix="/api/admin/registrations", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -90,6 +93,22 @@ class RefundIn(BaseModel):
     amount_cents: int = Field(ge=0, le=1_000_000)
     refunded_on: date | None = None
     note: str | None = Field(default=None, max_length=1000)
+
+
+Text = Annotated[str, StringConstraints(strip_whitespace=True)]
+
+
+class RegistrationPatch(BaseModel):
+    """Fields left out stay as they are; phone and invited_by can be cleared with null or ''."""
+
+    first_name: Annotated[Text, Field(min_length=1, max_length=100)] | None = None
+    last_name: Annotated[Text, Field(min_length=1, max_length=100)] | None = None
+    email: EmailStr | None = None
+    phone: Annotated[Text, Field(max_length=50)] | None = None
+    invited_by: Annotated[Text, Field(max_length=200)] | None = None
+    can_bring: Annotated[Text, Field(min_length=1, max_length=2000)] | None = None
+    # Without a time zone the value is read as Europe/Rome time.
+    hold_expires_at: datetime | None = None
 
 
 class PaymentIn(BaseModel):
@@ -322,6 +341,77 @@ def add_refund(
         raise HTTPException(
             status_code=422,
             detail=f"Il rimborso non può superare quanto versato ({format_euro(exc.paid_cents)})",
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
+
+
+@router.patch("/{booking_id}")
+def edit_registration(
+    booking_id: int,
+    body: RegistrationPatch,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    changes: dict[str, str | None] = {}
+    for field in booking_admin_service.PERSON_FIELDS:
+        if field not in body.model_fields_set:
+            continue
+        value = getattr(body, field)
+        if value is None and field not in ("phone", "invited_by"):
+            raise HTTPException(status_code=422, detail="Questo campo non può essere vuoto")
+        optional = field in ("phone", "invited_by")
+        changes[field] = (value or None) if optional else value
+    new_expires = body.hold_expires_at
+    if new_expires is not None and new_expires.tzinfo is None:
+        new_expires = new_expires.replace(tzinfo=ROME)
+    try:
+        booking_admin_service.update_details(db, admin, booking, changes, new_expires, now)
+    except booking_admin_service.EmailTaken as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa email è già usata da un'altra persona"
+        ) from exc
+    except booking_admin_service.NotExtendable as exc:
+        raise HTTPException(
+            status_code=409, detail="Si può prorogare solo un blocco in attesa di pagamento"
+        ) from exc
+    except booking_admin_service.InvalidDeadline as exc:
+        raise HTTPException(
+            status_code=422, detail="La nuova scadenza deve essere successiva a quella attuale"
+        ) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Questa email è già usata da un'altra persona"
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
+
+
+@router.post("/{booking_id}/reactivate")
+def reactivate_registration(
+    booking_id: int,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        booking_admin_service.reactivate(db, sender, admin, booking, now)
+    except booking_admin_service.NotExpired as exc:
+        raise HTTPException(
+            status_code=409, detail="Si può riattivare solo una prenotazione scaduta"
+        ) from exc
+    except SlotsFull as exc:
+        db.rollback()
+        labels = ", ".join(
+            format_slot(s.date, s.period, s.start_time, s.end_time) for s in exc.slots
+        )
+        raise HTTPException(
+            status_code=409, detail=f"Non c'è più posto in questi slot: {labels}"
         ) from exc
     db.refresh(booking)
     return _detail(db, booking, now)

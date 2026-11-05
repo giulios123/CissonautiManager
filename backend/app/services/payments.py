@@ -41,6 +41,23 @@ def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) ->
     sender.send(payment_confirmation_email(booking, paid_cents))
 
 
+def revive_expired(db: Session, booking: Booking, now: datetime) -> bool:
+    """Bring an expired booking back for a new hold, if every one of its slots has a free seat.
+
+    The hold starts now and the payment reminders start over. Returns False, changing nothing,
+    when a slot is full.
+    """
+    slots = list(db.scalars(slots_for_update([s.id for s in booking.slots])))
+    if not can_reactivate(free_by_slot(db, slots, now).values()):
+        return False
+    booking.status = STATUS_PENDING
+    booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))
+    booking.hold_started_at = now
+    booking.reminder_mid_sent_at = None
+    booking.reminder_final_sent_at = None
+    return True
+
+
 def record_payment(
     db: Session,
     sender: EmailSender,
@@ -77,14 +94,7 @@ def record_payment(
     reactivated = False
     warning = None
     if booking.status == STATUS_EXPIRED:
-        slots = list(db.scalars(slots_for_update([s.id for s in booking.slots])))
-        if can_reactivate(free_by_slot(db, slots, now).values()):
-            booking.status = STATUS_PENDING
-            booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))
-            # A new hold: reminders count from now and may go out again.
-            booking.hold_started_at = now
-            booking.reminder_mid_sent_at = None
-            booking.reminder_final_sent_at = None
+        if revive_expired(db, booking, now):
             reactivated = True
         else:
             warning = EXPIRED_NO_ROOM

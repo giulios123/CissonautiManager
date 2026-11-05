@@ -4,7 +4,9 @@ import { api, ApiError } from "../api";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
+import { AdminEditDetails } from "./AdminEditDetails";
 import { AdminHistory, type HistoryEntry } from "./AdminHistory";
+import { AdminHoldActions } from "./AdminHoldActions";
 import { AdminRefundForm } from "./AdminRefundForm";
 
 export type Detail = {
@@ -49,6 +51,11 @@ export function AdminRegistrationDetail() {
   if (!detail) return <main aria-busy="true">Caricamento…</main>;
 
   const { participant, booking } = detail;
+
+  function showUpdated(updated: Detail, text: string) {
+    setDetail(updated);
+    setNotice({ ok: true, text });
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,6 +102,11 @@ export function AdminRegistrationDetail() {
       {detail.warning && (
         <p role="alert" className="notice error">
           {detail.warning}
+        </p>
+      )}
+      {notice && (
+        <p role={notice.ok ? "status" : "alert"} className={`notice ${notice.ok ? "ok" : "error"}`}>
+          {notice.text}
         </p>
       )}
 
@@ -148,6 +160,13 @@ export function AdminRegistrationDetail() {
           </ul>
         )}
       </section>
+
+      <AdminHoldActions
+        bookingId={booking.id}
+        status={booking.status}
+        holdExpiresAt={booking.hold_expires_at}
+        onDone={showUpdated}
+      />
 
       {detail.refund && (
         <p className="notice ok">
@@ -211,15 +230,9 @@ export function AdminRegistrationDetail() {
           <input name="note" maxLength={1000} />
         </label>
         <button type="submit">Registra pagamento</button>
-        {notice && (
-          <p
-            role={notice.ok ? "status" : "alert"}
-            className={`notice ${notice.ok ? "ok" : "error"}`}
-          >
-            {notice.text}
-          </p>
-        )}
       </form>
+
+      <AdminEditDetails bookingId={booking.id} participant={participant} onDone={showUpdated} />
 
       <AdminHistory history={detail.history ?? []} />
     </main>

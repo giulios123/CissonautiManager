@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, vi } from "vitest";
 import { renderAt, stubAdminApi, type Call, type Reply } from "../test-utils";
@@ -172,5 +172,137 @@ describe("history", () => {
     renderAt("/admin/iscrizioni/7");
     await screen.findByRole("heading", { name: "Ada Lovelace" });
     expect(screen.queryByRole("region", { name: "Cronologia" })).not.toBeInTheDocument();
+  });
+});
+
+describe("edit details", () => {
+  it("shows the saved values and sends them all, clearing what was emptied", async () => {
+    const updated = detailFixture({
+      participant: {
+        first_name: "Adele",
+        last_name: "Lovelace",
+        email: "ada@example.com",
+        phone: null,
+        invited_by: null,
+        can_bring: "Un talk",
+        personal_code: "CSC-7K3P",
+      },
+    });
+    const calls = serve(
+      detailFixture({
+        participant: {
+          first_name: "Ada",
+          last_name: "Lovelace",
+          email: "ada@example.com",
+          phone: "+39 333 111",
+          invited_by: "Grace",
+          can_bring: "Un talk",
+          personal_code: "CSC-7K3P",
+        },
+      }),
+      (call) => (call.method === "PATCH" ? { body: updated } : undefined),
+    );
+    renderAt("/admin/iscrizioni/7");
+    const user = userEvent.setup();
+    const form = within(await screen.findByRole("form", { name: "Modifica i dati" }));
+    expect(form.getByLabelText("Nome")).toHaveValue("Ada");
+    expect(form.getByLabelText(/Telefono/)).toHaveValue("+39 333 111");
+    await user.clear(form.getByLabelText("Nome"));
+    await user.type(form.getByLabelText("Nome"), "Adele");
+    await user.clear(form.getByLabelText(/Telefono/));
+    await user.clear(form.getByLabelText(/Invitato da/));
+    await user.click(form.getByRole("button", { name: "Salva i dati" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Dati salvati");
+    const patch = calls.find((call) => call.method === "PATCH")!;
+    expect(patch.url).toBe("/api/admin/registrations/7");
+    expect(patch.body).toEqual({
+      first_name: "Adele",
+      last_name: "Lovelace",
+      email: "ada@example.com",
+      phone: "",
+      invited_by: "",
+      can_bring: "Un talk",
+    });
+    expect(screen.getByLabelText("Nome")).toHaveValue("Adele");
+  });
+
+  it("shows why the server refused, next to the form", async () => {
+    serve(detailFixture(), (call) =>
+      call.method === "PATCH"
+        ? { status: 409, body: { detail: "Questa email è già usata da un'altra persona" } }
+        : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    const form = within(await screen.findByRole("form", { name: "Modifica i dati" }));
+    await userEvent.click(form.getByRole("button", { name: "Salva i dati" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("già usata");
+  });
+});
+
+describe("hold extension and reactivation", () => {
+  it("proposes the current deadline in Rome time and sends the new one as typed", async () => {
+    const calls = serve(detailFixture(), (call) =>
+      call.method === "PATCH" ? { body: detailFixture() } : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    const form = within(await screen.findByRole("form", { name: "Proroga il blocco" }));
+    const input = form.getByLabelText("Nuova scadenza");
+    expect(input).toHaveValue("2026-07-04T12:00"); // 10:00 UTC is 12:00 in Rome
+    fireEvent.change(input, { target: { value: "2026-07-08T11:00" } });
+    await userEvent.click(form.getByRole("button", { name: "Proroga" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Scadenza prorogata");
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({
+      hold_expires_at: "2026-07-08T11:00",
+    });
+  });
+
+  it("shows the server's refusal", async () => {
+    serve(detailFixture(), (call) =>
+      call.method === "PATCH"
+        ? {
+            status: 422,
+            body: { detail: "La nuova scadenza deve essere successiva a quella attuale" },
+          }
+        : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    const form = within(await screen.findByRole("form", { name: "Proroga il blocco" }));
+    await userEvent.click(form.getByRole("button", { name: "Proroga" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("successiva");
+  });
+
+  it("offers neither action on a confirmed booking", async () => {
+    serve(detailFixture({}, { status: "confermata" }));
+    renderAt("/admin/iscrizioni/7");
+    await screen.findByRole("heading", { name: "Ada Lovelace" });
+    expect(screen.queryByRole("form", { name: "Proroga il blocco" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Riattiva la prenotazione" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reactivates an expired booking", async () => {
+    const calls = serve(detailFixture({}, { status: "scaduta" }), (call) =>
+      call.method === "POST" ? { body: detailFixture() } : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    expect(screen.queryByRole("form", { name: "Proroga il blocco" })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "Riattiva la prenotazione" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("riattivata");
+    expect(calls.find((call) => call.method === "POST")?.url).toBe(
+      "/api/admin/registrations/7/reactivate",
+    );
+    expect(screen.getByRole("form", { name: "Proroga il blocco" })).toBeInTheDocument();
+  });
+
+  it("says when there is no room left", async () => {
+    serve(detailFixture({}, { status: "scaduta" }), (call) =>
+      call.method === "POST"
+        ? { status: 409, body: { detail: "Non c'è più posto in questi slot: lun 13/07 mattina" } }
+        : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    await userEvent.click(await screen.findByRole("button", { name: "Riattiva la prenotazione" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Non c'è più posto");
   });
 });
