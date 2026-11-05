@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView } from "../auth";
-import { formatDay, hhmm, periodLabel } from "../booking";
+import type { PickerDay } from "../daySelection";
 import { formatEuro } from "../money";
+import { DayPicker } from "./DayPicker";
 import type { Detail } from "./AdminRegistrationDetail";
 
 type SlotRow = {
@@ -42,14 +43,24 @@ export function AdminSlotEditor({
   if (loadError) return <p role="alert">Non riesco a caricare gli slot.</p>;
   if (!days) return <p aria-busy="true">Caricamento…</p>;
 
-  function toggle(id: number, checked: boolean) {
-    setSelected((current) => {
-      const next = new Set(current);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  }
+  const pickerDays: PickerDay[] = days.map((day) => ({
+    date: day.date,
+    slots: day.slots.map((slot) => {
+      const full = slot.free !== null && slot.free < 1;
+      return {
+        id: slot.id,
+        period: slot.period,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        full,
+        disabled: full && !mine.has(slot.id) && !selected.has(slot.id) && !force,
+        hint:
+          slot.capacity === null
+            ? `${slot.present} presenti, senza limite`
+            : `${slot.present}/${slot.capacity} presenti${full ? ", completo" : ""}`,
+      };
+    }),
+  }));
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,32 +88,7 @@ export function AdminSlotEditor({
         <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
         <span>Forza oltre la capienza (per aggiungere uno slot già pieno)</span>
       </label>
-      {days.map((day) => (
-        <fieldset key={day.date}>
-          <legend>{formatDay(day.date)}</legend>
-          {day.slots.map((slot) => {
-            const full = slot.free !== null && slot.free < 1;
-            const disabled = full && !mine.has(slot.id) && !selected.has(slot.id) && !force;
-            return (
-              <label className="check" key={slot.id}>
-                <input
-                  type="checkbox"
-                  checked={selected.has(slot.id)}
-                  disabled={disabled}
-                  onChange={(e) => toggle(slot.id, e.target.checked)}
-                />
-                <span>
-                  {periodLabel(slot.period)} {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
-                  {" · "}
-                  {slot.capacity === null
-                    ? `${slot.present} presenti, senza limite`
-                    : `${slot.present}/${slot.capacity} presenti${full ? ", completo" : ""}`}
-                </span>
-              </label>
-            );
-          })}
-        </fieldset>
-      ))}
+      <DayPicker days={pickerDays} selected={selected} onChange={setSelected} />
       {error && (
         <p role="alert" className="notice error">
           {error}

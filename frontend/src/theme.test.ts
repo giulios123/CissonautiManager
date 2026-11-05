@@ -27,6 +27,14 @@ describe("theme tokens", () => {
   it.each([
     ["color-text", "color-bg"],
     ["color-text", "color-surface"],
+    ["color-text", "color-paper"],
+    ["color-text-muted", "color-bg"],
+    ["color-text-muted", "color-paper"],
+    ["color-text-muted", "color-surface"],
+    ["color-on-dark", "color-primary-dark"],
+    ["color-on-primary", "color-danger"],
+    ["color-on-cta", "color-cta-hover"],
+    ["color-text", "color-cta-soft"],
     ["color-heading", "color-bg"],
     ["color-primary", "color-bg"],
     ["color-on-primary", "color-primary"],
@@ -54,8 +62,11 @@ describe("theme tokens", () => {
 
   it("never uses the amber for text or focus, only as a fill or decoration", () => {
     expect(contrast(token("color-cta"), token("color-bg"))).toBeLessThan(3);
-    const outsideRoot = css.replace(/:root\s*{[^}]*}/, "");
-    expect(outsideRoot).not.toMatch(/(^|[\s;{])(color|outline(-color)?):[^;]*var\(--color-cta\)/m);
+    // List bullets are decoration, not text.
+    const outsideRoot = css.replace(/:root\s*{[^}]*}/, "").replace(/::marker\s*{[^}]*}/g, "");
+    expect(outsideRoot).not.toMatch(
+      /(^|[\s;{])(color|outline(-color)?):[^;]*var\(--color-(cta|accent)\)/m,
+    );
   });
 
   it("has no colored side stripes on cards, notices or badges", () => {

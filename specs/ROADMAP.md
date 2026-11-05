@@ -78,3 +78,4 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Collegare il +1 a un partecipante vero (relazione invece del testo libero), emerso nella spec dell'MVP 7.
 - Report che confronta più edizioni, emerso nella spec dell'MVP 7.
 - Modalità scura e stile configurabile dal pannello admin, emersi nella spec dell'MVP 8.
+- Iscrizione in 3 passi con indicatore (scegli i turni, dati, pagamento) come nel mockup; accordion per giorno su telefono.
