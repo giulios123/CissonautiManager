@@ -22,7 +22,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: aggiunta, modifica, rimozione; titolo obbligatorio; tipo non valido rifiutato; nessuno modifica i contributi di altri; spariscono con la prenotazione rimossa.
 - [x] **9. Vista Contributi e Settimana**: vista con filtro e CSV; colonna «Attività» in «Settimana».
   Test: filtro per tipo; contributi di prenotazioni non attive segnati; CSV con le righe filtrate; conteggi per giorno nella settimana.
-- [ ] **10. Chiusura**: lint e test verdi, migrazioni da zero, Memory Bank (modifiche a `domain.md` approvate, `decisions.md`), README, descrizione PR con checklist per organizzatori.
+- [x] **10. Chiusura**: lint e test verdi, migrazioni da zero, Memory Bank (modifiche a `domain.md` approvate, `decisions.md`), README, descrizione PR con checklist per organizzatori.
 
 ## Da verificare a mano
 

@@ -220,3 +220,24 @@
 - **Decisione**: togliere uno slot fa cadere i pasti a cui non si ha più titolo; la risposta e la cronologia lo dicono. Vale anche per l'admin, che per dare un pasto deve prima dare la presenza.
 - **Motivo**: bloccare il cambio di slot finché non si tolgono i pasti a mano sarebbe un passaggio in più senza vantaggi.
 - **Alternative scartate**: rifiutare il cambio di slot; lasciare pasti senza presenza (conteggi sbagliati per la cucina).
+
+## D-032 · Attività legate a giorno e fascia, con presenza obbligatoria
+
+- **Data**: 2026-11-05
+- **Decisione**: un'attività ha un giorno, una fascia (mattina, pomeriggio, sera) e un orario indicativo libero. Si aderisce solo se presenti in quella fascia (sera derivata compresa, D-009); la regola vale anche per l'admin, che può però superare la capienza con «forza» e cambiare giorni passati. Il conteggio dei posti e il lock sulla riga seguono gli slot (D-011).
+- **Motivo**: scelta del maintainer; la fascia riusa la regola di presenza dei pasti senza confrontare orari liberi.
+- **Alternative scartate**: orario libero di inizio e fine (confronti con gli slot più fragili); attività su tutto il giorno (Backlog).
+
+## D-033 · Attività bloccate dopo la prima adesione e riattivazione senza le attività piene
+
+- **Data**: 2026-11-05
+- **Decisione**: con iscritti non si cambiano prezzo, giorno e fascia e non si elimina (conta ogni prenotazione che la tiene, anche scaduta); la capienza non scende sotto chi occupa un posto. Quando una prenotazione scaduta torna attiva (riattivazione o pagamento), le attività nel frattempo piene cadono con avviso e cronologia: cambia la spec, che diceva «l'admin decide se forzare».
+- **Motivo**: gli importi non devono cambiare alle spalle delle persone; la riattivazione da pagamento non ha nessuno che possa forzare, e la regola è la stessa dei pasti (D-031).
+- **Alternative scartate**: ricalcolare gli importi di tutti al cambio di prezzo; rifiutare la riattivazione per un'attività piena.
+
+## D-034 · Contributi sulla prenotazione
+
+- **Data**: 2026-11-05
+- **Decisione**: tabella `contribution` legata alla prenotazione, tre tipi (talk, tema, competenza), più contributi per persona, modificabili solo da chi li ha scritti. Nella vista admin quelli di prenotazioni non attive restano, segnati. Si aggiungono solo con un'iscrizione in attesa o confermata.
+- **Motivo**: valgono per un'edizione e spariscono con la prenotazione rimossa; il meccanismo dell'unconference resta da definire (Backlog).
+- **Alternative scartate**: estendere il campo libero «cosa puoi portare» (non filtrabile né esportabile per tipo).

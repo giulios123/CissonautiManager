@@ -10,7 +10,7 @@
 | 3 | Pannello admin completo | codice fatto e provato in locale (task 1-12), chiusura documentale fatta (task 13); si porta su `main` insieme al task 9 dell'MVP 2 |
 | 4 | Lista d'attesa | codice fatto e provato in locale (task 1-9) |
 | 5 | Pranzi e cene | codice fatto e provato in locale (task 1-10) |
-| 6 | Attività e contributi | da fare |
+| 6 | Attività e contributi | codice fatto e provato in locale (task 1-10) |
 | 7 | Inviti e report | da fare |
 
 ## Verifiche manuali
@@ -32,6 +32,8 @@
 - **Non verificato (MVP 4)**: CI su SQL Server; promozione dopo una scadenza con il job che gira davvero su Azure; due promozioni concorrenti sullo stesso slot (lock provato solo su SQLite); email vere.
 - **MVP 5**, provato end to end in locale con browser da telefono (DB nuovo da migrazioni 0001-0006, prezzi 8 € e 12 €, consenso sanitario pubblicato): il modulo pubblico non chiede i pasti; dalla pagina personale pranzo e cena di lunedì con anteprima (11 € → 31 €); allergie rifiutate senza consenso e salvate con il consenso; togliendo la sera cade la cena con avviso; vista «Pasti» con regimi, allergie e CSV; colonne Pranzi e Cene in «Settimana». Downgrade e upgrade della 0006 senza errori.
 - **Non verificato (MVP 5)**: CI su SQL Server; CSV dei pasti aperto in Excel vero; importi definitivi dei pasti.
+- **MVP 6**, provato end to end in locale con browser da telefono (DB nuovo da migrazioni 0001-0007): l'admin crea dal pannello un'escursione a 15 € con 2 posti; Ada e Bob aderiscono (quota 12 € → 27 €), per Cid la casella è bloccata con «completo»; Ada toglie lo slot del lunedì mattina e l'attività cade con avviso; Bob propone un tema per l'unconference; dettaglio attività con iscritti e posti, vista «Contributi», CSV di attività e contributi, colonna Attività in «Settimana». Downgrade e upgrade della 0007 senza errori.
+- **Non verificato (MVP 6)**: CI su SQL Server (lock sulle attività provato solo sul testo della query); due adesioni contemporanee all'ultimo posto; CSV aperti in Excel vero.
 - **B0**: l'MVP 2 non è completo (task 9 aperto). Il maintainer ha chiesto di procedere e di validare tutto insieme al passaggio su `main`.
 
 ## Bug corretti fuori MVP

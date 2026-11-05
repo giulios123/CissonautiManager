@@ -34,8 +34,9 @@
 
 - Quota di partecipazione: quota base + importo per ogni giorno con almeno uno slot prenotato, sera compresa (un giorno con la sola sera conta, per ora). Default 10 € + 1 €/giorno, configurabili.
 - Pranzi e cene: adesione per singolo giorno, due prezzi flat configurabili (uno per il pranzo, uno per la cena). Per il pranzo serve almeno uno slot di giorno (mattina o pomeriggio); per la cena la presenza serale, e chi prenota l'intero giorno (mattina e pomeriggio) conta anche per la sera. L'adesione ai pasti non avviene all'iscrizione: si fa dopo, dalla pagina personale, e si può cambiare con le stesse regole degli slot (giorni passati solo l'admin). Togliere uno slot fa cadere i pasti a cui non si ha più titolo, con ricalcolo dell'importo.
-- Totale dovuto = quota di partecipazione + pranzi e cene, ai prezzi correnti dell'edizione.
-- Attività: create dall'admin, gratuite o a pagamento, capienza opzionale.
+- Totale dovuto = quota di partecipazione + pranzi e cene + attività a pagamento, ai prezzi correnti.
+- Attività: create dall'admin, gratuite o a pagamento, capienza opzionale. Ogni attività ha un giorno e una fascia (mattina, pomeriggio, sera): può aderire solo chi è presente in quella fascia, sera derivata compresa. Con persone già iscritte non cambiano prezzo, giorno e fascia, la capienza non scende sotto gli iscritti e l'attività non si elimina. Togliere uno slot fa cadere le attività a cui non si ha più titolo; alla riattivazione di una prenotazione scaduta cadono quelle nel frattempo piene. L'admin può superare la capienza con una conferma esplicita.
+- Contributi: dalla pagina personale si propongono talk, temi per l'unconference e competenze, più di uno per persona; sono legati all'iscrizione dell'edizione.
 - Saldo del partecipante = totale dovuto meno pagamenti registrati.
 
 ## Pagamenti
