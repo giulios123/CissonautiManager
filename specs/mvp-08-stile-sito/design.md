@@ -37,7 +37,7 @@ Self-hosted con i pacchetti `@fontsource/<famiglia>` (licenza OFL), importati in
 ## Intestazione e modalità iframe
 
 - Componente `SiteHeader` in `App.tsx` al posto dell'attuale `<h1>Cissonauti Summer Camp</h1>`: logo (`frontend/public/logo.svg` o `.png`, con `alt`) e nome.
-- Modalità iframe: in `main.tsx` si controlla `window.self !== window.top` (dentro `try`, perché alcuni browser lanciano un errore cross-origin) e si aggiunge la classe `in-frame` a `<html>`. Con `in-frame`: intestazione nascosta o ridotta, sfondo uguale a quello della sezione del sito, margini ridotti.
+- Modalità iframe: in `main.tsx` si controlla `window.self !== window.top` (dentro `try`, perché alcuni browser lanciano un errore cross-origin) e si aggiunge la classe `in-frame` a `<html>`. Con `in-frame`: intestazione ridotta (solo il nome, piccolo, senza logo), sfondo uguale a quello della sezione del sito, margini ridotti.
 - Il pannello admin (`AdminLayout.tsx`, `header.admin-nav`) usa gli stessi token; la navigazione resta un elenco di link.
 
 ## Componenti da allineare

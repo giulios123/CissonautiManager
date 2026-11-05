@@ -12,17 +12,17 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 
 ## Spec degli MVP 7 e 8 (2026-11-05)
 
-Scritte su richiesta del maintainer mentre gli MVP 4-6 sono in lavorazione altrove: `specs/mvp-07-inviti-report/` e `specs/mvp-08-stile-sito/`. In attesa di conferma.
+Scritte su richiesta del maintainer mentre gli MVP 4-6 sono in lavorazione altrove: `specs/mvp-07-inviti-report/` e `specs/mvp-08-stile-sito/`. Confermate.
 
 - MVP 7: priorità a chi è stato invitato (+1), verificata dall'admin con una spunta; ordine calcolato alla promozione. Report di edizione a video, in stampa e in CSV. Il design si appoggia su ipotesi sugli MVP 4-6, da riallineare prima del task 1.
 - MVP 8 (nuovo): grafica ripresa da https://sites.google.com/view/cissoneeventi/welcome. Colori, font (Montserrat) e loghi rilevati in `specs/mvp-08-stile-sito/stile.md`. Confermati: nome «Cissonauti Summer Camp», palette petrolio `#005C68` e ambra `#F4B400`, bottoni squadrati. Aperto: permesso della Pro Loco per i loghi (senza, l'intestazione mostra solo il nome).
 
-Domande aperte:
+Risposte del maintainer (2026-11-05), spec confermate:
 
-- MVP 7: un +1 verificato può entrare in lista oltre il limite del 20%? Proposta: no.
-- MVP 7: il report distingue prenotazioni confermate e in attesa? Proposta: sì, due colonne.
-- MVP 8: serve la modalità scura? Proposta: no.
-- MVP 8: dentro l'iframe l'intestazione si toglie del tutto o resta ridotta?
+- MVP 7: un +1 verificato non entra oltre il limite della lista; il report distingue confermate e in attesa di pagamento.
+- MVP 8: nessuna modalità scura; dentro l'iframe intestazione ridotta (solo il nome, senza logo).
+
+Prossimo passo: MVP 8 dal task 2 (non dipende dagli MVP 4-7); MVP 7 dopo la chiusura degli MVP 4-6, riallineando prima le ipotesi del design.
 
 ## Risolto il 2026-11-05 (conferma del maintainer)
 

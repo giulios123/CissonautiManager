@@ -24,6 +24,7 @@ Come +1 verificato voglio passare davanti in lista d'attesa, così chi è stato 
 - Quando l'admin verifica un +1 già in lista, allora la priorità vale dalla promozione successiva, senza che la persona debba rientrare.
 - Quando l'admin toglie la verifica, allora la persona torna al suo posto in ordine di ingresso.
 - Il limite di dimensione della lista (20% della capienza, configurabile) non cambia: la priorità cambia l'ordine, non quante persone entrano in lista.
+- Quando la lista è piena, allora anche un +1 verificato non può entrare (confermato dal maintainer il 2026-11-05).
 - La promozione segue le regole dell'MVP 4 (email e blocco di N giorni): cambia solo chi viene scelto.
 
 ## US-3 · Lista d'attesa con la priorità visibile
@@ -38,6 +39,7 @@ Come organizzatore voglio, a fine edizione, i numeri in una pagina sola, da guar
 
 - Quando apro «Report», allora vedo le sezioni: Iscrizioni, Presenze, Pasti, Attività, Lista d'attesa, Incassi.
 - **Iscrizioni**: quando apro la sezione, allora vedo il numero di prenotazioni per stato e il numero di persone distinte iscritte.
+- Quando una sezione conta presenze, pasti o attività, allora mostra due colonne, «confermate» e «in attesa di pagamento», più il totale (confermato dal maintainer il 2026-11-05).
 - **Presenze**: per ogni giorno e slot il numero di presenti (sera derivata D-009 inclusa e indicata); il picco di presenti contemporanei, la media per slot di giorno e i giorni-persona totali.
 - **Pasti**: pranzi e cene per giorno e i totali; il numero di persone con esigenze alimentari per pasto, senza nomi né dettagli (dati sanitari).
 - **Attività**: per ogni attività aderenti, capienza (se c'è) e incasso.

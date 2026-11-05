@@ -41,6 +41,7 @@ In `app/domain/report.py`:
 
 - `edition_report(...) -> EditionReport`: riceve righe già lette (prenotazioni con stato effettivo, presenze, pasti, attività, lista d'attesa, pagamenti, rimborsi) e restituisce dataclass per sezione. Riusa `presences` e `week_summary` di `app/domain/presence.py` per le presenze e la regola dei pagamenti annullati (D-021) per gli incassi.
 - Picco = massimo dei presenti su tutti gli slot; media = media sugli slot di mattina e pomeriggio dei giorni dell'edizione; giorni-persona = somma per persona dei giorni con almeno uno slot.
+- Presenze, pasti e attività sono contati separatamente per prenotazioni `confermata` e `in_attesa_pagamento`, con il totale.
 - Netto = versato meno rimborsato. Da incassare = somma dei saldi positivi delle prenotazioni attive. Crediti = somma dei saldi negativi.
 
 ## Servizi

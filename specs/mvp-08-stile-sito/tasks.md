@@ -15,7 +15,7 @@ Branch di implementazione: `feat/mvp-08-stile-sito`. Indipendente dall'MVP 7: pu
 - [ ] **5. Pannello admin**: navigazione, tabelle, `CsvButton`, scheda della persona.
   Test: tabelle scorrevoli a 390 px senza scorrimento della pagina; test esistenti verdi.
 - [ ] **6. Intestazione e modalità iframe**: `SiteHeader` con logo, classe `in-frame`.
-  Test vitest: intestazione visibile fuori dall'iframe e nascosta con `in-frame`; logo con `alt`; nome in testo se il logo manca.
+  Test vitest: intestazione completa fuori dall'iframe e ridotta (nome senza logo) con `in-frame`; logo con `alt`; nome in testo se il logo manca.
 - [ ] **7. Verifica visiva e chiusura**: screenshot Playwright a 390 e 1280 px, anche dentro un iframe di prova, confrontati con il sito; lint e test verdi; Memory Bank aggiornata (`progress.md`, `activeContext.md`, `decisions.md`); descrizione PR con checklist per organizzatori.
 
 ## Da verificare a mano

@@ -4,14 +4,14 @@ Riferimento: `memory-bank/domain.md`. In caso di conflitto vince `domain.md`. Ne
 
 Obiettivo: la grafica dell'app riprende lo stile del sito https://sites.google.com/view/cissoneeventi/welcome, che ospita l'iframe della pagina di iscrizione. Chi si iscrive dal sito non deve avere la sensazione di passare a un'altra applicazione.
 
-**Stato**: la sessione che ha scritto questa spec non ha potuto aprire il sito (`sites.google.com` non è tra i domini consentiti dalla rete dell'ambiente). Colori, font e logo vanno raccolti nel task 1, prima di qualsiasi modifica: nessuna palette è stata inventata.
+**Stato**: colori, font e loghi rilevati il 2026-11-05 in `stile.md`. Confermati dal maintainer: nome «Cissonauti Summer Camp», palette, bottoni squadrati, intestazione ridotta nell'iframe, nessuna modalità scura.
 
 ## US-1 · Iscrizione dentro il sito
 
 Come persona che si iscrive dal sito voglio che il modulo sembri parte della pagina.
 
 - Quando apro la pagina di iscrizione dentro l'iframe del sito, allora colori, font, bottoni e spaziature sono quelli del sito.
-- Quando la pagina è dentro l'iframe, allora non ripete l'intestazione del sito (niente logo grande né titolo doppio) e lo sfondo si fonde con la sezione che la contiene.
+- Quando la pagina è dentro l'iframe, allora mostra un'intestazione ridotta (solo il nome, piccolo, senza logo) e lo sfondo si fonde con la sezione che la contiene (confermato dal maintainer il 2026-11-05).
 - Quando apro la stessa pagina fuori dall'iframe, allora vedo l'intestazione completa con logo e nome dell'evento.
 
 ## US-2 · Stesso stile in tutta l'app
@@ -43,6 +43,6 @@ Nessuna.
 
 ## Fuori scope (Backlog)
 
-- Modalità scura (il sito è chiaro; da valutare se il sito la introduce).
+- Modalità scura (esclusa dal maintainer il 2026-11-05; il sito è chiaro).
 - Personalizzazione dello stile dal pannello admin.
 - Restyling dei testi delle email (restano in testo semplice).
