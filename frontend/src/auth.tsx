@@ -9,7 +9,9 @@ export type BookingView = {
   paid_cents: number;
   balance_cents: number;
   hold_expires_at: string;
-  slots: { date: string; period: string; label: string }[];
+  editable: boolean;
+  can_cancel: boolean;
+  slots: { id: number; date: string; period: string; label: string }[];
   payments: { amount_cents: number; channel: string; paid_on: string; note?: string | null }[];
 };
 

@@ -59,3 +59,4 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Modifica manuale dell'importo dovuto da parte dell'admin (sconti, organizzatori gratis), emersa nella spec dell'MVP 3.
 - Dominio proprio per le email (oggi dominio gestito Azure) se il recapito o i limiti di invio danno problemi.
 - Passaggio dell'invio email a una coda se il volume cresce (oggi l'invio è sincrono dopo il commit).
+- La pagina pubblica di iscrizione permette di scegliere anche giorni già passati: valutare se bloccarli durante l'evento (emerso nella prova dell'MVP 2).

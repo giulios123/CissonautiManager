@@ -9,7 +9,8 @@ export type SlotInfo = {
   // null means no limit (the evening)
   available: number | null;
 };
-export type Day = { date: string; slots: SlotInfo[] };
+// `past` is sent by the API: the day is over (Europe/Rome) and its slots can no longer change.
+export type Day = { date: string; past?: boolean; slots: SlotInfo[] };
 
 export function distinctDays(days: Day[], selected: Set<number>): number {
   return days.filter((day) => day.slots.some((slot) => selected.has(slot.id))).length;

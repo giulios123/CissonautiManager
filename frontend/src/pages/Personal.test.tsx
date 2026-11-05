@@ -1,0 +1,295 @@
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, vi } from "vitest";
+import { App } from "../App";
+import type { BookingView, Me } from "../auth";
+
+type Reply = { status?: number; body: unknown };
+
+function stubFetch(handler: (url: string, init?: RequestInit) => Reply) {
+  const calls: { method: string; url: string; body?: unknown }[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({
+        method: init?.method ?? "GET",
+        url,
+        body: init?.body ? JSON.parse(String(init.body)) : undefined,
+      });
+      const { status = 200, body } = handler(url, init);
+      return new Response(status === 204 ? null : JSON.stringify(body), { status });
+    }),
+  );
+  return calls;
+}
+
+afterEach(() => vi.unstubAllGlobals());
+
+const slot = (id: number, period: string, available: number | null) => ({
+  id,
+  period,
+  start_time: period === "morning" ? "09:00:00" : period === "afternoon" ? "14:00:00" : "19:00:00",
+  end_time: period === "morning" ? "13:00:00" : period === "afternoon" ? "18:00:00" : "00:00:00",
+  capacity: available === null ? null : 25,
+  available,
+});
+
+const EDITION = {
+  registration_open: true,
+  base_fee_cents: 1000,
+  per_day_fee_cents: 100,
+  days: [
+    { date: "2026-07-12", past: true, slots: [slot(10, "morning", 20)] },
+    {
+      date: "2026-07-13",
+      past: false,
+      // slot 1 is full but it is mine, slot 2 is full and not mine
+      slots: [slot(1, "morning", 0), slot(2, "afternoon", 0), slot(3, "evening", null)],
+    },
+    { date: "2026-07-14", past: false, slots: [slot(4, "morning", 5)] },
+  ],
+};
+
+function booking(overrides: Partial<BookingView> = {}): BookingView {
+  return {
+    id: 7,
+    status: "in_attesa_pagamento",
+    amount_due_cents: 1100,
+    paid_cents: 0,
+    balance_cents: 1100,
+    hold_expires_at: "2026-07-04T10:00:00Z",
+    editable: true,
+    can_cancel: true,
+    slots: [
+      { id: 1, date: "2026-07-13", period: "morning", label: "lun 13/07 mattina (09:00-13:00)" },
+    ],
+    payments: [],
+    ...overrides,
+  };
+}
+
+function me(bookings: BookingView[]): Me {
+  return {
+    id: 1,
+    first_name: "Ada",
+    last_name: "Lovelace",
+    email: "ada@example.com",
+    role: "participant",
+    personal_code: "CSC-7K3P",
+    has_password: false,
+    bookings,
+    payment_channels: [{ code: "iban", label: "Bonifico", instructions: "IT00 X000" }],
+  };
+}
+
+function openAt(handler: (url: string, init?: RequestInit) => Reply) {
+  const calls = stubFetch(handler);
+  render(
+    <MemoryRouter initialEntries={["/io"]}>
+      <App />
+    </MemoryRouter>,
+  );
+  return calls;
+}
+
+async function openEditor() {
+  await userEvent.click(await screen.findByRole("button", { name: "Cambia i tuoi slot" }));
+  return within(await screen.findByRole("form", { name: "Modifica i tuoi slot" }));
+}
+
+describe("changing slots", () => {
+  const routes =
+    (state = { me: me([booking()]) }) =>
+    (url: string, init?: RequestInit): Reply => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/slots" && init?.method === "PUT") return { body: booking() };
+      return { status: 404, body: {} };
+    };
+
+  it("previews the new fee and the difference as slots are chosen", async () => {
+    openAt(routes());
+    const form = await openEditor();
+    const [, , tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent(
+      "Nuova quota: 12,00 € (1,00 € in più di ora)",
+    );
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("Nuova quota: 11,00 €");
+    expect(form.getByText(/Nuova quota/)).not.toHaveTextContent("di ora");
+  });
+
+  it("shows a lower fee when a day is dropped", async () => {
+    openAt(routes());
+    const form = await openEditor();
+    const [, monday] = form.getAllByRole("group");
+    await userEvent.click(within(monday).getByRole("checkbox", { name: /Mattina/ }));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("Nuova quota: 10,00 € (1,00 € in meno");
+  });
+
+  it("locks past days and full slots that are not mine, but keeps my own slot editable", async () => {
+    openAt(routes());
+    const form = await openEditor();
+    const [sunday, monday] = form.getAllByRole("group");
+    expect(within(sunday).getByRole("checkbox")).toBeDisabled();
+    expect(within(sunday).getByRole("checkbox")).toHaveAccessibleName(/giorno passato/);
+    expect(within(monday).getByRole("checkbox", { name: /Mattina/ })).toBeEnabled();
+    expect(within(monday).getByRole("checkbox", { name: /Mattina/ })).toBeChecked();
+    expect(within(monday).getByRole("checkbox", { name: /Mattina/ })).toHaveAccessibleName(
+      /il tuo posto/,
+    );
+    expect(within(monday).getByRole("checkbox", { name: /Pomeriggio/ })).toBeDisabled();
+    expect(within(monday).getByRole("checkbox", { name: /Sera/ })).toBeEnabled();
+  });
+
+  it("saves only after a change, sends the chosen slots and reloads the page data", async () => {
+    const calls = openAt(routes());
+    const form = await openEditor();
+    const save = form.getByRole("button", { name: "Salva gli slot" });
+    expect(save).toBeDisabled();
+    const [, , tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    expect(save).toBeEnabled();
+    await userEvent.click(save);
+    expect(await form.findByText("Slot aggiornati.")).toBeInTheDocument();
+    const put = calls.find((call) => call.method === "PUT");
+    expect(put?.body).toEqual({ slot_ids: [1, 4] });
+    expect(calls.filter((call) => call.url === "/api/me")).toHaveLength(2);
+  });
+
+  it("refuses an empty selection and points to the cancellation", async () => {
+    const calls = openAt(routes());
+    const form = await openEditor();
+    const [, monday] = form.getAllByRole("group");
+    await userEvent.click(within(monday).getByRole("checkbox", { name: /Mattina/ }));
+    await userEvent.click(form.getByRole("button", { name: "Salva gli slot" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("Per rinunciare usa la disdetta");
+    expect(calls.some((call) => call.method === "PUT")).toBe(false);
+  });
+
+  it("shows the server error and refreshes the seats when a slot filled up", async () => {
+    const handler = routes();
+    const calls = openAt((url, init) =>
+      url === "/api/me/booking/slots"
+        ? { status: 409, body: { detail: "Questi slot sono al completo: mar 14/07 mattina." } }
+        : handler(url, init),
+    );
+    const form = await openEditor();
+    const [, , tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    await userEvent.click(form.getByRole("button", { name: "Salva gli slot" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("al completo");
+    await waitFor(() =>
+      expect(calls.filter((call) => call.url === "/api/public/edition")).toHaveLength(2),
+    );
+  });
+
+  it("does not offer the editor on a booking that can no longer change", async () => {
+    openAt(
+      routes({
+        me: me([booking({ status: "scaduta", editable: false, can_cancel: false })]),
+      }),
+    );
+    expect(await screen.findByRole("heading", { name: "Scaduta" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cambia i tuoi slot" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Richiedi disdetta" })).not.toBeInTheDocument();
+  });
+});
+
+describe("cancelling", () => {
+  function cancelRoutes(initial: Me) {
+    let current = initial;
+    return (url: string, init?: RequestInit): Reply => {
+      if (url === "/api/me") return { body: current };
+      if (url === "/api/me/booking/cancel" && init?.method === "POST") {
+        current = { ...current, bookings: [] };
+        return { body: { outcome: "removed" } };
+      }
+      return { status: 404, body: {} };
+    };
+  }
+
+  it("asks for confirmation, with focus on the safe choice, and closes with Escape", async () => {
+    const calls = openAt(cancelRoutes(me([booking()])));
+    const trigger = await screen.findByRole("button", { name: "Richiedi disdetta" });
+    await userEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "Vuoi disdire l'iscrizione?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveTextContent("I tuoi posti si liberano subito");
+    expect(dialog).toHaveTextContent("Non risultano pagamenti");
+    expect(screen.getByRole("button", { name: "No, torno indietro" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+  });
+
+  it("keeps the focus inside the dialog when tabbing", async () => {
+    openAt(cancelRoutes(me([booking()])));
+    await userEvent.click(await screen.findByRole("button", { name: "Richiedi disdetta" }));
+    const dialog = await screen.findByRole("dialog");
+    const keep = within(dialog).getByRole("button", { name: "No, torno indietro" });
+    const confirm = within(dialog).getByRole("button", { name: "Sì, disdico" });
+    await userEvent.tab();
+    expect(confirm).toHaveFocus();
+    await userEvent.tab();
+    expect(keep).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(confirm).toHaveFocus();
+  });
+
+  it("mentions the refund when something was already paid", async () => {
+    openAt(
+      cancelRoutes(me([booking({ paid_cents: 500, balance_cents: 600, status: "confermata" })])),
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Richiedi disdetta" }));
+    expect(await screen.findByRole("dialog")).toHaveTextContent("Hai già versato 5,00 €");
+  });
+
+  it("sends the cancellation and tells what happened", async () => {
+    const calls = openAt(cancelRoutes(me([booking()])));
+    await userEvent.click(await screen.findByRole("button", { name: "Richiedi disdetta" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Sì, disdico" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Disdetta registrata");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText(/Non hai ancora un.iscrizione/)).toBeInTheDocument();
+    expect(calls.filter((call) => call.method === "POST")).toHaveLength(1);
+  });
+});
+
+describe("balance and instructions", () => {
+  const route =
+    (bookings: BookingView[]) =>
+    (url: string): Reply =>
+      url === "/api/me" ? { body: me(bookings) } : { status: 404, body: {} };
+
+  it("asks to pay the difference on a confirmed booking after a change", async () => {
+    openAt(route([booking({ status: "confermata", paid_cents: 1100, balance_cents: 100 })]));
+    expect(await screen.findByText(/Ancora da versare/)).toHaveTextContent("1,00 €");
+    expect(screen.getByText(/la differenza si versa/)).toBeInTheDocument();
+    expect(screen.getByText("CSC-7K3P")).toBeInTheDocument();
+    expect(screen.getByText("IT00 X000")).toBeInTheDocument();
+  });
+
+  it("shows the credit when the new amount is lower than what was paid", async () => {
+    openAt(route([booking({ status: "confermata", paid_cents: 1200, balance_cents: -100 })]));
+    expect(await screen.findByText(/Versato in più/)).toHaveTextContent("1,00 €");
+  });
+
+  it("explains a requested cancellation and offers no actions", async () => {
+    openAt(
+      route([
+        booking({
+          status: "disdetta_richiesta",
+          editable: false,
+          can_cancel: false,
+          paid_cents: 500,
+        }),
+      ]),
+    );
+    expect(await screen.findByText(/Hai chiesto la disdetta/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /disdetta|slot/i })).not.toBeInTheDocument();
+  });
+});

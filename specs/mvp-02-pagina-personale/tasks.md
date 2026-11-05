@@ -16,7 +16,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test con client finto: invio corretto, errore non propagato, avvio rifiutato senza stringa di connessione.
 - [x] **7. Job promemoria**: `app/jobs/send_reminders.py`.
   Test: mid e final una sola volta; rilancio idempotente; niente su confermata, scaduta, disdetta, coperta; in ritardo solo il finale; riattivata riparte; riepilogo stampato.
-- [ ] **8. Interfaccia `/io`**: modifica slot con anteprima, saldo o credito, disdetta con dialogo di conferma.
+- [x] **8. Interfaccia `/io`**: modifica slot con anteprima, saldo o credito, disdetta con dialogo di conferma.
   Test vitest: anteprima e differenza; slot pieno non selezionabile; slot passati disabilitati; dialogo (apre, annulla, conferma); errore 409 mostrato.
 - [ ] **9. Infrastruttura**: Bicep (ACS, dominio gestito, job orario), `deploy.yml`, `infra/README.md`.
   Test: `az bicep build` senza errori; `what-if`; dopo il deploy il job compare e gira.
