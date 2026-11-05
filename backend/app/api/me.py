@@ -14,6 +14,7 @@ from app.db import get_db
 from app.deps import current_user, get_email_sender, get_now, get_settings_dep
 from app.email import EmailSender
 from app.models import DOC_HEALTH, Booking, Edition, Participant, WaitlistEntry
+from app.services import activities as activity_service
 from app.services import booking_changes
 from app.services import edition as edition_service
 from app.services import health as health_service
@@ -36,6 +37,20 @@ class WaitlistView(BaseModel):
     position: int
 
 
+class ActivityOffer(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    date: date
+    period: str
+    time_label: str | None
+    price_cents: int
+    capacity: int | None
+    free: int | None
+    joined: bool
+    past: bool
+
+
 class MeOut(BaseModel):
     id: int
     first_name: str
@@ -51,6 +66,8 @@ class MeOut(BaseModel):
     dinner_price_cents: int | None = None
     # Text of the consent for allergies; None while the admins have not published it.
     health_consent: LegalPublic | None = None
+    # Activities of the current booking: the ones joined and the ones its presence allows.
+    activities: list[ActivityOffer] = []
 
 
 class PasswordIn(BaseModel):
@@ -94,9 +111,32 @@ def get_me(
         payment_channels=channels,
         waitlist=waitlist,
         health_consent=_health_consent(db, edition),
+        activities=_offers(db, user, now),
         lunch_price_cents=edition.lunch_price_cents if edition else None,
         dinner_price_cents=edition.dinner_price_cents if edition else None,
     )
+
+
+def _offers(db: Session, user: Participant, now: datetime) -> list[ActivityOffer]:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        return []
+    return [
+        ActivityOffer(
+            id=a.id,
+            title=a.title,
+            description=a.description,
+            date=a.date,
+            period=a.period,
+            time_label=a.time_label,
+            price_cents=a.price_cents,
+            capacity=a.capacity,
+            free=free,
+            joined=joined,
+            past=past,
+        )
+        for a, free, joined, past in activity_service.offers_for(db, booking, now)
+    ]
 
 
 def _health_consent(db: Session, edition: Edition | None) -> LegalPublic | None:
@@ -297,6 +337,46 @@ def save_my_dietary(
             detail="Per ora non si possono indicare allergie: scrivi a chi organizza",
         ) from exc
     return booking_view(booking, now)
+
+
+class ActivitiesIn(BaseModel):
+    activity_ids: list[int] = Field(max_length=200)
+
+
+def activity_refusal(exc: activity_service.ActivitiesRefused) -> str:
+    names = activity_service.labels(exc.activities)
+    if exc.reason == "full":
+        return f"Queste attività sono al completo: {names}."
+    if exc.reason == "past_day":
+        return "Le attività di giorni già passati non si possono cambiare: scrivi a chi organizza."
+    return f"Puoi aderire solo alle attività dei momenti in cui sei presente: {names}."
+
+
+@router.put("/me/booking/activities")
+def change_my_activities(
+    body: ActivitiesIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> BookingView:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        result = activity_service.change_activities(db, sender, booking, body.activity_ids, now)
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except activity_service.InvalidActivities as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail="Le attività scelte non sono valide") from exc
+    except activity_service.ActivitiesRefused as exc:
+        db.rollback()
+        status = 409 if exc.reason == "full" else 422
+        raise HTTPException(status_code=status, detail=activity_refusal(exc)) from exc
+    return booking_view(result.booking, now)
 
 
 class CancelOut(BaseModel):

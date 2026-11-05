@@ -5,6 +5,7 @@ import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
+import { ActivityPicker } from "./ActivityPicker";
 import { DietaryForm } from "./DietaryForm";
 import { MealEditor } from "./MealEditor";
 import { SlotEditor } from "./SlotEditor";
@@ -44,6 +45,8 @@ function BookingCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [editingMeals, setEditingMeals] = useState(false);
+  const [editingActivities, setEditingActivities] = useState(false);
+  const activities = booking.activities ?? [];
   const meals = booking.meals ?? [];
   const pending = booking.status === "in_attesa_pagamento";
   const confirmedWithBalance = booking.status === "confermata" && booking.balance_cents > 0;
@@ -132,6 +135,33 @@ function BookingCard({
               dinnerCents={me.dinner_price_cents ?? 0}
               onSaved={reload}
             />
+          )}
+        </section>
+      )}
+      {(booking.editable || activities.length > 0) && (
+        <section aria-labelledby={`activities-${booking.id}`}>
+          <h3 id={`activities-${booking.id}`}>Attività</h3>
+          {activities.length === 0 ? (
+            <p>Nessuna attività scelta.</p>
+          ) : (
+            <ul>
+              {activities.map((activity) => (
+                <li key={activity.id}>{activity.label}</li>
+              ))}
+            </ul>
+          )}
+          {booking.editable && (
+            <button
+              type="button"
+              className="secondary"
+              aria-expanded={editingActivities}
+              onClick={() => setEditingActivities((value) => !value)}
+            >
+              {editingActivities ? "Chiudi le attività" : "Scegli le attività"}
+            </button>
+          )}
+          {editingActivities && booking.editable && (
+            <ActivityPicker booking={booking} offers={me.activities ?? []} onSaved={reload} />
           )}
         </section>
       )}

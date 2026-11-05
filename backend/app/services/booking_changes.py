@@ -22,6 +22,7 @@ from app.models import (
     STATUS_CANCEL_REQUESTED,
     STATUS_CONFIRMED,
     STATUS_PENDING,
+    Activity,
     AuditLog,
     Booking,
     Edition,
@@ -80,6 +81,10 @@ class ChangeResult:
     removed_slot_ids: list[int] = field(default_factory=list)
     # Meals dropped because the new slots no longer allow them, as (day, kind).
     dropped_meals: list[tuple[date, str]] = field(default_factory=list)
+    # Activities dropped because the new slots no longer allow them.
+    dropped_activities: list[Activity] = field(default_factory=list)
+    # Activities that went over capacity because an admin forced the change.
+    over_capacity_activities: list[Activity] = field(default_factory=list)
 
 
 def get_current_booking(db: Session, participant: Participant) -> Booking | None:

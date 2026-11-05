@@ -25,6 +25,7 @@ export type BookingView = {
   }[];
   meals?: MealView[];
   allowed_meals?: MealView[];
+  activities?: { id: number; title: string; label: string; price_cents: number }[];
   dropped_meals?: string[];
   diet?: string | null;
   allergies?: string | null;
@@ -54,6 +55,21 @@ export type Me = {
   lunch_price_cents?: number | null;
   dinner_price_cents?: number | null;
   health_consent?: { version: number; body: string } | null;
+  activities?: ActivityOffer[];
+};
+
+export type ActivityOffer = {
+  id: number;
+  title: string;
+  description: string | null;
+  date: string;
+  period: string;
+  time_label: string | null;
+  price_cents: number;
+  capacity: number | null;
+  free: number | null;
+  joined: boolean;
+  past: boolean;
 };
 
 type MeState = { status: "loading" } | { status: "anonymous" } | { status: "user"; me: Me };

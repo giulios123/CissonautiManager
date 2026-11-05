@@ -486,3 +486,69 @@ describe("dietary needs", () => {
     expect(form.getByText(/scrivi a chi organizza/)).toBeInTheDocument();
   });
 });
+
+describe("activities", () => {
+  const offer = (over: Record<string, unknown>) => ({
+    id: 1,
+    title: "Escursione",
+    description: "Sul monte",
+    date: "2026-07-13",
+    period: "morning",
+    time_label: "9:30-12",
+    price_cents: 1500,
+    capacity: 2,
+    free: 1,
+    joined: false,
+    past: false,
+    ...over,
+  });
+
+  it("joins a paid activity with a preview, and a full one is locked", async () => {
+    const offers = [offer({}), offer({ id: 2, title: "Kayak", free: 0, price_cents: 0 })];
+    const state = { me: { ...me([booking()]), activities: offers } };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/activities" && init?.method === "PUT") {
+        state.me = {
+          ...me([
+            booking({
+              activities: [
+                {
+                  id: 1,
+                  title: "Escursione",
+                  label: "Escursione (lun 13/07 mattina)",
+                  price_cents: 1500,
+                },
+              ],
+            }),
+          ]),
+          activities: [offer({ joined: true, free: 0 }), offers[1]],
+        };
+        return { body: state.me.bookings[0] };
+      }
+      return { status: 404, body: {} };
+    });
+    expect(await screen.findByText("Nessuna attività scelta.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Scegli le attività" }));
+    const form = within(await screen.findByRole("form", { name: "Scegli le attività" }));
+    expect(form.getByRole("checkbox", { name: /Kayak/ })).toBeDisabled();
+    await userEvent.click(form.getByRole("checkbox", { name: /Escursione/ }));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("26,00 € (15,00 € in più di ora)");
+    await userEvent.click(form.getByRole("button", { name: "Salva le attività" }));
+    expect(await screen.findByText("Escursione (lun 13/07 mattina)")).toBeInTheDocument();
+    expect(calls.find((c) => c.url === "/api/me/booking/activities")?.body).toEqual({
+      activity_ids: [1],
+    });
+  });
+
+  it("says when there are no activities for the moments booked", async () => {
+    openAt((url) => {
+      if (url === "/api/me") return { body: { ...me([booking()]), activities: [] } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Scegli le attività" }));
+    expect(await screen.findByText(/non ci sono attività/)).toBeInTheDocument();
+  });
+});
