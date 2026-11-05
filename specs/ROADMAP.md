@@ -68,3 +68,4 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Attività su più fasce o su tutto il giorno, come le escursioni (MVP 6).
 - Capienza dei pasti o chiusura delle adesioni a un'ora fissa (MVP 5).
 - Avviso a chi è in lista d'attesa quando la sua posizione cambia (MVP 4).
+- Anteprima della quota calcolata dal server nei modificatori di pasti e attività: oggi l'anteprima parte dalla quota salvata e, se un admin cambia un prezzo con iscrizioni già presenti, può differire dall'importo che viene poi salvato (che è sempre giusto). Emerso nella revisione della PR #6.
