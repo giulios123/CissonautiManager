@@ -17,7 +17,7 @@
 | 10 | Incassi (Da incassare) | fatto e provato in locale (task 1-10) |
 | 11 | Lingue e indirizzi | fatto e provato in locale (task 1-8) |
 | 12 | Pannello admin in inglese | fatto e provato in locale (task 1-5) |
-| 13 | Email di iscrizione personalizzabile | da fare |
+| 13 | Email di iscrizione personalizzabile | fatto e provato in locale (task 1-8) |
 
 ## Verifiche manuali
 
@@ -62,6 +62,9 @@
 
 - **MVP 12**, provato in locale con Chromium a 1280 px (lingua del browser inglese, DB nuovo da migrazioni, una iscrizione fatta in inglese, admin con password): menu, «People» con intestazioni e importi in inglese; link CSV con `lang=en` che scarica `people-2026-11-05.csv` con intestazioni inglesi; «To collect» con tasti «Mark as paid» e «Other amount»; scheda con sezioni e slot («Mon 9 Nov morning»); Impostazioni; cambio in italiano dal pannello che ricarica i dati e il titolo; guida organizzatori in italiano e in inglese con la stessa sezione. Nessun errore in console.
 - **Non verificato (MVP 12)**: CSV aperti in Excel o Numbers veri (il contenuto è provato nei test); lettura dei testi inglesi da una persona di fiducia; Safari e Firefox. La cronologia delle schede resta in italiano (D-044).
+
+- **MVP 13**, provato in locale con Chromium a 390 px (DB nuovo da migrazioni 0001-0012, console): dalle Impostazioni caricato uno sfondo JPEG (ricodificato in PNG, anteprima 1600×900), oggetto e testo in inglese con segnaposto, salvataggio, anteprima con «Ada Lovelace» e «I'm Ada Lovelace and I'll be at Cissonauti Summer Camp 2027 from 10 July 2027 to 16 July 2027»; «Send me a test» recapitata all'admin; iscrizione di una persona in inglese: oggetto «Welcome Grace, see you at Cissonauti Summer Camp 2027!», testo scritto dall'admin seguito dal blocco fisso (slot, quota, causale, scadenza, istruzioni con «Bank transfer (IBAN)», link `/login/verify`), parte HTML e allegato inline; nessun errore in console. Le immagini generate sono state guardate a occhio.
+- **Non verificato (MVP 13)**: la email vera in Gmail, Outlook e Apple Mail (immagine inline con `contentId` di Azure Communication Services: i test controllano il payload, non il recapito); come appare nello spam; CI su SQL Server con la migrazione 0012 (`varbinary(max)`); un file molto grande caricato su Azure (limite di richiesta del proxy). **Da verificare a mano**: dopo il deploy, carica uno sfondo vero, premi «Inviami una prova» e guarda la email nei client che usate di più.
 
 ## Bug corretti fuori MVP
 

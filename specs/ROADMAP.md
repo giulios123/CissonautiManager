@@ -116,3 +116,4 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Card dell'email scaricabile dalla pagina personale; altre email modificabili dall'admin (MVP 13).
 - Note di rilascio tradotte in inglese (MVP 12).
 - Voci di cronologia strutturate e tradotte alla lettura, invece di testi italiani salvati (emerso nell'MVP 12).
+- Email modificabili oltre alla conferma di iscrizione (pagamento ricevuto, promemoria, lista d'attesa); card dell'immagine scaricabile dalla pagina personale; font con caratteri non latini per i nomi (emersi nell'MVP 13).

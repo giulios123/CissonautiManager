@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import { useT } from "../i18n";
 import { hasMessage, tNow } from "../i18n/messages";
+import { AdminRegistrationEmail } from "./AdminRegistrationEmail";
 import { centsToInput, parseEuroToCents } from "../money";
 
 type Channel = { code: string; label: string; instructions: string; enabled: boolean };
@@ -384,6 +385,7 @@ export function AdminSettings() {
       {edition ? (
         <>
           <ChannelsSection edition={edition} />
+          <AdminRegistrationEmail />
           <section aria-labelledby="legal-title">
             <h2 id="legal-title">{t("set.legalTitle")}</h2>
             <p>{t("set.legalIntro")}</p>

@@ -8,7 +8,7 @@ You sign up with the public form, without creating an account. It takes two minu
 
 While you choose, the summary (at the bottom on a phone) shows the fee you are putting together.
 
-When you send the form you see the “Registration received” page with the amount, payment reference, payment instructions and deadline. You also get an email with the link to your page.
+When you send the form you see the “Registration received” page with the amount, payment reference, payment instructions and deadline. You also get an email with the link to your page and, if the organizers set it up, a picture with your name that you can share.
 
 ### Important
 

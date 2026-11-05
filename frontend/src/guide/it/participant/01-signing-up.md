@@ -8,7 +8,7 @@ L'iscrizione si fa dal modulo pubblico, senza creare un account. Ci vogliono due
 
 Mentre scegli, il riepilogo (in basso su telefono) ti mostra la quota che stai componendo.
 
-Quando invii, vedi la pagina «Iscrizione ricevuta» con importo, causale, istruzioni di pagamento e scadenza. Ti arriva anche un'email con il link per entrare nella tua pagina.
+Quando invii, vedi la pagina «Iscrizione ricevuta» con importo, causale, istruzioni di pagamento e scadenza. Ti arriva anche un'email con il link per entrare nella tua pagina e, se gli organizzatori l'hanno prevista, un'immagine con il tuo nome da condividere.
 
 ### Importante
 
