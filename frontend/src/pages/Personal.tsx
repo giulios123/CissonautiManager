@@ -5,6 +5,7 @@ import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
+import { DietaryForm } from "./DietaryForm";
 import { MealEditor } from "./MealEditor";
 import { SlotEditor } from "./SlotEditor";
 import { Waitlist } from "./Waitlist";
@@ -134,6 +135,7 @@ function BookingCard({
           )}
         </section>
       )}
+      {booking.editable && <DietaryForm booking={booking} me={me} onSaved={reload} />}
       {booking.payments.length > 0 && (
         <details>
           <summary>Pagamenti registrati</summary>

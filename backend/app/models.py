@@ -152,6 +152,9 @@ class Booking(Base):
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
     participant: Mapped[Participant] = relationship(foreign_keys=[participant_id])
+    health_consent: Mapped["LegalDocument | None"] = relationship(
+        foreign_keys=[health_consent_document_id]
+    )
     slots: Mapped[list[Slot]] = relationship(secondary="booking_slot")
     payments: Mapped[list["Payment"]] = relationship(
         back_populates="booking", order_by="Payment.id"

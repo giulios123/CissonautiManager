@@ -26,6 +26,9 @@ export type BookingView = {
   meals?: MealView[];
   allowed_meals?: MealView[];
   dropped_meals?: string[];
+  diet?: string | null;
+  allergies?: string | null;
+  health_consent_version?: number | null;
 };
 
 export type WaitlistItem = {
@@ -50,6 +53,7 @@ export type Me = {
   waitlist?: WaitlistItem[];
   lunch_price_cents?: number | null;
   dinner_price_cents?: number | null;
+  health_consent?: { version: number; body: string } | null;
 };
 
 type MeState = { status: "loading" } | { status: "anonymous" } | { status: "user"; me: Me };

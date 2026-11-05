@@ -448,3 +448,41 @@ describe("meals", () => {
     expect(await form.findByRole("alert")).toHaveTextContent("solo quando sei presente");
   });
 });
+
+describe("dietary needs", () => {
+  const consent = { version: 1, body: "Testo del consenso" };
+
+  it("refuses allergies without the consent and saves them with it", async () => {
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: { ...me([booking()]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/dietary" && init?.method === "PUT") return { body: booking() };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    await userEvent.selectOptions(form.getByLabelText("Regime alimentare"), "vegan");
+    await userEvent.type(form.getByLabelText("Allergie e intolleranze"), "Arachidi");
+    await userEvent.click(form.getByRole("button", { name: "Salva esigenze alimentari" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("spunta il consenso");
+    expect(calls.some((c) => c.url === "/api/me/booking/dietary")).toBe(false);
+    await userEvent.click(form.getByRole("checkbox", { name: /Acconsento/ }));
+    await userEvent.click(form.getByRole("button", { name: "Salva esigenze alimentari" }));
+    expect(await form.findByRole("status")).toHaveTextContent("salvate");
+    expect(calls.find((c) => c.url === "/api/me/booking/dietary")?.body).toEqual({
+      diet: "vegan",
+      allergies: "Arachidi",
+      consent: true,
+    });
+  });
+
+  it("without a published consent text only the diet can be given", async () => {
+    openAt((url) => {
+      if (url === "/api/me") return { body: me([booking()]) };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    expect(form.queryByLabelText("Allergie e intolleranze")).not.toBeInTheDocument();
+    expect(form.getByText(/scrivi a chi organizza/)).toBeInTheDocument();
+  });
+});

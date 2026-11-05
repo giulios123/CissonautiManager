@@ -57,6 +57,10 @@ class BookingView(BaseModel):
     allowed_meals: list[MealView] = []
     # After a change of slots: meals that went because the new slots no longer allow them.
     dropped_meals: list[str] = []
+    # Dietary needs. Allergies are health data: only the person and the admins see them.
+    diet: str | None = None
+    allergies: str | None = None
+    health_consent_version: int | None = None
 
 
 def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -> BookingView:
@@ -82,6 +86,9 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             )
             for s in slots
         ],
+        diet=booking.diet,
+        allergies=booking.allergies,
+        health_consent_version=booking.health_consent.version if booking.health_consent else None,
         meals=_meal_views(((m.date, m.kind) for m in booking.meals), now),
         allowed_meals=_meal_views(
             allowed_meals(periods_by_day((s.date, s.period) for s in booking.slots)), now

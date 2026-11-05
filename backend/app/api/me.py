@@ -7,15 +7,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.public import ChannelPublic
+from app.api.public import ChannelPublic, LegalPublic
 from app.api.schemas import BookingView, booking_view
 from app.config import Settings
 from app.db import get_db
 from app.deps import current_user, get_email_sender, get_now, get_settings_dep
 from app.email import EmailSender
-from app.models import Booking, Participant, WaitlistEntry
+from app.models import DOC_HEALTH, Booking, Edition, Participant, WaitlistEntry
 from app.services import booking_changes
 from app.services import edition as edition_service
+from app.services import health as health_service
 from app.services import meals as meals_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
@@ -48,6 +49,8 @@ class MeOut(BaseModel):
     waitlist: list[WaitlistView] = []
     lunch_price_cents: int | None = None
     dinner_price_cents: int | None = None
+    # Text of the consent for allergies; None while the admins have not published it.
+    health_consent: LegalPublic | None = None
 
 
 class PasswordIn(BaseModel):
@@ -90,9 +93,17 @@ def get_me(
         bookings=[booking_view(b, now) for b in bookings],
         payment_channels=channels,
         waitlist=waitlist,
+        health_consent=_health_consent(db, edition),
         lunch_price_cents=edition.lunch_price_cents if edition else None,
         dinner_price_cents=edition.dinner_price_cents if edition else None,
     )
+
+
+def _health_consent(db: Session, edition: Edition | None) -> LegalPublic | None:
+    if edition is None:
+        return None
+    document = edition_service.latest_legal_document(db, edition, DOC_HEALTH)
+    return LegalPublic(version=document.version, body=document.body) if document else None
 
 
 def _waitlist_view(db: Session, entry: WaitlistEntry) -> WaitlistView:
@@ -248,6 +259,44 @@ def change_my_meals(
         db.rollback()
         raise HTTPException(status_code=422, detail=MEAL_REFUSALS[exc.reason]) from exc
     return booking_view(result.booking, now)
+
+
+class DietaryIn(BaseModel):
+    diet: Literal["omnivore", "vegetarian", "vegan"] | None = None
+    allergies: str | None = Field(default=None, max_length=2000)
+    consent: bool = False
+
+
+@router.put("/me/booking/dietary")
+def save_my_dietary(
+    body: DietaryIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> BookingView:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        health_service.save_dietary(db, booking, body.diet, body.allergies, body.consent, now)
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except health_service.ConsentRequired as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail="Per salvare allergie e intolleranze serve il consenso al trattamento dei "
+            "dati sanitari",
+        ) from exc
+    except health_service.NoConsentText as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Per ora non si possono indicare allergie: scrivi a chi organizza",
+        ) from exc
+    return booking_view(booking, now)
 
 
 class CancelOut(BaseModel):
