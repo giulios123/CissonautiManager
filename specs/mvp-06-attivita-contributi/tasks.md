@@ -18,7 +18,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: capienza superata solo con `force` e segnalata; giorni passati ammessi; presenza sempre richiesta; cronologia.
 - [x] **7. Vista per attività**: elenco e dettaglio con CSV.
   Test: iscritti e posti; scadute e disdette escluse; CSV per attività e complessivo.
-- [ ] **8. Contributi lato partecipante**: servizio, endpoint, sezione «Cosa porti al camp».
+- [x] **8. Contributi lato partecipante**: servizio, endpoint, sezione «Cosa porti al camp».
   Test: aggiunta, modifica, rimozione; titolo obbligatorio; tipo non valido rifiutato; nessuno modifica i contributi di altri; spariscono con la prenotazione rimossa.
 - [ ] **9. Vista Contributi e Settimana**: vista con filtro e CSV; colonna «Attività» in «Settimana».
   Test: filtro per tipo; contributi di prenotazioni non attive segnati; CSV con le righe filtrate; conteggi per giorno nella settimana.

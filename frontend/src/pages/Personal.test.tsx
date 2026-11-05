@@ -552,3 +552,38 @@ describe("activities", () => {
     expect(await screen.findByText(/non ci sono attività/)).toBeInTheDocument();
   });
 });
+
+describe("contributions", () => {
+  it("adds a contribution and lists it", async () => {
+    const state = { me: { ...me([booking()]), contributions: [], can_bring: "Una torta" } };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/contributions" && init?.method === "POST") {
+        const item = { id: 5, kind: "topic", title: "Lavoro remoto", description: null };
+        state.me = { ...state.me, contributions: [item] as never[] };
+        return { status: 201, body: item };
+      }
+      return { status: 404, body: {} };
+    });
+    const section = within(
+      (await screen.findByRole("heading", { name: "Cosa porti al camp" })).closest(
+        "section",
+      ) as HTMLElement,
+    );
+    expect(section.getByText(/«Una torta»/)).toBeInTheDocument();
+    const form = within(section.getByRole("form", { name: "Proponi un contributo" }));
+    await userEvent.selectOptions(form.getByLabelText("Tipo"), "topic");
+    await userEvent.type(form.getByLabelText("Titolo"), "Lavoro remoto");
+    await userEvent.click(form.getByRole("button", { name: "Aggiungi" }));
+    expect(await section.findByText(/Lavoro remoto/)).toBeInTheDocument();
+    expect(section.getByRole("listitem")).toHaveTextContent(
+      "Tema per l'unconference: Lavoro remoto",
+    );
+    expect(calls.find((c) => c.url === "/api/me/contributions")?.body).toEqual({
+      kind: "topic",
+      title: "Lavoro remoto",
+      description: null,
+    });
+  });
+});

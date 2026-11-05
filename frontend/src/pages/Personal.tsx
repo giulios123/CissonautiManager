@@ -6,6 +6,7 @@ import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
 import { ActivityPicker } from "./ActivityPicker";
+import { Contributions } from "./Contributions";
 import { DietaryForm } from "./DietaryForm";
 import { MealEditor } from "./MealEditor";
 import { SlotEditor } from "./SlotEditor";
@@ -312,6 +313,7 @@ export function Personal() {
               onCancelled={onCancelled}
             />
           ))}
+      {me.bookings.some((b) => b.editable) && <Contributions me={me} editable reload={reload} />}
       <Waitlist me={me} reload={reload} />
       <PasswordForm hasPassword={me.has_password} />
       <button type="button" onClick={logout}>

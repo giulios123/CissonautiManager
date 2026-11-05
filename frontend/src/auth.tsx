@@ -57,6 +57,15 @@ export type Me = {
   dinner_price_cents?: number | null;
   health_consent?: { version: number; body: string } | null;
   activities?: ActivityOffer[];
+  contributions?: Contribution[];
+  can_bring?: string | null;
+};
+
+export type Contribution = {
+  id: number;
+  kind: "talk" | "topic" | "skill";
+  title: string;
+  description: string | null;
 };
 
 export type ActivityOffer = {
