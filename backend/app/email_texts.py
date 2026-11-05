@@ -186,8 +186,7 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
     "email.promoted.stays_confirmed": {
         "it": "La tua iscrizione resta confermata: versa la differenza con le stesse istruzioni.",
         "en": (
-            "Your registration stays confirmed: "
-            "pay the difference following the same instructions."
+            "Your registration stays confirmed: pay the difference following the same instructions."
         ),
     },
 }
