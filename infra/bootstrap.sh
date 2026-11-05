@@ -45,7 +45,7 @@ read -r -s -p "Repeat it: " ADMIN_PASSWORD_2; echo
 [[ ${#ADMIN_PASSWORD} -ge 12 ]] || { echo "Password too short." >&2; exit 1; }
 
 echo "1/3 Resource group and providers"
-for provider in Microsoft.App Microsoft.OperationalInsights Microsoft.Sql; do
+for provider in Microsoft.App Microsoft.Communication Microsoft.OperationalInsights Microsoft.Sql; do
   az provider register --namespace "$provider" --wait >/dev/null
 done
 az group create --name "$RG" --location "$LOCATION" --output none
