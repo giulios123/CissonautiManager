@@ -6,7 +6,7 @@ L'app serve a sapere quante persone ci sono ogni giorno nello spazio, ai pasti e
 
 ## Stato
 
-Progetto appena avviato: ci sono la documentazione e la spec del primo MVP, il codice arriva con l'MVP 1. Lo stato aggiornato è in [`memory-bank/progress.md`](memory-bank/progress.md), la roadmap in [`specs/ROADMAP.md`](specs/ROADMAP.md).
+MVP 1, parte 1a completata: iscrizione pubblica, accesso con magic link o password, impostazioni dell'edizione, elenco iscrizioni e registrazione dei pagamenti, tutto funzionante in locale. Manca il deploy su Azure (parte 1b). Lo stato aggiornato è in [`memory-bank/progress.md`](memory-bank/progress.md), la roadmap in [`specs/ROADMAP.md`](specs/ROADMAP.md).
 
 ## Come è organizzato il repo
 
@@ -19,7 +19,7 @@ Progetto appena avviato: ci sono la documentazione e la spec del primo MVP, il c
 
 ## Avvio in locale
 
-I comandi sono in [`AGENTS.md`](AGENTS.md#comandi). In breve: copia `.env.example` in `.env`, avvia il database con `docker compose up -d db`, poi backend e frontend.
+I comandi sono in [`AGENTS.md`](AGENTS.md#comandi). In breve: copia `.env.example` in `.env` (imposta `ADMIN_EMAIL` e `ADMIN_PASSWORD`), applica le migrazioni, avvia backend e frontend. Senza Docker l'app usa un file SQLite locale. Le email in sviluppo compaiono nel log del backend.
 
 ## Contribuire
 

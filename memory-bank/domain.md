@@ -5,8 +5,8 @@
 ## Edizione, giorni e slot
 
 - Un'edizione ha date configurabili dall'admin (non ancora definite).
-- Ogni giorno ha due slot, mattina e pomeriggio, con orari configurabili (default 9-13 e 14-18).
-- Capienza per slot configurabile, default 25. La sera non ha limite di capienza.
+- Ogni giorno ha tre slot: mattina, pomeriggio e sera, con orari configurabili (default 9-13, 14-18 e 19-24).
+- Capienza per slot configurabile, default 25, per mattina e pomeriggio. Lo slot serale non ha limite di capienza.
 - Il partecipante sceglie qualsiasi combinazione di slot, anche su giorni non contigui.
 
 ## Stati della prenotazione
@@ -26,21 +26,22 @@
 
 ## Importi
 
-- Quota di partecipazione: quota base + importo per ogni giorno con almeno uno slot prenotato. Default 10 € + 1 €/giorno, configurabili.
-- Pranzi e cene: adesione per singolo giorno, prezzo flat per pasto configurabile.
+- Quota di partecipazione: quota base + importo per ogni giorno con almeno uno slot prenotato, sera compresa (un giorno con la sola sera conta, per ora). Default 10 € + 1 €/giorno, configurabili.
+- Pranzi e cene: adesione per singolo giorno, prezzo flat per pasto configurabile. La presenza di giorno permette di aderire al pranzo e la presenza serale alla cena; chi prenota l'intero giorno (mattina e pomeriggio) conta anche per la sera. L'adesione ai pasti non avviene all'iscrizione: si fa dopo, dalla pagina personale, e si può cambiare.
 - Attività: create dall'admin, gratuite o a pagamento, capienza opzionale.
 - Saldo del partecipante = totale dovuto meno pagamenti registrati.
 
 ## Pagamenti
 
 - Nessuna integrazione: Revolut, Satispay, PayPal, IBAN. Istruzioni per canale configurabili dall'admin.
-- Causale generata dal sistema con un codice personale (es. `CSC-7K3P`).
+- Causale generata dal sistema con un codice personale (es. `CSC-7K3P`). Il codice serve solo come causale, mai per accedere.
 - L'admin registra un pagamento (importo, canale, data, nota) con un clic dalla scheda del partecipante.
 
 ## Accesso
 
 - Pagina pubblica di iscrizione senza login, incorporabile in Google Sites tramite iframe: header CSP `frame-ancestors` che autorizza `https://sites.google.com` e `https://*.googleusercontent.com`. Dopo l'invio mostra riepilogo, importo, istruzioni di pagamento e scadenza, e invia un'email con il magic link.
 - Magic link: token monouso valido 30 minuti, apre la pagina personale in una finestra normale (fuori dall'iframe). Dopo il login un cookie di sessione httpOnly, Secure, SameSite=Lax dura 14 giorni. Chi non ha un cookie valido può richiedere un nuovo link inserendo l'email.
+- Password (opzionale): oltre al magic link si può accedere con email e password. La password si imposta dalla pagina personale dopo un accesso con magic link; il magic link resta sempre disponibile come recupero.
 - Pagina personale: modifica degli slot, adesione a pranzi, cene e attività, esigenze alimentari, contributi offerti (talk, temi per l'unconference, competenze), saldo e istruzioni di pagamento, richiesta di disdetta.
 - Admin: stessa app, ruolo `admin`. Gli admin si aggiungono e rimuovono dal pannello, senza limite di numero. Il primo admin viene creato da variabile d'ambiente.
 
@@ -58,7 +59,7 @@
 
 ## Email
 
-Conferma iscrizione con magic link · conferma pagamento · avviso unico 24 ore prima della scadenza del blocco · posto liberato dalla lista d'attesa · conferma disdetta. Niente solleciti ripetuti.
+Conferma iscrizione con magic link · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
 
 ## Fuori scope
 

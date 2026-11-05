@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint and tests on SQLite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Ruff lint
+        run: uv run ruff check .
+      - name: Ruff format
+        run: uv run ruff format --check .
+      - name: Tests
+        run: uv run pytest
+
+  backend-sqlserver:
+    name: Backend (migrations and tests on SQL Server)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: Ci-${{ github.run_id }}-Aa1
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Ci-${{ github.run_id }}-Aa1' -C -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: mssql+pyodbc://sa:Ci-${{ github.run_id }}-Aa1@localhost:1433/cisonauti_test?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install ODBC Driver 18
+        run: |
+          # The runner image may already ship the driver or the Microsoft apt source:
+          # adding a second source with another key makes apt fail.
+          if ! odbcinst -q -d 2>/dev/null | grep -q "ODBC Driver 18 for SQL Server"; then
+            if ! grep -rqs "packages.microsoft.com" /etc/apt/sources.list /etc/apt/sources.list.d; then
+              curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/$(lsb_release -rs)/prod $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
+            fi
+            sudo apt-get update
+            sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+          fi
+          odbcinst -q -d
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Create test database
+        run: |
+          uv run python - <<'PY'
+          import os
+          import pyodbc
+          url = os.environ["TEST_DATABASE_URL"]
+          password = url.split("sa:")[1].split("@")[0]
+          conn = pyodbc.connect(
+              "DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost,1433;"
+              f"UID=sa;PWD={password};TrustServerCertificate=yes",
+              autocommit=True,
+          )
+          conn.execute("IF DB_ID('cisonauti_test') IS NULL CREATE DATABASE cisonauti_test")
+          PY
+      - name: Tests on SQL Server (includes migrations from scratch)
+        run: uv run pytest
+
+  frontend:
+    name: Frontend (lint, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  image:
+    name: Container image builds
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t cisonauti-booking:ci .

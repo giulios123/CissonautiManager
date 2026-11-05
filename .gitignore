@@ -24,3 +24,4 @@ backend/static/
 .vscode/
 .idea/
 .DS_Store
+*.db

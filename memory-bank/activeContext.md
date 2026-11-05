@@ -2,19 +2,22 @@
 
 ## Ora
 
-Bootstrap completato: Memory Bank, `AGENTS.md`, roadmap e spec dell'MVP 1 (`specs/mvp-01-iscrizione-base/`).
-La spec dell'MVP 1 è in attesa di conferma del maintainer.
+MVP 1, Parte 1a completata sul branch `feat/mvp-01-iscrizione-base` (task 1-12 spuntati). Backend 173 test, frontend 33 test, lint verdi, provato end to end in locale.
 
 ## Prossimo passo
 
-Dopo la conferma: fase B2 sull'MVP 1, partendo dal task 1 di `specs/mvp-01-iscrizione-base/tasks.md`.
+Task 13 (slot serale) fatto. Task 14 scritto (Bicep, workflow, README in `infra/`) ma da validare con un primo deploy: servono i passi di `infra/README.md` e i dati Azure. Il task 15 (verifica in Google Sites e chiusura) è in attesa: si sblocca dopo alcuni MVP. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
 
 ## Dubbi aperti
 
-1. Dividere l'MVP 1 in 1a (tutto in locale, task 1-11) e 1b (deploy Azure, task 12-13)?
-2. Branch: la Parte B prevede `feat/mvp-NN-<slug>`, ma la sessione cloud corrente può pushare solo sul branch assegnato. Quale usare?
-3. L'admin deve fare login già nell'MVP 1: si anticipa il magic link con cookie da 14 giorni dall'MVP 2, con una pagina personale solo in lettura.
-4. Scadenza del blocco: N x 24 ore esatte oppure fine giornata (23:59 Europe/Rome) dell'N-esimo giorno? Proposta: fine giornata.
-5. Email già iscritta: con prenotazione attiva si reinvia il link; con prenotazione scaduta se ne crea una nuova?
-6. Pagamento registrato su prenotazione scaduta: riattivarla solo se c'è ancora posto, altrimenti registrare il pagamento e avvisare l'admin?
-7. Email di conferma pagamento già nell'MVP 1 (in console)?
+- La CI su SQL Server non è mai girata: al primo push può mostrare differenze tra SQLite e SQL Server da correggere.
+- Il Dockerfile non è stato costruito in sessione (nessun daemon Docker).
+- Per la 1b servono: abbonamento e resource group Azure, nome dell'app, dominio (o quello di default di Container Apps), mittente email per l'MVP 2.
+- Chiarito: due slot diurni più la sera come terzo slot (default 19-24, senza limite).
+- Da chiarire prima dell'MVP 5: serve la presenza di giorno per il pranzo?
+- Conferma pagamento via email già nell'MVP 1 (assunto sì, non era stato risposto).
+- In setup (task 14): ricordare al maintainer che la Container App deve scalare a zero. Il database Basic non si mette in pausa.
+- Esiti della call decisi (D-008): due promemoria, magic link senza codice numerico, pranzi nell'app, MVP 7 ridotto, stack Azure.
+- Deciso (D-009): la sera dell'intero giorno è una regola derivata, non si aggiunge alle prenotazioni.
+- Task 14: Bicep, workflow di deploy e Dockerfile (migrazioni all'avvio) non sono mai stati eseguiti. Da verificare: `az bicep build`, `what-if`, build dell'immagine, primo deploy, `minReplicas: 0` e l'avvio da zero.
+- Finché non c'è l'email reale (MVP 2) in produzione i magic link compaiono solo nei log.

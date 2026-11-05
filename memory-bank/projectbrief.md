@@ -23,7 +23,7 @@ Problemi da risolvere:
 ## Stack
 
 - **App unica**: backend Python 3.12 con FastAPI che espone le API sotto `/api` e serve la build statica del frontend React (Vite + TypeScript). Un solo container, un solo deploy.
-- **Database**: Azure SQL (serverless, free offer). SQLAlchemy 2 + Alembic, driver `pyodbc` con ODBC Driver 18. In locale SQL Server in `docker-compose`.
+- **Database**: Azure SQL, tier Basic (decisione D-007). SQLAlchemy 2 + Alembic, driver `pyodbc` con ODBC Driver 18. In locale SQL Server in `docker-compose`.
 - **Email**: interfaccia astratta `EmailSender`; provider "console" in sviluppo, Azure Communication Services Email in produzione.
 - **Hosting**: Azure Container Apps con scale to zero. IaC in Bicep, CI/CD con GitHub Actions.
 - **Test**: pytest sul backend, con priorità alle regole di dominio (capienza, scadenze, importi, lista d'attesa). Vitest minimo sul frontend.
