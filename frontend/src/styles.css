@@ -442,6 +442,13 @@ main.wide {
   text-underline-offset: 0.35em;
 }
 
+.admin-nav a:hover,
+.admin-nav button.link:hover:not(:disabled) {
+  color: var(--color-on-dark);
+  background: none;
+  text-decoration: underline;
+}
+
 .admin-nav :focus-visible {
   outline-color: var(--color-on-dark);
 }
@@ -737,12 +744,6 @@ a + .status {
   border-radius: 50%;
 }
 
-.with-summary {
-  display: grid;
-  gap: 0 2rem;
-  align-items: start;
-}
-
 .form-main {
   min-width: 0;
 }
@@ -817,6 +818,9 @@ a + .status {
 
 @media (min-width: 60rem) {
   .with-summary {
+    display: grid;
+    gap: 0 2rem;
+    align-items: start;
     grid-template-columns: minmax(0, 1fr) 20rem;
   }
 
