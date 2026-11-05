@@ -272,3 +272,12 @@
 - **Motivo**: feedback del maintainer sul mockup; stessa configurazione, colori del design system.
 - **Alternative scartate**: percorso in 3 passi del mockup (cambia il flusso e i test, nel Backlog); accordion per giorno su telefono (l'elenco di tessere è già compatto).
 - **Nota audit**: Impeccable `detect` segnala solo `cream-palette`: la carta crema è prescritta dal design system, quindi accettata.
+
+
+## D-039 · Guida in app nel repo, note di rilascio dai commit
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) la guida sono file Markdown in italiano in `frontend/src/guide/{partecipante,admin}/`, inclusi nella build con `import.meta.glob`: ogni deploy pubblica la guida del codice; quella admin si carica a richiesta, così i partecipanti non la scaricano; (2) il filtro per ruolo è in due strati: la pagina `/guida` mostra al partecipante solo la sua guida, e le note di rilascio passano da `GET /api/admin/release-notes` (`require_admin`); il testo della guida admin è nel bundle e non è un segreto, per questo non c'è un'API dedicata; (3) le note le genera `scripts/release_notes.py` al deploy dalla storia git: ogni merge su `main` è un rilascio fatto dei commit `feat`, `fix`, `perf` del ramo unito; il JSON finisce in `backend/release_notes.json` (fuori da git) dentro l'immagine; (4) versione e data di build arrivano dalle build args `APP_VERSION` e `BUILT_AT` e si leggono da `GET /api/version`; (5) il controllo che la guida segua le modifiche è un workflow a parte (`guide.yml`) che guarda il diff, test esclusi, e si salta con la label `senza-guida`; (6) il Markdown si rende con `marked`, perché i testi sono del repo e non input degli utenti.
+- **Motivo**: richiesta del maintainer: guida filtrata per ruolo, aggiornata a ogni deploy, note solo per gli admin. Tenere i testi nel repo li fa rivedere nelle PR insieme al codice.
+- **Alternative scartate**: guida salvata nel database o modificabile dal pannello (due fonti di verità, nessuna revisione); note scritte a mano (lavoro in più a ogni PR); API che serve la guida admin solo agli admin (complessità senza segreti da proteggere); controllo di CI dentro `ci.yml` (la label non rilancerebbe solo quel controllo).
+- **Limiti noti**: il controllo di CI verifica che la guida sia stata toccata, non che sia giusta; le note sono in inglese perché lo sono i commit (Backlog); la prima volta le note compaiono dopo il primo deploy con questa versione.

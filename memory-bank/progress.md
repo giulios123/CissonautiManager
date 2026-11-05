@@ -13,6 +13,7 @@
 | 6 | Attività e contributi | codice fatto e provato in locale (task 1-10), in PR verso `main` |
 | 7 | Inviti e report | fatto e provato in locale (task 1-9) |
 | 8 | Stile del sito | fatto e provato in locale (task 1-7) |
+| 9 | Guida in app e note di rilascio | fatto e provato in locale (task 1-10) |
 
 ## Verifiche manuali
 
@@ -45,6 +46,9 @@
 - **Non verificato (MVP 7)**: CI su SQL Server con la migrazione 0008; apertura del CSV del report in Excel o Numbers veri; report con dati veri di un'edizione.
 - **Non verificato (MVP 8)**: embed nel sito Google vero; Safari e Firefox; spaziature del sito (CSS di Google Sites non raggiungibile dalla sessione).
 - **Design system Cissone** (2026-11-05): token, font e componenti dell'intera interfaccia, nuovo selettore giornate (D-038). Audit con `npx impeccable detect` sull'iscrizione: kicker, schede annidate e riga orfana corretti; resta solo `cream-palette`, voluta. **Da verificare a mano**: pagine admin, pagina personale e stampa del report con la nuova grafica; Safari e Firefox; logo SVG del design system (qui resta il PNG).
+
+- **MVP 9**, provato in locale con Chromium (DB nuovo da migrazioni, app costruita come in produzione con `APP_VERSION` e `BUILT_AT`, note generate dalla storia vera, 10 rilasci): partecipante a 390 px vede 9 sezioni, nessuna scheda, nessun testo admin, versione in fondo, API delle note 403; admin a 1280 px vede le tre schede, dal link «Guida» di «Giorni e slot» arriva alla sezione giusta, frecce e Fine spostano tra le schede, «Novità» elenca i rilasci; nessuno scorrimento orizzontale a 390 px su tutte e tre le schede, schede alte 45 px, nessun errore in console. Il controllo `check-guide.sh` provato su quattro casi (pagina senza guida, con guida, solo test, label).
+- **Non verificato (MVP 9)**: build dell'immagine Docker con le build args (il demone Docker non c'era nella sessione); il workflow `guide.yml` e il deploy con `fetch-depth: 0` (si vedono solo su GitHub); le note di rilascio dopo un deploy vero; Safari e Firefox. **Da verificare a mano**: dopo il deploy «Novità» mostra i rilasci veri e la versione in fondo coincide con l'ultimo commit su `main`; leggere i testi della guida con gli organizzatori e correggere cosa non torna.
 
 ## Bug corretti fuori MVP
 

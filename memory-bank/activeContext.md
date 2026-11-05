@@ -6,7 +6,7 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 
 ## MVP 9 · Guida in app (2026-11-05)
 
-Richiesta del maintainer: guida dopo il login filtrata per ruolo, aggiornata a ogni deploy; note di rilascio solo per gli admin. Spec in `specs/mvp-09-guida/`, confermata. Scelte: note generate dai commit; testi della guida nel repo con controllo CI; l'admin vede tutto, il partecipante solo la sua guida. In lavorazione sul branch `claude/dreamy-ride-bzr112`.
+Richiesta del maintainer: guida dopo il login filtrata per ruolo, aggiornata a ogni deploy; note di rilascio solo per gli admin. Spec in `specs/mvp-09-guida/`, confermata. Scelte: note generate dai commit; testi della guida nel repo con controllo CI; l'admin vede tutto, il partecipante solo la sua guida (D-039). Completato sul branch `claude/dreamy-ride-bzr112`, descrizione PR in `specs/mvp-09-guida/pr-description.md`. Da fare: far leggere i testi agli organizzatori; creare la label `senza-guida` su GitHub.
 
 ## Prossimo passo
 
