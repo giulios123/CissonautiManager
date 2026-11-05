@@ -8,6 +8,8 @@ export type SlotInfo = {
   capacity: number | null;
   // null means no limit (the evening)
   available: number | null;
+  // Places left on the waitlist of a full slot; null when it is not full or has no list.
+  waitlist_free?: number | null;
 };
 // `past` is sent by the API: the day is over (Europe/Rome) and its slots can no longer change.
 export type Day = { date: string; past?: boolean; slots: SlotInfo[] };
@@ -67,6 +69,8 @@ export const seatsLabel = (slot: SlotInfo) =>
     : slot.available < 1
       ? "completo"
       : `${slot.available} posti liberi`;
+export const canJoinWaitlist = (slot: SlotInfo) =>
+  isFull(slot) && slot.waitlist_free != null && slot.waitlist_free > 0;
 export const hhmm = (time: string) => time.slice(0, 5);
 
 const STATUS_LABELS: Record<string, string> = {
@@ -75,5 +79,48 @@ const STATUS_LABELS: Record<string, string> = {
   scaduta: "Scaduta",
   disdetta_richiesta: "Disdetta richiesta",
   rimborsata: "Rimborsata",
+  in_lista: "Solo in lista d'attesa",
 };
 export const statusLabel = (status: string) => STATUS_LABELS[status] ?? status;
+
+/** Present in that part of the day: the evening also counts for whoever has morning and
+ * afternoon (D-009). */
+export function isPresent(periods: Set<string>, period: string): boolean {
+  if (period === "evening")
+    return periods.has("evening") || (periods.has("morning") && periods.has("afternoon"));
+  return periods.has(period);
+}
+
+export type PricedExtras = {
+  meals: { date: string; kind: string }[];
+  activities: { date: string; period: string; price_cents: number }[];
+  lunchCents: number;
+  dinnerCents: number;
+};
+
+/** Price of the meals and activities still allowed by the selected slots: the others go when
+ * the slots are saved. */
+export function extrasPreview(days: Day[], selected: Set<number>, extras: PricedExtras): number {
+  const periods = new Map<string, Set<string>>();
+  for (const day of days)
+    for (const slot of day.slots)
+      if (selected.has(slot.id)) {
+        if (!periods.has(day.date)) periods.set(day.date, new Set());
+        periods.get(day.date)?.add(slot.period);
+      }
+  const at = (date: string) => periods.get(date) ?? new Set<string>();
+  const meals = extras.meals.reduce((sum, meal) => {
+    const allowed =
+      meal.kind === "lunch"
+        ? isPresent(at(meal.date), "morning") || isPresent(at(meal.date), "afternoon")
+        : isPresent(at(meal.date), "evening");
+    if (!allowed) return sum;
+    return sum + (meal.kind === "lunch" ? extras.lunchCents : extras.dinnerCents);
+  }, 0);
+  const activities = extras.activities.reduce(
+    (sum, activity) =>
+      isPresent(at(activity.date), activity.period) ? sum + activity.price_cents : sum,
+    0,
+  );
+  return meals + activities;
+}

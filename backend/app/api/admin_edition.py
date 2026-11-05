@@ -1,14 +1,17 @@
-from datetime import date, time
+from datetime import date, datetime, time
 from typing import Literal, Self
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.orm import Session
 
+from app.config import Settings
 from app.db import get_db
-from app.deps import require_admin
-from app.models import Edition, LegalDocument, PaymentChannel, slot_sort_key
+from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
+from app.email import EmailSender
+from app.models import DOC_HEALTH, Edition, LegalDocument, PaymentChannel, slot_sort_key
 from app.services import edition as edition_service
+from app.services import waitlist as waitlist_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -36,8 +39,12 @@ class EditionIn(BaseModel):
     # Seats per morning and afternoon slot. The evening has no limit.
     default_capacity: int = Field(default=25, ge=1, le=10000)
     hold_days: int = Field(default=3, ge=1, le=60)
+    # Waitlist length of a full slot, as a percentage of its capacity (rounded down).
+    waitlist_percent: int = Field(default=20, ge=0, le=100)
     base_fee_cents: int = Field(default=1000, ge=0)
     per_day_fee_cents: int = Field(default=100, ge=0)
+    lunch_price_cents: int = Field(default=800, ge=0, le=100_000)
+    dinner_price_cents: int = Field(default=1200, ge=0, le=100_000)
 
     @model_validator(mode="after")
     def check_consistency(self) -> Self:
@@ -88,6 +95,8 @@ class EditionOut(EditionIn):
     payment_channels: list[ChannelOut]
     privacy: LegalOut | None
     disclaimer: LegalOut | None
+    # Specific consent for health data (allergies); optional, it does not close registrations.
+    health: LegalOut | None = None
 
 
 class ChannelIn(BaseModel):
@@ -97,7 +106,7 @@ class ChannelIn(BaseModel):
 
 
 class LegalIn(BaseModel):
-    kind: Literal["privacy", "disclaimer"]
+    kind: Literal["privacy", "disclaimer", "health"]
     body: str = Field(min_length=1, max_length=50000)
 
 
@@ -105,6 +114,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
     slots = sorted(edition.slots, key=slot_sort_key)
     privacy = edition_service.latest_legal_document(db, edition, "privacy")
     disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
+    health = edition_service.latest_legal_document(db, edition, DOC_HEALTH)
     base = EditionIn.model_validate(edition, from_attributes=True)
     return EditionOut(
         **base.model_dump(),
@@ -115,6 +125,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
         ],
         privacy=LegalOut.model_validate(privacy) if privacy else None,
         disclaimer=LegalOut.model_validate(disclaimer) if disclaimer else None,
+        health=LegalOut.model_validate(health) if health else None,
     )
 
 
@@ -131,7 +142,13 @@ def get_edition(db: Session = Depends(get_db)) -> EditionOut:
 
 
 @router.put("/edition")
-def put_edition(body: EditionIn, db: Session = Depends(get_db)) -> EditionOut:
+def put_edition(
+    body: EditionIn,
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
+    now: datetime = Depends(get_now),
+) -> EditionOut:
     try:
         edition = edition_service.save_edition(db, body.model_dump())
     except edition_service.SlotsInUseError as exc:
@@ -140,6 +157,11 @@ def put_edition(body: EditionIn, db: Session = Depends(get_db)) -> EditionOut:
             status_code=409,
             detail=f"Non puoi togliere giorni con slot già prenotati: {days}",
         ) from exc
+    # A larger capacity (or a higher waitlist share) can free seats for people waiting.
+    waitlist_service.promote_freed(
+        db, sender, settings, waitlist_service.slots_with_waiting_people(db, edition), now
+    )
+    db.refresh(edition)
     return _edition_out(db, edition)
 
 

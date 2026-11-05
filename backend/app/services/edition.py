@@ -14,6 +14,7 @@ from app.models import (
     LegalDocument,
     PaymentChannel,
     Slot,
+    WaitlistEntry,
 )
 
 PAYMENT_CHANNELS = {
@@ -54,9 +55,14 @@ def sync_slots(db: Session, edition: Edition) -> None:
 
     removed = [s for s in existing.values() if s.date not in wanted_days]
     if removed:
-        used = db.scalars(
-            select(BookingSlot.slot_id).where(BookingSlot.slot_id.in_([s.id for s in removed]))
-        ).all()
+        removed_ids = [s.id for s in removed]
+        # Waitlist entries are kept as history, so a slot that had any is in use too.
+        used = [
+            *db.scalars(select(BookingSlot.slot_id).where(BookingSlot.slot_id.in_(removed_ids))),
+            *db.scalars(
+                select(WaitlistEntry.slot_id).where(WaitlistEntry.slot_id.in_(removed_ids))
+            ),
+        ]
         blocked = sorted({s.date for s in removed if s.id in set(used)})
         if blocked:
             raise SlotsInUseError(blocked)

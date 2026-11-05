@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -6,20 +7,42 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.public import ChannelPublic
-from app.api.schemas import BookingView, booking_view
+from app.api.public import ChannelPublic, LegalPublic
+from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
+from app.config import Settings
 from app.db import get_db
-from app.deps import current_user, get_email_sender, get_now
+from app.deps import current_user, get_email_sender, get_now, get_settings_dep
 from app.email import EmailSender
-from app.models import Booking, Participant
+from app.models import DOC_HEALTH, Booking, Contribution, Edition, Participant, WaitlistEntry
+from app.services import activities as activity_service
 from app.services import booking_changes
+from app.services import contributions as contributions_service
 from app.services import edition as edition_service
+from app.services import health as health_service
+from app.services import meals as meals_service
 from app.services import registration as registration_service
+from app.services import waitlist as waitlist_service
 from app.services.passwords import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
 from app.services.registration import InvalidSlots, SlotsFull
-from app.timefmt import format_slot
+from app.timefmt import format_activity, format_meal, format_slot
 
 router = APIRouter(prefix="/api", tags=["me"])
+
+
+class WaitlistView(BaseModel):
+    id: int
+    slot_id: int
+    date: date
+    period: str
+    label: str
+    position: int
+
+
+class ContributionOut(BaseModel):
+    id: int
+    kind: str
+    title: str
+    description: str | None
 
 
 class MeOut(BaseModel):
@@ -32,6 +55,16 @@ class MeOut(BaseModel):
     has_password: bool
     bookings: list[BookingView]
     payment_channels: list[ChannelPublic]
+    waitlist: list[WaitlistView] = []
+    lunch_price_cents: int | None = None
+    dinner_price_cents: int | None = None
+    # Text of the consent for allergies; None while the admins have not published it.
+    health_consent: LegalPublic | None = None
+    # Activities of the current booking: the ones joined and the ones its presence allows.
+    activities: list[ActivityOffer] = []
+    contributions: list[ContributionOut] = []
+    # What the person wrote at registration under "cosa puoi portare al camp?".
+    can_bring: str | None = None
 
 
 class PasswordIn(BaseModel):
@@ -47,7 +80,11 @@ def get_me(
     edition = edition_service.get_active_edition(db)
     bookings: list[Booking] = []
     channels = []
+    waitlist: list[WaitlistView] = []
     if edition is not None:
+        waitlist = [
+            _waitlist_view(db, entry) for entry in waitlist_service.entries_of(db, user, edition)
+        ]
         bookings = list(
             db.scalars(
                 select(Booking)
@@ -69,7 +106,96 @@ def get_me(
         has_password=user.password_hash is not None,
         bookings=[booking_view(b, now) for b in bookings],
         payment_channels=channels,
+        waitlist=waitlist,
+        health_consent=_health_consent(db, edition),
+        activities=_offers(db, user, now),
+        contributions=_contributions(db, user),
+        can_bring=user.can_bring,
+        lunch_price_cents=edition.lunch_price_cents if edition else None,
+        dinner_price_cents=edition.dinner_price_cents if edition else None,
     )
+
+
+def _offers(db: Session, user: Participant, now: datetime) -> list[ActivityOffer]:
+    booking = booking_changes.get_current_booking(db, user)
+    return [] if booking is None else activity_offers(db, booking, now)
+
+
+def _contributions(db: Session, user: Participant) -> list[ContributionOut]:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        return []
+    return [_contribution_out(c) for c in booking.contributions]
+
+
+def _contribution_out(contribution: Contribution) -> ContributionOut:
+    return ContributionOut(
+        id=contribution.id,
+        kind=contribution.kind,
+        title=contribution.title,
+        description=contribution.description,
+    )
+
+
+def _health_consent(db: Session, edition: Edition | None) -> LegalPublic | None:
+    if edition is None:
+        return None
+    document = edition_service.latest_legal_document(db, edition, DOC_HEALTH)
+    return LegalPublic(version=document.version, body=document.body) if document else None
+
+
+def _waitlist_view(db: Session, entry: WaitlistEntry) -> WaitlistView:
+    slot = entry.slot
+    return WaitlistView(
+        id=entry.id,
+        slot_id=slot.id,
+        date=slot.date,
+        period=slot.period,
+        label=format_slot(slot.date, slot.period, slot.start_time, slot.end_time),
+        position=waitlist_service.position_of(db, entry),
+    )
+
+
+class WaitlistIn(BaseModel):
+    slot_id: int
+
+
+@router.post("/me/waitlist", status_code=201)
+def join_waitlist(
+    body: WaitlistIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> WaitlistView:
+    try:
+        entry = waitlist_service.join(db, user, body.slot_id, now)
+    except waitlist_service.EntryNotFound as exc:
+        raise HTTPException(status_code=404, detail="Slot non trovato") from exc
+    except waitlist_service.NoLegalAcceptance as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Prima iscriviti al camp dal modulo di iscrizione"
+        ) from exc
+    except waitlist_service.WaitlistRefused as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail=waitlist_service.REFUSAL_MESSAGES[exc.reason]
+        ) from exc
+    db.commit()
+    return _waitlist_view(db, entry)
+
+
+@router.delete("/me/waitlist/{entry_id}", status_code=204)
+def leave_waitlist(
+    entry_id: int,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> None:
+    try:
+        waitlist_service.leave(db, user, entry_id, now)
+    except waitlist_service.EntryNotFound as exc:
+        raise HTTPException(status_code=404, detail="Non risulti in questa lista") from exc
 
 
 @router.put("/me/password", status_code=204)
@@ -91,6 +217,7 @@ def change_my_slots(
     user: Participant = Depends(current_user),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> BookingView | JSONResponse:
     booking = booking_changes.get_current_booking(db, user)
@@ -125,7 +252,209 @@ def change_my_slots(
                 "full_slot_ids": [s.id for s in exc.slots],
             },
         )
+    waitlist_service.promote_freed(db, sender, settings, result.removed_slot_ids, now)
+    db.refresh(result.booking)
+    view = booking_view(result.booking, now)
+    view.dropped_meals = [format_meal(day, kind) for day, kind in result.dropped_meals]
+    view.dropped_activities = [
+        format_activity(a.title, a.date, a.period) for a in result.dropped_activities
+    ]
+    return view
+
+
+class MealIn(BaseModel):
+    date: date
+    kind: Literal["lunch", "dinner"]
+
+
+class MealsIn(BaseModel):
+    meals: list[MealIn] = Field(max_length=200)
+
+
+MEAL_REFUSALS = {
+    "not_allowed": "Puoi scegliere un pasto solo nei giorni e nelle fasce in cui sei presente",
+    "past_day": "I pasti di giorni già passati non si possono cambiare: scrivi a chi organizza",
+}
+
+
+@router.put("/me/booking/meals")
+def change_my_meals(
+    body: MealsIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> BookingView:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        result = meals_service.change_meals(
+            db, sender, booking, [(m.date, m.kind) for m in body.meals], now
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except meals_service.MealsRefused as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=MEAL_REFUSALS[exc.reason]) from exc
     return booking_view(result.booking, now)
+
+
+class DietaryIn(BaseModel):
+    diet: Literal["omnivore", "vegetarian", "vegan"] | None = None
+    allergies: str | None = Field(default=None, max_length=2000)
+    consent: bool = False
+    # Version of the consent text shown to the person; required with consent.
+    consent_version: int | None = None
+
+
+@router.put("/me/booking/dietary")
+def save_my_dietary(
+    body: DietaryIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> BookingView:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        health_service.save_dietary(
+            db, booking, body.diet, body.allergies, body.consent, now, body.consent_version
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except health_service.ConsentRequired as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail="Per salvare allergie e intolleranze serve il consenso al trattamento dei "
+            "dati sanitari",
+        ) from exc
+    except health_service.ConsentTextChanged as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Il testo del consenso è stato aggiornato: ricarica la pagina, rileggilo e "
+            "conferma di nuovo",
+        ) from exc
+    except health_service.NoConsentText as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Per ora non si possono indicare allergie: scrivi a chi organizza",
+        ) from exc
+    return booking_view(booking, now)
+
+
+class ActivitiesIn(BaseModel):
+    activity_ids: list[int] = Field(max_length=200)
+
+
+def activity_refusal(exc: activity_service.ActivitiesRefused) -> str:
+    names = activity_service.labels(exc.activities)
+    if exc.reason == "full":
+        return f"Queste attività sono al completo: {names}."
+    if exc.reason == "past_day":
+        return "Le attività di giorni già passati non si possono cambiare: scrivi a chi organizza."
+    return f"Puoi aderire solo alle attività dei momenti in cui sei presente: {names}."
+
+
+@router.put("/me/booking/activities")
+def change_my_activities(
+    body: ActivitiesIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> BookingView:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        result = activity_service.change_activities(db, sender, booking, body.activity_ids, now)
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except activity_service.InvalidActivities as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail="Le attività scelte non sono valide") from exc
+    except activity_service.ActivitiesRefused as exc:
+        db.rollback()
+        status = 409 if exc.reason == "full" else 422
+        raise HTTPException(status_code=status, detail=activity_refusal(exc)) from exc
+    return booking_view(result.booking, now)
+
+
+class ContributionIn(BaseModel):
+    kind: Literal["talk", "topic", "skill"]
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+
+
+CONTRIBUTION_REFUSALS = {
+    "title_required": "Scrivi un titolo per il tuo contributo",
+    "invalid_kind": "Scegli se è un talk, un tema o una competenza",
+}
+
+
+@router.post("/me/contributions", status_code=201)
+def add_contribution(
+    body: ContributionIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> ContributionOut:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    try:
+        contribution = contributions_service.add(
+            db, booking, body.kind, body.title, body.description, now
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except contributions_service.InvalidContribution as exc:
+        raise HTTPException(status_code=422, detail=CONTRIBUTION_REFUSALS[exc.reason]) from exc
+    return _contribution_out(contribution)
+
+
+@router.patch("/me/contributions/{contribution_id}")
+def update_contribution(
+    contribution_id: int,
+    body: ContributionIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> ContributionOut:
+    try:
+        contribution = contributions_service.update(
+            db, user, contribution_id, body.kind, body.title, body.description, now
+        )
+    except contributions_service.ContributionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Contributo non trovato") from exc
+    except contributions_service.InvalidContribution as exc:
+        raise HTTPException(status_code=422, detail=CONTRIBUTION_REFUSALS[exc.reason]) from exc
+    return _contribution_out(contribution)
+
+
+@router.delete("/me/contributions/{contribution_id}", status_code=204)
+def delete_contribution(
+    contribution_id: int,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    try:
+        contributions_service.remove(db, user, contribution_id)
+    except contributions_service.ContributionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Contributo non trovato") from exc
 
 
 class CancelOut(BaseModel):
@@ -137,15 +466,18 @@ def cancel_my_booking(
     user: Participant = Depends(current_user),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> CancelOut:
     booking = booking_changes.get_current_booking(db, user)
     if booking is None:
         raise HTTPException(status_code=404, detail="Non hai ancora un'iscrizione")
+    freed = [s.id for s in booking.slots]
     try:
         outcome = booking_changes.request_cancellation(db, sender, booking, now)
     except booking_changes.NotEditable as exc:
         raise HTTPException(
             status_code=409, detail="Questa iscrizione non si può più disdire"
         ) from exc
+    waitlist_service.promote_freed(db, sender, settings, freed, now)
     return CancelOut(outcome=outcome)

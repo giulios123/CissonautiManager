@@ -1,7 +1,18 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView } from "../auth";
-import { feePreview, formatDay, hhmm, isFull, periodLabel, seatsLabel, type Day } from "../booking";
+import {
+  canJoinWaitlist,
+  extrasPreview,
+  feePreview,
+  formatDay,
+  hhmm,
+  isFull,
+  periodLabel,
+  seatsLabel,
+  type Day,
+  type PricedExtras,
+} from "../booking";
 import { formatEuro } from "../money";
 
 type PublicEdition = {
@@ -15,9 +26,12 @@ const fetchEdition = () => api<PublicEdition>("/api/public/edition");
 export function SlotEditor({
   booking,
   onSaved,
+  extras,
 }: {
   booking: BookingView;
   onSaved: () => Promise<void> | void;
+  // Meals and activities of the booking, so the preview includes the ones that stay.
+  extras?: PricedExtras;
 }) {
   const original = new Set(booking.slots.map((slot) => slot.id));
   const [edition, setEdition] = useState<PublicEdition | null>(null);
@@ -26,6 +40,7 @@ export function SlotEditor({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dropped, setDropped] = useState<string[]>([]);
 
   useEffect(() => {
     fetchEdition()
@@ -36,12 +51,13 @@ export function SlotEditor({
   if (loadError) return <p role="alert">Non riesco a caricare i giorni. Riprova tra poco.</p>;
   if (!edition) return <p aria-busy="true">Caricamento…</p>;
 
-  const fee = feePreview(
-    edition.days,
-    selected,
-    edition.base_fee_cents ?? 0,
-    edition.per_day_fee_cents ?? 0,
-  );
+  const fee =
+    feePreview(
+      edition.days,
+      selected,
+      edition.base_fee_cents ?? 0,
+      edition.per_day_fee_cents ?? 0,
+    ) + (extras ? extrasPreview(edition.days, selected, extras) : 0);
   const delta = fee - booking.amount_due_cents;
   const changed = selected.size !== original.size || [...selected].some((id) => !original.has(id));
 
@@ -65,7 +81,11 @@ export function SlotEditor({
     }
     setSaving(true);
     try {
-      await api("/api/me/booking/slots", { method: "PUT", json: { slot_ids: [...selected] } });
+      const result = await api<BookingView>("/api/me/booking/slots", {
+        method: "PUT",
+        json: { slot_ids: [...selected] },
+      });
+      setDropped([...(result.dropped_meals ?? []), ...(result.dropped_activities ?? [])]);
       await onSaved();
       // The seat I just freed (or took) changes what is available: show the current numbers.
       setEdition(await fetchEdition().catch(() => edition));
@@ -91,7 +111,9 @@ export function SlotEditor({
               ? "giorno passato"
               : isFull(slot) && mine
                 ? "il tuo posto"
-                : seatsLabel(slot);
+                : canJoinWaitlist(slot)
+                  ? "completo, puoi metterti in lista d'attesa"
+                  : seatsLabel(slot);
             return (
               <label className="check" key={slot.id}>
                 <input
@@ -130,6 +152,8 @@ export function SlotEditor({
       {saved && (
         <p role="status" className="notice ok">
           Slot aggiornati.
+          {dropped.length > 0 &&
+            ` Tolti anche pasti e attività dei momenti in cui non ci sei più: ${dropped.join(", ")}.`}
         </p>
       )}
       <button type="submit" disabled={!changed || saving}>

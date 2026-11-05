@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
-from app.domain.booking import can_reactivate, hold_deadline, status_after_void
+from app.domain.booking import can_reactivate, has_free_seat, hold_deadline, status_after_void
 from app.domain.fees import is_covered
 from app.email import EmailSender
 from app.email.templates import payment_confirmation_email
@@ -11,21 +11,26 @@ from app.models import (
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
     STATUS_PENDING,
+    Activity,
     Booking,
+    Edition,
     Participant,
     Payment,
     active_payments,
 )
 from app.services import audit
 from app.services import edition as edition_service
+from app.services.amounts import recompute_amount
 from app.services.seats import (
+    activities_for_update,
     expire_overdue,
+    free_by_activity,
     free_by_slot,
     has_other_active_booking,
     lock_booking,
     slots_for_update,
 )
-from app.timefmt import format_euro, status_label
+from app.timefmt import format_activity, format_euro, status_label
 
 EXPIRED_ALREADY_ACTIVE = (
     "Pagamento registrato, ma la persona ha già un'altra iscrizione attiva: questa prenotazione "
@@ -43,6 +48,8 @@ class PaymentResult:
     confirmed_now: bool
     reactivated: bool
     warning: str | None
+    # Activities dropped on reactivation because they had no seat left.
+    dropped_activities: list[Activity] = field(default_factory=list)
 
 
 def paid_total(booking: Booking) -> int:
@@ -58,18 +65,35 @@ NO_ROOM = "no_room"
 ALREADY_ACTIVE = "already_active"
 
 
-def revive_expired(db: Session, booking: Booking, now: datetime) -> str:
+def revive_expired(
+    db: Session, booking: Booking, now: datetime, dropped: list[Activity] | None = None
+) -> str:
     """Bring an expired booking back for a new hold. Returns REVIVED, or why it could not be
     (changing nothing): NO_ROOM when a slot is full, ALREADY_ACTIVE when the person has signed up
     again and holds another booking, which would leave them with two.
 
-    The hold starts now and the payment reminders start over.
+    The hold starts now and the payment reminders start over. Activities that filled up while
+    the booking was expired are dropped (and the amount recomputed); they are appended to
+    `dropped` so the caller can say so.
     """
     if has_other_active_booking(db, booking, now):
         return ALREADY_ACTIVE
     slots = list(db.scalars(slots_for_update([s.id for s in booking.slots])))
     if not can_reactivate(free_by_slot(db, slots, now).values()):
         return NO_ROOM
+    # Same locks as a sign-up, so a reactivation and a sign-up cannot both take the last seat.
+    activities = list(
+        db.scalars(activities_for_update([a.id for a in booking.activities], booking.edition_id))
+    )
+    free = free_by_activity(db, activities, now)
+    full = [a for a in activities if not has_free_seat(free[a.id])]
+    if full:
+        booking.activities = [a for a in booking.activities if a not in full]
+        edition = db.get(Edition, booking.edition_id)
+        assert edition is not None
+        recompute_amount(edition, booking)
+        if dropped is not None:
+            dropped.extend(full)
     booking.status = STATUS_PENDING
     booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))
     booking.hold_started_at = now
@@ -114,10 +138,13 @@ def record_payment(
 
     reactivated = False
     warning = None
+    dropped: list[Activity] = []
     if booking.status == STATUS_EXPIRED:
-        outcome = revive_expired(db, booking, now)
+        outcome = revive_expired(db, booking, now, dropped)
         if outcome == REVIVED:
             reactivated = True
+            if dropped:
+                warning = dropped_activities_warning(dropped)
         else:
             warning = EXPIRED_ALREADY_ACTIVE if outcome == ALREADY_ACTIVE else EXPIRED_NO_ROOM
 
@@ -129,7 +156,15 @@ def record_payment(
     db.commit()
     if confirmed_now:
         send_confirmation(sender, booking, total)
-    return PaymentResult(payment, confirmed_now, reactivated, warning)
+    return PaymentResult(payment, confirmed_now, reactivated, warning, dropped)
+
+
+def dropped_activities_warning(dropped: list[Activity]) -> str:
+    names = ", ".join(format_activity(a.title, a.date, a.period) for a in dropped)
+    return (
+        "Prenotazione riattivata senza queste attività, che nel frattempo sono al completo: "
+        f"{names}."
+    )
 
 
 def _hold_days(db: Session, booking: Booking) -> int:

@@ -179,11 +179,11 @@ describe("changing slots", () => {
     const form = await openEditor();
     const [, , tuesday] = form.getAllByRole("group");
     await userEvent.click(within(tuesday).getByRole("checkbox"));
+    const editionLoads = () => calls.filter((call) => call.url === "/api/public/edition").length;
+    const before = editionLoads();
     await userEvent.click(form.getByRole("button", { name: "Salva gli slot" }));
     expect(await form.findByRole("alert")).toHaveTextContent("al completo");
-    await waitFor(() =>
-      expect(calls.filter((call) => call.url === "/api/public/edition")).toHaveLength(2),
-    );
+    await waitFor(() => expect(editionLoads()).toBe(before + 1));
   });
 
   it("does not offer the editor on a booking that can no longer change", async () => {
@@ -334,5 +334,337 @@ describe("seats after saving", () => {
     const morning = within(monday).getByRole("checkbox", { name: /Mattina/ });
     expect(morning).toBeEnabled();
     expect(morning).not.toBeChecked();
+  });
+});
+
+describe("waitlist", () => {
+  const withList = {
+    ...EDITION,
+    days: EDITION.days.map((day) => ({
+      ...day,
+      slots: day.slots.map((s) => (s.id === 2 ? { ...s, waitlist_free: 2 } : s)),
+    })),
+  };
+  const entry = {
+    id: 9,
+    slot_id: 2,
+    date: "2026-07-13",
+    period: "afternoon",
+    label: "lun 13/07 pomeriggio (14:00-18:00)",
+    position: 2,
+  };
+
+  it("offers the full slots with a waitlist and joins one", async () => {
+    const state = { me: me([booking()]) };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: withList };
+      if (url === "/api/me/waitlist" && init?.method === "POST") {
+        state.me = { ...state.me, waitlist: [entry] };
+        return { status: 201, body: entry };
+      }
+      return { status: 404, body: {} };
+    });
+    const list = await screen.findByRole("list", { name: "Slot pieni con lista aperta" });
+    // Slot 1 is full but mine: it is not offered.
+    expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+    await userEvent.click(within(list).getByRole("button", { name: "Mettiti in lista" }));
+    expect(await screen.findByText(/2° in lista/)).toBeInTheDocument();
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ slot_id: 2 });
+    expect(screen.getByRole("status")).toHaveTextContent("Sei in lista d'attesa.");
+  });
+
+  it("shows only the waitlist to someone without a booking, with nothing to pay", async () => {
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: { ...me([]), waitlist: [entry] } };
+      if (url === "/api/public/edition") return { body: withList };
+      if (url.startsWith("/api/me/waitlist/") && init?.method === "DELETE")
+        return { status: 204, body: null };
+      return { status: 404, body: {} };
+    });
+    expect(await screen.findByText(/2° in lista/)).toBeInTheDocument();
+    expect(screen.getByText(/non devi pagare nulla/)).toBeInTheDocument();
+    expect(screen.queryByText(/Non hai ancora un'iscrizione/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Esci dalla lista" }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.method === "DELETE" && c.url === "/api/me/waitlist/9")).toBe(true),
+    );
+  });
+});
+
+describe("meals", () => {
+  const allowed = [
+    { date: "2026-07-13", kind: "lunch" as const, label: "pranzo di lun 13/07", past: false },
+    { date: "2026-07-13", kind: "dinner" as const, label: "cena di lun 13/07", past: false },
+    { date: "2026-07-12", kind: "lunch" as const, label: "pranzo di dom 12/07", past: true },
+  ];
+  const withMeals = (meals: typeof allowed = []) => ({
+    ...me([booking({ allowed_meals: allowed, meals })]),
+    lunch_price_cents: 800,
+    dinner_price_cents: 1200,
+  });
+
+  it("previews the new amount and saves the chosen meals", async () => {
+    const state = { me: withMeals() };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/meals" && init?.method === "PUT") {
+        state.me = withMeals([allowed[1]]);
+        return { body: state.me.bookings[0] };
+      }
+      return { status: 404, body: {} };
+    });
+    expect(await screen.findByText("Nessun pasto scelto.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Scegli pranzi e cene" }));
+    const form = within(await screen.findByRole("form", { name: "Scegli pranzi e cene" }));
+    expect(form.getByRole("checkbox", { name: /Pranzo · giorno passato/ })).toBeDisabled();
+    await userEvent.click(form.getByRole("checkbox", { name: "Cena" }));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent(
+      "Nuova quota: 23,00 € (12,00 € in più di ora)",
+    );
+    await userEvent.click(form.getByRole("button", { name: "Salva i pasti" }));
+    expect(await screen.findByText("cena di lun 13/07")).toBeInTheDocument();
+    expect(calls.find((c) => c.method === "PUT")?.body).toEqual({
+      meals: [{ date: "2026-07-13", kind: "dinner" }],
+    });
+  });
+
+  it("shows the server error", async () => {
+    openAt((url, init) => {
+      if (url === "/api/me") return { body: withMeals() };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/meals" && init?.method === "PUT")
+        return {
+          status: 422,
+          body: { detail: "Puoi scegliere un pasto solo quando sei presente" },
+        };
+      return { status: 404, body: {} };
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Scegli pranzi e cene" }));
+    const form = within(await screen.findByRole("form", { name: "Scegli pranzi e cene" }));
+    await userEvent.click(form.getByRole("checkbox", { name: /^Pranzo$/ }));
+    await userEvent.click(form.getByRole("button", { name: "Salva i pasti" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("solo quando sei presente");
+  });
+});
+
+describe("dietary needs", () => {
+  const consent = { version: 1, body: "Testo del consenso" };
+
+  it("refuses allergies without the consent and saves them with it", async () => {
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: { ...me([booking()]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/dietary" && init?.method === "PUT") return { body: booking() };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    await userEvent.selectOptions(form.getByLabelText("Regime alimentare"), "vegan");
+    await userEvent.type(form.getByLabelText("Allergie e intolleranze"), "Arachidi");
+    await userEvent.click(form.getByRole("button", { name: "Salva esigenze alimentari" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("spunta il consenso");
+    expect(calls.some((c) => c.url === "/api/me/booking/dietary")).toBe(false);
+    await userEvent.click(form.getByRole("checkbox", { name: /Acconsento/ }));
+    await userEvent.click(form.getByRole("button", { name: "Salva esigenze alimentari" }));
+    expect(await form.findByRole("status")).toHaveTextContent("salvate");
+    expect(calls.find((c) => c.url === "/api/me/booking/dietary")?.body).toEqual({
+      diet: "vegan",
+      allergies: "Arachidi",
+      consent: true,
+      consent_version: 1,
+    });
+  });
+
+  it("without a published consent text only the diet can be given", async () => {
+    openAt((url) => {
+      if (url === "/api/me") return { body: me([booking()]) };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    expect(form.queryByLabelText("Allergie e intolleranze")).not.toBeInTheDocument();
+    expect(form.getByText(/scrivi a chi organizza/)).toBeInTheDocument();
+  });
+});
+
+describe("activities", () => {
+  const offer = (over: Record<string, unknown>) => ({
+    id: 1,
+    title: "Escursione",
+    description: "Sul monte",
+    date: "2026-07-13",
+    period: "morning",
+    time_label: "9:30-12",
+    price_cents: 1500,
+    capacity: 2,
+    free: 1,
+    joined: false,
+    past: false,
+    ...over,
+  });
+
+  it("joins a paid activity with a preview, and a full one is locked", async () => {
+    const offers = [offer({}), offer({ id: 2, title: "Kayak", free: 0, price_cents: 0 })];
+    const state = { me: { ...me([booking()]), activities: offers } };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/activities" && init?.method === "PUT") {
+        state.me = {
+          ...me([
+            booking({
+              activities: [
+                {
+                  id: 1,
+                  title: "Escursione",
+                  label: "Escursione (lun 13/07 mattina)",
+                  price_cents: 1500,
+                },
+              ],
+            }),
+          ]),
+          activities: [offer({ joined: true, free: 0 }), offers[1]],
+        };
+        return { body: state.me.bookings[0] };
+      }
+      return { status: 404, body: {} };
+    });
+    expect(await screen.findByText("Nessuna attività scelta.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Scegli le attività" }));
+    const form = within(await screen.findByRole("form", { name: "Scegli le attività" }));
+    expect(form.getByRole("checkbox", { name: /Kayak/ })).toBeDisabled();
+    await userEvent.click(form.getByRole("checkbox", { name: /Escursione/ }));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("26,00 € (15,00 € in più di ora)");
+    await userEvent.click(form.getByRole("button", { name: "Salva le attività" }));
+    expect(await screen.findByText("Escursione (lun 13/07 mattina)")).toBeInTheDocument();
+    expect(calls.find((c) => c.url === "/api/me/booking/activities")?.body).toEqual({
+      activity_ids: [1],
+    });
+  });
+
+  it("says when there are no activities for the moments booked", async () => {
+    openAt((url) => {
+      if (url === "/api/me") return { body: { ...me([booking()]), activities: [] } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Scegli le attività" }));
+    expect(await screen.findByText(/non ci sono attività/)).toBeInTheDocument();
+  });
+});
+
+describe("contributions", () => {
+  it("adds a contribution and lists it", async () => {
+    const state = { me: { ...me([booking()]), contributions: [], can_bring: "Una torta" } };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/contributions" && init?.method === "POST") {
+        const item = { id: 5, kind: "topic", title: "Lavoro remoto", description: null };
+        state.me = { ...state.me, contributions: [item] as never[] };
+        return { status: 201, body: item };
+      }
+      return { status: 404, body: {} };
+    });
+    const section = within(
+      (await screen.findByRole("heading", { name: "Cosa porti al camp" })).closest(
+        "section",
+      ) as HTMLElement,
+    );
+    expect(section.getByText(/«Una torta»/)).toBeInTheDocument();
+    const form = within(section.getByRole("form", { name: "Proponi un contributo" }));
+    await userEvent.selectOptions(form.getByLabelText("Tipo"), "topic");
+    await userEvent.type(form.getByLabelText("Titolo"), "Lavoro remoto");
+    await userEvent.click(form.getByRole("button", { name: "Aggiungi" }));
+    expect(await section.findByText(/Lavoro remoto/)).toBeInTheDocument();
+    expect(section.getByRole("listitem")).toHaveTextContent(
+      "Tema per l'unconference: Lavoro remoto",
+    );
+    expect(calls.find((c) => c.url === "/api/me/contributions")?.body).toEqual({
+      kind: "topic",
+      title: "Lavoro remoto",
+      description: null,
+    });
+  });
+});
+
+describe("dietary needs after review", () => {
+  const consent = { version: 2, body: "Testo del consenso v2" };
+  const withAllergy = (version: number) =>
+    booking({ allergies: "Arachidi", health_consent_version: version });
+
+  it("withdraws the consent and the allergies without clearing the field by hand", async () => {
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: { ...me([withAllergy(2)]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/dietary" && init?.method === "PUT") return { body: booking() };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    await userEvent.click(form.getByRole("checkbox", { name: /Acconsento/ }));
+    await userEvent.click(form.getByRole("button", { name: "Salva esigenze alimentari" }));
+    expect(await form.findByRole("status")).toHaveTextContent("salvate");
+    expect(calls.find((c) => c.url === "/api/me/booking/dietary")?.body).toEqual({
+      diet: null,
+      allergies: null,
+      consent: false,
+      consent_version: null,
+    });
+  });
+
+  it("asks to accept again a consent text that changed", async () => {
+    openAt((url) => {
+      if (url === "/api/me") return { body: { ...me([withAllergy(1)]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
+    expect(form.getByRole("checkbox", { name: /Acconsento/ })).not.toBeChecked();
+    expect(form.getByText(/Il testo del consenso è cambiato/)).toBeInTheDocument();
+  });
+});
+
+describe("slot preview with meals and activities", () => {
+  it("keeps the price of the extras still allowed and drops the others", async () => {
+    const withExtras = {
+      ...me([
+        booking({
+          amount_due_cents: 1100 + 800 + 1500,
+          meals: [{ date: "2026-07-13", kind: "lunch", label: "pranzo di lun 13/07" }],
+        }),
+      ]),
+      lunch_price_cents: 800,
+      dinner_price_cents: 1200,
+      activities: [
+        {
+          id: 1,
+          title: "Escursione",
+          description: null,
+          date: "2026-07-13",
+          period: "morning",
+          time_label: null,
+          price_cents: 1500,
+          capacity: null,
+          free: null,
+          joined: true,
+          past: false,
+        },
+      ],
+    };
+    openAt((url) => {
+      if (url === "/api/me") return { body: withExtras };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+    const form = await openEditor();
+    const [, , tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    // Monday morning stays: lunch and hike stay too; one more day adds 1 euro.
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("Nuova quota: 35,00 € (1,00 € in più");
+    const [, monday] = form.getAllByRole("group");
+    await userEvent.click(within(monday).getByRole("checkbox", { name: /Mattina/ }));
+    // Without Monday morning, lunch and hike go: only Tuesday is left.
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent("Nuova quota: 11,00 €");
   });
 });

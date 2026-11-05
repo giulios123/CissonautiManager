@@ -1,11 +1,13 @@
 """Texts of the emails sent by the app, in Italian."""
 
 from app.email.base import EmailMessage
-from app.models import Booking, Participant, PaymentChannel, slot_sort_key
+from app.models import Booking, Participant, PaymentChannel, Slot, slot_sort_key
 from app.timefmt import format_deadline, format_euro, format_slot
 
 
-def cancellation_email(to: str, first_name: str, removed: bool) -> EmailMessage:
+def cancellation_email(
+    to: str, first_name: str, removed: bool, left_waitlist: bool = False
+) -> EmailMessage:
     """Confirmation of a cancellation. `removed` means no payment was ever registered."""
     if removed:
         details = (
@@ -24,17 +26,35 @@ def cancellation_email(to: str, first_name: str, removed: bool) -> EmailMessage:
             f"Ciao {first_name},\n\n"
             "abbiamo registrato la tua disdetta e i tuoi posti sono stati liberati.\n\n"
             f"{details}\n"
+            + ("\nSei uscito anche dalle liste d'attesa in cui eri.\n" if left_waitlist else "")
         ),
     )
 
 
-def registration_email(
-    participant: Participant, booking: Booking, channels: list[PaymentChannel], link: str
-) -> EmailMessage:
-    slots = "\n".join(
+def _slot_lines(slots: list[Slot]) -> str:
+    return "\n".join(
         f"- {format_slot(s.date, s.period, s.start_time, s.end_time)}"
-        for s in sorted(booking.slots, key=slot_sort_key)
+        for s in sorted(slots, key=slot_sort_key)
     )
+
+
+def _waitlist_section(waitlisted: list[Slot]) -> str:
+    if not waitlisted:
+        return ""
+    return (
+        f"Sei in lista d'attesa per:\n{_slot_lines(waitlisted)}\n"
+        "Se si libera un posto ti scriviamo e lo slot diventa tuo.\n\n"
+    )
+
+
+def registration_email(
+    participant: Participant,
+    booking: Booking,
+    channels: list[PaymentChannel],
+    link: str,
+    waitlisted: list[Slot] | None = None,
+) -> EmailMessage:
+    slots = _slot_lines(booking.slots)
     pay = "\n".join(f"- {c.label}: {c.instructions}".rstrip(": ") for c in channels) or (
         "- Ti scriveremo le istruzioni appena possibile."
     )
@@ -49,7 +69,25 @@ def registration_email(
             f"Causale: {participant.personal_code}\n"
             f"Il posto è bloccato fino al {format_deadline(booking.hold_expires_at)}: "
             "senza pagamento entro quella data si libera.\n\n"
+            f"{_waitlist_section(waitlisted or [])}"
             f"Come pagare:\n{pay}\n\n"
+            f"Il tuo link personale (vale 30 minuti, si usa una volta sola):\n{link}\n"
+        ),
+    )
+
+
+def waitlist_joined_email(
+    participant: Participant, waitlisted: list[Slot], link: str
+) -> EmailMessage:
+    """Sent to someone who registered only for full slots: they are on the waitlist."""
+    return EmailMessage(
+        to=participant.email,
+        subject="Sei in lista d'attesa al Cissonauti Summer Camp",
+        body=(
+            f"Ciao {participant.first_name},\n\n"
+            "gli slot che hai scelto sono al completo: ti abbiamo messo in lista d'attesa.\n\n"
+            f"{_waitlist_section(waitlisted)}"
+            "Finché non si libera un posto non devi pagare nulla.\n\n"
             f"Il tuo link personale (vale 30 minuti, si usa una volta sola):\n{link}\n"
         ),
     )
@@ -130,5 +168,49 @@ def reminder_email(
             f"Per vedere o modificare la tua iscrizione: {login_url}\n\n"
             "Se hai già pagato, ignora questo messaggio: registreremo il pagamento appena "
             "possibile.\n"
+        ),
+    )
+
+
+def waitlist_promoted_email(
+    booking: Booking,
+    slot: Slot,
+    kind: str,
+    channels: list[PaymentChannel],
+    balance_cents: int,
+    link: str,
+) -> EmailMessage:
+    """A seat freed up and went to this person. `kind` is the promotion kind (see the domain)."""
+    participant = booking.participant
+    label = format_slot(slot.date, slot.period, slot.start_time, slot.end_time)
+    pay = "\n".join(f"- {c.label}: {c.instructions}".rstrip(": ") for c in channels) or (
+        "- Ti scriveremo le istruzioni appena possibile."
+    )
+    if kind == "add_to_confirmed":
+        deadline = (
+            "La tua iscrizione resta confermata: versa la differenza con le stesse istruzioni.\n"
+        )
+    else:
+        deadline = (
+            f"Il posto è bloccato fino al {format_deadline(booking.hold_expires_at)}: "
+            "senza pagamento entro quella data si libera.\n"
+        )
+    if kind == "new_booking":
+        access = f"Il tuo link personale (vale 30 minuti, si usa una volta sola):\n{link}\n"
+    else:
+        access = f"Per vedere o modificare la tua iscrizione: {link}\n"
+    return EmailMessage(
+        to=participant.email,
+        subject="Si è liberato un posto al Cissonauti Summer Camp",
+        body=(
+            f"Ciao {participant.first_name},\n\n"
+            f"si è liberato un posto ed è tuo: {label}.\n\n"
+            f"I tuoi slot:\n{_slot_lines(booking.slots)}\n\n"
+            f"Quota: {format_euro(booking.amount_due_cents)}\n"
+            f"Ancora da versare: {format_euro(max(balance_cents, 0))}\n"
+            f"Causale: {participant.personal_code}\n"
+            f"{deadline}\n"
+            f"Come pagare:\n{pay}\n\n"
+            f"{access}"
         ),
     )

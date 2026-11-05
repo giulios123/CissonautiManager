@@ -124,3 +124,114 @@ def review_rows(db: Session, now: datetime) -> list[ReviewRow]:
     order = list(REASON_LABELS)
     rows.sort(key=lambda r: (order.index(r.reason), r.last_name.lower(), r.first_name.lower()))
     return rows
+
+
+@dataclass(frozen=True)
+class MealRow:
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    day: date
+    kind: str
+    diet: str | None
+    allergies: str | None
+
+
+@dataclass
+class MealData:
+    days: list[date] = field(default_factory=list)
+    rows: list[MealRow] = field(default_factory=list)
+
+
+def load_meals(db: Session, now: datetime) -> MealData:
+    """Meals of the active edition, only for bookings that occupy seats, with dietary needs.
+
+    Allergies are health data: this is for the admin views only.
+    """
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return MealData()
+    expire_overdue(db, now)
+    db.commit()
+    rows: list[MealRow] = []
+    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+        if not occupies_seats(effective_status(booking.status, booking.hold_expires_at, now)):
+            continue
+        participant = booking.participant
+        rows.extend(
+            MealRow(
+                booking_id=booking.id,
+                first_name=participant.first_name,
+                last_name=participant.last_name,
+                email=participant.email,
+                day=meal.date,
+                kind=meal.kind,
+                diet=booking.diet,
+                allergies=booking.allergies,
+            )
+            for meal in booking.meals
+        )
+    rows.sort(key=lambda r: (r.day, r.kind != "lunch", r.last_name.lower(), r.first_name.lower()))
+    return MealData(days=sorted({s.date for s in edition.slots}), rows=rows)
+
+
+@dataclass(frozen=True)
+class ContributionRow:
+    id: int
+    kind: str
+    title: str
+    description: str | None
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    status: str
+    active: bool
+    created_at: datetime
+
+
+def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> list[ContributionRow]:
+    """Contributions of the active edition. Those of bookings that no longer occupy seats are
+    kept and flagged: the proposal can still be useful."""
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return []
+    expire_overdue(db, now)
+    db.commit()
+    rows: list[ContributionRow] = []
+    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+        status = effective_status(booking.status, booking.hold_expires_at, now)
+        participant = booking.participant
+        for contribution in booking.contributions:
+            if kind and contribution.kind != kind:
+                continue
+            rows.append(
+                ContributionRow(
+                    id=contribution.id,
+                    kind=contribution.kind,
+                    title=contribution.title,
+                    description=contribution.description,
+                    booking_id=booking.id,
+                    first_name=participant.first_name,
+                    last_name=participant.last_name,
+                    email=participant.email,
+                    status=status,
+                    active=occupies_seats(status),
+                    created_at=contribution.created_at,
+                )
+            )
+    rows.sort(key=lambda r: (not r.active, r.created_at, r.id))
+    return rows
+
+
+def activity_signup_days(db: Session, now: datetime) -> list[date]:
+    """One day per sign-up to an activity, for bookings that occupy seats."""
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return []
+    days: list[date] = []
+    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+        if occupies_seats(effective_status(booking.status, booking.hold_expires_at, now)):
+            days.extend(activity.date for activity in booking.activities)
+    return days

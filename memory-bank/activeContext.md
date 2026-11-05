@@ -2,13 +2,30 @@
 
 ## Ora
 
-MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 implementati sul branch `claude/magical-gauss-vbss2u` (backend 470 test, frontend 96 test, lint verdi, provati in browser da telefono). Aperto solo il task 9 dell'MVP 2: infrastruttura Azure (ACS, job orario) scritta ma mai validata.
+MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 su `main` e deployati su Azure (PR #4 e #5, task 9 dell'MVP 2 validato): `https://cissonauti-booking.wonderfulbush-cbda30f0.italynorth.azurecontainerapps.io`. MVP 4, 5 e 6 implementati e provati in locale sul branch `claude/quirky-meitner-qn9hwh`, in PR verso `main`; descrizioni per gli organizzatori in `specs/mvp-0{4,5,6}-*/pr-description.md`. Modifiche a `domain.md` dei tre MVP applicate.
 
 ## Prossimo passo
 
-1. Passaggio su `main` quando il maintainer lo decide (decisione: tutto insieme a fine sviluppi, nessuna PR intermedia). Prima: CI su SQL Server sul branch, poi `az bicep build`, `what-if` e deploy per validare il task 9 dell'MVP 2 (vedi `infra/README.md`).
-2. Prova con le descrizioni di PR per gli organizzatori: `specs/mvp-02-pagina-personale/pr-description.md` e `specs/mvp-03-pannello-admin/pr-description.md`.
-3. MVP 4 (lista d'attesa), dopo il passaggio su `main`. Da chiarire prima: dettagli della priorità per chi porta un +1 (vedi Backlog).
+1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
+2. Dopo il merge il deploy applica le migrazioni 0005-0007 all'avvio: il primo avvio a freddo può essere lento (circa 4 minuti con la PR #5).
+3. Prove manuali in produzione con le checklist di MVP 2-6: email vera nella casella e fuori dallo spam, il job `cissonauti-booking-reminders` che gira ogni ora (portale Azure, «Execution history»), viste e CSV con dati veri, lista d'attesa che si sblocca dopo una scadenza.
+4. MVP 7 (inviti e report): la priorità del +1 si innesta in `domain/waitlist.queue`; da definire come si verifica il +1 (Backlog).
+5. Importi definitivi di pranzo e cena (oggi 8 € e 12 €, segnaposto).
+
+## Scelte del maintainer per MVP 4-6 (2026-11-05)
+
+- B0: l'MVP 4 non era fatto; il maintainer ha chiesto di pianificare 4, 5 e 6 insieme.
+- MVP 4: lista d'attesa anche dal modulo pubblico, anche senza slot liberi; promozione su prenotazione confermata: resta confermata, saldo con la differenza.
+- MVP 5: due prezzi (pranzo e cena); regime senza consenso, allergie e intolleranze con consenso specifico; pasti modificabili come gli slot.
+- MVP 6: si aderisce a un'attività solo se presenti in quella fascia.
+
+## Risposte del maintainer su MVP 4-6
+
+- Prezzi di pranzo e cena: segnaposto (8 € e 12 €) finché non ci sono gli importi definitivi.
+- Email di promozione ai confermati senza scadenza: va bene.
+- Promozione dopo una scadenza entro un'ora con il job orario: va bene.
+- Pranzo con mattina o pomeriggio: confermato.
+- Attività su tutto il giorno: restano nel Backlog.
 
 ## Spec degli MVP 7 e 8 (2026-11-05)
 
@@ -22,7 +39,7 @@ Risposte del maintainer (2026-11-05), spec confermate:
 - MVP 7: un +1 verificato non entra oltre il limite della lista; il report distingue confermate e in attesa di pagamento.
 - MVP 8: nessuna modalità scura; dentro l'iframe intestazione ridotta (solo il nome, senza logo).
 
-MVP 8 completato sul branch `claude/nifty-hawking-mgu6fa` (D-026), descrizione PR in `specs/mvp-08-stile-sito/pr-description.md`. Da provare nel sito Google vero dopo il deploy. Le pagine degli MVP 4-7 devono usare i token di `styles.css`, senza colori scritti a mano (lo controlla `theme.test.ts`).
+MVP 8 completato sul branch `claude/nifty-hawking-mgu6fa` (D-035), descrizione PR in `specs/mvp-08-stile-sito/pr-description.md`. Da provare nel sito Google vero dopo il deploy. Le pagine degli MVP 4-7 devono usare i token di `styles.css`, senza colori scritti a mano (lo controlla `theme.test.ts`).
 
 Prossimo passo: MVP 7 dopo la chiusura degli MVP 4-6, riallineando prima le ipotesi del design.
 
@@ -51,5 +68,5 @@ Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/...`, per il vincol
 - Task 15: verifica dell'embed reale in Google Sites e chiusura dell'MVP 1.
 - Finché il task 9 non è validato in produzione i magic link compaiono solo nei log (`EMAIL_PROVIDER=console`).
 - Il database Basic non si mette in pausa; la Container App deve restare a `minReplicas: 0`.
-- Da chiarire prima dell'MVP 5: serve la presenza di giorno per il pranzo?
+- Presenza di giorno per il pranzo: la spec dell'MVP 5 propone mattina o pomeriggio (da confermare).
 - Esiti della call (D-008), sera derivata (D-009), nome con due s (D-012) e risorse ricreate (D-013): già registrati in `decisions.md`.

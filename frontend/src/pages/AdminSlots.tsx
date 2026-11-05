@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import { formatDay, hhmm, periodLabel } from "../booking";
 import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
@@ -12,6 +12,13 @@ type Person = {
   status: string;
   derived: boolean;
 };
+type Waiting = {
+  entry_id: number;
+  position: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+};
 type SlotRow = {
   id: number;
   period: string;
@@ -21,18 +28,43 @@ type SlotRow = {
   present: number;
   free: number | null;
   people: Person[];
+  waitlist?: Waiting[];
 };
 type DayRow = { date: string; slots: SlotRow[] };
 
 export function AdminSlots() {
   const [days, setDays] = useState<DayRow[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const load = useCallback(
+    () =>
+      api<{ days: DayRow[] }>("/api/admin/views/slots")
+        .then((data) => setDays(data.days))
+        .catch(() => setFailed(true)),
+    [],
+  );
 
   useEffect(() => {
-    api<{ days: DayRow[] }>("/api/admin/views/slots")
-      .then((data) => setDays(data.days))
-      .catch(() => setFailed(true));
-  }, []);
+    void load();
+  }, [load]);
+
+  async function remove(person: Waiting) {
+    setMessage(null);
+    try {
+      await api(`/api/admin/waitlist/${person.entry_id}`, { method: "DELETE" });
+      setMessage({
+        ok: true,
+        text: `${person.first_name} ${person.last_name} è stato tolto dalla lista. Non parte nessuna email: avvisalo tu.`,
+      });
+      await load();
+    } catch (error) {
+      setMessage({
+        ok: false,
+        text: error instanceof ApiError ? error.message : "Riprova tra poco.",
+      });
+    }
+  }
 
   return (
     <main className="wide">
@@ -42,6 +74,14 @@ export function AdminSlots() {
         dello stesso giorno (segnato come «sera dell&apos;intero giorno»).
       </p>
       {failed && <p role="alert">Non riesco a caricare la vista.</p>}
+      {message && (
+        <p
+          role={message.ok ? "status" : "alert"}
+          className={`notice ${message.ok ? "ok" : "error"}`}
+        >
+          {message.text}
+        </p>
+      )}
       {days === null ? (
         <p aria-busy="true">Caricamento…</p>
       ) : days.length === 0 ? (
@@ -61,6 +101,7 @@ export function AdminSlots() {
                     <th scope="col">Presenti</th>
                     <th scope="col">Posti liberi</th>
                     <th scope="col">Persone</th>
+                    <th scope="col">Lista d&apos;attesa</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -95,6 +136,27 @@ export function AdminSlots() {
                               </li>
                             ))}
                           </ul>
+                        )}
+                      </td>
+                      <td>
+                        {(slot.waitlist ?? []).length === 0 ? (
+                          "-"
+                        ) : (
+                          <ol className="plain">
+                            {(slot.waitlist ?? []).map((person) => (
+                              <li key={person.entry_id}>
+                                {person.position}. {person.first_name} {person.last_name}{" "}
+                                <button
+                                  type="button"
+                                  className="secondary"
+                                  onClick={() => remove(person)}
+                                  aria-label={`Togli ${person.first_name} ${person.last_name} dalla lista`}
+                                >
+                                  Togli
+                                </button>
+                              </li>
+                            ))}
+                          </ol>
                         )}
                       </td>
                     </tr>

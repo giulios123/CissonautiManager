@@ -30,6 +30,29 @@ STATUS_REFUNDED = "rimborsata"
 
 DOC_PRIVACY = "privacy"
 DOC_DISCLAIMER = "disclaimer"
+# Specific consent to the processing of health data (allergies and intolerances).
+DOC_HEALTH = "health"
+
+MEAL_LUNCH = "lunch"
+MEAL_DINNER = "dinner"
+
+DIET_OMNIVORE = "omnivore"
+DIET_VEGETARIAN = "vegetarian"
+DIET_VEGAN = "vegan"
+DIETS = (DIET_OMNIVORE, DIET_VEGETARIAN, DIET_VEGAN)
+
+# What a participant offers to the camp.
+CONTRIB_TALK = "talk"
+CONTRIB_TOPIC = "topic"  # a theme for the unconference
+CONTRIB_SKILL = "skill"
+CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL)
+
+# Why a waitlist entry was closed. Entries are never deleted: the history stays.
+CLOSE_PROMOTED = "promoted"  # the seat went to this person
+CLOSE_LEFT = "left"  # the person left the list
+CLOSE_REMOVED = "removed"  # an admin removed the entry
+CLOSE_CANCELLED = "cancelled"  # the person cancelled their booking
+CLOSE_BOOKED = "booked"  # the person booked the slot by other means
 
 
 class Edition(Base):
@@ -50,6 +73,11 @@ class Edition(Base):
     hold_days: Mapped[int] = mapped_column(Integer, default=3)
     base_fee_cents: Mapped[int] = mapped_column(Integer, default=1000)
     per_day_fee_cents: Mapped[int] = mapped_column(Integer, default=100)
+    # Maximum waitlist length as a percentage of a slot's capacity.
+    waitlist_percent: Mapped[int] = mapped_column(Integer, default=20)
+    # Flat prices per meal. Placeholders until the final amounts are known.
+    lunch_price_cents: Mapped[int] = mapped_column(Integer, default=800)
+    dinner_price_cents: Mapped[int] = mapped_column(Integer, default=1200)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")
@@ -118,6 +146,11 @@ class Booking(Base):
     refund_note: Mapped[str | None] = mapped_column(UnicodeText)
     refunded_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     amount_due_cents: Mapped[int] = mapped_column(Integer)
+    # Dietary needs. The diet is not health data; allergies are, and need the specific consent.
+    diet: Mapped[str | None] = mapped_column(Unicode(16))
+    allergies: Mapped[str | None] = mapped_column(UnicodeText)
+    health_consent_document_id: Mapped[int | None] = mapped_column(ForeignKey("legal_document.id"))
+    health_consent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
     privacy_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
     disclaimer_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
@@ -125,9 +158,19 @@ class Booking(Base):
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
     participant: Mapped[Participant] = relationship(foreign_keys=[participant_id])
+    health_consent: Mapped["LegalDocument | None"] = relationship(
+        foreign_keys=[health_consent_document_id]
+    )
     slots: Mapped[list[Slot]] = relationship(secondary="booking_slot")
     payments: Mapped[list["Payment"]] = relationship(
         back_populates="booking", order_by="Payment.id"
+    )
+    meals: Mapped[list["BookingMeal"]] = relationship(
+        cascade="all, delete-orphan", order_by="BookingMeal.date"
+    )
+    activities: Mapped[list["Activity"]] = relationship(secondary="booking_activity")
+    contributions: Mapped[list["Contribution"]] = relationship(
+        cascade="all, delete-orphan", order_by="Contribution.id"
     )
 
 
@@ -136,6 +179,59 @@ class BookingSlot(Base):
 
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
     slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id"), primary_key=True)
+
+
+class BookingMeal(Base):
+    """A lunch or a dinner the person takes part in."""
+
+    __tablename__ = "booking_meal"
+
+    booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
+
+
+class Activity(Base):
+    """Something organised during the camp, on a day and in one part of it (morning, afternoon,
+    evening). Only people present in that part of the day can join."""
+
+    __tablename__ = "activity"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
+    title: Mapped[str] = mapped_column(Unicode(200))
+    description: Mapped[str | None] = mapped_column(UnicodeText)
+    date: Mapped[date] = mapped_column(Date)
+    period: Mapped[str] = mapped_column(Unicode(12))
+    # Free text such as "10:30-12", shown as is.
+    time_label: Mapped[str | None] = mapped_column(Unicode(50))
+    # 0 means free.
+    price_cents: Mapped[int] = mapped_column(Integer, default=0)
+    # None means no limit.
+    capacity: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class BookingActivity(Base):
+    __tablename__ = "booking_activity"
+
+    booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"), primary_key=True)
+    joined_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class Contribution(Base):
+    """A talk, an unconference theme or a skill a participant offers."""
+
+    __tablename__ = "contribution"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"))
+    kind: Mapped[str] = mapped_column(Unicode(16))
+    title: Mapped[str] = mapped_column(Unicode(200))
+    description: Mapped[str | None] = mapped_column(UnicodeText)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 
 class PaymentChannel(Base):
@@ -188,6 +284,31 @@ class AuthSession(Base):
     token_hash: Mapped[str] = mapped_column(Unicode(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class WaitlistEntry(Base):
+    """Someone waiting for a seat in a full slot. Active while `closed_at` is empty.
+
+    The legal texts accepted are stored on the entry, so that a promotion can create a booking
+    for someone who is only on the waitlist (they never had a booking to copy them from).
+    """
+
+    __tablename__ = "waitlist_entry"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id"))
+    participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    close_reason: Mapped[str | None] = mapped_column(Unicode(16))
+    promoted_booking_id: Mapped[int | None] = mapped_column(Integer)
+    privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
+    privacy_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    disclaimer_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
+    disclaimer_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
+
+    slot: Mapped[Slot] = relationship()
+    participant: Mapped[Participant] = relationship()
 
 
 class AuditLog(Base):

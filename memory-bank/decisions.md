@@ -178,7 +178,71 @@
 - **Motivo**: tutti difetti reali emersi dalla revisione: (2) richiede due admin sulla stessa prenotazione nello stesso istante, improbabile ma con effetti gravi (confermata senza soldi); (3) valeva già per i pagamenti dell'MVP 1.
 - **Limite noto**: la corsa del punto 2 non è riproducibile in modo deterministico nei test (SQLite non sa fare lock di riga): il test controlla che la query contenga l'hint per SQL Server.
 
-## D-026 · Stile del sito: token CSS, font self-hosted e modalità iframe
+## D-026 · Lista d'attesa: voci chiuse, mai cancellate
+
+- **Data**: 2026-11-05
+- **Decisione**: ogni voce in lista ha `closed_at` e un motivo (`promoted`, `left`, `removed`, `cancelled`, `booked`); non si cancella mai. I testi legali accettati stanno anche sulla voce, così chi è solo in lista può ricevere una prenotazione nuova senza ripassare dal modulo. Chi entra dalla pagina personale riusa i testi della sua ultima prenotazione. Un giorno che ha avuto voci in lista non si toglie dalle Impostazioni.
+- **Motivo**: la storia serve al report dell'MVP 7 e alla cronologia; la promozione deve poter creare una prenotazione valida.
+- **Alternative scartate**: cancellare le voci (nessuna traccia); prenotazione «vuota» per chi è solo in lista (stato nuovo da gestire ovunque).
+
+## D-027 · Promozione dopo il commit, dallo strato API e dal job orario
+
+- **Data**: 2026-11-05
+- **Decisione**: `promote_freed` gira dopo il commit dell'operazione che libera i posti, uno slot alla volta, ciascuno in una transazione propria con il lock sullo slot. La chiamano gli endpoint di disdetta e cambio slot (partecipante e admin) e il salvataggio delle Impostazioni; le scadenze le gestisce il job orario dei promemoria, che fa un passo in più. Il limite della lista si arrotonda per difetto. Dopo una promozione su una prenotazione in attesa i promemoria si ricalcolano come dopo una proroga (D-024).
+- **Motivo**: i servizi esistenti restano invariati e non dipendono dalla configurazione; la lettura non manda email, quindi una scadenza la nota solo il job (entro un'ora, accettato dal maintainer).
+- **Alternative scartate**: promozione alla lettura (email inviate da una GET); un job dedicato (un'altra risorsa Azure per lo stesso orario).
+- **Limite noto**: se l'operazione riesce e la promozione fallisce (errore improvviso), il posto resta libero finché il job orario non lo assegna.
+
+## D-028 · Persone solo in lista nel pannello
+
+- **Data**: 2026-11-05
+- **Decisione**: in «Persone» chi è solo in lista compare con stato «Solo in lista d'attesa», senza scheda (la scheda è per prenotazione); la lista si gestisce da «Giorni e slot», dove l'admin può togliere una voce senza email, con cronologia.
+- **Motivo**: evita una seconda scheda per persona per un caso raro.
+- **Alternative scartate**: scheda per persona (nuova pagina e nuovi endpoint, fuori dalla dimensione dell'MVP).
+
+## D-029 · Un solo punto calcola l'importo dovuto
+
+- **Data**: 2026-11-05
+- **Decisione**: `services/amounts.recompute_amount` scrive `amount_due_cents` da slot e pasti, ai prezzi correnti dell'edizione (come D-017). La usano iscrizione, cambio slot, pasti e promozione dalla lista; l'MVP 6 vi aggiungerà le attività. Prezzi segnaposto: pranzo 8 €, cena 12 €.
+- **Motivo**: con più voci di costo, calcoli sparsi divergerebbero.
+- **Alternative scartate**: salvare un importo per riga (pasto, slot) e sommarlo (più dati per lo stesso risultato).
+
+## D-030 · Dati sanitari sulla prenotazione, consenso che non blocca l'iscrizione
+
+- **Data**: 2026-11-05
+- **Decisione**: regime, allergie e consenso stanno su `booking`, non su `participant`. Il consenso è un testo legale versionato (`health`) ma fuori dai testi che aprono le iscrizioni: senza testo pubblicato si indica solo il regime. Il CSV dei pasti chiede conferma prima del download perché contiene dati sanitari.
+- **Motivo**: i dati valgono per un'edizione e spariscono con la prenotazione rimossa (minimizzazione); i pasti non devono fermare le iscrizioni.
+- **Alternative scartate**: dati sulla persona (resterebbero da un anno all'altro); consenso obbligatorio per iscriversi (non tutti hanno allergie).
+
+## D-031 · I pasti cadono da soli quando cambia la presenza
+
+- **Data**: 2026-11-05
+- **Decisione**: togliere uno slot fa cadere i pasti a cui non si ha più titolo; la risposta e la cronologia lo dicono. Vale anche per l'admin, che per dare un pasto deve prima dare la presenza.
+- **Motivo**: bloccare il cambio di slot finché non si tolgono i pasti a mano sarebbe un passaggio in più senza vantaggi.
+- **Alternative scartate**: rifiutare il cambio di slot; lasciare pasti senza presenza (conteggi sbagliati per la cucina).
+
+## D-032 · Attività legate a giorno e fascia, con presenza obbligatoria
+
+- **Data**: 2026-11-05
+- **Decisione**: un'attività ha un giorno, una fascia (mattina, pomeriggio, sera) e un orario indicativo libero. Si aderisce solo se presenti in quella fascia (sera derivata compresa, D-009); la regola vale anche per l'admin, che può però superare la capienza con «forza» e cambiare giorni passati. Il conteggio dei posti e il lock sulla riga seguono gli slot (D-011).
+- **Motivo**: scelta del maintainer; la fascia riusa la regola di presenza dei pasti senza confrontare orari liberi.
+- **Alternative scartate**: orario libero di inizio e fine (confronti con gli slot più fragili); attività su tutto il giorno (Backlog).
+
+## D-033 · Attività bloccate dopo la prima adesione e riattivazione senza le attività piene
+
+- **Data**: 2026-11-05
+- **Decisione**: con iscritti non si cambiano prezzo, giorno e fascia e non si elimina (conta ogni prenotazione che la tiene, anche scaduta); la capienza non scende sotto chi occupa un posto. Quando una prenotazione scaduta torna attiva (riattivazione o pagamento), le attività nel frattempo piene cadono con avviso e cronologia: cambia la spec, che diceva «l'admin decide se forzare».
+- **Motivo**: gli importi non devono cambiare alle spalle delle persone; la riattivazione da pagamento non ha nessuno che possa forzare, e la regola è la stessa dei pasti (D-031).
+- **Alternative scartate**: ricalcolare gli importi di tutti al cambio di prezzo; rifiutare la riattivazione per un'attività piena.
+
+## D-034 · Contributi sulla prenotazione
+
+- **Data**: 2026-11-05
+- **Decisione**: tabella `contribution` legata alla prenotazione, tre tipi (talk, tema, competenza), più contributi per persona, modificabili solo da chi li ha scritti. Nella vista admin quelli di prenotazioni non attive restano, segnati. Si aggiungono solo con un'iscrizione in attesa o confermata.
+- **Motivo**: valgono per un'edizione e spariscono con la prenotazione rimossa; il meccanismo dell'unconference resta da definire (Backlog).
+- **Alternative scartate**: estendere il campo libero «cosa puoi portare» (non filtrabile né esportabile per tipo).
+
+## D-035 · Stile del sito: token CSS, font self-hosted e modalità iframe
 
 - **Data**: 2026-11-05
 - **Decisione**: (1) tutti i colori sono token su `:root` in `frontend/src/styles.css`, con la palette del sito Cissone Eventi (petrolio `#005C68` per link e focus, ambra `#F4B400` solo come sfondo del bottone principale); un test vitest controlla i contrasti AA e che non ci siano colori fuori da `:root`; (2) Montserrat è incluso nella build con `@fontsource/montserrat` (pesi 400, 600, 700); (3) dentro un iframe la pagina aggiunge la classe `in-frame` a `<html>`, ha lo sfondo trasparente e un'intestazione ridotta al solo nome; (4) bottoni e campi squadrati (`--radius: 0`); (5) il logo di Cissone è nel bundle con il permesso della Pro Loco e non rientra nella licenza MIT (nota nel README).

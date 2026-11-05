@@ -13,6 +13,7 @@ STATUS_LABELS = {
     "scaduta": "Scaduta",
     "disdetta_richiesta": "Disdetta richiesta",
     "rimborsata": "Rimborsata",
+    "in_lista": "Solo in lista d'attesa",
 }
 
 
@@ -46,3 +47,19 @@ def format_amount(cents: int) -> str:
 def format_slot(day: date, period: str, start: time, end: time) -> str:
     label = _PERIODS.get(period, period)
     return f"{_WEEKDAYS[day.weekday()]} {day.strftime('%d/%m')} {label} ({start:%H:%M}-{end:%H:%M})"
+
+
+_MEALS = {"lunch": "pranzo", "dinner": "cena"}
+
+
+def meal_label(kind: str) -> str:
+    return _MEALS.get(kind, kind).capitalize()
+
+
+def format_meal(day: date, kind: str) -> str:
+    return f"{_MEALS.get(kind, kind)} di {_WEEKDAYS[day.weekday()]} {day.strftime('%d/%m')}"
+
+
+def format_activity(title: str, day: date, period: str) -> str:
+    when = f"{_WEEKDAYS[day.weekday()]} {day.strftime('%d/%m')} {_PERIODS.get(period, period)}"
+    return f"{title} ({when})"

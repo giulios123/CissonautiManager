@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import {
+  canJoinWaitlist,
   feePreview,
   formatDay,
   formatDeadline,
@@ -32,7 +33,18 @@ type Summary = {
   slots: { label: string }[];
   payment_channels: Channel[];
 };
-type Outcome = { kind: "created"; booking: Summary } | { kind: "already"; message: string };
+type Waitlisted = { label: string; position: number };
+type Outcome =
+  | { kind: "created"; booking: Summary; waitlist: Waitlisted[] }
+  | { kind: "waitlisted"; personalCode: string; waitlist: Waitlisted[] }
+  | { kind: "already"; message: string };
+
+/** Label of a full slot: whether its waitlist can still be joined. */
+function fullSlotLabel(slot: Day["slots"][number]) {
+  if (canJoinWaitlist(slot)) return "completo, spunta per entrare in lista d'attesa";
+  if (slot.waitlist_free === 0) return "completo, anche la lista d'attesa";
+  return seatsLabel(slot);
+}
 
 const fetchEdition = () => api<PublicEdition>("/api/public/edition");
 
@@ -67,7 +79,10 @@ export function Registration() {
       </main>
     );
   }
-  if (outcome?.kind === "created") return <Confirmation booking={outcome.booking} />;
+  if (outcome?.kind === "created")
+    return <Confirmation booking={outcome.booking} waitlist={outcome.waitlist} />;
+  if (outcome?.kind === "waitlisted")
+    return <WaitlistConfirmation personalCode={outcome.personalCode} waitlist={outcome.waitlist} />;
 
   if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
     return (
@@ -79,9 +94,14 @@ export function Registration() {
   }
 
   const { privacy, disclaimer } = edition;
+  const fullIds = new Set(
+    edition.days.flatMap((day) => day.slots.filter((slot) => isFull(slot)).map((slot) => slot.id)),
+  );
+  const toBook = new Set([...selected].filter((id) => !fullIds.has(id)));
+  const toWait = [...selected].filter((id) => fullIds.has(id));
   const fee = feePreview(
     edition.days,
-    selected,
+    toBook,
     edition.base_fee_cents ?? 0,
     edition.per_day_fee_cents ?? 0,
   );
@@ -106,27 +126,37 @@ export function Registration() {
     const text = (name: string) => String(data.get(name) ?? "");
     setSending(true);
     try {
-      const result = await api<{ result: string; message?: string; booking?: Summary }>(
-        "/api/public/registrations",
-        {
-          method: "POST",
-          json: {
-            first_name: text("first_name"),
-            last_name: text("last_name"),
-            email: text("email"),
-            phone: text("phone") || null,
-            invited_by: text("invited_by") || null,
-            can_bring: text("can_bring"),
-            slot_ids: [...selected],
-            accept_privacy: data.get("accept_privacy") === "on",
-            accept_disclaimer: data.get("accept_disclaimer") === "on",
-            privacy_version: privacy.version,
-            disclaimer_version: disclaimer.version,
-          },
+      const result = await api<{
+        result: string;
+        message?: string;
+        booking?: Summary;
+        personal_code?: string;
+        waitlist?: Waitlisted[];
+      }>("/api/public/registrations", {
+        method: "POST",
+        json: {
+          first_name: text("first_name"),
+          last_name: text("last_name"),
+          email: text("email"),
+          phone: text("phone") || null,
+          invited_by: text("invited_by") || null,
+          can_bring: text("can_bring"),
+          slot_ids: [...toBook],
+          waitlist_slot_ids: toWait,
+          accept_privacy: data.get("accept_privacy") === "on",
+          accept_disclaimer: data.get("accept_disclaimer") === "on",
+          privacy_version: privacy.version,
+          disclaimer_version: disclaimer.version,
         },
-      );
+      });
       if (result.result === "created" && result.booking) {
-        setOutcome({ kind: "created", booking: result.booking });
+        setOutcome({ kind: "created", booking: result.booking, waitlist: result.waitlist ?? [] });
+      } else if (result.result === "waitlisted") {
+        setOutcome({
+          kind: "waitlisted",
+          personalCode: result.personal_code ?? "",
+          waitlist: result.waitlist ?? [],
+        });
       } else {
         setOutcome({ kind: "already", message: result.message ?? "Risulti già iscritto." });
       }
@@ -156,18 +186,19 @@ export function Registration() {
               <legend>{formatDay(day.date)}</legend>
               {day.slots.map((slot) => {
                 const full = isFull(slot);
+                const disabled = full && !canJoinWaitlist(slot);
                 return (
                   <label className="check" key={slot.id}>
                     <input
                       type="checkbox"
                       checked={selected.has(slot.id)}
-                      disabled={full}
+                      disabled={disabled}
                       onChange={(e) => toggle(slot.id, e.target.checked)}
                     />
                     <span>
                       {periodLabel(slot.period)} {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
                       {" · "}
-                      {seatsLabel(slot)}
+                      {full ? fullSlotLabel(slot) : seatsLabel(slot)}
                     </span>
                   </label>
                 );
@@ -175,7 +206,19 @@ export function Registration() {
             </fieldset>
           ))}
           <p aria-live="polite" className="fee">
-            Quota da versare: <strong>{formatEuro(fee)}</strong>
+            {toBook.size === 0 && toWait.length > 0 ? (
+              "Solo lista d'attesa: per ora non devi pagare nulla."
+            ) : (
+              <>
+                Quota da versare: <strong>{formatEuro(fee)}</strong>
+              </>
+            )}
+            {toBook.size > 0 && toWait.length > 0 && (
+              <>
+                <br />
+                In lista d&apos;attesa: {toWait.length} slot, si pagano solo se si libera un posto.
+              </>
+            )}
           </p>
         </fieldset>
 
@@ -242,7 +285,53 @@ export function Registration() {
   );
 }
 
-function Confirmation({ booking }: { booking: Summary }) {
+function WaitlistSummary({ waitlist }: { waitlist: Waitlisted[] }) {
+  if (waitlist.length === 0) return null;
+  return (
+    <>
+      <h2>In lista d&apos;attesa</h2>
+      <ul>
+        {waitlist.map((item) => (
+          <li key={item.label}>
+            {item.label}: sei {item.position}° in lista
+          </li>
+        ))}
+      </ul>
+      <p>Se si libera un posto ti scriviamo e lo slot diventa tuo.</p>
+    </>
+  );
+}
+
+function WaitlistConfirmation({
+  personalCode,
+  waitlist,
+}: {
+  personalCode: string;
+  waitlist: Waitlisted[];
+}) {
+  return (
+    <main>
+      <h1>Sei in lista d&apos;attesa</h1>
+      <p role="status">
+        Gli slot che hai scelto sono al completo. Ti abbiamo inviato un&apos;email con il tuo link
+        personale. Controlla anche lo spam.
+      </p>
+      <WaitlistSummary waitlist={waitlist} />
+      <p>
+        Finché non si libera un posto non devi pagare nulla. Il tuo codice è{" "}
+        <strong>{personalCode}</strong>.
+      </p>
+      <p>
+        <a href="/accedi" target="_blank" rel="noopener">
+          Vai alla tua pagina personale
+        </a>{" "}
+        (si apre in una nuova finestra)
+      </p>
+    </main>
+  );
+}
+
+function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitlisted[] }) {
   return (
     <main>
       <h1>Iscrizione ricevuta</h1>
@@ -256,6 +345,7 @@ function Confirmation({ booking }: { booking: Summary }) {
           <li key={slot.label}>{slot.label}</li>
         ))}
       </ul>
+      <WaitlistSummary waitlist={waitlist} />
       <h2>Come pagare</h2>
       <p>
         Quota: <strong>{formatEuro(booking.amount_due_cents)}</strong>
