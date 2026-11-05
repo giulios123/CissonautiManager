@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react";
-import { dayBadge, formatDay, hhmm, periodLabel } from "../booking";
+import { dayBadge, formatDay, formatWeekday, hhmm, periodLabel } from "../booking";
 import {
   allSlots,
   clearAll,
@@ -130,7 +130,8 @@ export function DayPicker({
                 <strong>{badge.day}</strong>
               </span>
               <span className="day-name" id={labelId}>
-                {formatDay(day.date)}
+                {formatWeekday(day.date)}
+                <span className="sr-only"> {formatDay(day.date)}</span>
               </span>
             </div>
             <div className="tiles">

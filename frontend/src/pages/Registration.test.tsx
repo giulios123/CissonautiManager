@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
@@ -279,6 +279,19 @@ describe("waitlist in the registration form", () => {
     >;
     expect(sent.slot_ids).toEqual([1]);
     expect(sent.waitlist_slot_ids).toEqual([2]);
+  });
+
+  it("groups the chosen slots by day in the summary and lets you remove one", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
+    await user.click(screen.getByLabelText(/Sera 19:00-00:00/));
+    const summary = screen.getByRole("complementary", { name: "Il tuo riepilogo" });
+    expect(within(summary).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(summary).getByText("2 turni · 1 giorno")).toBeInTheDocument();
+    await user.click(within(summary).getByRole("button", { name: /^Togli .* · Mattina$/ }));
+    expect(within(summary).getByText("1 turno · 1 giorno")).toBeInTheDocument();
   });
 
   it("keeps a full slot locked when its waitlist is full too", async () => {

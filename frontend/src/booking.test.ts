@@ -3,6 +3,7 @@ import {
   feePreview,
   formatDeadline,
   formatDay,
+  formatWeekday,
   toRomeLocalInput,
   type Day,
 } from "./booking";
@@ -69,5 +70,12 @@ describe("toRomeLocalInput", () => {
 
   it("crosses midnight, whatever the time zone of the browser", () => {
     expect(toRomeLocalInput("2026-07-13T22:30:00Z")).toBe("2026-07-14T00:30");
+  });
+});
+
+describe("formatWeekday", () => {
+  it("returns the capitalised weekday only", () => {
+    expect(formatWeekday("2026-11-27")).toBe("Venerdì");
+    expect(formatWeekday("2026-07-13")).toBe("Lunedì");
   });
 });
