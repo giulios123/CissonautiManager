@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 # Only the public registration page may be embedded, and only by Google Sites.
 EMBED_ANCESTORS = "https://sites.google.com https://*.googleusercontent.com"
+# The registration form is embedded in Google Sites. The Italian address redirects inside the frame.
+EMBEDDABLE_PATHS = {"/register", "/iscrizione"}
 
 
 def _mount_frontend(app: FastAPI, static_dir: Path) -> None:
@@ -101,7 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.middleware("http")
     async def frame_policy(request: Request, call_next):
         response = await call_next(request)
-        embeddable = request.url.path.rstrip("/") == "/iscrizione"
+        embeddable = request.url.path.rstrip("/") in EMBEDDABLE_PATHS
         response.headers["Content-Security-Policy"] = (
             f"frame-ancestors {EMBED_ANCESTORS}" if embeddable else "frame-ancestors 'self'"
         )

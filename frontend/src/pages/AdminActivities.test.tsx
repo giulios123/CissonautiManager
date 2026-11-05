@@ -31,7 +31,7 @@ describe("activities admin page", () => {
       }
       return undefined;
     });
-    renderAt("/admin/attivita");
+    renderAt("/admin/activities");
     const row = (await screen.findByRole("link", { name: "Escursione" })).closest(
       "tr",
     ) as HTMLElement;
@@ -70,7 +70,7 @@ describe("activities admin page", () => {
         };
       return undefined;
     });
-    renderAt("/admin/attivita");
+    renderAt("/admin/activities");
     await userEvent.click(await screen.findByRole("button", { name: "Modifica" }));
     const form = within(screen.getByRole("form", { name: "Modifica «Escursione»" }));
     expect(form.getByText(/Ci sono già iscritti/)).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe("activity detail page", () => {
           }
         : undefined,
     );
-    renderAt("/admin/attivita/3");
+    renderAt("/admin/activities/3");
     expect(await screen.findByRole("heading", { name: "Escursione" })).toBeInTheDocument();
     expect(screen.getByText(/1 \/ 2, 1 posti liberi/)).toBeInTheDocument();
     const row = screen.getByRole("link", { name: "Ada Lovelace" }).closest("tr") as HTMLElement;

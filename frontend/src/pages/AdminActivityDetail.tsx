@@ -33,7 +33,7 @@ export function AdminActivityDetail() {
   return (
     <main className="wide">
       <p>
-        <Link to="/admin/attivita">← Tutte le attività</Link>
+        <Link to="/admin/activities">← Tutte le attività</Link>
       </p>
       <h1>{detail.title}</h1>
       <p>
@@ -64,7 +64,7 @@ export function AdminActivityDetail() {
                 {detail.people.map((person) => (
                   <tr key={person.booking_id}>
                     <th scope="row">
-                      <Link to={`/admin/iscrizioni/${person.booking_id}`}>
+                      <Link to={`/admin/registrations/${person.booking_id}`}>
                         {person.first_name} {person.last_name}
                       </Link>
                       <br />

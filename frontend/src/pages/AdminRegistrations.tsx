@@ -125,7 +125,7 @@ export function AdminRegistrations() {
                       {row.id === null ? (
                         `${row.first_name} ${row.last_name}`
                       ) : (
-                        <Link to={`/admin/iscrizioni/${row.id}`}>
+                        <Link to={`/admin/registrations/${row.id}`}>
                           {row.first_name} {row.last_name}
                         </Link>
                       )}

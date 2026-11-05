@@ -265,7 +265,7 @@ export function AdminRegistrationDetail() {
           <ul>
             {(booking.activities ?? []).map((activity) => (
               <li key={activity.id}>
-                <Link to={`/admin/attivita/${activity.id}`}>{activity.label}</Link>
+                <Link to={`/admin/activities/${activity.id}`}>{activity.label}</Link>
               </li>
             ))}
           </ul>
@@ -405,7 +405,7 @@ export function AdminRegistrationDetail() {
             ))}
           </ul>
           <p>
-            Per togliere la persona da una lista usa <Link to="/admin/giorni">Giorni e slot</Link>.
+            Per togliere la persona da una lista usa <Link to="/admin/days">Giorni e slot</Link>.
           </p>
         </section>
       )}

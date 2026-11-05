@@ -238,7 +238,7 @@ export function AdminActivities() {
                 {activities.map((activity) => (
                   <tr key={activity.id}>
                     <th scope="row">
-                      <Link to={`/admin/attivita/${activity.id}`}>{activity.title}</Link>
+                      <Link to={`/admin/activities/${activity.id}`}>{activity.title}</Link>
                     </th>
                     <td>
                       {formatDay(activity.date)}, {periodLabel(activity.period).toLowerCase()}

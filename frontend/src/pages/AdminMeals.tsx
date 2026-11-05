@@ -91,7 +91,7 @@ export function AdminMeals() {
                             <ul className="plain">
                               {meal.people.map((person) => (
                                 <li key={person.booking_id}>
-                                  <Link to={`/admin/iscrizioni/${person.booking_id}`}>
+                                  <Link to={`/admin/registrations/${person.booking_id}`}>
                                     {person.first_name} {person.last_name}
                                   </Link>
                                 </li>

@@ -3,7 +3,7 @@
 Branch: `claude/relaxed-dijkstra-9z2e5o` (vincolo della sessione). **Dimensione**: 8 task.
 
 - [x] **1. Spec** dei tre MVP (11, 12, 13), `ROADMAP.md`, `activeContext.md`, regola «bilingue da subito» in `AGENTS.md`.
-- [ ] **2. Rotte**: `routes.ts`, alias con redirect, link, `pageTitle.ts`, `guide/content.ts`, URL del backend e CSP.
+- [x] **2. Rotte**: `routes.ts`, alias con redirect, link, `pageTitle.ts`, `guide/content.ts`, URL del backend e CSP.
   Test: `canonicalPath`, redirect che conserva query e hash, CSP su `/register` e `/iscrizione`, magic link `/login/verify`.
 - [ ] **3. Core i18n**: dizionari, provider, rilevamento, selettore, formattatori.
   Test: rilevamento (`?lang`, storage, browser), selettore, parità delle chiavi, `localStorage` che lancia.

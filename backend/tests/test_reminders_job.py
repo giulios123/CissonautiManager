@@ -83,7 +83,7 @@ def test_reminder_names_the_balance_the_code_and_the_deadline(db, booking, outbo
     assert "8,00 €" in body  # 11,00 due minus 3,00 paid
     assert booking.participant.personal_code in body
     assert "04/07/2026" in body
-    assert "https://camp.example.org/accedi" in body
+    assert "https://camp.example.org/login" in body
 
 
 @pytest.mark.parametrize("status", [STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_CANCEL_REQUESTED])

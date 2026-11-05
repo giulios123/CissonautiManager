@@ -74,7 +74,7 @@ function mockFetch(responses: Record<string, { status?: number; body: unknown }>
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={["/iscrizione"]}>
+    <MemoryRouter initialEntries={["/register"]}>
       <App />
     </MemoryRouter>,
   );

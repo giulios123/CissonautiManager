@@ -64,7 +64,7 @@ export function AdminReview() {
                 {rows.map((row) => (
                   <tr key={row.booking_id}>
                     <th scope="row">
-                      <Link to={`/admin/iscrizioni/${row.booking_id}`}>
+                      <Link to={`/admin/registrations/${row.booking_id}`}>
                         {row.first_name} {row.last_name}
                       </Link>
                       <br />

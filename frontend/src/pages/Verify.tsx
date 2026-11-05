@@ -33,7 +33,7 @@ export function Verify() {
       <main>
         <h1>Link non valido</h1>
         <p>
-          <Link to="/accedi">Richiedi un nuovo link</Link>
+          <Link to="/login">Richiedi un nuovo link</Link>
         </p>
       </main>
     );
@@ -51,7 +51,7 @@ export function Verify() {
             {error}
           </p>
           <p>
-            <Link to="/accedi">Richiedi un nuovo link</Link>
+            <Link to="/login">Richiedi un nuovo link</Link>
           </p>
         </>
       )}

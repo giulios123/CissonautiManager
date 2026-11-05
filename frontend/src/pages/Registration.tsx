@@ -381,7 +381,7 @@ function WaitlistConfirmation({
         <strong>{personalCode}</strong>.
       </p>
       <p>
-        <a href="/accedi" target="_blank" rel="noopener">
+        <a href="/login" target="_blank" rel="noopener">
           Vai alla tua pagina personale
         </a>{" "}
         (si apre in una nuova finestra)
@@ -429,7 +429,7 @@ function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitl
         <p>Le istruzioni di pagamento arriveranno presto.</p>
       )}
       <p>
-        <a href="/accedi" target="_blank" rel="noopener">
+        <a href="/login" target="_blank" rel="noopener">
           Vai alla tua pagina personale
         </a>{" "}
         (si apre in una nuova finestra)

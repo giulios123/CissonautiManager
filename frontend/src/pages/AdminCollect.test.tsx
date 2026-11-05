@@ -81,7 +81,7 @@ afterEach(() => {
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={["/admin/da-incassare"]}>
+    <MemoryRouter initialEntries={["/admin/to-collect"]}>
       <App />
     </MemoryRouter>,
   );
@@ -96,7 +96,7 @@ describe("to collect view", () => {
     expect(screen.getByText("2 da incassare")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ada Lovelace" })).toHaveAttribute(
       "href",
-      "/admin/iscrizioni/7",
+      "/admin/registrations/7",
     );
     expect(screen.getAllByRole("link", { name: "Altro importo" })).toHaveLength(2);
   });

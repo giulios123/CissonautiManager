@@ -32,7 +32,7 @@ def create_magic_link_token(db: Session, participant: Participant, now: datetime
 
 
 def magic_link_url(settings: Settings, raw_token: str) -> str:
-    return f"{settings.app_base_url.rstrip('/')}/accedi/verifica?token={raw_token}"
+    return f"{settings.app_base_url.rstrip('/')}/login/verify?token={raw_token}"
 
 
 def send_magic_link(

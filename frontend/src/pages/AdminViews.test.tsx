@@ -76,20 +76,20 @@ describe("days and slots view", () => {
 
   it("shows presences, free seats and who is there, linking to each booking", async () => {
     stub(() => slots);
-    renderAt("/admin/giorni");
+    renderAt("/admin/days");
     const table = await screen.findByRole("table", { name: /13 luglio/ });
     const morning = within(table).getByRole("row", { name: /Mattina/ });
     expect(within(morning).getByText("2 / 25")).toBeInTheDocument();
     expect(within(morning).getByText("23")).toBeInTheDocument();
     expect(within(morning).getByRole("link", { name: "Eve Adams" })).toHaveAttribute(
       "href",
-      "/admin/iscrizioni/7",
+      "/admin/registrations/7",
     );
   });
 
   it("marks the evening of the whole day as derived and the evening as unlimited", async () => {
     stub(() => slots);
-    renderAt("/admin/giorni");
+    renderAt("/admin/days");
     const evening = within(await screen.findByRole("row", { name: /Sera/ }));
     expect(evening.getByText("senza limite")).toBeInTheDocument();
     expect(evening.getByText(/sera dell'intero giorno/)).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("days and slots view", () => {
 
   it("offers the CSV download", async () => {
     stub(() => slots);
-    renderAt("/admin/giorni");
+    renderAt("/admin/days");
     expect(await screen.findByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
       "/api/admin/views/slots?format=csv",
@@ -106,7 +106,7 @@ describe("days and slots view", () => {
 
   it("explains what to do when there are no days", async () => {
     stub(() => ({ days: [] }));
-    renderAt("/admin/giorni");
+    renderAt("/admin/days");
     expect(await screen.findByText(/configura prima l'edizione/)).toBeInTheDocument();
   });
 });
@@ -215,14 +215,14 @@ describe("payments to review", () => {
         balance_cents: 0,
       }),
     ]);
-    renderAt("/admin/da-verificare");
+    renderAt("/admin/to-review");
     const table = await screen.findByRole("table", { name: "Iscrizioni da verificare" });
     const ada = within(within(table).getByRole("row", { name: /Ada Lovelace/ }));
     expect(ada.getByText(/ha versato in più/)).toBeInTheDocument();
     expect(ada.getByText(/-1,00/)).toBeInTheDocument();
     expect(ada.getByRole("link", { name: /Ada Lovelace/ })).toHaveAttribute(
       "href",
-      "/admin/iscrizioni/7",
+      "/admin/registrations/7",
     );
     expect(screen.getByText("Disdetta richiesta: da rimborsare")).toBeInTheDocument();
     expect(screen.getByText("2 da verificare")).toBeInTheDocument();
@@ -230,7 +230,7 @@ describe("payments to review", () => {
 
   it("offers the CSV download", async () => {
     stub(() => [reviewRow({})]);
-    renderAt("/admin/da-verificare");
+    renderAt("/admin/to-review");
     expect(await screen.findByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
       "/api/admin/views/payments-review?format=csv",
@@ -239,7 +239,7 @@ describe("payments to review", () => {
 
   it("says so when everything is in order", async () => {
     stub(() => []);
-    renderAt("/admin/da-verificare");
+    renderAt("/admin/to-review");
     expect(await screen.findByText(/Tutto in ordine/)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Scarica CSV" })).not.toBeInTheDocument();
   });

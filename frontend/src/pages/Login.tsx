@@ -81,7 +81,7 @@ export function Login() {
         )}
       </form>
       <p>
-        Non sei ancora iscritto? <Link to="/iscrizione">Iscriviti al camp</Link>
+        Non sei ancora iscritto? <Link to="/register">Iscriviti al camp</Link>
       </p>
     </main>
   );

@@ -70,7 +70,7 @@ describe("meals in the admin detail", () => {
         ? { body: detailFixture({}, { meals: [allowed[0]], allowed_meals: allowed }) }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const section = (await screen.findByRole("heading", { name: "Pasti ed esigenze alimentari" }))
       .parentElement as HTMLElement;
     expect(within(section).getByText(/Regime: vegano/)).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe("meals view", () => {
     expect(within(lunch).getByText("Ada Lovelace: Arachidi")).toBeInTheDocument();
     expect(within(lunch).getByRole("link", { name: "Bob Rossi" })).toHaveAttribute(
       "href",
-      "/admin/iscrizioni/8",
+      "/admin/registrations/8",
     );
   });
 
@@ -188,7 +188,7 @@ describe("activities in the admin detail", () => {
           }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     await userEvent.click(await screen.findByRole("button", { name: "Cambia le attività" }));
     const form = within(screen.getByRole("form", { name: "Scegli le attività" }));
     const hike = form.getByRole("checkbox", { name: /Escursione/ });
@@ -200,7 +200,7 @@ describe("activities in the admin detail", () => {
     expect(calls.find((c) => c.method === "PUT")?.body).toEqual({ activity_ids: [3], force: true });
     expect(screen.getByRole("link", { name: "Escursione (lun 13/07 mattina)" })).toHaveAttribute(
       "href",
-      "/admin/attivita/3",
+      "/admin/activities/3",
     );
   });
 });

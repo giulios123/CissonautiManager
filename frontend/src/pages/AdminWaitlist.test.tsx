@@ -53,7 +53,7 @@ describe("waitlist in the admin panel", () => {
       }
       return undefined;
     });
-    renderAt("/admin/giorni");
+    renderAt("/admin/days");
     const row = (await screen.findByText(/1\. Bea Neri/)).closest("tr") as HTMLElement;
     await userEvent.click(within(row).getByRole("button", { name: "Togli Bea Neri dalla lista" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Non parte nessuna email");
@@ -104,7 +104,7 @@ describe("waitlist in the admin panel", () => {
       }
       return undefined;
     });
-    renderAt("/admin/giorni");
+    renderAt("/admin/days");
     const row = (await screen.findByText(/invitato da Eve, da verificare/)).closest(
       "tr",
     ) as HTMLElement;
@@ -121,7 +121,7 @@ describe("waitlist in the admin panel", () => {
         ? { body: slotsView([{ ...bea, participant_id: 31, invited_by: null, plus_one: false }]) }
         : undefined,
     );
-    renderAt("/admin/giorni");
+    renderAt("/admin/days");
     await screen.findByText(/1\. Bea Neri/);
     expect(screen.queryByRole("checkbox", { name: "+1 verificato" })).not.toBeInTheDocument();
   });

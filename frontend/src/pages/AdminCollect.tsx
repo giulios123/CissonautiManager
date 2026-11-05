@@ -257,7 +257,7 @@ export function AdminCollect() {
                   return (
                     <tr key={row.booking_id}>
                       <th scope="row">
-                        <Link to={`/admin/iscrizioni/${row.booking_id}`}>{name}</Link>
+                        <Link to={`/admin/registrations/${row.booking_id}`}>{name}</Link>
                         <br />
                         <small>{row.email}</small>
                       </th>
@@ -293,7 +293,7 @@ export function AdminCollect() {
                             >
                               Segna pagato
                             </button>{" "}
-                            <Link to={`/admin/iscrizioni/${row.booking_id}`}>Altro importo</Link>
+                            <Link to={`/admin/registrations/${row.booking_id}`}>Altro importo</Link>
                           </>
                         )}
                         {errors[row.booking_id] && (

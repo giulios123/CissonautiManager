@@ -96,7 +96,7 @@ function BookingCard({
       {booking.status === "scaduta" && (
         <p>
           Il blocco è scaduto e i posti sono stati liberati.{" "}
-          <Link to="/iscrizione">Iscriviti di nuovo</Link>
+          <Link to="/register">Iscriviti di nuovo</Link>
         </p>
       )}
       {booking.status === "disdetta_richiesta" && (
@@ -107,7 +107,7 @@ function BookingCard({
       {booking.status === "rimborsata" && (
         <p>
           La disdetta è conclusa e il rimborso è stato gestito.{" "}
-          <Link to="/iscrizione">Iscriviti di nuovo</Link>
+          <Link to="/register">Iscriviti di nuovo</Link>
         </p>
       )}
       {(booking.editable || meals.length > 0) && (
@@ -286,12 +286,12 @@ export function Personal() {
   }, [reload]);
 
   if (state.status === "loading") return <main aria-busy="true">Caricamento…</main>;
-  if (state.status === "anonymous") return <Navigate to="/accedi" replace />;
+  if (state.status === "anonymous") return <Navigate to="/login" replace />;
   const { me } = state;
 
   async function logout() {
     await api("/api/auth/logout", { method: "POST" });
-    navigate("/accedi");
+    navigate("/login");
   }
 
   async function onCancelled(outcome: CancelOutcome) {
@@ -315,7 +315,7 @@ export function Personal() {
       {me.bookings.length === 0
         ? (me.waitlist ?? []).length === 0 && (
             <p>
-              Non hai ancora un&apos;iscrizione. <Link to="/iscrizione">Iscriviti al camp</Link>
+              Non hai ancora un&apos;iscrizione. <Link to="/register">Iscriviti al camp</Link>
             </p>
           )
         : me.bookings.map((booking) => (
@@ -331,7 +331,7 @@ export function Personal() {
       <Waitlist me={me} reload={reload} />
       <PasswordForm hasPassword={me.has_password} />
       <p>
-        <Link to="/guida">Come funziona: la guida</Link>
+        <Link to="/guide">Come funziona: la guida</Link>
       </p>
       <button type="button" className="secondary" onClick={logout}>
         Esci

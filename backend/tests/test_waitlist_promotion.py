@@ -159,7 +159,7 @@ def test_someone_only_on_the_list_gets_a_new_booking_with_the_texts_of_the_entry
     assert booking.privacy_document_id == entry.privacy_document_id
     assert booking.privacy_accepted_at == entry.privacy_accepted_at
     [email] = outbox.sent
-    assert "accedi/verifica?token=" in email.body
+    assert "login/verify?token=" in email.body
 
 
 def test_an_expired_booking_does_not_receive_the_slot(

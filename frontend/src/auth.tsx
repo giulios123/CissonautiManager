@@ -103,7 +103,7 @@ export function RequireLogin({
 }) {
   const state = useMe();
   if (state.status === "loading") return <main aria-busy="true">Caricamento…</main>;
-  if (state.status === "anonymous") return <Navigate to="/accedi" replace />;
+  if (state.status === "anonymous") return <Navigate to="/login" replace />;
   if (admin && state.me.role !== "admin") {
     return (
       <main>

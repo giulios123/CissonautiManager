@@ -55,7 +55,7 @@ def set_session_cookie(response: Response, settings: Settings, raw_session: str)
 
 def login_result(participant: Participant) -> LoginResult:
     is_admin = participant.role == ROLE_ADMIN
-    return LoginResult(role=participant.role, redirect="/admin" if is_admin else "/io")
+    return LoginResult(role=participant.role, redirect="/admin" if is_admin else "/me")
 
 
 @router.post("/magic-link")

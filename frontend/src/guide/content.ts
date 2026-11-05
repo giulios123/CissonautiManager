@@ -1,3 +1,4 @@
+import { ROUTES } from "../routes";
 export type GuideSection = { slug: string; title: string; body: string };
 
 /**
@@ -43,28 +44,28 @@ export async function loadAdminGuide(): Promise<GuideSection[]> {
 
 const ADMIN_PAGES: Record<string, string> = {
   "/admin": "persone",
-  "/admin/giorni": "giorni-e-slot",
-  "/admin/settimana": "settimana",
-  "/admin/pasti": "pasti",
-  "/admin/attivita": "attivita",
-  "/admin/contributi": "contributi",
+  "/admin/days": "giorni-e-slot",
+  "/admin/week": "settimana",
+  "/admin/meals": "pasti",
+  "/admin/activities": "attivita",
+  "/admin/contributions": "contributi",
   "/admin/report": "report",
-  "/admin/da-incassare": "da-incassare",
-  "/admin/da-verificare": "da-verificare",
-  "/admin/amministratori": "amministratori",
-  "/admin/impostazioni": "impostazioni",
+  "/admin/to-collect": "da-incassare",
+  "/admin/to-review": "da-verificare",
+  "/admin/admins": "amministratori",
+  "/admin/settings": "impostazioni",
 };
 
 /** The guide section that explains an admin page, so the help link opens the right place. */
 export function adminGuideSlug(pathname: string): string | undefined {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  if (/^\/admin\/iscrizioni\/[^/]+$/.test(path)) return "persone";
-  if (/^\/admin\/attivita\/[^/]+$/.test(path)) return "attivita";
+  if (/^\/admin\/registrations\/[^/]+$/.test(path)) return "persone";
+  if (/^\/admin\/activities\/[^/]+$/.test(path)) return "attivita";
   return ADMIN_PAGES[path];
 }
 
 /** Link to the admin guide, at the section of the current page when there is one. */
 export function adminGuideLink(pathname: string): string {
   const slug = adminGuideSlug(pathname);
-  return `/guida?scheda=organizzatori${slug ? `#${slug}` : ""}`;
+  return `${ROUTES.guide}?tab=organizers${slug ? `#${slug}` : ""}`;
 }

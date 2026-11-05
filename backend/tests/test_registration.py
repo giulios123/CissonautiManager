@@ -125,7 +125,7 @@ class TestRegistration:
         assert "CSC-" in message.body
         assert "11,00 €" in message.body
         assert "lun 13/07 mattina (09:00-13:00)" in message.body
-        assert "https://camp.example.org/accedi/verifica?token=" in message.body
+        assert "https://camp.example.org/login/verify?token=" in message.body
 
     def test_deadline_in_email_is_shown_in_rome_time(self, client, outbox, slot_ids):
         client.post("/api/public/registrations", json=payload([slot_ids[(d(13), "morning")]]))
@@ -134,7 +134,7 @@ class TestRegistration:
     def test_email_link_logs_the_participant_in(self, client, outbox, slot_ids):
         client.post("/api/public/registrations", json=payload([slot_ids[(d(13), "morning")]]))
         token = re.search(r"token=([\w-]+)", outbox.sent[0].body).group(1)
-        assert client.post("/api/auth/verify", json={"token": token}).json()["redirect"] == "/io"
+        assert client.post("/api/auth/verify", json={"token": token}).json()["redirect"] == "/me"
 
     def test_optional_fields_can_be_omitted(self, client, slot_ids):
         body = payload([slot_ids[(d(13), "morning")]])
@@ -308,13 +308,15 @@ class TestSameEmail:
 
 class TestEmbedding:
     def test_registration_page_can_be_framed_by_google_sites_only(self, client):
-        csp = client.get("/iscrizione").headers["content-security-policy"]
+        csp = client.get("/register").headers["content-security-policy"]
         assert csp == "frame-ancestors https://sites.google.com https://*.googleusercontent.com"
 
     def test_trailing_slash_is_treated_the_same(self, client):
-        assert "sites.google.com" in client.get("/iscrizione/").headers["content-security-policy"]
+        assert "sites.google.com" in client.get("/register/").headers["content-security-policy"]
+        # The Italian address redirects inside the frame, so it stays embeddable.
+        assert "sites.google.com" in client.get("/iscrizione").headers["content-security-policy"]
 
-    @pytest.mark.parametrize("path", ["/", "/accedi", "/admin", "/api/health", "/api/me"])
+    @pytest.mark.parametrize("path", ["/", "/login", "/admin", "/api/health", "/api/me"])
     def test_everything_else_cannot_be_framed_by_others(self, client, path):
         assert client.get(path).headers["content-security-policy"] == "frame-ancestors 'self'"
 

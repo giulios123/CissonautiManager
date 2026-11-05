@@ -30,17 +30,17 @@ describe("parseSections", () => {
 describe("admin guide links", () => {
   it.each([
     ["/admin", "persone"],
-    ["/admin/giorni", "giorni-e-slot"],
-    ["/admin/iscrizioni/12", "persone"],
-    ["/admin/attivita/3", "attivita"],
+    ["/admin/days", "giorni-e-slot"],
+    ["/admin/registrations/12", "persone"],
+    ["/admin/activities/3", "attivita"],
     ["/admin/report/", "report"],
   ])("%s opens the section %s", (path, slug) => {
     expect(adminGuideSlug(path)).toBe(slug);
-    expect(adminGuideLink(path)).toBe(`/guida?scheda=organizzatori#${slug}`);
+    expect(adminGuideLink(path)).toBe(`/guide?tab=organizers#${slug}`);
   });
 
   it("opens the guide without a section for an unknown page", () => {
-    expect(adminGuideLink("/admin/altro")).toBe("/guida?scheda=organizzatori");
+    expect(adminGuideLink("/admin/altro")).toBe("/guide?tab=organizers");
   });
 });
 
@@ -59,16 +59,16 @@ describe("admin guide", () => {
     const slugs = (await loadAdminGuide()).map((section) => section.slug);
     const pages = [
       "/admin",
-      "/admin/giorni",
-      "/admin/settimana",
-      "/admin/pasti",
-      "/admin/attivita",
-      "/admin/contributi",
+      "/admin/days",
+      "/admin/week",
+      "/admin/meals",
+      "/admin/activities",
+      "/admin/contributions",
       "/admin/report",
-      "/admin/da-incassare",
-      "/admin/da-verificare",
-      "/admin/amministratori",
-      "/admin/impostazioni",
+      "/admin/to-collect",
+      "/admin/to-review",
+      "/admin/admins",
+      "/admin/settings",
     ];
     for (const page of pages) expect(slugs).toContain(adminGuideSlug(page));
   });

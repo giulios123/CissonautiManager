@@ -417,7 +417,7 @@ def _notify(
         raw = auth_service.create_magic_link_token(db, participant, now)
         link = auth_service.magic_link_url(settings, raw)
     else:
-        link = f"{settings.app_base_url.rstrip('/')}/accedi"
+        link = f"{settings.app_base_url.rstrip('/')}/login"
     sender.send(
         waitlist_promoted_email(
             booking,

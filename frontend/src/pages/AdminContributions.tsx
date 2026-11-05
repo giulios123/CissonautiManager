@@ -79,7 +79,7 @@ export function AdminContributions() {
                     </th>
                     <td>{KIND_LABELS[row.kind]}</td>
                     <td>
-                      <Link to={`/admin/iscrizioni/${row.booking_id}`}>
+                      <Link to={`/admin/registrations/${row.booking_id}`}>
                         {row.first_name} {row.last_name}
                       </Link>
                       {!row.active && (

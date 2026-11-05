@@ -3,22 +3,22 @@ import { useLocation } from "react-router-dom";
 import { EVENT_NAME } from "./SiteHeader";
 
 const TITLES: Record<string, string> = {
-  "/iscrizione": "Iscrizione",
-  "/accedi": "Accedi",
-  "/accedi/verifica": "Entra nella tua pagina",
-  "/io": "La tua iscrizione",
-  "/guida": "Guida",
+  "/register": "Iscrizione",
+  "/login": "Accedi",
+  "/login/verify": "Entra nella tua pagina",
+  "/me": "La tua iscrizione",
+  "/guide": "Guida",
   "/admin": "Persone",
-  "/admin/giorni": "Giorni e slot",
-  "/admin/settimana": "Settimana",
-  "/admin/pasti": "Pasti",
-  "/admin/attivita": "Attività",
-  "/admin/contributi": "Contributi",
+  "/admin/days": "Giorni e slot",
+  "/admin/week": "Settimana",
+  "/admin/meals": "Pasti",
+  "/admin/activities": "Attività",
+  "/admin/contributions": "Contributi",
   "/admin/report": "Report",
-  "/admin/da-incassare": "Da incassare",
-  "/admin/da-verificare": "Pagamenti da verificare",
-  "/admin/amministratori": "Admin",
-  "/admin/impostazioni": "Impostazioni",
+  "/admin/to-collect": "Da incassare",
+  "/admin/to-review": "Pagamenti da verificare",
+  "/admin/admins": "Admin",
+  "/admin/settings": "Impostazioni",
 };
 
 /** The title of the page at a path, so that tabs, history and screen readers tell pages apart. */
@@ -26,8 +26,8 @@ export function titleFor(pathname: string): string {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   if (path === "/") return EVENT_NAME;
   let page = TITLES[path];
-  if (!page && /^\/admin\/iscrizioni\/[^/]+$/.test(path)) page = "Scheda iscrizione";
-  if (!page && /^\/admin\/attivita\/[^/]+$/.test(path)) page = "Attività";
+  if (!page && /^\/admin\/registrations\/[^/]+$/.test(path)) page = "Scheda iscrizione";
+  if (!page && /^\/admin\/activities\/[^/]+$/.test(path)) page = "Attività";
   return `${page ?? "Pagina non trovata"} · ${EVENT_NAME}`;
 }
 

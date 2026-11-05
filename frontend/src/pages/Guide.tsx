@@ -9,9 +9,9 @@ type Release = { version: string; date: string | null; features: string[]; fixes
 type Version = { version: string; built_at: string | null };
 
 const TABS = [
-  { id: "organizzatori", label: "Organizzatori" },
-  { id: "partecipanti", label: "Partecipanti" },
-  { id: "novita", label: "Novità" },
+  { id: "organizers", label: "Organizzatori" },
+  { id: "participants", label: "Partecipanti" },
+  { id: "news", label: "Novità" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -122,7 +122,7 @@ function VersionLine() {
 
 function AdminGuide({ initial }: { initial: TabId }) {
   const [params, setParams] = useSearchParams();
-  const requested = params.get("scheda");
+  const requested = params.get("tab");
   const tab: TabId = TABS.some((t) => t.id === requested) ? (requested as TabId) : initial;
   const [adminSections, setAdminSections] = useState<GuideSection[] | null>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -133,13 +133,13 @@ function AdminGuide({ initial }: { initial: TabId }) {
   }, []);
 
   // The sections appear after the page has loaded, so the browser cannot scroll to the anchor.
-  const ready = tab === "organizzatori" ? adminSections !== null : true;
+  const ready = tab === "organizers" ? adminSections !== null : true;
   useEffect(() => {
     if (ready && hash) document.getElementById(hash.slice(1))?.scrollIntoView?.();
   }, [ready, hash, tab]);
 
   function select(id: TabId) {
-    setParams({ scheda: id }, { replace: true });
+    setParams({ tab: id }, { replace: true });
   }
 
   function onKeyDown(event: KeyboardEvent, index: number) {
@@ -183,13 +183,13 @@ function AdminGuide({ initial }: { initial: TabId }) {
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "organizzatori" &&
+        {tab === "organizers" &&
           (adminSections ? (
             <Sections sections={adminSections} />
           ) : (
             <p aria-busy="true">Caricamento…</p>
           ))}
-        {tab === "partecipanti" && (
+        {tab === "participants" && (
           <>
             <p className="lead">
               È la guida che vedono i partecipanti: utile per aiutare chi te la chiede.
@@ -197,7 +197,7 @@ function AdminGuide({ initial }: { initial: TabId }) {
             <Sections sections={participantGuide} />
           </>
         )}
-        {tab === "novita" && <ReleaseNotes />}
+        {tab === "news" && <ReleaseNotes />}
       </div>
     </>
   );
@@ -214,18 +214,18 @@ export function Guide() {
   }, [state, hash]);
 
   if (state.status === "loading") return <main aria-busy="true">Caricamento…</main>;
-  if (state.status === "anonymous") return <Navigate to="/accedi" replace />;
+  if (state.status === "anonymous") return <Navigate to="/login" replace />;
   const isAdmin = state.me.role === "admin";
 
   return (
     <main className={isAdmin ? "wide" : undefined}>
       <h1>Guida</h1>
       <p>
-        <Link to={isAdmin ? "/admin" : "/io"}>
+        <Link to={isAdmin ? "/admin" : "/me"}>
           {isAdmin ? "Torna al pannello organizzatori" : "Torna alla tua iscrizione"}
         </Link>
       </p>
-      {isAdmin ? <AdminGuide initial="organizzatori" /> : <Sections sections={participantGuide} />}
+      {isAdmin ? <AdminGuide initial="organizers" /> : <Sections sections={participantGuide} />}
       <VersionLine />
     </main>
   );
