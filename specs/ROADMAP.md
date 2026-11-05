@@ -56,3 +56,6 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Limite di richieste (rate limit) su richiesta del magic link e sul login con password, per evitare invii email ripetuti e tentativi a raffica.
 - Canale "contanti/altro" per registrare pagamenti fuori dai quattro canali previsti.
 - Se la quota giornaliera debba contare un giorno con la sola sera (per ora sì).
+- Modifica manuale dell'importo dovuto da parte dell'admin (sconti, organizzatori gratis), emersa nella spec dell'MVP 3.
+- Dominio proprio per le email (oggi dominio gestito Azure) se il recapito o i limiti di invio danno problemi.
+- Passaggio dell'invio email a una coda se il volume cresce (oggi l'invio è sincrono dopo il commit).

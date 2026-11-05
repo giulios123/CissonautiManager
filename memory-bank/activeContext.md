@@ -2,25 +2,33 @@
 
 ## Ora
 
-MVP 1, Parte 1a completata sul branch `feat/mvp-01-iscrizione-base` (task 1-12 spuntati). Backend 173 test, frontend 33 test, lint verdi, provato end to end in locale.
+MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. Il task 14 è validato: deploy Azure riuscito e login funzionante. Spec degli MVP 2 e 3 scritte (fase B1), in attesa della conferma del maintainer.
 
 ## Prossimo passo
 
-Task 13 (slot serale) fatto. Task 14 scritto (Bicep, workflow, README in `infra/`) ma da validare con un primo deploy: servono i passi di `infra/README.md` e i dati Azure. Il task 15 (verifica in Google Sites e chiusura) è in attesa: si sblocca dopo alcuni MVP. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
+1. Conferma delle spec in `specs/mvp-02-pagina-personale/` e `specs/mvp-03-pannello-admin/` (domande aperte sotto).
+2. MVP 2 (10 task), branch `feat/mvp-02-pagina-personale`.
+3. MVP 3 (13 task), branch `feat/mvp-03-pannello-admin`, dopo la chiusura dell'MVP 2.
 
-## Dubbi aperti
+## Scelte già prese per le spec
 
-- La CI su SQL Server non è mai girata: al primo push può mostrare differenze tra SQLite e SQL Server da correggere.
-- Il Dockerfile non è stato costruito in sessione (nessun daemon Docker).
-- Per la 1b servono: abbonamento e resource group Azure, nome dell'app, dominio (o quello di default di Container Apps), mittente email per l'MVP 2.
-- Chiarito: due slot diurni più la sera come terzo slot (default 19-24, senza limite).
-- Da chiarire prima dell'MVP 5: serve la presenza di giorno per il pranzo?
-- Conferma pagamento via email già nell'MVP 1 (assunto sì, non era stato risposto).
-- In setup (task 14): ricordare al maintainer che la Container App deve scalare a zero. Il database Basic non si mette in pausa.
-- Esiti della call decisi (D-008): due promemoria, magic link senza codice numerico, pranzi nell'app, MVP 7 ridotto, stack Azure.
-- Deciso (D-009): la sera dell'intero giorno è una regola derivata, non si aggiunge alle prenotazioni.
-- Task 14: Bicep, workflow di deploy e Dockerfile (migrazioni all'avvio) non sono mai stati eseguiti. Da verificare: `az bicep build`, `what-if`, build dell'immagine, primo deploy, `minReplicas: 0` e l'avvio da zero.
+- Promemoria da un Container Apps Job orario (non da GitHub Actions).
+- Email da dominio gestito Azure (ACS), con passaggio a dominio proprio come evoluzione.
+- Prenotazione confermata che aggiunge giorni: resta confermata, il saldo mostra la differenza.
+- MVP 3 resta unico (13 task, sopra la soglia di circa 10): punto di taglio naturale dopo il task 7.
+
+## Domande aperte
+
+- MVP 2: una prenotazione senza pagamenti che si disdice passa comunque a `disdetta_richiesta` (e l'admin la chiude) o a uno stato finale diretto? Nella spec passa a `disdetta_richiesta`.
+- MVP 2: va bene bloccare la modifica degli slot di giorni già passati?
+- MVP 3: l'admin può modificare a mano l'importo dovuto (sconti, organizzatori gratis)? Per ora nel Backlog.
+- MVP 3: la proroga della scadenza del blocco resta qui?
+- Le sezioni «Modifiche a domain.md» delle due spec (4 voci per l'MVP 2, 6 per l'MVP 3) vanno approvate prima di toccare `domain.md`.
+
+## Dubbi aperti ereditati
+
+- Task 15: verifica dell'embed reale in Google Sites e chiusura dell'MVP 1.
 - Finché non c'è l'email reale (MVP 2) in produzione i magic link compaiono solo nei log.
-- Deploy su Azure riuscito ma l'app non parte: il driver ODBC non caricava nel container (base Debian 13 contro repository Debian 12). Corretto nel Dockerfile con base Debian 12 e controllo in build, da verificare dopo il merge.
-- Nome con due s (D-012): testi corretti; restano da decidere i nomi tecnici su Azure.
-- Risorse Azure da ricreare con i nomi a due s (D-013): eliminare `cisonauti-rg` e la vecchia identità, rilanciare `bootstrap.sh`, poi merge e deploy. L'indirizzo dell'app cambia.
+- Il database Basic non si mette in pausa; la Container App deve restare a `minReplicas: 0`.
+- Da chiarire prima dell'MVP 5: serve la presenza di giorno per il pranzo?
+- Esiti della call (D-008), sera derivata (D-009), nome con due s (D-012) e risorse ricreate (D-013): già registrati in `decisions.md`.
