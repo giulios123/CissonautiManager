@@ -14,7 +14,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test: dopo la riattivazione i promemoria possono ripartire.
 - [x] **6. Email reali**: `AcsEmailSender`, `build_email_sender` con `acs`, testi in `app/email/templates.py`, errori solo loggati.
   Test con client finto: invio corretto, errore non propagato, avvio rifiutato senza stringa di connessione.
-- [ ] **7. Job promemoria**: `app/jobs/send_reminders.py`.
+- [x] **7. Job promemoria**: `app/jobs/send_reminders.py`.
   Test: mid e final una sola volta; rilancio idempotente; niente su confermata, scaduta, disdetta, coperta; in ritardo solo il finale; riattivata riparte; riepilogo stampato.
 - [ ] **8. Interfaccia `/io`**: modifica slot con anteprima, saldo o credito, disdetta con dialogo di conferma.
   Test vitest: anteprima e differenza; slot pieno non selezionabile; slot passati disabilitati; dialogo (apre, annulla, conferma); errore 409 mostrato.

@@ -97,3 +97,38 @@ def payment_confirmation_email(booking: Booking, paid_cents: int) -> EmailMessag
             f"I tuoi slot:\n{slots}\n\nCi vediamo presto!\n"
         ),
     )
+
+
+def reminder_email(
+    booking: Booking,
+    kind: str,
+    channels: list[PaymentChannel],
+    balance_cents: int,
+    login_url: str,
+) -> EmailMessage:
+    """Payment reminder. `kind` is "mid" (half of the hold) or "final" (24 hours before)."""
+    participant = booking.participant
+    deadline = format_deadline(booking.hold_expires_at)
+    if kind == "final":
+        subject = "Ultimo promemoria: il tuo posto al Cissonauti Summer Camp sta per liberarsi"
+        intro = f"mancano meno di 24 ore: il tuo posto è bloccato fino al {deadline}."
+    else:
+        subject = "Promemoria: il tuo posto al Cissonauti Summer Camp"
+        intro = f"ti ricordiamo che il tuo posto è bloccato fino al {deadline}."
+    pay = "\n".join(f"- {c.label}: {c.instructions}".rstrip(": ") for c in channels) or (
+        "- Ti scriveremo le istruzioni appena possibile."
+    )
+    return EmailMessage(
+        to=participant.email,
+        subject=subject,
+        body=(
+            f"Ciao {participant.first_name},\n\n"
+            f"{intro} Senza pagamento entro quella data il posto si libera.\n\n"
+            f"Ancora da versare: {format_euro(balance_cents)}\n"
+            f"Causale: {participant.personal_code}\n\n"
+            f"Come pagare:\n{pay}\n\n"
+            f"Per vedere o modificare la tua iscrizione: {login_url}\n\n"
+            "Se hai già pagato, ignora questo messaggio: registreremo il pagamento appena "
+            "possibile.\n"
+        ),
+    )
