@@ -18,18 +18,18 @@ Un solo gruppo di risorse con: Container App (si spegne quando nessuno la usa), 
 
 Servono Azure CLI e i permessi sull'abbonamento.
 
-Registra i provider di risorse che il Bicep usa. L'identità di deploy ha permessi solo sul gruppo di risorse e non può farlo da sola; `bootstrap.sh` lo fa già, a mano serve:
+```bash
+az login
+az account set --subscription <ID_ABBONAMENTO>
+az group create --name cissonauti-rg --location westeurope
+```
+
+Poi, **nello stesso abbonamento appena selezionato**, registra i provider di risorse che il Bicep usa. L'identità di deploy ha permessi solo sul gruppo di risorse e non può farlo da sola (`bootstrap.sh` lo fa già):
 
 ```bash
 for provider in Microsoft.App Microsoft.Communication Microsoft.OperationalInsights Microsoft.Sql; do
   az provider register --namespace "$provider" --wait
 done
-```
-
-```bash
-az login
-az account set --subscription <ID_ABBONAMENTO>
-az group create --name cissonauti-rg --location westeurope
 ```
 
 Utenza per GitHub Actions, con login senza password (OIDC) e permessi solo su quel gruppo:
