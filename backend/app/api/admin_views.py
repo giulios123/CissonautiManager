@@ -10,10 +10,12 @@ from sqlalchemy.orm import Session
 from app.csv_export import Amount, Cell, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_now, require_admin
+from app.domain.meals import diet_counts
 from app.domain.presence import presence_by_slot, week_summary
+from app.models import MEAL_DINNER, MEAL_LUNCH
 from app.services import views as views_service
 from app.services import waitlist as waitlist_service
-from app.timefmt import period_label, status_label
+from app.timefmt import meal_label, period_label, status_label
 
 router = APIRouter(prefix="/api/admin/views", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -157,6 +159,92 @@ def slots_view(
         ]
         return csv_response(csv_filename("giorni-slot", now), header, rows)
     return SlotsViewOut(days=days)
+
+
+class MealPerson(BaseModel):
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    diet: str | None
+    allergies: str | None
+
+
+class MealOut(BaseModel):
+    kind: str
+    count: int
+    diets: dict[str, int]
+    people: list[MealPerson]
+
+
+class MealDayOut(BaseModel):
+    date: date
+    meals: list[MealOut]
+
+
+class MealsViewOut(BaseModel):
+    days: list[MealDayOut]
+
+
+DIET_LABELS = {"omnivore": "Onnivoro", "vegetarian": "Vegetariano", "vegan": "Vegano"}
+
+
+@router.get("/meals", response_model=None)
+def meals_view(
+    fmt: Format = Query(default="json", alias="format"),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> MealsViewOut | Response:
+    """Who eats when, with diets and allergies. Contains health data: admins only."""
+    data = views_service.load_meals(db, now)
+    if fmt == "csv":
+        header = [
+            "Giorno",
+            "Pasto",
+            "Nome",
+            "Cognome",
+            "Email",
+            "Regime",
+            "Allergie e intolleranze",
+        ]
+        rows = [
+            [
+                r.day,
+                meal_label(r.kind),
+                r.first_name,
+                r.last_name,
+                r.email,
+                DIET_LABELS.get(r.diet or "", "Non indicato"),
+                r.allergies,
+            ]
+            for r in data.rows
+        ]
+        return csv_response(csv_filename("pasti", now), header, rows)
+    days = []
+    for day in data.days:
+        meals = []
+        for kind in (MEAL_LUNCH, MEAL_DINNER):
+            people = [r for r in data.rows if r.day == day and r.kind == kind]
+            meals.append(
+                MealOut(
+                    kind=kind,
+                    count=len(people),
+                    diets=diet_counts(r.diet for r in people),
+                    people=[
+                        MealPerson(
+                            booking_id=r.booking_id,
+                            first_name=r.first_name,
+                            last_name=r.last_name,
+                            email=r.email,
+                            diet=r.diet,
+                            allergies=r.allergies,
+                        )
+                        for r in people
+                    ],
+                )
+            )
+        days.append(MealDayOut(date=day, meals=meals))
+    return MealsViewOut(days=days)
 
 
 class WeekDayOut(BaseModel):

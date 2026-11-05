@@ -87,3 +87,67 @@ describe("meals in the admin detail", () => {
     });
   });
 });
+
+describe("meals view", () => {
+  const view = {
+    days: [
+      {
+        date: "2026-07-13",
+        meals: [
+          {
+            kind: "lunch",
+            count: 2,
+            diets: { omnivore: 1, vegetarian: 0, vegan: 1, none: 0 },
+            people: [
+              {
+                booking_id: 7,
+                first_name: "Ada",
+                last_name: "Lovelace",
+                diet: "vegan",
+                allergies: "Arachidi",
+              },
+              {
+                booking_id: 8,
+                first_name: "Bob",
+                last_name: "Rossi",
+                diet: "omnivore",
+                allergies: null,
+              },
+            ],
+          },
+          {
+            kind: "dinner",
+            count: 0,
+            diets: { omnivore: 0, vegetarian: 0, vegan: 0, none: 0 },
+            people: [],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("shows counts, diets and allergies per meal", async () => {
+    stubAdminApi((call) => (call.url === "/api/admin/views/meals" ? { body: view } : undefined));
+    renderAt("/admin/pasti");
+    const lunch = (await screen.findByRole("rowheader", { name: "Pranzo" })).closest(
+      "tr",
+    ) as HTMLElement;
+    expect(within(lunch).getByText("1 onnivori, 1 vegani")).toBeInTheDocument();
+    expect(within(lunch).getByText("Ada Lovelace: Arachidi")).toBeInTheDocument();
+    expect(within(lunch).getByRole("link", { name: "Bob Rossi" })).toHaveAttribute(
+      "href",
+      "/admin/iscrizioni/8",
+    );
+  });
+
+  it("asks before downloading the CSV with health data", async () => {
+    stubAdminApi((call) => (call.url === "/api/admin/views/meals" ? { body: view } : undefined));
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal("confirm", confirm);
+    renderAt("/admin/pasti");
+    const link = await screen.findByRole("link", { name: "Scarica CSV" });
+    expect(link).toHaveAttribute("href", "/api/admin/views/meals?format=csv");
+    await userEvent.click(link);
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("dati sanitari"));
+  });
+});

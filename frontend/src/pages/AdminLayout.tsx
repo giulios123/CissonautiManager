@@ -18,6 +18,7 @@ export function AdminLayout() {
           </NavLink>
           <NavLink to="/admin/giorni">Giorni e slot</NavLink>
           <NavLink to="/admin/settimana">Settimana</NavLink>
+          <NavLink to="/admin/pasti">Pasti</NavLink>
           <NavLink to="/admin/da-verificare">Da verificare</NavLink>
           <NavLink to="/admin/amministratori">Admin</NavLink>
           <NavLink to="/admin/impostazioni">Impostazioni</NavLink>
