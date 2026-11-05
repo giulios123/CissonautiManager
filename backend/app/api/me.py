@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -11,15 +11,25 @@ from app.api.schemas import BookingView, booking_view
 from app.db import get_db
 from app.deps import current_user, get_email_sender, get_now
 from app.email import EmailSender
-from app.models import Booking, Participant
+from app.models import Booking, Participant, WaitlistEntry
 from app.services import booking_changes
 from app.services import edition as edition_service
 from app.services import registration as registration_service
+from app.services import waitlist as waitlist_service
 from app.services.passwords import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
 from app.services.registration import InvalidSlots, SlotsFull
 from app.timefmt import format_slot
 
 router = APIRouter(prefix="/api", tags=["me"])
+
+
+class WaitlistView(BaseModel):
+    id: int
+    slot_id: int
+    date: date
+    period: str
+    label: str
+    position: int
 
 
 class MeOut(BaseModel):
@@ -32,6 +42,7 @@ class MeOut(BaseModel):
     has_password: bool
     bookings: list[BookingView]
     payment_channels: list[ChannelPublic]
+    waitlist: list[WaitlistView] = []
 
 
 class PasswordIn(BaseModel):
@@ -47,7 +58,11 @@ def get_me(
     edition = edition_service.get_active_edition(db)
     bookings: list[Booking] = []
     channels = []
+    waitlist: list[WaitlistView] = []
     if edition is not None:
+        waitlist = [
+            _waitlist_view(db, entry) for entry in waitlist_service.entries_of(db, user, edition)
+        ]
         bookings = list(
             db.scalars(
                 select(Booking)
@@ -69,7 +84,62 @@ def get_me(
         has_password=user.password_hash is not None,
         bookings=[booking_view(b, now) for b in bookings],
         payment_channels=channels,
+        waitlist=waitlist,
     )
+
+
+def _waitlist_view(db: Session, entry: WaitlistEntry) -> WaitlistView:
+    slot = entry.slot
+    return WaitlistView(
+        id=entry.id,
+        slot_id=slot.id,
+        date=slot.date,
+        period=slot.period,
+        label=format_slot(slot.date, slot.period, slot.start_time, slot.end_time),
+        position=waitlist_service.position_of(db, entry),
+    )
+
+
+class WaitlistIn(BaseModel):
+    slot_id: int
+
+
+@router.post("/me/waitlist", status_code=201)
+def join_waitlist(
+    body: WaitlistIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> WaitlistView:
+    try:
+        entry = waitlist_service.join(db, user, body.slot_id, now)
+    except waitlist_service.EntryNotFound as exc:
+        raise HTTPException(status_code=404, detail="Slot non trovato") from exc
+    except waitlist_service.NoLegalAcceptance as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Prima iscriviti al camp dal modulo di iscrizione"
+        ) from exc
+    except waitlist_service.WaitlistRefused as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail=waitlist_service.REFUSAL_MESSAGES[exc.reason]
+        ) from exc
+    db.commit()
+    return _waitlist_view(db, entry)
+
+
+@router.delete("/me/waitlist/{entry_id}", status_code=204)
+def leave_waitlist(
+    entry_id: int,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> None:
+    try:
+        waitlist_service.leave(db, user, entry_id, now)
+    except waitlist_service.EntryNotFound as exc:
+        raise HTTPException(status_code=404, detail="Non risulti in questa lista") from exc
 
 
 @router.put("/me/password", status_code=204)

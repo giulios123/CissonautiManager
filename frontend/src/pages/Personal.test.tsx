@@ -179,11 +179,11 @@ describe("changing slots", () => {
     const form = await openEditor();
     const [, , tuesday] = form.getAllByRole("group");
     await userEvent.click(within(tuesday).getByRole("checkbox"));
+    const editionLoads = () => calls.filter((call) => call.url === "/api/public/edition").length;
+    const before = editionLoads();
     await userEvent.click(form.getByRole("button", { name: "Salva gli slot" }));
     expect(await form.findByRole("alert")).toHaveTextContent("al completo");
-    await waitFor(() =>
-      expect(calls.filter((call) => call.url === "/api/public/edition")).toHaveLength(2),
-    );
+    await waitFor(() => expect(editionLoads()).toBe(before + 1));
   });
 
   it("does not offer the editor on a booking that can no longer change", async () => {
@@ -334,5 +334,60 @@ describe("seats after saving", () => {
     const morning = within(monday).getByRole("checkbox", { name: /Mattina/ });
     expect(morning).toBeEnabled();
     expect(morning).not.toBeChecked();
+  });
+});
+
+describe("waitlist", () => {
+  const withList = {
+    ...EDITION,
+    days: EDITION.days.map((day) => ({
+      ...day,
+      slots: day.slots.map((s) => (s.id === 2 ? { ...s, waitlist_free: 2 } : s)),
+    })),
+  };
+  const entry = {
+    id: 9,
+    slot_id: 2,
+    date: "2026-07-13",
+    period: "afternoon",
+    label: "lun 13/07 pomeriggio (14:00-18:00)",
+    position: 2,
+  };
+
+  it("offers the full slots with a waitlist and joins one", async () => {
+    const state = { me: me([booking()]) };
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: state.me };
+      if (url === "/api/public/edition") return { body: withList };
+      if (url === "/api/me/waitlist" && init?.method === "POST") {
+        state.me = { ...state.me, waitlist: [entry] };
+        return { status: 201, body: entry };
+      }
+      return { status: 404, body: {} };
+    });
+    const list = await screen.findByRole("list", { name: "Slot pieni con lista aperta" });
+    // Slot 1 is full but mine: it is not offered.
+    expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+    await userEvent.click(within(list).getByRole("button", { name: "Mettiti in lista" }));
+    expect(await screen.findByText(/2° in lista/)).toBeInTheDocument();
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ slot_id: 2 });
+    expect(screen.getByRole("status")).toHaveTextContent("Sei in lista d'attesa.");
+  });
+
+  it("shows only the waitlist to someone without a booking, with nothing to pay", async () => {
+    const calls = openAt((url, init) => {
+      if (url === "/api/me") return { body: { ...me([]), waitlist: [entry] } };
+      if (url === "/api/public/edition") return { body: withList };
+      if (url.startsWith("/api/me/waitlist/") && init?.method === "DELETE")
+        return { status: 204, body: null };
+      return { status: 404, body: {} };
+    });
+    expect(await screen.findByText(/2° in lista/)).toBeInTheDocument();
+    expect(screen.getByText(/non devi pagare nulla/)).toBeInTheDocument();
+    expect(screen.queryByText(/Non hai ancora un'iscrizione/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Esci dalla lista" }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.method === "DELETE" && c.url === "/api/me/waitlist/9")).toBe(true),
+    );
   });
 });

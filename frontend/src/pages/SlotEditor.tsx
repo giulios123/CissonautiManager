@@ -1,7 +1,16 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView } from "../auth";
-import { feePreview, formatDay, hhmm, isFull, periodLabel, seatsLabel, type Day } from "../booking";
+import {
+  canJoinWaitlist,
+  feePreview,
+  formatDay,
+  hhmm,
+  isFull,
+  periodLabel,
+  seatsLabel,
+  type Day,
+} from "../booking";
 import { formatEuro } from "../money";
 
 type PublicEdition = {
@@ -91,7 +100,9 @@ export function SlotEditor({
               ? "giorno passato"
               : isFull(slot) && mine
                 ? "il tuo posto"
-                : seatsLabel(slot);
+                : canJoinWaitlist(slot)
+                  ? "completo, puoi metterti in lista d'attesa"
+                  : seatsLabel(slot);
             return (
               <label className="check" key={slot.id}>
                 <input

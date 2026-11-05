@@ -8,7 +8,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: upgrade e downgrade da zero; default 20 sulle edizioni esistenti.
 - [x] **2. Regole pure**: `waitlist_limit`, `can_join`, `queue`, `position`, `hold_after_promotion`, `promotion_kind`.
   Test: 25 al 20% fa 5, 3 al 20% fa 0, sera senza lista; ogni motivo di rifiuto di `can_join`; ordine per arrivo a parità di orario; la scadenza non si accorcia mai; giorno passato rifiutato.
-- [ ] **3. Lista dalla pagina personale**: servizio `join`/`leave`, `POST` e `DELETE /api/me/waitlist`, `GET /api/me` con posizione, sezione nella pagina.
+- [x] **3. Lista dalla pagina personale**: servizio `join`/`leave`, `POST` e `DELETE /api/me/waitlist`, `GET /api/me` con posizione, sezione nella pagina.
   Test: ingresso con slot pieno e lista aperta; rifiuto con lista completa, slot libero, slot già prenotato, doppia voce; uscita che fa salire gli altri; pagina con sole voci in lista.
 - [ ] **4. Lista dal modulo pubblico**: `waitlist_slot_ids` in `register`, persona senza prenotazione con testi legali sulla voce, email, riepilogo nel modulo.
   Test: slot misti (prenotazione più voci); soli slot in lista (nessuna `Booking`, testi salvati, magic link inviato); lista riempita o slot liberato nel frattempo (nessun salvataggio); persona già in lista trattata come D-005.

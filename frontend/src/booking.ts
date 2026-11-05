@@ -8,6 +8,8 @@ export type SlotInfo = {
   capacity: number | null;
   // null means no limit (the evening)
   available: number | null;
+  // Places left on the waitlist of a full slot; null when it is not full or has no list.
+  waitlist_free?: number | null;
 };
 // `past` is sent by the API: the day is over (Europe/Rome) and its slots can no longer change.
 export type Day = { date: string; past?: boolean; slots: SlotInfo[] };
@@ -67,6 +69,8 @@ export const seatsLabel = (slot: SlotInfo) =>
     : slot.available < 1
       ? "completo"
       : `${slot.available} posti liberi`;
+export const canJoinWaitlist = (slot: SlotInfo) =>
+  isFull(slot) && slot.waitlist_free != null && slot.waitlist_free > 0;
 export const hhmm = (time: string) => time.slice(0, 5);
 
 const STATUS_LABELS: Record<string, string> = {

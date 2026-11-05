@@ -198,3 +198,47 @@ def admin_client(app, make_participant) -> TestClient:
 def slot_ids(db, edition):
     """Slot ids keyed by (date, period) for the 13-17 July edition."""
     return {(s.date, s.period): s.id for s in db.scalars(select(Slot))}
+
+
+@pytest.fixture
+def fill_slot(db, make_participant, make_booking):
+    """Shrink a slot to `capacity` seats and fill them with bookings of other people.
+
+    With the default 10 seats, the 20% waitlist has 2 places."""
+    counter = iter(range(1, 1000))
+
+    def _fill(slot, capacity=10, status=STATUS_PENDING) -> list[Booking]:
+        slot.capacity = capacity
+        db.commit()
+        bookings = []
+        for _ in range(capacity):
+            n = next(counter)
+            other = make_participant(f"filler{n}@example.com", first_name=f"Filler{n}")
+            bookings.append(make_booking(other, [slot], status=status))
+        return bookings
+
+    return _fill
+
+
+@pytest.fixture
+def add_entry(db, edition):
+    """Put someone on a slot's waitlist directly in the database."""
+    from app.models import WaitlistEntry
+
+    def _add(slot, participant, at) -> "WaitlistEntry":
+        privacy = edition_service.latest_legal_document(db, edition, "privacy")
+        disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
+        entry = WaitlistEntry(
+            slot_id=slot.id,
+            participant_id=participant.id,
+            created_at=at,
+            privacy_document_id=privacy.id,
+            privacy_accepted_at=at,
+            disclaimer_document_id=disclaimer.id,
+            disclaimer_accepted_at=at,
+        )
+        db.add(entry)
+        db.commit()
+        return entry
+
+    return _add

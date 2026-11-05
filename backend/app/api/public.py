@@ -16,6 +16,7 @@ from app.email import EmailSender
 from app.models import slot_sort_key
 from app.services import edition as edition_service
 from app.services import registration as registration_service
+from app.services import waitlist as waitlist_service
 from app.services.seats import expire_overdue, free_by_slot
 from app.timefmt import format_slot
 
@@ -31,6 +32,8 @@ class SlotAvailability(BaseModel):
     end_time: time
     capacity: int | None
     available: int | None
+    # Places left on the waitlist of a full slot; None when the slot is not full or has no list.
+    waitlist_free: int | None = None
 
 
 class DayOut(BaseModel):
@@ -130,6 +133,7 @@ def get_public_edition(
     db.commit()
     slots = sorted(edition.slots, key=slot_sort_key)
     free = free_by_slot(db, slots, now)
+    waitlist_free = waitlist_service.waitlist_availability(db, edition, slots, free, now)
     days = [
         DayOut(
             date=day,
@@ -142,6 +146,7 @@ def get_public_edition(
                     end_time=s.end_time,
                     capacity=s.capacity,
                     available=free[s.id],
+                    waitlist_free=waitlist_free[s.id],
                 )
                 for s in group
             ],

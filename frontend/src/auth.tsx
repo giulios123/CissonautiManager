@@ -23,6 +23,15 @@ export type BookingView = {
   }[];
 };
 
+export type WaitlistItem = {
+  id: number;
+  slot_id: number;
+  date: string;
+  period: string;
+  label: string;
+  position: number;
+};
+
 export type Me = {
   id: number;
   first_name: string;
@@ -33,6 +42,7 @@ export type Me = {
   has_password: boolean;
   bookings: BookingView[];
   payment_channels: { code: string; label: string; instructions: string }[];
+  waitlist?: WaitlistItem[];
 };
 
 type MeState = { status: "loading" } | { status: "anonymous" } | { status: "user"; me: Me };

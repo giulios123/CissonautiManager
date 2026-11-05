@@ -6,6 +6,7 @@ import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
 import { SlotEditor } from "./SlotEditor";
+import { Waitlist } from "./Waitlist";
 
 type State = { status: "loading" } | { status: "anonymous" } | { status: "ready"; me: Me };
 
@@ -229,21 +230,22 @@ export function Personal() {
           <Link to="/admin">Vai al pannello organizzatori</Link>
         </p>
       )}
-      {me.bookings.length === 0 ? (
-        <p>
-          Non hai ancora un&apos;iscrizione. <Link to="/iscrizione">Iscriviti al camp</Link>
-        </p>
-      ) : (
-        me.bookings.map((booking) => (
-          <BookingCard
-            key={booking.id}
-            booking={booking}
-            me={me}
-            reload={reload}
-            onCancelled={onCancelled}
-          />
-        ))
-      )}
+      {me.bookings.length === 0
+        ? (me.waitlist ?? []).length === 0 && (
+            <p>
+              Non hai ancora un&apos;iscrizione. <Link to="/iscrizione">Iscriviti al camp</Link>
+            </p>
+          )
+        : me.bookings.map((booking) => (
+            <BookingCard
+              key={booking.id}
+              booking={booking}
+              me={me}
+              reload={reload}
+              onCancelled={onCancelled}
+            />
+          ))}
+      <Waitlist me={me} reload={reload} />
       <PasswordForm hasPassword={me.has_password} />
       <button type="button" onClick={logout}>
         Esci
