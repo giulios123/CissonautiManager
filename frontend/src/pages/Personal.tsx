@@ -245,7 +245,7 @@ export function Personal() {
         ))
       )}
       <PasswordForm hasPassword={me.has_password} />
-      <button type="button" onClick={logout}>
+      <button type="button" className="secondary" onClick={logout}>
         Esci
       </button>
     </main>
