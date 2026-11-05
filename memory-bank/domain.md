@@ -14,7 +14,7 @@
 `in_attesa_pagamento` → `confermata` · `scaduta` · `disdetta_richiesta` → `rimborsata`
 
 - L'iscrizione crea una prenotazione `in_attesa_pagamento` che occupa i posti per N giorni (impostazione configurabile).
-- Senza pagamento entro la scadenza diventa `scaduta` e i posti si liberano. La scadenza si valuta al momento della lettura: nessun job schedulato obbligatorio.
+- Senza pagamento entro la scadenza diventa `scaduta` e i posti si liberano. La scadenza si valuta al momento della lettura; il passaggio del posto liberato al primo in lista d'attesa avviene con il job orario, quindi entro un'ora.
 - Diventa `confermata` quando l'admin registra pagamenti che coprono l'importo dovuto.
 - Rimborso: l'admin segna come `rimborsata` una disdetta richiesta registrando importo (mai oltre quanto versato), data e nota. Non parte nessuna email: scrive lui alla persona.
 - Disdetta: il partecipante la richiede dalla pagina personale, i posti si liberano subito, l'admin rimborsa fuori dal sistema, la segna come `rimborsata` e scrive al partecipante. Se non c'è alcun pagamento registrato la prenotazione viene semplicemente rimossa, senza passaggio dall'admin.
@@ -22,9 +22,13 @@
 
 ## Lista d'attesa
 
-- Quando uno slot è pieno si entra in lista d'attesa per quello slot.
-- Dimensione massima: 20% della capienza dello slot (percentuale configurabile).
-- Quando si libera un posto, il primo in lista riceve un'email e un blocco di N giorni con le stesse regole di pagamento.
+- Quando uno slot è pieno si entra in lista d'attesa per quello slot, dal modulo pubblico o dalla pagina personale. Dal modulo ci si può iscrivere anche con soli slot pieni: la persona è registrata senza prenotazione e i testi legali accettati restano salvati sulla voce in lista.
+- Dimensione massima: capienza × percentuale (default 20%, configurabile), arrotondato per difetto. La sera, senza limite di posti, non ha lista.
+- Quando si libera un posto (disdetta, slot tolto, aumento di capienza, scadenza), il primo in lista per ordine di arrivo riceve lo slot e un'email:
+  - prenotazione `in_attesa_pagamento`: lo slot si aggiunge, l'importo si ricalcola e la scadenza diventa la più lontana tra quella attuale e N giorni da ora;
+  - prenotazione `confermata`: lo slot si aggiunge e resta confermata, con la differenza nel saldo (come per il cambio degli slot);
+  - nessuna prenotazione attiva: ne nasce una nuova `in_attesa_pagamento` con blocco di N giorni.
+- Chi disdice esce anche dalle liste d'attesa. Chi prenota da sé uno slot per cui aspettava esce da quella lista. I giorni passati non promuovono nessuno.
 
 ## Importi
 
@@ -63,7 +67,7 @@
 
 ## Email
 
-Conferma iscrizione con magic link · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza, ciascuno una sola volta per blocco; con un blocco sotto le 48 ore parte solo quello a metà; ripartono se la prenotazione viene riattivata) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
+Conferma iscrizione con magic link (o di ingresso in lista d'attesa) · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza, ciascuno una sola volta per blocco; con un blocco sotto le 48 ore parte solo quello a metà; ripartono se la prenotazione viene riattivata) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
 
 ## Fuori scope
 

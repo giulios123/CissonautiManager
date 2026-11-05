@@ -20,7 +20,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: prenotazione scaduta che libera il posto al primo in lista; due esecuzioni sovrapposte non assegnano lo stesso posto due volte; riepilogo nei log.
 - [x] **8. Pannello admin**: coda in «Giorni e slot» e nel CSV, rimozione con cronologia, voci nella scheda, persone solo in lista in «Persone».
   Test: CSV con posizione; rimozione senza email e con cronologia; 403 per un partecipante; filtro «in lista».
-- [ ] **9. Impostazioni e chiusura**: percentuale in Impostazioni; lint e test verdi, migrazioni da zero, Memory Bank, README, descrizione PR con checklist per organizzatori.
+- [x] **9. Impostazioni e chiusura**: percentuale in Impostazioni; lint e test verdi, migrazioni da zero, Memory Bank, README, descrizione PR con checklist per organizzatori.
   Test: percentuale fuori da 0-100 rifiutata; il nuovo limite vale per i nuovi ingressi.
 
 ## Da verificare a mano

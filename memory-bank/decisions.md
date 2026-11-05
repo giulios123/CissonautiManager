@@ -177,3 +177,25 @@
 - **Decisione**: (1) quando una prenotazione viene rimossa, le sue voci di cronologia si staccano dall'id (`booking_id` diventa `NULL`, il testo conserva nome ed email): un id liberato, che SQLite riusa, non fa ereditare la cronologia a una prenotazione nuova (corregge D-022); (2) pagamenti e annullamenti di una prenotazione bloccano la riga (`lock_booking`, con `WITH (UPDLOCK, HOLDLOCK)` su SQL Server) per non applicare due modifiche in parallelo; (3) riattivare una prenotazione scaduta, a mano o con un pagamento, è rifiutato se la persona ha un'altra iscrizione attiva nella stessa edizione (il pagamento resta registrato, con avviso); (4) il promemoria si segna solo se la prenotazione è ancora identica a quando è stata valutata (stato, scadenza, importo).
 - **Motivo**: tutti difetti reali emersi dalla revisione: (2) richiede due admin sulla stessa prenotazione nello stesso istante, improbabile ma con effetti gravi (confermata senza soldi); (3) valeva già per i pagamenti dell'MVP 1.
 - **Limite noto**: la corsa del punto 2 non è riproducibile in modo deterministico nei test (SQLite non sa fare lock di riga): il test controlla che la query contenga l'hint per SQL Server.
+
+## D-026 · Lista d'attesa: voci chiuse, mai cancellate
+
+- **Data**: 2026-11-05
+- **Decisione**: ogni voce in lista ha `closed_at` e un motivo (`promoted`, `left`, `removed`, `cancelled`, `booked`); non si cancella mai. I testi legali accettati stanno anche sulla voce, così chi è solo in lista può ricevere una prenotazione nuova senza ripassare dal modulo. Chi entra dalla pagina personale riusa i testi della sua ultima prenotazione. Un giorno che ha avuto voci in lista non si toglie dalle Impostazioni.
+- **Motivo**: la storia serve al report dell'MVP 7 e alla cronologia; la promozione deve poter creare una prenotazione valida.
+- **Alternative scartate**: cancellare le voci (nessuna traccia); prenotazione «vuota» per chi è solo in lista (stato nuovo da gestire ovunque).
+
+## D-027 · Promozione dopo il commit, dallo strato API e dal job orario
+
+- **Data**: 2026-11-05
+- **Decisione**: `promote_freed` gira dopo il commit dell'operazione che libera i posti, uno slot alla volta, ciascuno in una transazione propria con il lock sullo slot. La chiamano gli endpoint di disdetta e cambio slot (partecipante e admin) e il salvataggio delle Impostazioni; le scadenze le gestisce il job orario dei promemoria, che fa un passo in più. Il limite della lista si arrotonda per difetto. Dopo una promozione su una prenotazione in attesa i promemoria si ricalcolano come dopo una proroga (D-024).
+- **Motivo**: i servizi esistenti restano invariati e non dipendono dalla configurazione; la lettura non manda email, quindi una scadenza la nota solo il job (entro un'ora, accettato dal maintainer).
+- **Alternative scartate**: promozione alla lettura (email inviate da una GET); un job dedicato (un'altra risorsa Azure per lo stesso orario).
+- **Limite noto**: se l'operazione riesce e la promozione fallisce (errore improvviso), il posto resta libero finché il job orario non lo assegna.
+
+## D-028 · Persone solo in lista nel pannello
+
+- **Data**: 2026-11-05
+- **Decisione**: in «Persone» chi è solo in lista compare con stato «Solo in lista d'attesa», senza scheda (la scheda è per prenotazione); la lista si gestisce da «Giorni e slot», dove l'admin può togliere una voce senza email, con cronologia.
+- **Motivo**: evita una seconda scheda per persona per un caso raro.
+- **Alternative scartate**: scheda per persona (nuova pagina e nuovi endpoint, fuori dalla dimensione dell'MVP).

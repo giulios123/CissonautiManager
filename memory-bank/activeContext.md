@@ -2,13 +2,12 @@
 
 ## Ora
 
-MVP 1-3 su `main` (PR #4). Aperti e non bloccanti: task 15 dell'MVP 1 (Google Sites) e task 9 dell'MVP 2 (infrastruttura Azure da validare). Fase B1 degli MVP 4, 5 e 6: spec scritte in `specs/mvp-04-lista-attesa/`, `specs/mvp-05-pranzi-cene/`, `specs/mvp-06-attivita-contributi/`, in attesa di conferma del maintainer. Nessun codice.
+MVP 4 (lista d'attesa) implementato e provato in locale sul branch `claude/quirky-meitner-qn9hwh`; descrizione PR in `specs/mvp-04-lista-attesa/pr-description.md`. Spec di MVP 4, 5 e 6 confermate dal maintainer («confermo tutto»): modifiche a `domain.md` dell'MVP 4 applicate. In corso: MVP 5 (pranzi e cene). Aperti e non bloccanti: task 15 dell'MVP 1 e task 9 dell'MVP 2.
 
 ## Prossimo passo
 
-1. Conferma delle tre spec e delle loro «Modifiche a domain.md».
-2. Implementazione in ordine: MVP 4, poi 5, poi 6 (il 6 usa il calcolo unico dell'importo del 5).
-3. Validazione del task 9 dell'MVP 2 quando il maintainer lo decide (serve anche al job orario che nell'MVP 4 promuove dalla lista).
+1. MVP 5, poi MVP 6 (il 6 usa il calcolo unico dell'importo del 5).
+2. CI su SQL Server sul branch e validazione del task 9 dell'MVP 2 (serve anche al job orario che promuove dalla lista dopo una scadenza).
 
 ## Scelte del maintainer per MVP 4-6 (2026-11-05)
 
@@ -17,12 +16,13 @@ MVP 1-3 su `main` (PR #4). Aperti e non bloccanti: task 15 dell'MVP 1 (Google Si
 - MVP 5: due prezzi (pranzo e cena); regime senza consenso, allergie e intolleranze con consenso specifico; pasti modificabili come gli slot.
 - MVP 6: si aderisce a un'attività solo se presenti in quella fascia.
 
-## Domande aperte MVP 4-6
+## Risposte del maintainer su MVP 4-6
 
-- Importi di default di pranzo e cena (la spec usa segnaposto).
-- MVP 4: l'email di promozione a chi è già confermato chiede la differenza senza una scadenza: va bene?
-- MVP 4: la promozione dopo una scadenza arriva entro un'ora (job orario): va bene, o serve anche alla lettura?
-- MVP 6: servono attività su tutto il giorno (escursioni)? Per ora nel Backlog.
+- Prezzi di pranzo e cena: segnaposto (8 € e 12 €) finché non ci sono gli importi definitivi.
+- Email di promozione ai confermati senza scadenza: va bene.
+- Promozione dopo una scadenza entro un'ora con il job orario: va bene.
+- Pranzo con mattina o pomeriggio: confermato.
+- Attività su tutto il giorno: restano nel Backlog.
 
 ## Risolto il 2026-11-05 (conferma del maintainer)
 

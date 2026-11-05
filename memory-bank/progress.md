@@ -8,7 +8,7 @@
 | 1 | Iscrizione base | fatto salvo il task 15 (verifica in Google Sites e chiusura), aperto e non bloccante |
 | 2 | Pagina personale | codice fatto e provato in locale (task 1-8), infrastruttura Azure scritta ma non validata (task 9), chiusura documentale fatta (task 10) |
 | 3 | Pannello admin completo | codice fatto e provato in locale (task 1-12), chiusura documentale fatta (task 13); si porta su `main` insieme al task 9 dell'MVP 2 |
-| 4 | Lista d'attesa | da fare |
+| 4 | Lista d'attesa | codice fatto e provato in locale (task 1-9) |
 | 5 | Pranzi e cene | da fare |
 | 6 | Attività e contributi | da fare |
 | 7 | Inviti e report | da fare |
@@ -28,6 +28,8 @@
 
 - **MVP 3**, provato end to end in locale con browser da telefono (DB nuovo da migrazioni, edizione 3-9 novembre, tre iscritti con pagamenti diversi): voci del pannello; elenco Persone con telefono e sere e CSV scaricato (BOM, `;`, importi con la virgola, fuso di Roma); «Giorni e slot» con la sera dell'intero giorno marcata; «Settimana» con totale delle persone diverse; «Da verificare» con credito e pagamento parziale; aggiunta di un admin nuovo e rimozione con dialogo di conferma (focus sul tasto sicuro); admin attuale non rimovibile con spiegazione; proroga del blocco letta in ora di Roma; modifica dati e di slot (anche un giorno passato) con cronologia; annullamento di un pagamento che riporta la prenotazione in attesa; disdetta a nome della persona e rimborso (parte dall'importo versato); «Da verificare» che si svuota da sola.
 - **Non verificato (MVP 3)**: CI su SQL Server (le query nuove sono semplici, ma la CI non è ancora girata sul branch); apertura dei CSV in Excel o Numbers veri (provato solo il contenuto dei file); uso con molti iscritti.
+- **MVP 4**, provato end to end in locale con browser da telefono (DB nuovo da migrazioni 0001-0005, capienza 1 e lista al 100%): Ada prende l'ultimo posto; Bea trova lo slot «completo, spunta per entrare in lista», si iscrive solo in lista (nessuna quota), riceve l'email e vede «1° in lista» nella pagina personale; Ada disdice e Bea riceve «Si è liberato un posto» con quota, causale e scadenza, e la sua pagina mostra la prenotazione in attesa; pannello con «Persone», «Giorni e slot» e percentuale nelle Impostazioni. Downgrade e upgrade della 0005 senza errori.
+- **Non verificato (MVP 4)**: CI su SQL Server; promozione dopo una scadenza con il job che gira davvero su Azure; due promozioni concorrenti sullo stesso slot (lock provato solo su SQLite); email vere.
 - **B0**: l'MVP 2 non è completo (task 9 aperto). Il maintainer ha chiesto di procedere e di validare tutto insieme al passaggio su `main`.
 
 ## Bug corretti fuori MVP
