@@ -12,7 +12,7 @@ Branch di implementazione: `feat/mvp-08-stile-sito`. Indipendente dall'MVP 7: pu
   Test: build senza richieste esterne (controllo sul `dist/`); test esistenti verdi.
 - [x] **4. Componenti**: bottoni, campi, fieldset degli slot, checkbox, messaggi, `ConfirmDialog`.
   Test: altezza minima 44 px e focus visibile controllati negli screenshot; test esistenti verdi.
-- [ ] **5. Pannello admin**: navigazione, tabelle, `CsvButton`, scheda della persona.
+- [x] **5. Pannello admin**: navigazione, tabelle, `CsvButton`, scheda della persona.
   Test: tabelle scorrevoli a 390 px senza scorrimento della pagina; test esistenti verdi.
 - [ ] **6. Intestazione e modalità iframe**: `SiteHeader` con logo, classe `in-frame`.
   Test vitest: intestazione completa fuori dall'iframe e ridotta (nome senza logo) con `in-frame`; logo con `alt`; nome in testo se il logo manca.
