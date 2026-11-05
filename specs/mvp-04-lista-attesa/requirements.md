@@ -34,7 +34,7 @@ Come persona che trova pieni uno o più slot voglio mettermi in lista, così non
 ## US-4 · Promozione del primo in lista
 
 - Quando si libera un posto in uno slot con persone in lista, allora il primo in lista (per ordine di arrivo) riceve lo slot e un'email «si è liberato un posto».
-- Quando il promosso ha una prenotazione `in_attesa_pagamento`, allora lo slot si aggiunge, l'importo si ricalcola e la scadenza del blocco diventa la più lontana tra quella attuale e N giorni da ora; i promemoria si ricalcolano senza mandare due volte quello già ricevuto.
+- Quando il promosso ha una prenotazione `in_attesa_pagamento`, allora lo slot si aggiunge, l'importo si ricalcola e la scadenza del blocco diventa la più lontana tra quella attuale e N giorni da ora; i promemoria si ricalcolano come dopo una proroga (D-024).
 - Quando il promosso ha una prenotazione `confermata`, allora lo slot si aggiunge, l'importo si ricalcola e la prenotazione resta `confermata`; il saldo mostra la differenza da versare e la prenotazione compare in «Da verificare» (saldo positivo).
 - Quando il promosso non ha una prenotazione attiva, allora ne nasce una nuova `in_attesa_pagamento` con quel solo slot, blocco di N giorni e i testi legali accettati quando è entrato in lista; l'email contiene importo, istruzioni, scadenza e magic link.
 - Quando si liberano più posti nello stesso slot, allora vengono promosse altrettante persone, in ordine.

@@ -167,3 +167,47 @@ def reminder_email(
             "possibile.\n"
         ),
     )
+
+
+def waitlist_promoted_email(
+    booking: Booking,
+    slot: Slot,
+    kind: str,
+    channels: list[PaymentChannel],
+    balance_cents: int,
+    link: str,
+) -> EmailMessage:
+    """A seat freed up and went to this person. `kind` is the promotion kind (see the domain)."""
+    participant = booking.participant
+    label = format_slot(slot.date, slot.period, slot.start_time, slot.end_time)
+    pay = "\n".join(f"- {c.label}: {c.instructions}".rstrip(": ") for c in channels) or (
+        "- Ti scriveremo le istruzioni appena possibile."
+    )
+    if kind == "add_to_confirmed":
+        deadline = (
+            "La tua iscrizione resta confermata: versa la differenza con le stesse istruzioni.\n"
+        )
+    else:
+        deadline = (
+            f"Il posto è bloccato fino al {format_deadline(booking.hold_expires_at)}: "
+            "senza pagamento entro quella data si libera.\n"
+        )
+    if kind == "new_booking":
+        access = f"Il tuo link personale (vale 30 minuti, si usa una volta sola):\n{link}\n"
+    else:
+        access = f"Per vedere o modificare la tua iscrizione: {link}\n"
+    return EmailMessage(
+        to=participant.email,
+        subject="Si è liberato un posto al Cissonauti Summer Camp",
+        body=(
+            f"Ciao {participant.first_name},\n\n"
+            f"si è liberato un posto ed è tuo: {label}.\n\n"
+            f"I tuoi slot:\n{_slot_lines(booking.slots)}\n\n"
+            f"Quota: {format_euro(booking.amount_due_cents)}\n"
+            f"Ancora da versare: {format_euro(max(balance_cents, 0))}\n"
+            f"Causale: {participant.personal_code}\n"
+            f"{deadline}\n"
+            f"Come pagare:\n{pay}\n\n"
+            f"{access}"
+        ),
+    )
