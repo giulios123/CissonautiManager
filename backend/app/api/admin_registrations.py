@@ -9,33 +9,50 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.schemas import BookingView, booking_view
+from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
+from app.config import Settings
 from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
-from app.deps import get_email_sender, get_now, require_admin
+from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.domain.booking import occupies_seats
 from app.domain.presence import has_evening
 from app.email import EmailSender
-from app.models import STATUS_EXPIRED, Booking, LegalDocument, Participant
+from app.models import (
+    STATUS_EXPIRED,
+    Activity,
+    Booking,
+    Edition,
+    LegalDocument,
+    Participant,
+    WaitlistEntry,
+)
+from app.services import activities as activity_service
 from app.services import audit as audit_service
 from app.services import booking_admin as booking_admin_service
 from app.services import booking_changes
 from app.services import edition as edition_service
+from app.services import meals as meals_service
 from app.services import payments as payment_service
 from app.services import refunds as refund_service
+from app.services import waitlist as waitlist_service
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue
-from app.timefmt import ROME, format_euro, format_slot, status_label, to_rome
+from app.timefmt import ROME, format_euro, format_meal, format_slot, status_label, to_rome
 
 router = APIRouter(
     prefix="/api/admin/registrations", tags=["admin"], dependencies=[Depends(require_admin)]
 )
 
-Status = Literal["in_attesa_pagamento", "confermata", "scaduta", "disdetta_richiesta", "rimborsata"]
+Status = Literal[
+    "in_attesa_pagamento", "confermata", "scaduta", "disdetta_richiesta", "rimborsata", "in_lista"
+]
+# Status of a row for someone who is only on a waitlist and has no booking.
+WAITLIST_ONLY = "in_lista"
 
 
 class RegistrationRow(BaseModel):
-    id: int
+    # The booking; None for someone who is only on a waitlist.
+    id: int | None
     first_name: str
     last_name: str
     email: str
@@ -47,8 +64,9 @@ class RegistrationRow(BaseModel):
     amount_due_cents: int
     paid_cents: int
     balance_cents: int
-    hold_expires_at: datetime
+    hold_expires_at: datetime | None
     created_at: datetime
+    waitlist_slots: int = 0
 
 
 class ParticipantView(BaseModel):
@@ -80,14 +98,25 @@ class HistoryEntry(BaseModel):
     detail: str
 
 
+class WaitlistItem(BaseModel):
+    id: int
+    label: str
+    position: int
+    created_at: datetime
+
+
 class RegistrationDetail(BaseModel):
     participant: ParticipantView
     booking: BookingView
+    waitlist: list[WaitlistItem] = []
     privacy: LegalAcceptance
     disclaimer: LegalAcceptance
     refund: RefundOut | None = None
     history: list[HistoryEntry] = []
     warning: str | None = None
+    lunch_price_cents: int = 0
+    dinner_price_cents: int = 0
+    activity_offers: list[ActivityOffer] = []
 
 
 class RefundIn(BaseModel):
@@ -129,7 +158,7 @@ def _evenings(booking: Booking, status: str) -> int:
     return sum(1 for day_periods in periods.values() if has_evening(day_periods))
 
 
-def _row(booking: Booking, now: datetime) -> RegistrationRow:
+def _row(booking: Booking, now: datetime, waitlist_slots: int = 0) -> RegistrationRow:
     view = booking_view(booking, now)
     participant = booking.participant
     return RegistrationRow(
@@ -147,6 +176,39 @@ def _row(booking: Booking, now: datetime) -> RegistrationRow:
         balance_cents=view.balance_cents,
         hold_expires_at=booking.hold_expires_at,
         created_at=booking.created_at,
+        waitlist_slots=waitlist_slots,
+    )
+
+
+def _waitlist_only_row(participant: Participant, entries: list[WaitlistEntry]) -> RegistrationRow:
+    return RegistrationRow(
+        id=None,
+        first_name=participant.first_name,
+        last_name=participant.last_name,
+        email=participant.email,
+        phone=participant.phone,
+        personal_code=participant.personal_code,
+        days=0,
+        evenings=0,
+        status=WAITLIST_ONLY,
+        amount_due_cents=0,
+        paid_cents=0,
+        balance_cents=0,
+        hold_expires_at=None,
+        created_at=min(e.created_at for e in entries),
+        waitlist_slots=len(entries),
+    )
+
+
+def _matches(participant: Participant, needle: str) -> bool:
+    return any(
+        needle in value.lower()
+        for value in (
+            participant.first_name,
+            participant.last_name,
+            participant.email,
+            participant.personal_code,
+        )
     )
 
 
@@ -156,6 +218,7 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
     privacy = db.get(LegalDocument, booking.privacy_document_id)
     disclaimer = db.get(LegalDocument, booking.disclaimer_document_id)
     assert privacy is not None and disclaimer is not None
+    edition = db.get(Edition, booking.edition_id)
     if warning is None and view.status == STATUS_EXPIRED and view.paid_cents > 0:
         warning = "Ci sono pagamenti registrati su una prenotazione scaduta."
     return RegistrationDetail(
@@ -183,6 +246,17 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
             if booking.refund_cents is not None
             else None
         ),
+        waitlist=[
+            WaitlistItem(
+                id=entry.id,
+                label=format_slot(
+                    entry.slot.date, entry.slot.period, entry.slot.start_time, entry.slot.end_time
+                ),
+                position=waitlist_service.position_of(db, entry),
+                created_at=entry.created_at,
+            )
+            for entry in _entries_of(db, participant)
+        ],
         history=[
             HistoryEntry(
                 at=entry.at,
@@ -193,7 +267,15 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
             for entry, actor in audit_service.history(db, booking.id)
         ],
         warning=warning,
+        lunch_price_cents=edition.lunch_price_cents if edition else 0,
+        dinner_price_cents=edition.dinner_price_cents if edition else 0,
+        activity_offers=activity_offers(db, booking, now),
     )
+
+
+def _entries_of(db: Session, participant: Participant) -> list[WaitlistEntry]:
+    edition = edition_service.get_active_edition(db)
+    return [] if edition is None else waitlist_service.entries_of(db, participant, edition)
 
 
 def _get_booking(db: Session, booking_id: int) -> Booking:
@@ -219,6 +301,7 @@ def _csv_rows(rows: list[RegistrationRow]):
             Amount(row.balance_cents),
             row.hold_expires_at if row.status == "in_attesa_pagamento" else None,
             row.created_at,
+            row.waitlist_slots,
         ]
 
 
@@ -236,6 +319,7 @@ CSV_HEADER = [
     "Saldo",
     "Scadenza blocco",
     "Iscritto il",
+    "Slot in lista d'attesa",
 ]
 
 
@@ -261,8 +345,8 @@ def list_registrations(
         )
         if status:
             query = query.where(Booking.status == status)
-        if q and q.strip():
-            needle = q.strip().lower()
+        needle = q.strip().lower() if q and q.strip() else None
+        if needle:
             query = query.where(
                 or_(
                     *[
@@ -276,7 +360,23 @@ def list_registrations(
                     ]
                 )
             )
-        rows = [_row(b, now) for b in db.scalars(query)]
+        waiting: dict[int, list[WaitlistEntry]] = defaultdict(list)
+        for entries in waitlist_service.active_entries(db, [s.id for s in edition.slots]).values():
+            for entry in entries:
+                waiting[entry.participant_id].append(entry)
+        bookings = [] if status == WAITLIST_ONLY else list(db.scalars(query))
+        rows = [_row(b, now, len(waiting.get(b.participant_id, []))) for b in bookings]
+        if status in (None, WAITLIST_ONLY):
+            with_booking = set(
+                db.scalars(select(Booking.participant_id).where(Booking.edition_id == edition.id))
+            )
+            for participant_id, entries in waiting.items():
+                participant = entries[0].participant
+                if participant_id in with_booking:
+                    continue
+                if needle and not _matches(participant, needle):
+                    continue
+                rows.append(_waitlist_only_row(participant, entries))
     if fmt == "csv":
         return csv_response(csv_filename("persone", now), CSV_HEADER, _csv_rows(rows))
     return rows
@@ -400,8 +500,9 @@ def reactivate_registration(
     now: datetime = Depends(get_now),
 ) -> RegistrationDetail:
     booking = _get_booking(db, booking_id)
+    dropped: list[Activity] = []
     try:
-        booking_admin_service.reactivate(db, sender, admin, booking, now)
+        booking_admin_service.reactivate(db, sender, admin, booking, now, dropped)
     except booking_admin_service.NotExpired as exc:
         raise HTTPException(
             status_code=409, detail="Si può riattivare solo una prenotazione scaduta"
@@ -421,7 +522,8 @@ def reactivate_registration(
             status_code=409, detail=f"Non c'è più posto in questi slot: {labels}"
         ) from exc
     db.refresh(booking)
-    return _detail(db, booking, now)
+    warning = payment_service.dropped_activities_warning(dropped) if dropped else None
+    return _detail(db, booking, now, warning=warning)
 
 
 class SlotsIn(BaseModel):
@@ -437,6 +539,7 @@ def change_registration_slots(
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> RegistrationDetail:
     booking = _get_booking(db, booking_id)
@@ -471,6 +574,7 @@ def change_registration_slots(
             detail=f"Questi slot sono al completo: {labels}. Per aggiungerli comunque spunta "
             "«Forza oltre la capienza».",
         ) from exc
+    waitlist_service.promote_freed(db, sender, settings, result.removed_slot_ids, now)
     db.refresh(booking)
     warning = None
     if result.over_capacity:
@@ -478,6 +582,114 @@ def change_registration_slots(
             format_slot(s.date, s.period, s.start_time, s.end_time) for s in result.over_capacity
         )
         warning = f"Attenzione: capienza superata in {labels}."
+    if result.dropped_meals:
+        meals = ", ".join(format_meal(day, kind) for day, kind in result.dropped_meals)
+        dropped = f"Tolti anche i pasti senza più presenza: {meals}."
+        warning = f"{warning} {dropped}" if warning else dropped
+    if result.dropped_activities:
+        names = activity_service.labels(result.dropped_activities)
+        dropped = f"Tolte anche le attività senza più presenza: {names}."
+        warning = f"{warning} {dropped}" if warning else dropped
+    return _detail(db, booking, now, warning=warning)
+
+
+class MealIn(BaseModel):
+    date: date
+    kind: Literal["lunch", "dinner"]
+
+
+class MealsIn(BaseModel):
+    meals: list[MealIn] = Field(max_length=200)
+
+
+@router.put("/{booking_id}/meals")
+def change_registration_meals(
+    booking_id: int,
+    body: MealsIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        meals_service.change_meals(
+            db,
+            sender,
+            booking,
+            [(m.date, m.kind) for m in body.meals],
+            now,
+            allow_past=True,
+            actor=admin,
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except meals_service.MealsRefused as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail="Un pasto si può dare solo nei giorni e nelle fasce in cui la persona è "
+            "presente: aggiungi prima lo slot",
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
+
+
+class ActivitiesIn(BaseModel):
+    activity_ids: list[int] = Field(max_length=200)
+    # Accept an activity that is already full.
+    force: bool = False
+
+
+@router.put("/{booking_id}/activities")
+def change_registration_activities(
+    booking_id: int,
+    body: ActivitiesIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        result = activity_service.change_activities(
+            db,
+            sender,
+            booking,
+            body.activity_ids,
+            now,
+            allow_past=True,
+            force=body.force,
+            actor=admin,
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except activity_service.InvalidActivities as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail="Le attività scelte non sono valide") from exc
+    except activity_service.ActivitiesRefused as exc:
+        db.rollback()
+        names = activity_service.labels(exc.activities)
+        if exc.reason == "full":
+            detail = (
+                f"Queste attività sono al completo: {names}. Per aggiungerle comunque spunta "
+                "«Forza oltre la capienza»."
+            )
+            raise HTTPException(status_code=409, detail=detail) from exc
+        detail = (
+            f"La persona non è presente nel momento di queste attività: {names}. "
+            "Aggiungi prima lo slot."
+        )
+        raise HTTPException(status_code=422, detail=detail) from exc
+    db.refresh(booking)
+    warning = None
+    if result.over_capacity_activities:
+        names = activity_service.labels(result.over_capacity_activities)
+        warning = f"Attenzione: capienza superata in {names}."
     return _detail(db, booking, now, warning=warning)
 
 
@@ -493,15 +705,18 @@ def cancel_registration(
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
     sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> CancelOut:
     booking = _get_booking(db, booking_id)
+    freed = [s.id for s in booking.slots]
     try:
         outcome = booking_changes.request_cancellation(db, sender, booking, now, actor=admin)
     except booking_changes.NotEditable as exc:
         raise HTTPException(
             status_code=409, detail="Questa iscrizione non si può più disdire"
         ) from exc
+    waitlist_service.promote_freed(db, sender, settings, freed, now)
     if outcome == "removed":
         return CancelOut(outcome=outcome)
     db.refresh(booking)

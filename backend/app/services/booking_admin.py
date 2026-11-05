@@ -8,12 +8,20 @@ from app.domain.booking import can_extend_hold
 from app.domain.fees import is_covered
 from app.domain.reminders import reminders_to_keep_after_extension
 from app.email import EmailSender
-from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING, Booking, Participant
+from app.models import (
+    STATUS_CONFIRMED,
+    STATUS_EXPIRED,
+    STATUS_PENDING,
+    Activity,
+    Booking,
+    Participant,
+)
 from app.services import audit
 from app.services.participants import get_by_email, normalize_email
 from app.services.payments import (
     ALREADY_ACTIVE,
     REVIVED,
+    dropped_activities_warning,
     paid_total,
     revive_expired,
     send_confirmation,
@@ -121,7 +129,12 @@ def update_details(
 
 
 def reactivate(
-    db: Session, sender: EmailSender, admin: Participant, booking: Booking, now: datetime
+    db: Session,
+    sender: EmailSender,
+    admin: Participant,
+    booking: Booking,
+    now: datetime,
+    dropped: list[Activity] | None = None,
 ) -> bool:
     """Bring an expired booking back for a new hold. Returns True if it was confirmed at once.
 
@@ -132,7 +145,9 @@ def reactivate(
     db.refresh(booking)
     if booking.status != STATUS_EXPIRED:
         raise NotExpired()
-    outcome = revive_expired(db, booking, now)
+    if dropped is None:
+        dropped = []
+    outcome = revive_expired(db, booking, now, dropped)
     if outcome == ALREADY_ACTIVE:
         raise AnotherActiveBooking()
     if outcome != REVIVED:
@@ -147,6 +162,8 @@ def reactivate(
     else:
         until = format_deadline(booking.hold_expires_at)
         detail = f"Prenotazione riattivata: nuovo blocco fino al {until}"
+    if dropped:
+        detail += f". {dropped_activities_warning(dropped)}"
     audit.log(db, admin, "reactivated", detail, booking.id)
     db.commit()
     if confirmed:

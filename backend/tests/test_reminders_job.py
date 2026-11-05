@@ -163,6 +163,7 @@ def test_main_runs_with_settings_from_the_environment(
         send_reminders.main()
     assert len(outbox.sent) == 1
     assert "mid=1" in caplog.text
+    assert "waitlist promotions=0" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -194,3 +195,26 @@ def test_a_reminder_is_not_sent_if_the_booking_changed_after_it_was_evaluated(
     assert summary.mid == 0
     db.expire_all()
     assert db.get(Booking, booking.id).reminder_mid_sent_at is None  # nothing was consumed
+
+
+def test_a_seat_freed_by_an_expired_hold_goes_to_the_first_waiting(
+    db, outbox, settings, clock, fill_slot, make_participant, add_entry, slot_ids
+):
+    target = db.get(Slot, slot_ids[(d(14), MORNING)])
+    fillers = fill_slot(target)
+    fillers[0].hold_expires_at = clock() + timedelta(hours=1)
+    db.commit()
+    bea = make_participant("bea@example.com")
+    entry = add_entry(target, bea, clock())
+    outbox.sent.clear()
+
+    assert run(db, outbox, settings, clock).promoted == 0
+    clock.advance(hours=2)
+    summary = run(db, outbox, settings, clock)
+
+    assert summary.promoted == 1
+    db.refresh(entry)
+    assert entry.promoted_booking_id is not None
+    assert "Si è liberato un posto al Cissonauti Summer Camp" in subjects(outbox)
+    # A second run finds nothing left to hand out.
+    assert run(db, outbox, settings, clock).promoted == 0

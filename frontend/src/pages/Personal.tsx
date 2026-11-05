@@ -5,7 +5,12 @@ import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
+import { ActivityPicker } from "./ActivityPicker";
+import { Contributions } from "./Contributions";
+import { DietaryForm } from "./DietaryForm";
+import { MealEditor } from "./MealEditor";
 import { SlotEditor } from "./SlotEditor";
+import { Waitlist } from "./Waitlist";
 
 type State = { status: "loading" } | { status: "anonymous" } | { status: "ready"; me: Me };
 
@@ -40,6 +45,10 @@ function BookingCard({
   onCancelled: (outcome: CancelOutcome) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
+  const [editingMeals, setEditingMeals] = useState(false);
+  const [editingActivities, setEditingActivities] = useState(false);
+  const activities = booking.activities ?? [];
+  const meals = booking.meals ?? [];
   const pending = booking.status === "in_attesa_pagamento";
   const confirmedWithBalance = booking.status === "confermata" && booking.balance_cents > 0;
   return (
@@ -98,6 +107,66 @@ function BookingCard({
           <Link to="/iscrizione">Iscriviti di nuovo</Link>
         </p>
       )}
+      {(booking.editable || meals.length > 0) && (
+        <section aria-labelledby={`meals-${booking.id}`}>
+          <h3 id={`meals-${booking.id}`}>Pranzi e cene</h3>
+          {meals.length === 0 ? (
+            <p>Nessun pasto scelto.</p>
+          ) : (
+            <ul>
+              {meals.map((meal) => (
+                <li key={`${meal.date}:${meal.kind}`}>{meal.label}</li>
+              ))}
+            </ul>
+          )}
+          {booking.editable && (
+            <button
+              type="button"
+              className="secondary"
+              aria-expanded={editingMeals}
+              onClick={() => setEditingMeals((value) => !value)}
+            >
+              {editingMeals ? "Chiudi i pasti" : "Scegli pranzi e cene"}
+            </button>
+          )}
+          {editingMeals && booking.editable && (
+            <MealEditor
+              booking={booking}
+              lunchCents={me.lunch_price_cents ?? 0}
+              dinnerCents={me.dinner_price_cents ?? 0}
+              onSaved={reload}
+            />
+          )}
+        </section>
+      )}
+      {(booking.editable || activities.length > 0) && (
+        <section aria-labelledby={`activities-${booking.id}`}>
+          <h3 id={`activities-${booking.id}`}>Attività</h3>
+          {activities.length === 0 ? (
+            <p>Nessuna attività scelta.</p>
+          ) : (
+            <ul>
+              {activities.map((activity) => (
+                <li key={activity.id}>{activity.label}</li>
+              ))}
+            </ul>
+          )}
+          {booking.editable && (
+            <button
+              type="button"
+              className="secondary"
+              aria-expanded={editingActivities}
+              onClick={() => setEditingActivities((value) => !value)}
+            >
+              {editingActivities ? "Chiudi le attività" : "Scegli le attività"}
+            </button>
+          )}
+          {editingActivities && booking.editable && (
+            <ActivityPicker booking={booking} offers={me.activities ?? []} onSaved={reload} />
+          )}
+        </section>
+      )}
+      {booking.editable && <DietaryForm booking={booking} me={me} onSaved={reload} />}
       {booking.payments.length > 0 && (
         <details>
           <summary>Pagamenti registrati</summary>
@@ -126,7 +195,18 @@ function BookingCard({
           {booking.can_cancel && <CancelBooking booking={booking} onDone={onCancelled} />}
         </div>
       )}
-      {editing && booking.editable && <SlotEditor booking={booking} onSaved={reload} />}
+      {editing && booking.editable && (
+        <SlotEditor
+          booking={booking}
+          onSaved={reload}
+          extras={{
+            meals: booking.meals ?? [],
+            activities: (me.activities ?? []).filter((offer) => offer.joined),
+            lunchCents: me.lunch_price_cents ?? 0,
+            dinnerCents: me.dinner_price_cents ?? 0,
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -229,21 +309,23 @@ export function Personal() {
           <Link to="/admin">Vai al pannello organizzatori</Link>
         </p>
       )}
-      {me.bookings.length === 0 ? (
-        <p>
-          Non hai ancora un&apos;iscrizione. <Link to="/iscrizione">Iscriviti al camp</Link>
-        </p>
-      ) : (
-        me.bookings.map((booking) => (
-          <BookingCard
-            key={booking.id}
-            booking={booking}
-            me={me}
-            reload={reload}
-            onCancelled={onCancelled}
-          />
-        ))
-      )}
+      {me.bookings.length === 0
+        ? (me.waitlist ?? []).length === 0 && (
+            <p>
+              Non hai ancora un&apos;iscrizione. <Link to="/iscrizione">Iscriviti al camp</Link>
+            </p>
+          )
+        : me.bookings.map((booking) => (
+            <BookingCard
+              key={booking.id}
+              booking={booking}
+              me={me}
+              reload={reload}
+              onCancelled={onCancelled}
+            />
+          ))}
+      {me.bookings.some((b) => b.editable) && <Contributions me={me} editable reload={reload} />}
+      <Waitlist me={me} reload={reload} />
       <PasswordForm hasPassword={me.has_password} />
       <button type="button" onClick={logout}>
         Esci

@@ -17,12 +17,16 @@ type Edition = {
   evening_end: string;
   default_capacity: number;
   hold_days: number;
+  waitlist_percent?: number;
   base_fee_cents: number;
   per_day_fee_cents: number;
+  lunch_price_cents?: number;
+  dinner_price_cents?: number;
   slots: unknown[];
   payment_channels: Channel[];
   privacy: Legal;
   disclaimer: Legal;
+  health?: Legal;
 };
 
 type Notice = { kind: "ok" | "error"; text: string } | null;
@@ -57,7 +61,9 @@ function EditionSection({
     const text = (name: string) => String(data.get(name) ?? "");
     const base = parseEuroToCents(text("base_fee"));
     const perDay = parseEuroToCents(text("per_day_fee"));
-    if (base === null || perDay === null) {
+    const lunch = parseEuroToCents(text("lunch_price"));
+    const dinner = parseEuroToCents(text("dinner_price"));
+    if (base === null || perDay === null || lunch === null || dinner === null) {
       setNotice({ kind: "error", text: "Gli importi devono essere numeri, ad esempio 10,00." });
       return;
     }
@@ -76,8 +82,11 @@ function EditionSection({
           evening_end: text("evening_end"),
           default_capacity: Number(text("default_capacity")),
           hold_days: Number(text("hold_days")),
+          waitlist_percent: Number(text("waitlist_percent")),
           base_fee_cents: base,
           per_day_fee_cents: perDay,
+          lunch_price_cents: lunch,
+          dinner_price_cents: dinner,
         },
       });
       onSaved(saved);
@@ -188,6 +197,17 @@ function EditionSection({
             defaultValue={edition?.hold_days ?? 3}
           />
         </label>
+        <label>
+          Lista d&apos;attesa (% dei posti)
+          <input
+            type="number"
+            name="waitlist_percent"
+            min={0}
+            max={100}
+            required
+            defaultValue={edition?.waitlist_percent ?? 20}
+          />
+        </label>
       </div>
       <div className="row">
         <label>
@@ -206,6 +226,26 @@ function EditionSection({
             inputMode="decimal"
             required
             defaultValue={centsToInput(edition?.per_day_fee_cents ?? 100)}
+          />
+        </label>
+      </div>
+      <div className="row">
+        <label>
+          Prezzo del pranzo (€)
+          <input
+            name="lunch_price"
+            inputMode="decimal"
+            required
+            defaultValue={centsToInput(edition?.lunch_price_cents ?? 800)}
+          />
+        </label>
+        <label>
+          Prezzo della cena (€)
+          <input
+            name="dinner_price"
+            inputMode="decimal"
+            required
+            defaultValue={centsToInput(edition?.dinner_price_cents ?? 1200)}
           />
         </label>
       </div>
@@ -271,7 +311,7 @@ function LegalSection({
   title,
   current,
 }: {
-  kind: "privacy" | "disclaimer";
+  kind: "privacy" | "disclaimer" | "health";
   title: string;
   current: Legal;
 }) {
@@ -340,6 +380,11 @@ export function AdminSettings() {
               kind="disclaimer"
               title="Scarico di responsabilità"
               current={edition.disclaimer}
+            />
+            <LegalSection
+              kind="health"
+              title="Consenso per allergie e intolleranze (dati sanitari)"
+              current={edition.health ?? null}
             />
           </section>
         </>

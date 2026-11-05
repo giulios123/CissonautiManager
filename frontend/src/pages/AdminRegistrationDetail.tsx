@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
-import { type BookingView } from "../auth";
+import { type ActivityOffer, type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
 import { AdminEditDetails } from "./AdminEditDetails";
@@ -11,6 +11,8 @@ import { AdminHoldActions } from "./AdminHoldActions";
 import { AdminPayments } from "./AdminPayments";
 import { AdminRefundForm } from "./AdminRefundForm";
 import { AdminSlotEditor } from "./AdminSlotEditor";
+import { ActivityPicker } from "./ActivityPicker";
+import { MealEditor } from "./MealEditor";
 
 export type Detail = {
   participant: {
@@ -28,6 +30,16 @@ export type Detail = {
   refund: { amount_cents: number; refunded_on: string | null; note: string | null } | null;
   history: HistoryEntry[];
   warning: string | null;
+  waitlist?: { id: number; label: string; position: number; created_at: string }[];
+  lunch_price_cents?: number;
+  dinner_price_cents?: number;
+  activity_offers?: ActivityOffer[];
+};
+
+const DIET_LABELS: Record<string, string> = {
+  omnivore: "onnivoro",
+  vegetarian: "vegetariano",
+  vegan: "vegano",
 };
 
 const CHANNELS = [
@@ -41,6 +53,8 @@ export function AdminRegistrationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [editingSlots, setEditingSlots] = useState(false);
+  const [editingMeals, setEditingMeals] = useState(false);
+  const [editingActivities, setEditingActivities] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [failed, setFailed] = useState(false);
   const [amount, setAmount] = useState("");
@@ -172,6 +186,81 @@ export function AdminRegistrationDetail() {
         <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
       </section>
 
+      <section aria-labelledby="meals-title">
+        <h2 id="meals-title">Pasti ed esigenze alimentari</h2>
+        {(booking.meals ?? []).length === 0 ? (
+          <p>Nessun pasto.</p>
+        ) : (
+          <ul>
+            {(booking.meals ?? []).map((meal) => (
+              <li key={`${meal.date}:${meal.kind}`}>{meal.label}</li>
+            ))}
+          </ul>
+        )}
+        <p>
+          Regime: {booking.diet ? DIET_LABELS[booking.diet] : "non indicato"}.
+          <br />
+          Allergie e intolleranze: {booking.allergies ?? "nessuna indicata"}
+          {booking.health_consent_version != null &&
+            ` (consenso versione ${booking.health_consent_version})`}
+          .
+        </p>
+        {booking.editable && (
+          <button
+            type="button"
+            className="secondary"
+            aria-expanded={editingMeals}
+            onClick={() => setEditingMeals((value) => !value)}
+          >
+            {editingMeals ? "Chiudi la modifica dei pasti" : "Cambia i pasti"}
+          </button>
+        )}
+        {editingMeals && booking.editable && (
+          <MealEditor<Detail>
+            booking={booking}
+            lunchCents={detail.lunch_price_cents ?? 0}
+            dinnerCents={detail.dinner_price_cents ?? 0}
+            path={`/api/admin/registrations/${booking.id}/meals`}
+            allowPast
+            onSaved={(updated) => showUpdated(updated, "Pasti aggiornati.")}
+          />
+        )}
+      </section>
+
+      <section aria-labelledby="activities-title">
+        <h2 id="activities-title">Attività</h2>
+        {(booking.activities ?? []).length === 0 ? (
+          <p>Nessuna attività.</p>
+        ) : (
+          <ul>
+            {(booking.activities ?? []).map((activity) => (
+              <li key={activity.id}>
+                <Link to={`/admin/attivita/${activity.id}`}>{activity.label}</Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {booking.editable && (
+          <button
+            type="button"
+            className="secondary"
+            aria-expanded={editingActivities}
+            onClick={() => setEditingActivities((value) => !value)}
+          >
+            {editingActivities ? "Chiudi la modifica delle attività" : "Cambia le attività"}
+          </button>
+        )}
+        {editingActivities && booking.editable && (
+          <ActivityPicker<Detail>
+            booking={booking}
+            offers={detail.activity_offers ?? []}
+            path={`/api/admin/registrations/${booking.id}/activities`}
+            admin
+            onSaved={(updated) => showUpdated(updated, "Attività aggiornate.")}
+          />
+        )}
+      </section>
+
       {(booking.editable || booking.can_cancel) && (
         <section aria-labelledby="actions-title">
           <h2 id="actions-title">Azioni sull&apos;iscrizione</h2>
@@ -275,6 +364,21 @@ export function AdminRegistrationDetail() {
 
       <AdminEditDetails bookingId={booking.id} participant={participant} onDone={showUpdated} />
 
+      {(detail.waitlist ?? []).length > 0 && (
+        <section aria-labelledby="waitlist-title">
+          <h2 id="waitlist-title">Lista d&apos;attesa</h2>
+          <ul>
+            {(detail.waitlist ?? []).map((item) => (
+              <li key={item.id}>
+                {item.label}: {item.position}° in lista
+              </li>
+            ))}
+          </ul>
+          <p>
+            Per togliere la persona da una lista usa <Link to="/admin/giorni">Giorni e slot</Link>.
+          </p>
+        </section>
+      )}
       <AdminHistory history={detail.history ?? []} />
     </main>
   );

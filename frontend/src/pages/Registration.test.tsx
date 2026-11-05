@@ -193,3 +193,106 @@ describe("Registration page", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("al completo"));
   });
 });
+
+describe("waitlist in the registration form", () => {
+  const withList = {
+    ...edition,
+    days: edition.days.map((day) => ({
+      ...day,
+      slots: day.slots.map((s) => (s.id === 2 ? { ...s, waitlist_free: 3 } : s)),
+    })),
+  };
+
+  async function fillIn(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText("Nome"), "Ada");
+    await user.type(screen.getByLabelText("Cognome"), "Lovelace");
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
+    await user.click(screen.getByLabelText(/informativa privacy$/));
+    await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+  }
+
+  it("lets people tick a full slot with a waitlist, and says there is nothing to pay", async () => {
+    const calls = mockFetch({
+      "/api/public/edition": { body: withList },
+      "/api/public/registrations": {
+        status: 201,
+        body: {
+          result: "waitlisted",
+          personal_code: "CSC-7K3P",
+          waitlist: [{ label: "lun 13/07 pomeriggio (14:00-18:00)", position: 1 }],
+        },
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+    const full = await screen.findByLabelText(/Pomeriggio 14:00-18:00 · completo, spunta/);
+    expect(full).toBeEnabled();
+    await user.click(full);
+    expect(screen.getByText(/Solo lista d'attesa/)).toBeInTheDocument();
+    await fillIn(user);
+    await user.click(screen.getByRole("button", { name: "Iscriviti" }));
+    expect(
+      await screen.findByRole("heading", { name: "Sei in lista d'attesa" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/sei 1° in lista/)).toBeInTheDocument();
+    const sent = calls.find((c) => c.url === "/api/public/registrations")?.body as Record<
+      string,
+      unknown
+    >;
+    expect(sent.slot_ids).toEqual([]);
+    expect(sent.waitlist_slot_ids).toEqual([2]);
+  });
+
+  it("books free slots and lists the full ones in the summary", async () => {
+    const calls = mockFetch({
+      "/api/public/edition": { body: withList },
+      "/api/public/registrations": {
+        status: 201,
+        body: {
+          result: "created",
+          booking: {
+            personal_code: "CSC-7K3P",
+            status: "in_attesa_pagamento",
+            amount_due_cents: 1100,
+            hold_expires_at: "2026-07-04T10:00:00Z",
+            slots: [{ label: "lun 13/07 mattina (09:00-13:00)" }],
+            payment_channels: [],
+          },
+          waitlist: [{ label: "lun 13/07 pomeriggio (14:00-18:00)", position: 2 }],
+        },
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
+    await user.click(screen.getByLabelText(/Pomeriggio 14:00-18:00 · completo, spunta/));
+    // The waitlisted slot is not in the fee: only Monday morning is booked.
+    expect(screen.getByText(/Quota da versare/)).toHaveTextContent("11,00");
+    await fillIn(user);
+    await user.click(screen.getByRole("button", { name: "Iscriviti" }));
+    expect(await screen.findByRole("heading", { name: "In lista d'attesa" })).toBeInTheDocument();
+    expect(screen.getByText(/sei 2° in lista/)).toBeInTheDocument();
+    const sent = calls.find((c) => c.url === "/api/public/registrations")?.body as Record<
+      string,
+      unknown
+    >;
+    expect(sent.slot_ids).toEqual([1]);
+    expect(sent.waitlist_slot_ids).toEqual([2]);
+  });
+
+  it("keeps a full slot locked when its waitlist is full too", async () => {
+    const fullList = {
+      ...edition,
+      days: edition.days.map((day) => ({
+        ...day,
+        slots: day.slots.map((s) => (s.id === 2 ? { ...s, waitlist_free: 0 } : s)),
+      })),
+    };
+    mockFetch({ "/api/public/edition": { body: fullList } });
+    renderPage();
+    expect(
+      await screen.findByLabelText(/Pomeriggio 14:00-18:00 · completo, anche la lista/),
+    ).toBeDisabled();
+  });
+});

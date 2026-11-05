@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { api } from "./api";
 
+export type MealView = { date: string; kind: "lunch" | "dinner"; label: string; past?: boolean };
+
 export type BookingView = {
   id: number;
   status: string;
@@ -21,6 +23,23 @@ export type BookingView = {
     voided?: boolean;
     void_reason?: string | null;
   }[];
+  meals?: MealView[];
+  allowed_meals?: MealView[];
+  activities?: { id: number; title: string; label: string; price_cents: number }[];
+  dropped_meals?: string[];
+  dropped_activities?: string[];
+  diet?: string | null;
+  allergies?: string | null;
+  health_consent_version?: number | null;
+};
+
+export type WaitlistItem = {
+  id: number;
+  slot_id: number;
+  date: string;
+  period: string;
+  label: string;
+  position: number;
 };
 
 export type Me = {
@@ -33,6 +52,34 @@ export type Me = {
   has_password: boolean;
   bookings: BookingView[];
   payment_channels: { code: string; label: string; instructions: string }[];
+  waitlist?: WaitlistItem[];
+  lunch_price_cents?: number | null;
+  dinner_price_cents?: number | null;
+  health_consent?: { version: number; body: string } | null;
+  activities?: ActivityOffer[];
+  contributions?: Contribution[];
+  can_bring?: string | null;
+};
+
+export type Contribution = {
+  id: number;
+  kind: "talk" | "topic" | "skill";
+  title: string;
+  description: string | null;
+};
+
+export type ActivityOffer = {
+  id: number;
+  title: string;
+  description: string | null;
+  date: string;
+  period: string;
+  time_label: string | null;
+  price_cents: number;
+  capacity: number | null;
+  free: number | null;
+  joined: boolean;
+  past: boolean;
 };
 
 type MeState = { status: "loading" } | { status: "anonymous" } | { status: "user"; me: Me };
