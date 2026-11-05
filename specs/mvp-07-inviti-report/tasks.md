@@ -14,7 +14,7 @@ Branch di implementazione: `feat/mvp-07-inviti-report` (se la sessione non può 
   Test: verifica e rimozione salvate con chi e quando; 422 senza «invitato da»; 404 persona sconosciuta; 403 per un partecipante; cronologia scritta, anche senza prenotazione; svuotare «invitato da» dalla modifica dati fa cadere la verifica; vitest sulla spunta (etichetta, stato, errore).
 - [x] **5. Lista d'attesa con la priorità visibile**: posizione effettiva, «+1» e «da verificare» in `AdminSlots.tsx`, colonne nel CSV.
   Test: l'ordine della vista è quello di promozione; colonne e valori del CSV; vitest sull'etichetta.
-- [ ] **6. Regole pure del report**: `edition_report`.
+- [x] **6. Regole pure del report**: `edition_report`.
   Test: ogni sezione con dati minimi; confermate e in attesa separate; scadute, disdette e rimborsate escluse da presenze, pasti e attività ma contate negli incassi; pagamenti annullati esclusi; netto, da incassare e crediti; scomposizione del dovuto che torna al totale anche con un prezzo cambiato (riga «scarto»); picco, media e giorni-persona; sezioni vuote a zero.
 - [ ] **7. Report: dati, endpoint e CSV**: `load_report`, `GET /api/admin/views/report`.
   Test: totali di presenza uguali alla vista «Settimana», pasti a «Pasti», attività a «Attività», incassi alla somma di «Persone»; CSV con BOM, `;`, virgola decimale; nessun nome né testo di allergie nel report, solo il numero; 403 per un partecipante.
