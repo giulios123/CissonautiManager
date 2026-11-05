@@ -49,10 +49,7 @@ export function participantGuide(locale: Locale): GuideSection[] {
 }
 
 export async function loadAdminGuide(locale: Locale): Promise<GuideSection[]> {
-  // The English organizers' guide arrives with the English panel (MVP 12): until then the
-  // Italian one is shown to everybody.
-  let loaders = inFolder(adminFiles, locale, "admin");
-  if (Object.keys(loaders).length === 0) loaders = inFolder(adminFiles, "it", "admin");
+  const loaders = inFolder(adminFiles, locale, "admin");
   const entries = await Promise.all(
     Object.entries(loaders).map(async ([path, load]) => [path, await load()] as const),
   );

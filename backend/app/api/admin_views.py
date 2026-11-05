@@ -14,6 +14,7 @@ from app.db import get_db
 from app.deps import get_now, require_admin
 from app.domain.meals import diet_counts, meal_counts_by_day
 from app.domain.presence import presence_by_slot, week_summary
+from app.i18n import tr
 from app.models import MEAL_DINNER, MEAL_LUNCH
 from app.services import report_export
 from app.services import views as views_service
@@ -152,7 +153,7 @@ def slots_view(
                 waiting.first_name,
                 waiting.last_name,
                 waiting.email,
-                "In lista d'attesa",
+                tr("In lista d'attesa"),
                 False,
                 waiting.position,
                 waiting.plus_one,
@@ -232,7 +233,7 @@ def meals_view(
                 r.first_name,
                 r.last_name,
                 r.email,
-                DIET_LABELS.get(r.diet or "", "Non indicato"),
+                tr(DIET_LABELS.get(r.diet or "", "Non indicato")),
                 r.allergies,
             ]
             for r in data.rows
@@ -403,7 +404,7 @@ def contributions_view(
         ]
         csv_rows = [
             [
-                KIND_LABELS.get(r.kind, r.kind),
+                tr(KIND_LABELS.get(r.kind, r.kind)),
                 r.title,
                 r.description,
                 r.first_name,
@@ -529,7 +530,7 @@ def report_view(
     if fmt == "csv":
         return csv_response(
             csv_filename("report", now),
-            report_export.HEADER,
+            report_export.header(),
             report_export.report_rows(data.report),
         )
     edition = data.edition

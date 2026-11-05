@@ -115,11 +115,11 @@ describe("admin area", () => {
     expect(within(tableRow).getByText("+39 333 1234567")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Sere" })).toBeInTheDocument();
     const csv = screen.getByRole("link", { name: "Scarica CSV" });
-    expect(csv).toHaveAttribute("href", "/api/admin/registrations?format=csv");
+    expect(csv).toHaveAttribute("href", "/api/admin/registrations?format=csv&lang=it");
     await userEvent.type(screen.getByLabelText(/Cerca/), "ada");
     expect(screen.getByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
-      "/api/admin/registrations?q=ada&format=csv",
+      "/api/admin/registrations?q=ada&format=csv&lang=it",
     );
   });
 

@@ -233,7 +233,7 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
     assert privacy is not None and disclaimer is not None
     edition = db.get(Edition, booking.edition_id)
     if warning is None and view.status == STATUS_EXPIRED and view.paid_cents > 0:
-        warning = "Ci sono pagamenti registrati su una prenotazione scaduta."
+        warning = t("warn.expired_with_payments")
     return RegistrationDetail(
         participant=ParticipantView(
             id=participant.id,
@@ -602,14 +602,14 @@ def change_registration_slots(
         labels = ", ".join(
             format_slot(s.date, s.period, s.start_time, s.end_time) for s in result.over_capacity
         )
-        warning = f"Attenzione: capienza superata in {labels}."
+        warning = t("warn.over_capacity", labels=labels)
     if result.dropped_meals:
         meals = ", ".join(format_meal(day, kind) for day, kind in result.dropped_meals)
-        dropped = f"Tolti anche i pasti senza più presenza: {meals}."
+        dropped = t("warn.dropped_meals", meals=meals)
         warning = f"{warning} {dropped}" if warning else dropped
     if result.dropped_activities:
         names = activity_service.labels(result.dropped_activities)
-        dropped = f"Tolte anche le attività senza più presenza: {names}."
+        dropped = t("warn.dropped_activities", names=names)
         warning = f"{warning} {dropped}" if warning else dropped
     return _detail(db, booking, now, warning=warning)
 
@@ -699,7 +699,7 @@ def change_registration_activities(
     warning = None
     if result.over_capacity_activities:
         names = activity_service.labels(result.over_capacity_activities)
-        warning = f"Attenzione: capienza superata in {names}."
+        warning = t("warn.over_capacity", labels=names)
     return _detail(db, booking, now, warning=warning)
 
 

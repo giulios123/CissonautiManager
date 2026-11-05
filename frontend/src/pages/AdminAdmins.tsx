@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { useT } from "../i18n";
 
 type AdminRow = {
   id: number;
@@ -14,6 +15,7 @@ type AdminRow = {
 type Notice = { ok: boolean; text: string };
 
 export function AdminAdmins() {
+  const t = useT();
   const [admins, setAdmins] = useState<AdminRow[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -54,15 +56,15 @@ export function AdminAdmins() {
       form.reset();
       setNotice({
         ok: true,
-        text: result.created
-          ? `${result.first_name} ${result.last_name} è stato aggiunto come admin. Può entrare da «Accedi» con il link via email.`
-          : `${result.first_name} ${result.last_name} ora è admin.`,
+        text: t(result.created ? "aadm.added" : "aadm.nowAdmin", {
+          name: `${result.first_name} ${result.last_name}`,
+        }),
       });
       await load();
     } catch (caught) {
       setNotice({
         ok: false,
-        text: caught instanceof ApiError ? caught.message : "Riprova tra poco.",
+        text: caught instanceof ApiError ? caught.message : t("common.retryShortly"),
       });
     }
   }
@@ -75,12 +77,12 @@ export function AdminAdmins() {
       await api(`/api/admin/admins/${removing.id}`, { method: "DELETE" });
       setNotice({
         ok: true,
-        text: `${removing.first_name} ${removing.last_name} non è più admin.`,
+        text: t("aadm.removed", { name: `${removing.first_name} ${removing.last_name}` }),
       });
       setRemoving(null);
       await load();
     } catch (caught) {
-      setDialogError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setDialogError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
     } finally {
       setWorking(false);
     }
@@ -88,25 +90,25 @@ export function AdminAdmins() {
 
   return (
     <main className="wide">
-      <h1>Admin</h1>
-      <p>Gli admin vedono e modificano tutto. Non c&apos;è un limite al loro numero.</p>
+      <h1>{t("aadm.title")}</h1>
+      <p>{t("aadm.intro")}</p>
       {notice && (
         <p role={notice.ok ? "status" : "alert"} className={`notice ${notice.ok ? "ok" : "error"}`}>
           {notice.text}
         </p>
       )}
-      {failed && <p role="alert">Non riesco a caricare gli admin.</p>}
+      {failed && <p role="alert">{t("aadm.loadError")}</p>}
       {admins === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : (
         <div className="table-wrap">
           <table>
-            <caption>Admin attuali</caption>
+            <caption>{t("aadm.caption")}</caption>
             <thead>
               <tr>
-                <th scope="col">Nome</th>
-                <th scope="col">Email</th>
-                <th scope="col">Azioni</th>
+                <th scope="col">{t("aadm.colName")}</th>
+                <th scope="col">{t("login.email")}</th>
+                <th scope="col">{t("aact.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -114,7 +116,7 @@ export function AdminAdmins() {
                 <tr key={admin.id}>
                   <th scope="row">
                     {admin.first_name} {admin.last_name}
-                    {admin.is_you && <small> (tu)</small>}
+                    {admin.is_you && <small>{t("aadm.you")}</small>}
                   </th>
                   <td>{admin.email}</td>
                   <td>
@@ -122,13 +124,15 @@ export function AdminAdmins() {
                       <button
                         type="button"
                         className="secondary"
-                        aria-label={`Rimuovi ${admin.first_name} ${admin.last_name}`}
+                        aria-label={t("aadm.removeAria", {
+                          name: `${admin.first_name} ${admin.last_name}`,
+                        })}
                         onClick={(event) => {
                           clickedRef.current = event.currentTarget;
                           setRemoving(admin);
                         }}
                       >
-                        Rimuovi
+                        {t("aadm.remove")}
                       </button>
                     ) : (
                       <small>{admin.blocked_reason}</small>
@@ -142,31 +146,29 @@ export function AdminAdmins() {
       )}
 
       <form onSubmit={add} aria-labelledby="add-title">
-        <h2 id="add-title">Aggiungi un admin</h2>
+        <h2 id="add-title">{t("aadm.addTitle")}</h2>
         <label>
-          Email
+          {t("login.email")}
           <input type="email" name="email" autoComplete="off" required />
         </label>
-        <p className="legal">
-          Se la persona è già iscritta basta l&apos;email. Se è nuova servono anche nome e cognome.
-        </p>
+        <p className="legal">{t("aadm.addHint")}</p>
         <div className="row">
           <label>
-            Nome
+            {t("reg.firstName")}
             <input name="first_name" autoComplete="off" maxLength={100} />
           </label>
           <label>
-            Cognome
+            {t("reg.lastName")}
             <input name="last_name" autoComplete="off" maxLength={100} />
           </label>
         </div>
-        <button type="submit">Aggiungi admin</button>
+        <button type="submit">{t("aadm.addButton")}</button>
       </form>
 
       {removing && (
         <ConfirmDialog
-          title={`Rimuovere ${removing.first_name} ${removing.last_name} dagli admin?`}
-          confirmLabel="Sì, rimuovo"
+          title={t("aadm.removeTitle", { name: `${removing.first_name} ${removing.last_name}` })}
+          confirmLabel={t("aadm.removeConfirm")}
           working={working}
           error={dialogError}
           onConfirm={remove}
@@ -176,10 +178,7 @@ export function AdminAdmins() {
           }}
           returnFocusTo={clickedRef}
         >
-          <p>
-            Resta una persona normale e la sua eventuale iscrizione non cambia, ma perde subito
-            l&apos;accesso al pannello.
-          </p>
+          <p>{t("aadm.removeBody")}</p>
         </ConfirmDialog>
       )}
     </main>

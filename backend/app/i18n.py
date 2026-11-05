@@ -8,9 +8,11 @@ language explicitly.
 
 import re
 from contextvars import ContextVar
+from urllib.parse import parse_qs
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from app.admin_texts import ADMIN_MESSAGES, LABELS_EN
 from app.email_texts import EMAIL_MESSAGES
 
 LOCALES = ("it", "en")
@@ -63,11 +65,22 @@ class LocaleMiddleware:
         header = next(
             (v.decode("latin-1") for k, v in scope["headers"] if k == b"accept-language"), None
         )
-        token = _current.set(parse_accept_language(header))
+        # A plain download link cannot send headers: `?lang=en` in the address says it instead.
+        asked = parse_qs(scope.get("query_string", b"").decode("latin-1")).get("lang", [None])[0]
+        locale = asked if asked in LOCALES else parse_accept_language(header)
+        token = _current.set(locale)
         try:
             await self.app(scope, receive, send)
         finally:
             _current.reset(token)
+
+
+def tr(text: str, locale: str | None = None) -> str:
+    """A fixed Italian label (CSV header, report row...) in the language. Text with no English
+    version, such as names typed by people, is returned as it is."""
+    if normalize_locale(locale or current_locale()) == "en":
+        return LABELS_EN.get(text, text)
+    return text
 
 
 def channel_label(code: str, stored: str, locale: str | None = None) -> str:
@@ -422,3 +435,4 @@ MESSAGES: dict[str, dict[str, str]] = {
 }
 
 MESSAGES.update(EMAIL_MESSAGES)
+MESSAGES.update(ADMIN_MESSAGES)

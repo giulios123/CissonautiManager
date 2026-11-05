@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { adminGuideLink } from "../guide/content";
+import { useI18n } from "../i18n";
+import { ROUTES } from "../routes";
 
 export function AdminLayout() {
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -15,33 +18,37 @@ export function AdminLayout() {
 
   async function logout() {
     await api("/api/auth/logout", { method: "POST" });
-    navigate("/login");
+    navigate(ROUTES.login);
   }
 
   return (
     <>
       <div className="admin-nav">
-        <nav aria-label="Pannello organizzatori">
+        <nav aria-label={t("adm.navLabel")}>
           <NavLink to="/admin" end>
-            Persone
+            {t("adm.navPeople")}
           </NavLink>
-          <NavLink to="/admin/days">Giorni e slot</NavLink>
-          <NavLink to="/admin/week">Settimana</NavLink>
-          <NavLink to="/admin/meals">Pasti</NavLink>
-          <NavLink to="/admin/activities">Attività</NavLink>
-          <NavLink to="/admin/contributions">Contributi</NavLink>
-          <NavLink to="/admin/report">Report</NavLink>
-          <NavLink to="/admin/to-collect">Da incassare</NavLink>
-          <NavLink to="/admin/to-review">Da verificare</NavLink>
-          <NavLink to="/admin/admins">Admin</NavLink>
-          <NavLink to="/admin/settings">Impostazioni</NavLink>
-          <Link to={adminGuideLink(pathname)}>Guida</Link>
+          <NavLink to="/admin/days">{t("adm.navDays")}</NavLink>
+          <NavLink to="/admin/week">{t("adm.navWeek")}</NavLink>
+          <NavLink to="/admin/meals">{t("adm.navMeals")}</NavLink>
+          <NavLink to="/admin/activities">{t("adm.navActivities")}</NavLink>
+          <NavLink to="/admin/contributions">{t("adm.navContributions")}</NavLink>
+          <NavLink to="/admin/report">{t("adm.navReport")}</NavLink>
+          <NavLink to="/admin/to-collect">{t("adm.navToCollect")}</NavLink>
+          <NavLink to="/admin/to-review">{t("adm.navToReview")}</NavLink>
+          <NavLink to="/admin/admins">{t("adm.navAdmins")}</NavLink>
+          <NavLink to="/admin/settings">{t("adm.navSettings")}</NavLink>
+          <Link to={adminGuideLink(pathname)}>{t("adm.navGuide")}</Link>
           <button type="button" className="link" onClick={logout}>
-            Esci
+            {t("me.logout")}
           </button>
         </nav>
       </div>
-      <Outlet />
+      {/* Pages show labels the server writes in the language of the request: a new language
+          means asking again, so they start over. */}
+      <Fragment key={locale}>
+        <Outlet />
+      </Fragment>
     </>
   );
 }

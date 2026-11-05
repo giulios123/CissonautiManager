@@ -14,6 +14,8 @@ function fill(text: string, params?: Params): string {
   );
 }
 
+export const hasMessage = (key: string): key is MessageKey => key in it;
+
 /** The text of a key in a language, with `{name}` placeholders replaced. */
 export function translate(locale: Locale, key: MessageKey, params?: Params): string {
   return fill(catalogs[locale][key], params);

@@ -6,6 +6,7 @@ data and appear only as a number, never with names.
 
 from app.csv_export import Amount, Cell
 from app.domain.report import EditionReport, Split
+from app.i18n import channel_label, tr
 from app.services.edition import PAYMENT_CHANNELS
 from app.timefmt import format_activity, meal_label, period_label, status_label
 
@@ -18,15 +19,20 @@ DIET_LABELS = {
 }
 CONTRIBUTION_LABELS = {"talk": "Talk", "topic": "Temi per l'unconference", "skill": "Competenze"}
 
+
+def header() -> list[str]:
+    return [tr(cell) for cell in HEADER]
+
+
 Row = list[Cell]
 
 
 def _split(section: str, label: str, value: Split) -> Row:
-    return [section, label, value.confirmed, value.pending, value.total]
+    return [tr(section), tr(label), value.confirmed, value.pending, value.total]
 
 
 def _plain(section: str, label: str, value: Cell) -> Row:
-    return [section, label, None, None, value]
+    return [tr(section), tr(label), None, None, value]
 
 
 def _decimal(value: float) -> str:
@@ -38,7 +44,7 @@ def report_rows(report: EditionReport) -> list[Row]:
 
     section = "Iscrizioni"
     for status, count in report.enrollment.by_status.items():
-        rows.append(_plain(section, f"Prenotazioni: {status_label(status).lower()}", count))
+        rows.append(_plain(section, f"{tr('Prenotazioni')}: {status_label(status).lower()}", count))
     rows.append(_plain(section, "Persone con un posto", report.enrollment.people_with_seat))
 
     section = "Presenze"
@@ -46,7 +52,9 @@ def report_rows(report: EditionReport) -> list[Row]:
         label = f"{slot.day:%d/%m/%Y} {period_label(slot.period).lower()}"
         rows.append(_split(section, label, slot.present))
         if slot.derived:
-            rows.append(_plain(section, f"{label}, di cui sera dell'intero giorno", slot.derived))
+            rows.append(
+                _plain(section, f"{label}, {tr("di cui sera dell'intero giorno")}", slot.derived)
+            )
     rows.append(_plain(section, "Picco di presenti in uno slot", report.presence.peak))
     rows.append(
         _plain(
@@ -64,9 +72,21 @@ def report_rows(report: EditionReport) -> list[Row]:
     rows.append(_split(section, "Pranzi in totale", report.meals.lunches))
     rows.append(_split(section, "Cene in totale", report.meals.dinners))
     for key, count in report.meals.lunch_diets.items():
-        rows.append(_plain(section, f"Pranzi, regime {DIET_LABELS[key]}: persone", count))
+        rows.append(
+            _plain(
+                section,
+                f"{tr('Pranzi')}, {tr('regime')} {tr(DIET_LABELS[key])}: {tr('persone')}",
+                count,
+            )
+        )
     for key, count in report.meals.dinner_diets.items():
-        rows.append(_plain(section, f"Cene, regime {DIET_LABELS[key]}: persone", count))
+        rows.append(
+            _plain(
+                section,
+                f"{tr('Cene')}, {tr('regime')} {tr(DIET_LABELS[key])}: {tr('persone')}",
+                count,
+            )
+        )
     rows.append(
         _plain(section, "Persone con allergie o intolleranze", report.meals.people_with_allergies)
     )
@@ -77,16 +97,22 @@ def report_rows(report: EditionReport) -> list[Row]:
     for activity in report.activities:
         title = format_activity(activity.title, activity.day, activity.period)
         rows.append(_split(section, title, activity.joined))
-        rows.append(_plain(section, f"Prezzo: {activity.title}", Amount(activity.price_cents)))
-        capacity = "senza limite" if activity.capacity is None else activity.capacity
-        rows.append(_plain(section, f"Capienza: {activity.title}", capacity))
         rows.append(
-            _plain(section, f"Incasso atteso: {activity.title}", Amount(activity.expected_cents))
+            _plain(section, f"{tr('Prezzo')}: {activity.title}", Amount(activity.price_cents))
+        )
+        capacity = tr("senza limite") if activity.capacity is None else activity.capacity
+        rows.append(_plain(section, f"{tr('Capienza')}: {activity.title}", capacity))
+        rows.append(
+            _plain(
+                section,
+                f"{tr('Incasso atteso')}: {activity.title}",
+                Amount(activity.expected_cents),
+            )
         )
 
     section = "Contributi"
     for kind, count in report.contributions.items():
-        rows.append(_plain(section, CONTRIBUTION_LABELS.get(kind, kind), count))
+        rows.append(_plain(section, tr(CONTRIBUTION_LABELS.get(kind, kind)), count))
 
     section = "Lista d'attesa"
     wl = report.waitlist
@@ -115,8 +141,13 @@ def report_rows(report: EditionReport) -> list[Row]:
         _plain(section, "Versato", Amount(money.paid_cents)),
     ]
     for channel, cents in money.paid_by_channel.items():
+        name = channel_label(channel, PAYMENT_CHANNELS.get(channel, channel))
         rows.append(
-            _plain(section, f"Versato: {PAYMENT_CHANNELS.get(channel, channel)}", Amount(cents))
+            _plain(
+                section,
+                f"{tr('Versato')}: {name}",
+                Amount(cents),
+            )
         )
     rows += [
         _plain(section, "Rimborsato", Amount(money.refunded_cents)),

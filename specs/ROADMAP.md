@@ -115,3 +115,4 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Traduzione dei contenuti scritti dall'admin (attività, istruzioni di pagamento, testi legali), emersa nella spec dell'MVP 11.
 - Card dell'email scaricabile dalla pagina personale; altre email modificabili dall'admin (MVP 13).
 - Note di rilascio tradotte in inglese (MVP 12).
+- Voci di cronologia strutturate e tradotte alla lettura, invece di testi italiani salvati (emerso nell'MVP 12).

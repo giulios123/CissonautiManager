@@ -100,7 +100,7 @@ describe("days and slots view", () => {
     renderAt("/admin/days");
     expect(await screen.findByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
-      "/api/admin/views/slots?format=csv",
+      "/api/admin/views/slots?format=csv&lang=it",
     );
   });
 
@@ -181,7 +181,7 @@ describe("week view", () => {
     renderAt("/admin/settimana");
     expect(await screen.findByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
-      "/api/admin/views/week?format=csv",
+      "/api/admin/views/week?format=csv&lang=it",
     );
   });
 });
@@ -233,7 +233,7 @@ describe("payments to review", () => {
     renderAt("/admin/to-review");
     expect(await screen.findByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
-      "/api/admin/views/payments-review?format=csv",
+      "/api/admin/views/payments-review?format=csv&lang=it",
     );
   });
 

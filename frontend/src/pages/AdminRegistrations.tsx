@@ -3,7 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { api } from "../api";
 import { formatDeadline, statusLabel } from "../booking";
 import { StatusBadge } from "../StatusBadge";
+import { useI18n } from "../i18n";
 import { formatEuro } from "../money";
+import { adminRegistrationPath } from "../routes";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
@@ -41,6 +43,7 @@ function filterParams(status: string, query: string) {
 }
 
 export function AdminRegistrations() {
+  const { t, tn } = useI18n();
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -66,7 +69,7 @@ export function AdminRegistrations() {
 
   return (
     <main className="wide">
-      <h1>Persone</h1>
+      <h1>{t("people.title")}</h1>
       {notice && (
         <p role="status" className="notice ok">
           {notice}
@@ -74,13 +77,13 @@ export function AdminRegistrations() {
       )}
       <div className="row filters">
         <label>
-          Cerca per nome, email o codice
+          {t("people.search")}
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
         </label>
         <label>
-          Stato
+          {t("people.status")}
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Tutti</option>
+            <option value="">{t("adm.all")}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {statusLabel(s)}
@@ -89,33 +92,33 @@ export function AdminRegistrations() {
           </select>
         </label>
       </div>
-      {failed && <p role="alert">Non riesco a caricare le iscrizioni.</p>}
+      {failed && <p role="alert">{t("people.loadError")}</p>}
       {rows === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : rows.length === 0 ? (
-        <p>Nessuna iscrizione trovata.</p>
+        <p>{t("people.none")}</p>
       ) : (
         <>
-          <p aria-live="polite">{rows.length} iscrizioni</p>
+          <p aria-live="polite">{tn("people.count", rows.length)}</p>
           <p>
             <CsvButton path="/api/admin/registrations" params={filterParams(status, query)} />
           </p>
           <div className="table-wrap">
             <table>
-              <caption className="sr-only">Persone iscritte</caption>
+              <caption className="sr-only">{t("people.caption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Persona</th>
-                  <th scope="col">Telefono</th>
-                  <th scope="col">Codice</th>
-                  <th scope="col">Giorni</th>
-                  <th scope="col">Sere</th>
-                  <th scope="col">Stato</th>
-                  <th scope="col">Dovuto</th>
-                  <th scope="col">Versato</th>
-                  <th scope="col">Saldo</th>
-                  <th scope="col">Scadenza</th>
-                  <th scope="col">In lista</th>
+                  <th scope="col">{t("people.colPerson")}</th>
+                  <th scope="col">{t("people.colPhone")}</th>
+                  <th scope="col">{t("people.colCode")}</th>
+                  <th scope="col">{t("people.colDays")}</th>
+                  <th scope="col">{t("people.colEvenings")}</th>
+                  <th scope="col">{t("people.colStatus")}</th>
+                  <th scope="col">{t("people.colDue")}</th>
+                  <th scope="col">{t("people.colPaid")}</th>
+                  <th scope="col">{t("people.colBalance")}</th>
+                  <th scope="col">{t("people.colDeadline")}</th>
+                  <th scope="col">{t("people.colWaitlist")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -125,7 +128,7 @@ export function AdminRegistrations() {
                       {row.id === null ? (
                         `${row.first_name} ${row.last_name}`
                       ) : (
-                        <Link to={`/admin/registrations/${row.id}`}>
+                        <Link to={adminRegistrationPath(row.id)}>
                           {row.first_name} {row.last_name}
                         </Link>
                       )}
@@ -147,7 +150,9 @@ export function AdminRegistrations() {
                         ? formatDeadline(row.hold_expires_at)
                         : "-"}
                     </td>
-                    <td>{row.waitlist_slots ? `${row.waitlist_slots} slot` : "-"}</td>
+                    <td>
+                      {row.waitlist_slots ? tn("people.waitlistSlots", row.waitlist_slots) : "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

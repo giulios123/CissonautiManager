@@ -88,10 +88,31 @@ describe("admin guide", () => {
     for (const page of pages) expect(slugs).toContain(adminGuideSlug(page));
   });
 
-  it("gives every section a title and a body", async () => {
-    for (const section of await loadAdminGuide("it")) {
+  it.each(["it", "en"] as const)("gives every %s section a title and a body", async (locale) => {
+    const sections = await loadAdminGuide(locale);
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
       expect(section.title).not.toBe("");
       expect(section.body).not.toBe("");
     }
+  });
+
+  it("has the same sections, in the same order, in Italian and English", async () => {
+    const english = (await loadAdminGuide("en")).map((s) => s.slug);
+    expect(english).toEqual((await loadAdminGuide("it")).map((s) => s.slug));
+  });
+
+  it("is really translated: no English section repeats the Italian text", async () => {
+    const italian = await loadAdminGuide("it");
+    (await loadAdminGuide("en")).forEach((section, index) => {
+      expect(section.title).not.toBe(italian[index].title);
+      expect(section.body).not.toBe(italian[index].body);
+    });
+  });
+
+  it("has an English section for every page of the panel", async () => {
+    const slugs = (await loadAdminGuide("en")).map((section) => section.slug);
+    for (const page of ["/admin", "/admin/days", "/admin/to-collect", "/admin/settings"])
+      expect(slugs).toContain(adminGuideSlug(page));
   });
 });

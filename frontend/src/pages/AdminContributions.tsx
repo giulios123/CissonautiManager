@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { statusLabel } from "../booking";
 import { KIND_KEYS, kindLabel } from "./Contributions";
+import { useT } from "../i18n";
+import { adminRegistrationPath } from "../routes";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
@@ -18,6 +20,7 @@ type Row = {
 };
 
 export function AdminContributions() {
+  const t = useT();
   const [kind, setKind] = useState("");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -32,12 +35,12 @@ export function AdminContributions() {
 
   return (
     <main className="wide">
-      <h1>Contributi</h1>
-      <p>Talk, temi per l&apos;unconference e competenze proposti dai partecipanti.</p>
+      <h1>{t("contrib.adminTitle")}</h1>
+      <p>{t("contrib.adminIntro")}</p>
       <label>
-        Tipo
+        {t("contrib.type")}
         <select value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="">Tutti</option>
+          <option value="">{t("adm.all")}</option>
           {Object.keys(KIND_KEYS).map((value) => (
             <option key={value} value={value}>
               {kindLabel(value as keyof typeof KIND_KEYS)}
@@ -45,11 +48,11 @@ export function AdminContributions() {
           ))}
         </select>
       </label>
-      {failed && <p role="alert">Non riesco a caricare i contributi.</p>}
+      {failed && <p role="alert">{t("contrib.loadError")}</p>}
       {rows === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : rows.length === 0 ? (
-        <p>Nessun contributo per ora.</p>
+        <p>{t("contrib.none")}</p>
       ) : (
         <>
           <p>
@@ -57,12 +60,12 @@ export function AdminContributions() {
           </p>
           <div className="table-wrap">
             <table>
-              <caption className="sr-only">Contributi offerti</caption>
+              <caption className="sr-only">{t("contrib.caption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Contributo</th>
-                  <th scope="col">Tipo</th>
-                  <th scope="col">Chi</th>
+                  <th scope="col">{t("contrib.colContribution")}</th>
+                  <th scope="col">{t("contrib.type")}</th>
+                  <th scope="col">{t("contrib.colWho")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -79,13 +82,17 @@ export function AdminContributions() {
                     </th>
                     <td>{kindLabel(row.kind)}</td>
                     <td>
-                      <Link to={`/admin/registrations/${row.booking_id}`}>
+                      <Link to={adminRegistrationPath(row.booking_id)}>
                         {row.first_name} {row.last_name}
                       </Link>
                       {!row.active && (
                         <>
                           <br />
-                          <small>iscrizione {statusLabel(row.status).toLowerCase()}</small>
+                          <small>
+                            {t("contrib.registrationStatus", {
+                              status: statusLabel(row.status).toLowerCase(),
+                            })}
+                          </small>
                         </>
                       )}
                     </td>

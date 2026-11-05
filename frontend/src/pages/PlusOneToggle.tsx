@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { api, ApiError } from "../api";
 import { formatDeadline } from "../booking";
+import { useT } from "../i18n";
 
 type Props = {
   participantId: number;
@@ -26,6 +27,7 @@ export function PlusOneToggle({
   compact = false,
   onChanged,
 }: Props) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const helpId = useId();
@@ -41,7 +43,7 @@ export function PlusOneToggle({
       });
       onChanged();
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : "Non riesco a salvare. Riprova.");
+      setError(failure instanceof ApiError ? failure.message : t("plus.cannotSave"));
     } finally {
       setBusy(false);
     }
@@ -57,14 +59,17 @@ export function PlusOneToggle({
           aria-describedby={helpId}
           onChange={(event) => void change(event.target.checked)}
         />
-        +1 verificato
+        {t("plus.verified")}
       </label>
       <small id={helpId} className={compact ? "sr-only" : undefined}>
         {!hasInvite && !verified
-          ? "Serve che la persona abbia indicato chi l'ha invitata."
+          ? t("plus.needsInviter")
           : verified
-            ? `Verificato${verifiedBy ? ` da ${verifiedBy}` : ""}${verifiedAt ? ` il ${formatDeadline(verifiedAt)}` : ""}. Passa davanti nelle liste d'attesa.`
-            : "Se confermi che è davvero un invitato, passa davanti nelle liste d'attesa."}
+            ? t("plus.verifiedLine", {
+                by: verifiedBy ? t("plus.verifiedBy", { name: verifiedBy }) : "",
+                on: verifiedAt ? t("plus.verifiedOn", { date: formatDeadline(verifiedAt) }) : "",
+              })
+            : t("plus.confirmHint")}
       </small>
       {error && (
         <p role="alert" className="notice error">

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import { formatDeadline, toRomeLocalInput } from "../booking";
+import { useT } from "../i18n";
 import type { Detail } from "./AdminRegistrationDetail";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 /** Extend a pending hold, or bring an expired booking back. */
 export function AdminHoldActions({ bookingId, status, holdExpiresAt, onDone }: Props) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
 
   async function call(request: Promise<Detail>, text: string) {
@@ -19,7 +21,7 @@ export function AdminHoldActions({ bookingId, status, holdExpiresAt, onDone }: P
     try {
       onDone(await request, text);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
     }
   }
 
@@ -32,20 +34,17 @@ export function AdminHoldActions({ bookingId, status, holdExpiresAt, onDone }: P
         method: "PATCH",
         json: { hold_expires_at: hold },
       }),
-      "Scadenza prorogata.",
+      t("dsub.holdExtended"),
     );
   }
 
   if (status === "in_attesa_pagamento") {
     return (
       <form onSubmit={extend} aria-labelledby="extend-title" key={holdExpiresAt}>
-        <h2 id="extend-title">Proroga il blocco</h2>
-        <p>
-          Ora il posto è bloccato fino al {formatDeadline(holdExpiresAt)}. Scegli una nuova
-          scadenza, in orario italiano.
-        </p>
+        <h2 id="extend-title">{t("dsub.extendTitle")}</h2>
+        <p>{t("dsub.extendBody", { date: formatDeadline(holdExpiresAt) })}</p>
         <label>
-          Nuova scadenza
+          {t("dsub.newDeadline")}
           <input
             type="datetime-local"
             name="hold"
@@ -53,7 +52,7 @@ export function AdminHoldActions({ bookingId, status, holdExpiresAt, onDone }: P
             required
           />
         </label>
-        <button type="submit">Proroga</button>
+        <button type="submit">{t("dsub.extend")}</button>
         {error && (
           <p role="alert" className="notice error">
             {error}
@@ -66,21 +65,18 @@ export function AdminHoldActions({ bookingId, status, holdExpiresAt, onDone }: P
   if (status === "scaduta") {
     return (
       <section aria-labelledby="revive-title">
-        <h2 id="revive-title">Riattiva la prenotazione</h2>
-        <p>
-          Rimette i posti in blocco per i giorni previsti, se ci sono ancora per tutti gli slot. Se
-          un pagamento già registrato copre la quota, la conferma subito.
-        </p>
+        <h2 id="revive-title">{t("dsub.reviveTitle")}</h2>
+        <p>{t("dsub.reviveBody")}</p>
         <button
           type="button"
           onClick={() =>
             void call(
               api<Detail>(`/api/admin/registrations/${bookingId}/reactivate`, { method: "POST" }),
-              "Prenotazione riattivata.",
+              t("dsub.reactivated"),
             )
           }
         >
-          Riattiva la prenotazione
+          {t("dsub.reviveTitle")}
         </button>
         {error && (
           <p role="alert" className="notice error">

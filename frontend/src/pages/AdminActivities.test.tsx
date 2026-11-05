@@ -104,12 +104,12 @@ describe("activity detail page", () => {
     );
     renderAt("/admin/activities/3");
     expect(await screen.findByRole("heading", { name: "Escursione" })).toBeInTheDocument();
-    expect(screen.getByText(/1 \/ 2, 1 posti liberi/)).toBeInTheDocument();
+    expect(screen.getByText(/1 \/ 2, 1 posto libero/)).toBeInTheDocument();
     const row = screen.getByRole("link", { name: "Ada Lovelace" }).closest("tr") as HTMLElement;
     expect(within(row).getByText("Confermata")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
-      "/api/admin/activities/3?format=csv",
+      "/api/admin/activities/3?format=csv&lang=it",
     );
   });
 });
@@ -153,7 +153,7 @@ describe("contributions view", () => {
     );
     expect(screen.getByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
       "href",
-      "/api/admin/views/contributions?kind=talk&format=csv",
+      "/api/admin/views/contributions?kind=talk&format=csv&lang=it",
     );
   });
 });

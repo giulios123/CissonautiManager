@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, hhmm, periodLabel } from "../booking";
+import { useT } from "../i18n";
+import { adminRegistrationPath } from "../routes";
 import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
 import { PlusOneToggle } from "./PlusOneToggle";
@@ -37,6 +39,7 @@ type SlotRow = {
 type DayRow = { date: string; slots: SlotRow[] };
 
 export function AdminSlots() {
+  const t = useT();
   const [days, setDays] = useState<DayRow[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -59,25 +62,22 @@ export function AdminSlots() {
       await api(`/api/admin/waitlist/${person.entry_id}`, { method: "DELETE" });
       setMessage({
         ok: true,
-        text: `${person.first_name} ${person.last_name} è stato tolto dalla lista. Non parte nessuna email: avvisalo tu.`,
+        text: t("slots.removed", { name: `${person.first_name} ${person.last_name}` }),
       });
       await load();
     } catch (error) {
       setMessage({
         ok: false,
-        text: error instanceof ApiError ? error.message : "Riprova tra poco.",
+        text: error instanceof ApiError ? error.message : t("common.retryShortly"),
       });
     }
   }
 
   return (
     <main className="wide">
-      <h1>Giorni e slot</h1>
-      <p>
-        Chi c&apos;è in ogni slot. La sera comprende anche chi ha prenotato mattina e pomeriggio
-        dello stesso giorno (segnato come «sera dell&apos;intero giorno»).
-      </p>
-      {failed && <p role="alert">Non riesco a caricare la vista.</p>}
+      <h1>{t("slots.title")}</h1>
+      <p>{t("slots.intro")}</p>
+      {failed && <p role="alert">{t("slots.loadError")}</p>}
       {message && (
         <p
           role={message.ok ? "status" : "alert"}
@@ -87,9 +87,9 @@ export function AdminSlots() {
         </p>
       )}
       {days === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : days.length === 0 ? (
-        <p>Nessun giorno: configura prima l&apos;edizione nelle Impostazioni.</p>
+        <p>{t("slots.noDays")}</p>
       ) : (
         <>
           <p>
@@ -101,11 +101,11 @@ export function AdminSlots() {
                 <caption>{formatDay(day.date)}</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Slot</th>
-                    <th scope="col">Presenti</th>
-                    <th scope="col">Posti liberi</th>
-                    <th scope="col">Persone</th>
-                    <th scope="col">Lista d&apos;attesa</th>
+                    <th scope="col">{t("slots.colSlot")}</th>
+                    <th scope="col">{t("slots.colPresent")}</th>
+                    <th scope="col">{t("slots.colFree")}</th>
+                    <th scope="col">{t("slots.colPeople")}</th>
+                    <th scope="col">{t("slots.colWaitlist")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -122,7 +122,7 @@ export function AdminSlots() {
                         {slot.present}
                         {slot.capacity !== null && ` / ${slot.capacity}`}
                       </td>
-                      <td>{slot.free === null ? "senza limite" : slot.free}</td>
+                      <td>{slot.free === null ? t("slots.unlimited") : slot.free}</td>
                       <td>
                         {slot.people.length === 0 ? (
                           "-"
@@ -130,12 +130,12 @@ export function AdminSlots() {
                           <ul className="plain">
                             {slot.people.map((person) => (
                               <li key={person.booking_id}>
-                                <Link to={`/admin/registrations/${person.booking_id}`}>
+                                <Link to={adminRegistrationPath(person.booking_id)}>
                                   {person.first_name} {person.last_name}
                                 </Link>{" "}
                                 <small>
                                   <StatusBadge status={person.status} />
-                                  {person.derived && ", sera dell'intero giorno"}
+                                  {person.derived && t("slots.derived")}
                                 </small>
                               </li>
                             ))}
@@ -161,8 +161,8 @@ export function AdminSlots() {
                                     <>
                                       <br />
                                       <small>
-                                        invitato da {person.invited_by}
-                                        {!person.plus_one && ", da verificare"}
+                                        {t("slots.invitedBy", { name: person.invited_by })}
+                                        {!person.plus_one && t("slots.toVerify")}
                                       </small>
                                     </>
                                   )}
@@ -183,9 +183,11 @@ export function AdminSlots() {
                                   type="button"
                                   className="secondary"
                                   onClick={() => remove(person)}
-                                  aria-label={`Togli ${person.first_name} ${person.last_name} dalla lista`}
+                                  aria-label={t("slots.removeAria", {
+                                    name: `${person.first_name} ${person.last_name}`,
+                                  })}
                                 >
-                                  Togli
+                                  {t("slots.remove")}
                                 </button>
                               </li>
                             ))}

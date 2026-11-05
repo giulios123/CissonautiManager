@@ -314,3 +314,12 @@
 - **Motivo**: le due versioni si rivedono insieme nella stessa PR e non si disallineano.
 - **Alternative scartate**: guida inglese generata da traduzione automatica a ogni build (testi non rivisti); un solo file con le due lingue (diff illeggibili).
 
+
+## D-044 · Pannello admin in due lingue: tabella di etichette per i CSV, cronologia lasciata com'è
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) il pannello admin usa gli stessi dizionari dell'MVP 11 e si rimonta quando cambia la lingua (`AdminLayout`), perché le sue viste mostrano etichette scritte dal server; (2) i link «Scarica CSV» sono semplici link e non mandano `Accept-Language`: la lingua viaggia nell'indirizzo (`?lang=en`) e il middleware la preferisce all'intestazione; (3) intestazioni, nomi dei file, valori fissi e righe del report CSV restano scritti in italiano nel codice e si traducono con `tr()`, grazie alla tabella `LABELS_EN` in `app/admin_texts.py`; un test controlla che ogni intestazione di ogni CSV abbia la sua versione inglese; formato (`;`, BOM, virgola decimale, date `gg/mm/aaaa`) invariato, per Excel italiano; (4) gli avvisi che le API mostrano all'admin passano dal catalogo con `t()`; (5) la cronologia delle modifiche («Cronologia» della scheda) è un registro: le voci nuove si scrivono ancora in italiano e quelle vecchie non si toccano.
+- **Motivo**: richiesta del maintainer di un'interfaccia tutta bilingue; i CSV e la scheda sono usati ogni giorno dagli organizzatori.
+- **Alternative scartate**: scaricare i CSV con `fetch` per mandare l'intestazione (perde il download nativo e l'avviso sui dati sanitari); tradurre qualunque cella di un CSV (traduce anche nomi di persone uguali a una etichetta); voci di cronologia strutturate e tradotte alla lettura (richiede un cambio di schema, nel Backlog).
+- **Limiti noti**: la cronologia resta in italiano; il separatore `;` e le date `gg/mm/aaaa` restano anche nei CSV inglesi; i nomi e i testi scritti dagli organizzatori non si traducono.
+

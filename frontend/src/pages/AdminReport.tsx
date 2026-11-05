@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "../api";
+import { useT, type MessageKey } from "../i18n";
 import { intlTag } from "../i18n/locale";
 import { formatDay, periodLabel } from "../booking";
 import { formatEuro } from "../money";
@@ -60,22 +61,22 @@ type Report = {
   };
 };
 
-const DIET_LABELS: Record<string, string> = {
-  omnivore: "Onnivoro",
-  vegetarian: "Vegetariano",
-  vegan: "Vegano",
-  none: "Non indicato",
+const DIET_LABELS: Record<string, MessageKey> = {
+  omnivore: "rep.dietOmnivore",
+  vegetarian: "rep.dietVegetarian",
+  vegan: "rep.dietVegan",
+  none: "rep.dietNone",
 };
-const CONTRIBUTION_LABELS: Record<string, string> = {
-  talk: "Talk",
-  topic: "Temi per l'unconference",
-  skill: "Competenze",
+const CONTRIBUTION_LABELS: Record<string, MessageKey> = {
+  talk: "rep.contribTalk",
+  topic: "rep.contribTopic",
+  skill: "rep.contribSkill",
 };
-const CHANNEL_LABELS: Record<string, string> = {
-  revolut: "Revolut",
-  satispay: "Satispay",
-  paypal: "PayPal",
-  iban: "Bonifico (IBAN)",
+const CHANNEL_LABELS: Record<string, MessageKey> = {
+  revolut: "channel.revolut",
+  satispay: "channel.satispay",
+  paypal: "channel.paypal",
+  iban: "channel.iban",
 };
 const decimal = (value: number) =>
   value.toLocaleString(intlTag(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -101,6 +102,7 @@ function SplitTable({
   rows: { key: string; label: ReactNode; split: Split }[];
   footer?: { label: string; split: Split };
 }) {
+  const t = useT();
   return (
     <div className="table-wrap">
       <table>
@@ -108,9 +110,9 @@ function SplitTable({
         <thead>
           <tr>
             <th scope="col">{first}</th>
-            <th scope="col">Confermate</th>
-            <th scope="col">In attesa di pagamento</th>
-            <th scope="col">Totale</th>
+            <th scope="col">{t("rep.confirmed")}</th>
+            <th scope="col">{t("rep.pending")}</th>
+            <th scope="col">{t("rep.total")}</th>
           </tr>
         </thead>
         <tbody>
@@ -173,6 +175,7 @@ function CountTable({
 }
 
 export function AdminReport() {
+  const t = useT();
   const [report, setReport] = useState<Report | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -184,12 +187,12 @@ export function AdminReport() {
 
   return (
     <main className="wide report">
-      <h1>Report</h1>
-      {failed && <p role="alert">Non riesco a caricare il report.</p>}
+      <h1>{t("rep.title")}</h1>
+      {failed && <p role="alert">{t("rep.loadError")}</p>}
       {report === null ? (
-        !failed && <p aria-busy="true">Caricamento…</p>
+        !failed && <p aria-busy="true">{t("common.loading")}</p>
       ) : report.edition === null ? (
-        <p>Nessuna edizione configurata: crea prima l&apos;edizione nelle Impostazioni.</p>
+        <p>{t("rep.noEdition")}</p>
       ) : (
         <ReportBody report={report} edition={report.edition.name} />
       )}
@@ -198,6 +201,7 @@ export function AdminReport() {
 }
 
 function ReportBody({ report, edition }: { report: Report; edition: string }) {
+  const t = useT();
   const { enrollment, presence, meals, revenue, waitlist } = report;
   const money = (label: string, cents: number, sub = false) => ({
     key: label,
@@ -207,20 +211,16 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
 
   return (
     <>
-      <p>
-        {edition}. I numeri dell&apos;edizione in una pagina: guardala qui, stampala o scarica il
-        CSV. Presenze, pasti e attività contano chi ha un posto, con le prenotazioni confermate
-        separate da quelle ancora in attesa di pagamento.
-      </p>
+      <p>{t("rep.intro", { edition })}</p>
       <p className="no-print">
         <CsvButton path="/api/admin/views/report" />
       </p>
 
-      <Section id="sec-enrollment" title="Iscrizioni">
+      <Section id="sec-enrollment" title={t("rep.secEnrollment")}>
         <CountTable
-          caption="Prenotazioni per stato"
-          first="Stato"
-          second="Prenotazioni"
+          caption={t("rep.byStatusCaption")}
+          first={t("rep.colStatus")}
+          second={t("rep.colBookings")}
           rows={[
             ...Object.entries(enrollment.by_status).map(([status, count]) => ({
               key: status,
@@ -229,68 +229,78 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
             })),
             {
               key: "people",
-              label: "Persone con un posto",
+              label: t("rep.peopleWithSeat"),
               value: enrollment.people_with_seat,
             },
           ]}
         />
       </Section>
 
-      <Section id="sec-presence" title="Presenze">
+      <Section id="sec-presence" title={t("rep.secPresence")}>
         <SplitTable
-          caption="Presenti per giorno e slot"
-          first="Giorno e slot"
+          caption={t("rep.presenceCaption")}
+          first={t("rep.dayAndSlot")}
           rows={presence.slots.map((slot) => ({
             key: `${slot.day}-${slot.period}`,
             label: (
               <>
                 {formatDay(slot.day)}, {periodLabel(slot.period).toLowerCase()}
-                {slot.derived > 0 && (
-                  <small> (di cui {slot.derived} per l&apos;intero giorno)</small>
-                )}
+                {slot.derived > 0 && <small>{t("week.derived", { n: slot.derived })}</small>}
               </>
             ),
             split: slot.present,
           }))}
-          footer={{ label: "Giorni-persona", split: presence.person_days }}
+          footer={{ label: t("rep.personDays"), split: presence.person_days }}
         />
         <dl>
-          <dt>Picco di presenti in uno slot</dt>
+          <dt>{t("rep.peak")}</dt>
           <dd>{presence.peak}</dd>
-          <dt>Media di presenti per slot di mattina e pomeriggio</dt>
+          <dt>{t("rep.average")}</dt>
           <dd>{decimal(presence.average_per_daytime_slot)}</dd>
         </dl>
       </Section>
 
-      <Section id="sec-meals" title="Pasti">
+      <Section id="sec-meals" title={t("rep.secMeals")}>
         <SplitTable
-          caption="Pranzi e cene per giorno"
-          first="Giorno e pasto"
+          caption={t("rep.mealsCaption")}
+          first={t("rep.dayAndMeal")}
           rows={meals.days.flatMap((day) => [
-            { key: `${day.day}-l`, label: `${formatDay(day.day)}, pranzo`, split: day.lunches },
-            { key: `${day.day}-d`, label: `${formatDay(day.day)}, cena`, split: day.dinners },
+            {
+              key: `${day.day}-l`,
+              label: t("rep.dayLunch", { day: formatDay(day.day) }),
+              split: day.lunches,
+            },
+            {
+              key: `${day.day}-d`,
+              label: t("rep.dayDinner", { day: formatDay(day.day) }),
+              split: day.dinners,
+            },
           ])}
         />
         <p>
-          Pranzi in totale: <strong>{meals.lunches.total}</strong> ({meals.lunches.confirmed}{" "}
-          confermati, {meals.lunches.pending} in attesa). Cene in totale:{" "}
-          <strong>{meals.dinners.total}</strong> ({meals.dinners.confirmed} confermate,{" "}
-          {meals.dinners.pending} in attesa).
+          {t("rep.mealTotals", {
+            lunches: meals.lunches.total,
+            lunchConfirmed: meals.lunches.confirmed,
+            lunchPending: meals.lunches.pending,
+            dinners: meals.dinners.total,
+            dinnerConfirmed: meals.dinners.confirmed,
+            dinnerPending: meals.dinners.pending,
+          })}
         </p>
         <div className="table-wrap">
           <table>
-            <caption>Persone per regime alimentare</caption>
+            <caption>{t("rep.dietsCaption")}</caption>
             <thead>
               <tr>
-                <th scope="col">Regime</th>
-                <th scope="col">A pranzo</th>
-                <th scope="col">A cena</th>
+                <th scope="col">{t("rep.colDiet")}</th>
+                <th scope="col">{t("rep.atLunch")}</th>
+                <th scope="col">{t("rep.atDinner")}</th>
               </tr>
             </thead>
             <tbody>
               {Object.keys(DIET_LABELS).map((key) => (
                 <tr key={key}>
-                  <th scope="row">{DIET_LABELS[key]}</th>
+                  <th scope="row">{t(DIET_LABELS[key])}</th>
                   <td>{meals.lunch_diets[key] ?? 0}</td>
                   <td>{meals.dinner_diets[key] ?? 0}</td>
                 </tr>
@@ -298,28 +308,25 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
             </tbody>
           </table>
         </div>
-        <p>
-          Persone con allergie o intolleranze: <strong>{meals.people_with_allergies}</strong>. Chi
-          sono e cosa hanno lo trovi solo in «Pasti», perché sono dati sanitari.
-        </p>
+        <p>{t("rep.allergies", { n: meals.people_with_allergies })}</p>
       </Section>
 
-      <Section id="sec-activities" title="Attività">
+      <Section id="sec-activities" title={t("rep.secActivities")}>
         {report.activities.length === 0 ? (
-          <p>Nessuna attività.</p>
+          <p>{t("rep.noActivities")}</p>
         ) : (
           <div className="table-wrap">
             <table>
-              <caption>Adesioni e incasso atteso per attività</caption>
+              <caption>{t("rep.activitiesCaption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Attività</th>
-                  <th scope="col">Prezzo</th>
-                  <th scope="col">Capienza</th>
-                  <th scope="col">Confermate</th>
-                  <th scope="col">In attesa di pagamento</th>
-                  <th scope="col">Totale</th>
-                  <th scope="col">Incasso atteso</th>
+                  <th scope="col">{t("aact.colActivity")}</th>
+                  <th scope="col">{t("aact.colPrice")}</th>
+                  <th scope="col">{t("rep.colCapacity")}</th>
+                  <th scope="col">{t("rep.confirmed")}</th>
+                  <th scope="col">{t("rep.pending")}</th>
+                  <th scope="col">{t("rep.total")}</th>
+                  <th scope="col">{t("rep.colExpected")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -333,9 +340,11 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
                       </small>
                     </th>
                     <td>
-                      {activity.price_cents === 0 ? "gratuita" : formatEuro(activity.price_cents)}
+                      {activity.price_cents === 0
+                        ? t("activity.free")
+                        : formatEuro(activity.price_cents)}
                     </td>
-                    <td>{activity.capacity ?? "senza limite"}</td>
+                    <td>{activity.capacity ?? t("slots.unlimited")}</td>
                     <td>{activity.joined.confirmed}</td>
                     <td>{activity.joined.pending}</td>
                     <td>{activity.joined.total}</td>
@@ -348,70 +357,62 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
         )}
       </Section>
 
-      <Section id="sec-contributions" title="Contributi">
+      <Section id="sec-contributions" title={t("rep.secContributions")}>
         <CountTable
-          caption="Contributi offerti"
-          first="Tipo"
-          second="Numero"
+          caption={t("rep.contribCaption")}
+          first={t("contrib.type")}
+          second={t("rep.colNumber")}
           rows={Object.entries(report.contributions).map(([kind, count]) => ({
             key: kind,
-            label: CONTRIBUTION_LABELS[kind] ?? kind,
+            label: CONTRIBUTION_LABELS[kind] ? t(CONTRIBUTION_LABELS[kind]) : kind,
             value: count,
           }))}
         />
       </Section>
 
-      <Section id="sec-waitlist" title="Lista d'attesa">
+      <Section id="sec-waitlist" title={t("rep.secWaitlist")}>
         <CountTable
-          caption="Voci delle liste d'attesa (una per slot)"
-          first="Voce"
-          second="Numero"
+          caption={t("rep.waitlistCaption")}
+          first={t("rep.colEntry")}
+          second={t("rep.colNumber")}
           rows={[
-            { key: "waiting", label: "Ancora in lista", value: waitlist.waiting },
-            { key: "promoted", label: "Promossi", value: waitlist.promoted },
+            { key: "waiting", label: t("rep.stillWaiting"), value: waitlist.waiting },
+            { key: "promoted", label: t("rep.promoted"), value: waitlist.promoted },
             {
               key: "plus",
-              label: (
-                <span className="indent">di cui +1 verificati al momento della promozione</span>
-              ),
+              label: <span className="indent">{t("rep.promotedPlusOne")}</span>,
               value: waitlist.promoted_plus_one,
             },
-            { key: "left", label: "Usciti da soli", value: waitlist.left },
-            { key: "removed", label: "Tolti da un admin", value: waitlist.removed },
-            { key: "cancelled", label: "Annullati per disdetta", value: waitlist.cancelled },
-            { key: "booked", label: "Prenotati per altra via", value: waitlist.booked },
+            { key: "left", label: t("rep.leftAlone"), value: waitlist.left },
+            { key: "removed", label: t("rep.removedByAdmin"), value: waitlist.removed },
+            { key: "cancelled", label: t("rep.cancelled"), value: waitlist.cancelled },
+            { key: "booked", label: t("rep.booked"), value: waitlist.booked },
           ]}
         />
       </Section>
 
-      <Section id="sec-revenue" title="Incassi">
+      <Section id="sec-revenue" title={t("rep.secRevenue")}>
         <CountTable
-          caption="Quanto è dovuto, versato e ancora da incassare"
-          first="Voce"
-          second="Importo"
+          caption={t("rep.revenueCaption")}
+          first={t("rep.colEntry")}
+          second={t("rep.colAmount")}
           rows={[
-            money("Totale dovuto", revenue.due_cents),
-            money("quota di partecipazione", revenue.due_fee_cents, true),
-            money("pasti", revenue.due_meals_cents, true),
-            money("attività", revenue.due_activities_cents, true),
+            money(t("rep.totalDue"), revenue.due_cents),
+            money(t("rep.dueFee"), revenue.due_fee_cents, true),
+            money(t("rep.dueMeals"), revenue.due_meals_cents, true),
+            money(t("rep.dueActivities"), revenue.due_activities_cents, true),
             ...(revenue.due_difference_cents !== 0
-              ? [
-                  money(
-                    "differenza di prezzi cambiati dopo le iscrizioni",
-                    revenue.due_difference_cents,
-                    true,
-                  ),
-                ]
+              ? [money(t("rep.dueDifference"), revenue.due_difference_cents, true)]
               : []),
-            money("Versato", revenue.paid_cents),
+            money(t("rep.paidWord"), revenue.paid_cents),
             ...Object.entries(revenue.paid_by_channel).map(([channel, cents]) =>
-              money(CHANNEL_LABELS[channel] ?? channel, cents, true),
+              money(CHANNEL_LABELS[channel] ? t(CHANNEL_LABELS[channel]) : channel, cents, true),
             ),
-            money("Rimborsato", revenue.refunded_cents),
-            money("Netto (versato meno rimborsato)", revenue.net_cents),
-            money("Ancora da incassare", revenue.to_collect_cents),
-            money("Crediti da restituire", revenue.credits_cents),
-            money("Disdette da rimborsare", revenue.to_refund_cents),
+            money(t("rep.refundedWord"), revenue.refunded_cents),
+            money(t("rep.net"), revenue.net_cents),
+            money(t("rep.toCollect"), revenue.to_collect_cents),
+            money(t("rep.credits"), revenue.credits_cents),
+            money(t("rep.toRefund"), revenue.to_refund_cents),
           ]}
         />
       </Section>

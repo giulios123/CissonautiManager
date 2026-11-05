@@ -16,7 +16,7 @@
 | 9 | Guida in app e note di rilascio | fatto e provato in locale (task 1-10) |
 | 10 | Incassi (Da incassare) | fatto e provato in locale (task 1-10) |
 | 11 | Lingue e indirizzi | fatto e provato in locale (task 1-8) |
-| 12 | Pannello admin in inglese | da fare |
+| 12 | Pannello admin in inglese | fatto e provato in locale (task 1-5) |
 | 13 | Email di iscrizione personalizzabile | da fare |
 
 ## Verifiche manuali
@@ -59,6 +59,9 @@
 
 - **MVP 11**, provato in locale con Chromium a 390 px (lingua del browser inglese, DB nuovo da migrazioni 0001-0011, build di produzione servita dal backend): `/iscrizione` porta a `/register`, `/accedi?x=1` a `/login?x=1`, `/guida` a `/guide`; iscrizione in inglese con riepilogo «1 shift · 1 day», pagina di conferma, email in console in inglese con il link `/login/verify` e «Bank transfer (IBAN)»; accesso dal link, pagina personale in inglese con titolo e pulsanti tradotti; cambio in italiano che ricarica le etichette degli slot dal server («lun 09/11 mattina»), lingua che resta dopo il ricaricamento e salvata sul profilo; `?lang=it` vince sulla lingua del browser; guida partecipante in inglese; nessuno scorrimento laterale, nessun errore in console. Trovato e corretto in prova: le etichette del server non si aggiornavano al cambio di lingua.
 - **Non verificato (MVP 11)**: CI su SQL Server con la migrazione 0011; embed reale in Google Sites con `/iscrizione` (redirect dentro l'iframe) e `?lang=en`; email vere in inglese nella casella; Safari e Firefox; il pannello admin resta in italiano (MVP 12). **Da verificare a mano**: leggere i testi inglesi con una persona madrelingua o di fiducia.
+
+- **MVP 12**, provato in locale con Chromium a 1280 px (lingua del browser inglese, DB nuovo da migrazioni, una iscrizione fatta in inglese, admin con password): menu, «People» con intestazioni e importi in inglese; link CSV con `lang=en` che scarica `people-2026-11-05.csv` con intestazioni inglesi; «To collect» con tasti «Mark as paid» e «Other amount»; scheda con sezioni e slot («Mon 9 Nov morning»); Impostazioni; cambio in italiano dal pannello che ricarica i dati e il titolo; guida organizzatori in italiano e in inglese con la stessa sezione. Nessun errore in console.
+- **Non verificato (MVP 12)**: CSV aperti in Excel o Numbers veri (il contenuto è provato nei test); lettura dei testi inglesi da una persona di fiducia; Safari e Firefox. La cronologia delle schede resta in italiano (D-044).
 
 ## Bug corretti fuori MVP
 

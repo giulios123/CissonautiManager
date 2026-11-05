@@ -146,7 +146,7 @@ describe("meals view", () => {
     vi.stubGlobal("confirm", confirm);
     renderAt("/admin/pasti");
     const link = await screen.findByRole("link", { name: "Scarica CSV" });
-    expect(link).toHaveAttribute("href", "/api/admin/views/meals?format=csv");
+    expect(link).toHaveAttribute("href", "/api/admin/views/meals?format=csv&lang=it");
     await userEvent.click(link);
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("dati sanitari"));
   });

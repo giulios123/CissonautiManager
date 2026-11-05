@@ -5,6 +5,8 @@ import { editionDays, priceLabel, seatsLabel, type Activity } from "../activitie
 import { formatDay, periodLabel } from "../booking";
 import { centsToInput, parseEuroToCents } from "../money";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { useT } from "../i18n";
+import { adminActivityPath } from "../routes";
 import { CsvButton } from "./CsvButton";
 
 type Notice = { ok: boolean; text: string } | null;
@@ -21,6 +23,7 @@ function ActivityForm({
   onSaved: (text: string) => Promise<void>;
   onCancel?: () => void;
 }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -31,7 +34,7 @@ function ActivityForm({
     const text = (name: string) => String(data.get(name) ?? "").trim();
     const price = parseEuroToCents(text("price") || "0");
     if (price === null) {
-      setError("Il prezzo deve essere un numero, ad esempio 15,00 (0 per gratuita).");
+      setError(t("aact.priceInvalid"));
       return;
     }
     const body = {
@@ -49,27 +52,27 @@ function ActivityForm({
         json: body,
       });
       if (!initial) form.reset();
-      await onSaved(initial ? "Attività aggiornata." : "Attività creata.");
+      await onSaved(initial ? t("aact.updated") : t("aact.created"));
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
     }
   }
 
-  const title = initial ? `Modifica «${initial.title}»` : "Nuova attività";
+  const title = initial ? t("aact.editTitle", { title: initial.title }) : t("aact.newTitle");
   return (
     <form onSubmit={submit} aria-label={title} key={initial?.id ?? "new"}>
       <h2>{title}</h2>
       <label>
-        Titolo
+        {t("contrib.title")}
         <input name="title" required maxLength={200} defaultValue={initial?.title ?? ""} />
       </label>
       <label>
-        Descrizione (facoltativa)
+        {t("contrib.description")}
         <textarea name="description" rows={3} defaultValue={initial?.description ?? ""} />
       </label>
       <div className="row">
         <label>
-          Giorno
+          {t("aact.day")}
           <select name="date" required defaultValue={initial?.date ?? days[0]}>
             {days.map((day) => (
               <option key={day} value={day}>
@@ -79,7 +82,7 @@ function ActivityForm({
           </select>
         </label>
         <label>
-          Fascia
+          {t("aact.period")}
           <select name="period" defaultValue={initial?.period ?? "morning"}>
             {PERIODS.map((period) => (
               <option key={period} value={period}>
@@ -91,11 +94,11 @@ function ActivityForm({
       </div>
       <div className="row">
         <label>
-          Orario indicativo (facoltativo)
+          {t("aact.timeLabel")}
           <input name="time_label" maxLength={50} defaultValue={initial?.time_label ?? ""} />
         </label>
         <label>
-          Prezzo (€, 0 se gratuita)
+          {t("aact.price")}
           <input
             name="price"
             inputMode="decimal"
@@ -103,25 +106,21 @@ function ActivityForm({
           />
         </label>
         <label>
-          Posti (vuoto se senza limite)
+          {t("aact.capacity")}
           <input name="capacity" type="number" min={1} defaultValue={initial?.capacity ?? ""} />
         </label>
       </div>
-      {initial && initial.joined > 0 && (
-        <p className="legal">
-          Ci sono già iscritti: prezzo, giorno e fascia non si possono cambiare.
-        </p>
-      )}
+      {initial && initial.joined > 0 && <p className="legal">{t("aact.locked")}</p>}
       {error && (
         <p role="alert" className="notice error">
           {error}
         </p>
       )}
       <div className="actions">
-        <button type="submit">{initial ? "Salva le modifiche" : "Crea l'attività"}</button>
+        <button type="submit">{initial ? t("aact.saveChanges") : t("aact.create")}</button>
         {onCancel && (
           <button type="button" className="secondary" onClick={onCancel}>
-            Annulla
+            {t("contrib.cancel")}
           </button>
         )}
       </div>
@@ -130,6 +129,7 @@ function ActivityForm({
 }
 
 function DeleteActivity({ activity, onDone }: { activity: Activity; onDone: (n: Notice) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -138,9 +138,9 @@ function DeleteActivity({ activity, onDone }: { activity: Activity; onDone: (n: 
     try {
       await api(`/api/admin/activities/${activity.id}`, { method: "DELETE" });
       setOpen(false);
-      onDone({ ok: true, text: `Attività «${activity.title}» eliminata.` });
+      onDone({ ok: true, text: t("aact.deleted", { title: activity.title }) });
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
     }
   }
 
@@ -151,21 +151,21 @@ function DeleteActivity({ activity, onDone }: { activity: Activity; onDone: (n: 
         className="danger"
         ref={trigger}
         disabled={activity.joined > 0}
-        title={activity.joined > 0 ? "Un'attività con iscritti non si elimina" : undefined}
+        title={activity.joined > 0 ? t("aact.hasPeople") : undefined}
         onClick={() => setOpen(true)}
       >
-        Elimina
+        {t("aact.delete")}
       </button>
       {open && (
         <ConfirmDialog
-          title={`Eliminare «${activity.title}»?`}
-          confirmLabel="Sì, elimina"
+          title={t("aact.deleteTitle", { title: activity.title })}
+          confirmLabel={t("aact.deleteConfirm")}
           error={error}
           onConfirm={confirm}
           onCancel={() => setOpen(false)}
           returnFocusTo={trigger}
         >
-          <p>L&apos;attività sparisce dalla pagina dei partecipanti.</p>
+          <p>{t("aact.deleteBody")}</p>
         </ConfirmDialog>
       )}
     </>
@@ -173,6 +173,7 @@ function DeleteActivity({ activity, onDone }: { activity: Activity; onDone: (n: 
 }
 
 export function AdminActivities() {
+  const t = useT();
   const [activities, setActivities] = useState<Activity[] | null>(null);
   const [days, setDays] = useState<string[]>([]);
   const [failed, setFailed] = useState(false);
@@ -202,21 +203,18 @@ export function AdminActivities() {
 
   return (
     <main className="wide">
-      <h1>Attività</h1>
-      <p>
-        Ogni attività ha un giorno e una fascia: possono aderire solo le persone presenti in quella
-        fascia. Le attività a pagamento si aggiungono alla quota.
-      </p>
-      {failed && <p role="alert">Non riesco a caricare le attività.</p>}
+      <h1>{t("aact.title")}</h1>
+      <p>{t("aact.intro")}</p>
+      {failed && <p role="alert">{t("aact.loadError")}</p>}
       {notice && (
         <p role={notice.ok ? "status" : "alert"} className={`notice ${notice.ok ? "ok" : "error"}`}>
           {notice.text}
         </p>
       )}
       {activities === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : activities.length === 0 ? (
-        <p>Nessuna attività per ora.</p>
+        <p>{t("aact.none")}</p>
       ) : (
         <>
           <p>
@@ -224,21 +222,21 @@ export function AdminActivities() {
           </p>
           <div className="table-wrap">
             <table>
-              <caption className="sr-only">Attività dell'edizione</caption>
+              <caption className="sr-only">{t("aact.caption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Attività</th>
-                  <th scope="col">Quando</th>
-                  <th scope="col">Prezzo</th>
-                  <th scope="col">Iscritti</th>
-                  <th scope="col">Azioni</th>
+                  <th scope="col">{t("aact.colActivity")}</th>
+                  <th scope="col">{t("aact.colWhen")}</th>
+                  <th scope="col">{t("aact.colPrice")}</th>
+                  <th scope="col">{t("aact.colSignedUp")}</th>
+                  <th scope="col">{t("aact.colActions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {activities.map((activity) => (
                   <tr key={activity.id}>
                     <th scope="row">
-                      <Link to={`/admin/activities/${activity.id}`}>{activity.title}</Link>
+                      <Link to={adminActivityPath(activity.id)}>{activity.title}</Link>
                     </th>
                     <td>
                       {formatDay(activity.date)}, {periodLabel(activity.period).toLowerCase()}
@@ -253,7 +251,7 @@ export function AdminActivities() {
                           className="secondary"
                           onClick={() => setEditing(activity)}
                         >
-                          Modifica
+                          {t("contrib.edit")}
                         </button>
                         <DeleteActivity
                           activity={activity}
@@ -272,7 +270,7 @@ export function AdminActivities() {
         </>
       )}
       {days.length === 0 ? (
-        <p>Configura prima le date dell&apos;edizione nelle Impostazioni.</p>
+        <p>{t("aact.setDatesFirst")}</p>
       ) : (
         <ActivityForm
           days={days}
