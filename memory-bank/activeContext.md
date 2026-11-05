@@ -2,11 +2,11 @@
 
 ## Ora
 
-MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 implementati sul branch `claude/magical-gauss-vbss2u` (backend 470 test, frontend 96 test, lint verdi, provati in browser da telefono). Aperto solo il task 9 dell'MVP 2: infrastruttura Azure (ACS, job orario) scritta ma mai validata.
+MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 su `main` e deployati su Azure (backend 480 test, frontend 99 test, CI verde anche su SQL Server).
 
 ## Prossimo passo
 
-1. MVP 2 e MVP 3 sono su `main` (PR #4). Il primo deploy è fallito per il provider `Microsoft.Communication` non registrato: il maintainer lo registra (`az provider register --namespace Microsoft.Communication --wait`), poi si rilancia il Deploy. Quando è verde si chiude il task 9 dell'MVP 2 e si fanno le prove manuali (email vera, job orario). Ogni nuovo errore di Azure sul Bicep, mai compilato prima, si corregge con una PR piccola.
+1. MVP 2 e MVP 3 sono su `main` (PR #4) e **deployati su Azure** (task 9 validato): `https://cissonauti-booking.wonderfulbush-cbda30f0.italynorth.azurecontainerapps.io`. Ora servono le prove manuali in produzione con le checklist delle due descrizioni di PR: email vera nella casella e fuori dallo spam, il job `cissonauti-booking-reminders` che gira ogni ora (portale Azure, «Execution history»), viste e CSV nel pannello con dati veri.
 2. Prova con le descrizioni di PR per gli organizzatori: `specs/mvp-02-pagina-personale/pr-description.md` e `specs/mvp-03-pannello-admin/pr-description.md`.
 3. MVP 4 (lista d'attesa), dopo il passaggio su `main`. Da chiarire prima: dettagli della priorità per chi porta un +1 (vedi Backlog).
 
