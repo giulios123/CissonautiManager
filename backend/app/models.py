@@ -30,6 +30,16 @@ STATUS_REFUNDED = "rimborsata"
 
 DOC_PRIVACY = "privacy"
 DOC_DISCLAIMER = "disclaimer"
+# Specific consent to the processing of health data (allergies and intolerances).
+DOC_HEALTH = "health"
+
+MEAL_LUNCH = "lunch"
+MEAL_DINNER = "dinner"
+
+DIET_OMNIVORE = "omnivore"
+DIET_VEGETARIAN = "vegetarian"
+DIET_VEGAN = "vegan"
+DIETS = (DIET_OMNIVORE, DIET_VEGETARIAN, DIET_VEGAN)
 
 # Why a waitlist entry was closed. Entries are never deleted: the history stays.
 CLOSE_PROMOTED = "promoted"  # the seat went to this person
@@ -59,6 +69,9 @@ class Edition(Base):
     per_day_fee_cents: Mapped[int] = mapped_column(Integer, default=100)
     # Maximum waitlist length as a percentage of a slot's capacity.
     waitlist_percent: Mapped[int] = mapped_column(Integer, default=20)
+    # Flat prices per meal. Placeholders until the final amounts are known.
+    lunch_price_cents: Mapped[int] = mapped_column(Integer, default=800)
+    dinner_price_cents: Mapped[int] = mapped_column(Integer, default=1200)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")
@@ -127,6 +140,11 @@ class Booking(Base):
     refund_note: Mapped[str | None] = mapped_column(UnicodeText)
     refunded_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     amount_due_cents: Mapped[int] = mapped_column(Integer)
+    # Dietary needs. The diet is not health data; allergies are, and need the specific consent.
+    diet: Mapped[str | None] = mapped_column(Unicode(16))
+    allergies: Mapped[str | None] = mapped_column(UnicodeText)
+    health_consent_document_id: Mapped[int | None] = mapped_column(ForeignKey("legal_document.id"))
+    health_consent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
     privacy_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
     disclaimer_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
@@ -138,6 +156,9 @@ class Booking(Base):
     payments: Mapped[list["Payment"]] = relationship(
         back_populates="booking", order_by="Payment.id"
     )
+    meals: Mapped[list["BookingMeal"]] = relationship(
+        cascade="all, delete-orphan", order_by="BookingMeal.date"
+    )
 
 
 class BookingSlot(Base):
@@ -145,6 +166,16 @@ class BookingSlot(Base):
 
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
     slot_id: Mapped[int] = mapped_column(ForeignKey("slot.id"), primary_key=True)
+
+
+class BookingMeal(Base):
+    """A lunch or a dinner the person takes part in."""
+
+    __tablename__ = "booking_meal"
+
+    booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
 
 
 class PaymentChannel(Base):

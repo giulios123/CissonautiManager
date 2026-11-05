@@ -4,7 +4,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
 
 **Dimensione**: 10 task.
 
-- [ ] **1. Migrazione 0006**: prezzi su `edition`, tabella `booking_meal`, colonne di regime, allergie e consenso su `booking`, tipo di testo `health`.
+- [x] **1. Migrazione 0006**: prezzi su `edition`, tabella `booking_meal`, colonne di regime, allergie e consenso su `booking`, tipo di testo `health`.
   Test: upgrade e downgrade da zero; edizioni e prenotazioni esistenti senza pasti.
 - [ ] **2. Regole pure**: `can_have_lunch`, `can_have_dinner`, `allowed_meals`, `meals_to_drop`, `check_meal_change`, `check_health_data`, `diet_counts`, `compute_amount_due`.
   Test: pranzo con sola mattina e con solo pomeriggio; cena con sera esplicita e derivata; nessun pasto senza presenza; pasti che cadono togliendo uno slot (e cena che resta con l'intero giorno); giorno passato; allergie senza consenso rifiutate e consenso tolto che le svuota; importo a zero pasti uguale a `compute_fee`.

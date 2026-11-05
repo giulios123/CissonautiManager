@@ -123,3 +123,28 @@ def test_migration_0005_sets_the_default_waitlist_percent(
     command.downgrade(alembic_config, "0004")
     engine.dispose()
     assert percent == 20
+
+
+def test_migration_0006_sets_the_placeholder_meal_prices(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0005")
+    engine = make_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO edition (name, start_date, end_date, morning_start, morning_end,"
+                " afternoon_start, afternoon_end, evening_start, evening_end, default_capacity,"
+                " hold_days, base_fee_cents, per_day_fee_cents, is_active, waitlist_percent)"
+                " VALUES ('Camp', '2026-07-13', '2026-07-17', '09:00:00', '13:00:00',"
+                " '14:00:00', '18:00:00', '19:00:00', '00:00:00', 25, 3, 1000, 100, 1, 20)"
+            )
+        )
+    command.upgrade(alembic_config, "0006")
+    with engine.connect() as connection:
+        prices = connection.execute(
+            text("SELECT lunch_price_cents, dinner_price_cents FROM edition")
+        ).one()
+    command.downgrade(alembic_config, "0005")
+    engine.dispose()
+    assert tuple(prices) == (800, 1200)
