@@ -53,6 +53,19 @@ Su GitHub crea l'ambiente `production` (Settings, Environments) e imposta:
 
 Se il repository o il pacchetto su GitHub sono privati, aggiungi anche la variabile `GHCR_USERNAME` e il segreto `GHCR_TOKEN` (token con permesso `read:packages`). Se sono pubblici non servono.
 
+## Se il login a Azure fallisce (AADSTS700213)
+
+Azure confronta il `subject` della credenziale con quello che GitHub presenta. Il messaggio d'errore nel log del workflow riporta il subject esatto. Alcuni repository lo presentano nel formato con gli ID numerici (`repo:proprietario@ID/repo@ID:environment:production`): in quel caso serve una seconda credenziale con quel subject. `bootstrap.sh` le crea entrambe. A mano:
+
+```bash
+az ad app federated-credential create --id <APP_ID> --parameters '{
+  "name": "github-production-id",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "<SUBJECT_DAL_LOG>",
+  "audiences": ["api://AzureADTokenExchange"]
+}'
+```
+
 ## Deploy
 
 Ogni push su `main` esegue `deploy.yml`: costruisce l'immagine, la pubblica su GHCR, applica `main.bicep` e aggiorna la Container App. Le migrazioni del database partono da sole all'avvio del container. Si può lanciare anche a mano da Actions (Run workflow).
