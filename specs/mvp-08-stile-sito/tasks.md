@@ -8,7 +8,7 @@ Branch di implementazione: `feat/mvp-08-stile-sito`. Indipendente dall'MVP 7: pu
   Richiede `sites.google.com` tra i domini consentiti dall'ambiente, oppure i materiali forniti a mano.
 - [x] **2. Token CSS**: palette su `:root`, tutti i colori scritti a mano sostituiti.
   Test: vitest sul contrasto delle coppie testo/sfondo, bottone/testo e bordo dei campi/sfondo; `grep` senza colori fuori da `:root`; test esistenti verdi.
-- [ ] **3. Font e tipografia**: `@fontsource`, scala dei titoli, cifre tabellari negli importi.
+- [x] **3. Font e tipografia**: `@fontsource`, scala dei titoli, cifre tabellari negli importi.
   Test: build senza richieste esterne (controllo sul `dist/`); test esistenti verdi.
 - [ ] **4. Componenti**: bottoni, campi, fieldset degli slot, checkbox, messaggi, `ConfirmDialog`.
   Test: altezza minima 44 px e focus visibile controllati negli screenshot; test esistenti verdi.
