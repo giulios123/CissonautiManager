@@ -13,6 +13,7 @@ STATUS_LABELS = {
     "scaduta": "Scaduta",
     "disdetta_richiesta": "Disdetta richiesta",
     "rimborsata": "Rimborsata",
+    "in_lista": "Solo in lista d'attesa",
 }
 
 

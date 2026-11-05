@@ -33,6 +33,7 @@ from app.models import (
     CLOSE_BOOKED,
     CLOSE_LEFT,
     CLOSE_PROMOTED,
+    CLOSE_REMOVED,
     STATUS_CONFIRMED,
     STATUS_PENDING,
     Booking,
@@ -42,10 +43,12 @@ from app.models import (
     WaitlistEntry,
     slot_sort_key,
 )
+from app.services import audit
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services.payments import paid_total
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
+from app.timefmt import format_slot
 
 
 class WaitlistRefused(Exception):
@@ -216,6 +219,25 @@ def leave(db: Session, participant: Participant, entry_id: int, now: datetime) -
     if entry is None or entry.participant_id != participant.id or entry.closed_at is not None:
         raise EntryNotFound()
     close(entry, CLOSE_LEFT, now)
+    db.commit()
+
+
+def remove(db: Session, admin: Participant, entry_id: int, now: datetime) -> None:
+    """An admin takes someone off a waitlist. No email: the admin tells the person."""
+    entry = db.get(WaitlistEntry, entry_id)
+    if entry is None or entry.closed_at is not None:
+        raise EntryNotFound()
+    close(entry, CLOSE_REMOVED, now)
+    slot, person = entry.slot, entry.participant
+    booking = _latest_booking(db, person.id, slot.edition_id)
+    audit.log(
+        db,
+        admin,
+        "waitlist_removed",
+        f"{person.first_name} {person.last_name} ({person.email}) tolto dalla lista d'attesa di "
+        f"{format_slot(slot.date, slot.period, slot.start_time, slot.end_time)}",
+        booking.id if booking is not None else None,
+    )
     db.commit()
 
 

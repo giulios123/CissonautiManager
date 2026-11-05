@@ -6,7 +6,8 @@ import { formatEuro } from "../money";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
-  id: number;
+  // null for someone who is only on a waitlist and has no booking
+  id: number | null;
   first_name: string;
   last_name: string;
   email: string;
@@ -18,7 +19,8 @@ type Row = {
   amount_due_cents: number;
   paid_cents: number;
   balance_cents: number;
-  hold_expires_at: string;
+  hold_expires_at: string | null;
+  waitlist_slots?: number;
 };
 
 const STATUSES = [
@@ -27,6 +29,7 @@ const STATUSES = [
   "scaduta",
   "disdetta_richiesta",
   "rimborsata",
+  "in_lista",
 ];
 
 function filterParams(status: string, query: string) {
@@ -110,15 +113,20 @@ export function AdminRegistrations() {
                   <th scope="col">Versato</th>
                   <th scope="col">Saldo</th>
                   <th scope="col">Scadenza</th>
+                  <th scope="col">In lista</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id}>
+                  <tr key={row.id ?? `w-${row.personal_code}`}>
                     <th scope="row">
-                      <Link to={`/admin/iscrizioni/${row.id}`}>
-                        {row.first_name} {row.last_name}
-                      </Link>
+                      {row.id === null ? (
+                        `${row.first_name} ${row.last_name}`
+                      ) : (
+                        <Link to={`/admin/iscrizioni/${row.id}`}>
+                          {row.first_name} {row.last_name}
+                        </Link>
+                      )}
                       <br />
                       <small>{row.email}</small>
                     </th>
@@ -131,10 +139,11 @@ export function AdminRegistrations() {
                     <td>{formatEuro(row.paid_cents)}</td>
                     <td>{formatEuro(row.balance_cents)}</td>
                     <td>
-                      {row.status === "in_attesa_pagamento"
+                      {row.status === "in_attesa_pagamento" && row.hold_expires_at
                         ? formatDeadline(row.hold_expires_at)
                         : "-"}
                     </td>
+                    <td>{row.waitlist_slots ? `${row.waitlist_slots} slot` : "-"}</td>
                   </tr>
                 ))}
               </tbody>

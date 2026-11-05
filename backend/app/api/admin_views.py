@@ -12,6 +12,7 @@ from app.db import get_db
 from app.deps import get_now, require_admin
 from app.domain.presence import presence_by_slot, week_summary
 from app.services import views as views_service
+from app.services import waitlist as waitlist_service
 from app.timefmt import period_label, status_label
 
 router = APIRouter(prefix="/api/admin/views", tags=["admin"], dependencies=[Depends(require_admin)])
@@ -29,6 +30,15 @@ class SlotPerson(BaseModel):
     derived: bool
 
 
+class WaitingPerson(BaseModel):
+    entry_id: int
+    position: int
+    first_name: str
+    last_name: str
+    email: str
+    since: datetime
+
+
 class SlotPresenceOut(BaseModel):
     id: int
     period: str
@@ -38,6 +48,7 @@ class SlotPresenceOut(BaseModel):
     present: int
     free: int | None
     people: list[SlotPerson]
+    waitlist: list[WaitingPerson] = []
 
 
 class DayPresenceOut(BaseModel):
@@ -57,6 +68,7 @@ def slots_view(
 ) -> SlotsViewOut | Response:
     data = views_service.load_presence(db, now)
     grouped = presence_by_slot(data.rows)
+    queues = waitlist_service.active_entries(db, [s.id for s in data.slots])
     days: list[DayPresenceOut] = []
     for day, day_slots in groupby(data.slots, key=lambda s: s.date):
         slot_views = []
@@ -86,6 +98,17 @@ def slots_view(
                     present=len(people),
                     free=None if slot.capacity is None else max(slot.capacity - len(people), 0),
                     people=people,
+                    waitlist=[
+                        WaitingPerson(
+                            entry_id=entry.id,
+                            position=position,
+                            first_name=entry.participant.first_name,
+                            last_name=entry.participant.last_name,
+                            email=entry.participant.email,
+                            since=entry.created_at,
+                        )
+                        for position, entry in enumerate(queues.get(slot.id, []), start=1)
+                    ],
                 )
             )
         days.append(DayPresenceOut(date=day, slots=slot_views))
@@ -100,12 +123,38 @@ def slots_view(
                 person.email,
                 status_label(person.status),
                 person.derived,
+                None,
             ]
             for day in days
             for slot in day.slots
             for person in slot.people
+        ] + [
+            [
+                day.date,
+                period_label(slot.period),
+                f"{slot.start_time:%H:%M}-{slot.end_time:%H:%M}",
+                waiting.first_name,
+                waiting.last_name,
+                waiting.email,
+                "In lista d'attesa",
+                False,
+                waiting.position,
+            ]
+            for day in days
+            for slot in day.slots
+            for waiting in slot.waitlist
         ]
-        header = ["Giorno", "Slot", "Orario", "Nome", "Cognome", "Email", "Stato", "Sera derivata"]
+        header = [
+            "Giorno",
+            "Slot",
+            "Orario",
+            "Nome",
+            "Cognome",
+            "Email",
+            "Stato",
+            "Sera derivata",
+            "Posizione in lista",
+        ]
         return csv_response(csv_filename("giorni-slot", now), header, rows)
     return SlotsViewOut(days=days)
 

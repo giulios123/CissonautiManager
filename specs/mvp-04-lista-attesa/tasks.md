@@ -18,7 +18,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: un caso per ogni evento che libera un posto; la disdetta chiude le voci e lo scrive nell'email; chi prenota da sé lo slot esce dalla lista; «forza» dell'admin non promuove nessuno.
 - [x] **7. Job orario**: passo di promozione dopo le scadenze in `send_reminders`.
   Test: prenotazione scaduta che libera il posto al primo in lista; due esecuzioni sovrapposte non assegnano lo stesso posto due volte; riepilogo nei log.
-- [ ] **8. Pannello admin**: coda in «Giorni e slot» e nel CSV, rimozione con cronologia, voci nella scheda, persone solo in lista in «Persone».
+- [x] **8. Pannello admin**: coda in «Giorni e slot» e nel CSV, rimozione con cronologia, voci nella scheda, persone solo in lista in «Persone».
   Test: CSV con posizione; rimozione senza email e con cronologia; 403 per un partecipante; filtro «in lista».
 - [ ] **9. Impostazioni e chiusura**: percentuale in Impostazioni; lint e test verdi, migrazioni da zero, Memory Bank, README, descrizione PR con checklist per organizzatori.
   Test: percentuale fuori da 0-100 rifiutata; il nuovo limite vale per i nuovi ingressi.

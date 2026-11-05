@@ -79,5 +79,6 @@ const STATUS_LABELS: Record<string, string> = {
   scaduta: "Scaduta",
   disdetta_richiesta: "Disdetta richiesta",
   rimborsata: "Rimborsata",
+  in_lista: "Solo in lista d'attesa",
 };
 export const statusLabel = (status: string) => STATUS_LABELS[status] ?? status;

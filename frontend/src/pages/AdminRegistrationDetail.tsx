@@ -28,6 +28,7 @@ export type Detail = {
   refund: { amount_cents: number; refunded_on: string | null; note: string | null } | null;
   history: HistoryEntry[];
   warning: string | null;
+  waitlist?: { id: number; label: string; position: number; created_at: string }[];
 };
 
 const CHANNELS = [
@@ -275,6 +276,21 @@ export function AdminRegistrationDetail() {
 
       <AdminEditDetails bookingId={booking.id} participant={participant} onDone={showUpdated} />
 
+      {(detail.waitlist ?? []).length > 0 && (
+        <section aria-labelledby="waitlist-title">
+          <h2 id="waitlist-title">Lista d&apos;attesa</h2>
+          <ul>
+            {(detail.waitlist ?? []).map((item) => (
+              <li key={item.id}>
+                {item.label}: {item.position}° in lista
+              </li>
+            ))}
+          </ul>
+          <p>
+            Per togliere la persona da una lista usa <Link to="/admin/giorni">Giorni e slot</Link>.
+          </p>
+        </section>
+      )}
       <AdminHistory history={detail.history ?? []} />
     </main>
   );
