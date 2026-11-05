@@ -4,7 +4,7 @@ Istruzioni per gli agent (Claude Code, Codex, GitHub Copilot). Questo file è la
 
 ## Il progetto in tre righe
 
-Cisonauti Booking gestisce le iscrizioni al Cisonauti Summer Camp: slot di coworking, pasti, attività e pagamenti registrati a mano.
+Cissonauti Booking gestisce le iscrizioni al Cissonauti Summer Camp: slot di coworking, pasti, attività e pagamenti registrati a mano.
 App unica: FastAPI (Python 3.12) espone le API sotto `/api` e serve la build statica di un frontend React (Vite + TypeScript).
 Database Azure SQL (SQL Server in locale), deploy su Azure Container Apps, open source con licenza MIT.
 
@@ -35,7 +35,7 @@ cd backend && uv run alembic upgrade head
 cd backend && uv run alembic revision --autogenerate -m "short description"
 
 # Build di produzione (un solo container)
-docker build -t cisonauti-booking .
+docker build -t cissonauti-booking .
 ```
 
 ## Convenzioni di codice

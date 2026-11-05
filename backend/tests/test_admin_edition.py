@@ -143,7 +143,7 @@ class TestPaymentChannels:
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         body = [
             {"code": "iban", "instructions": "IT00 X000 0000 0000", "enabled": True},
-            {"code": "revolut", "instructions": "@cisonauti", "enabled": True},
+            {"code": "revolut", "instructions": "@cissonauti", "enabled": True},
         ]
         response = admin_client.put("/api/admin/payment-channels", json=body)
         assert response.status_code == 200

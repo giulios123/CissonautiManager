@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     admin_email: str | None = None
     admin_password: str | None = None
 
-    database_url: str = "sqlite:///./cisonauti-dev.db"
+    database_url: str = "sqlite:///./cissonauti-dev.db"
 
     email_provider: str = "console"
     email_from: str = "noreply@example.com"

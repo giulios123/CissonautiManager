@@ -19,16 +19,16 @@ Servono Azure CLI e i permessi sull'abbonamento.
 ```bash
 az login
 az account set --subscription <ID_ABBONAMENTO>
-az group create --name cisonauti-rg --location westeurope
+az group create --name cissonauti-rg --location westeurope
 ```
 
 Utenza per GitHub Actions, con login senza password (OIDC) e permessi solo su quel gruppo:
 
 ```bash
-APP_ID=$(az ad app create --display-name cisonauti-deploy --query appId -o tsv)
+APP_ID=$(az ad app create --display-name cissonauti-deploy --query appId -o tsv)
 az ad sp create --id "$APP_ID"
 az role assignment create --assignee "$APP_ID" --role Contributor \
-  --scope /subscriptions/<ID_ABBONAMENTO>/resourceGroups/cisonauti-rg
+  --scope /subscriptions/<ID_ABBONAMENTO>/resourceGroups/cissonauti-rg
 az ad app federated-credential create --id "$APP_ID" --parameters '{
   "name": "github-production",
   "issuer": "https://token.actions.githubusercontent.com",
@@ -44,8 +44,8 @@ Su GitHub crea l'ambiente `production` (Settings, Environments) e imposta:
 | Variabile | `AZURE_CLIENT_ID` | l'`APP_ID` di sopra |
 | Variabile | `AZURE_TENANT_ID` | `az account show --query tenantId -o tsv` |
 | Variabile | `AZURE_SUBSCRIPTION_ID` | l'ID dell'abbonamento |
-| Variabile | `AZURE_RESOURCE_GROUP` | `cisonauti-rg` |
-| Variabile | `APP_NAME` | nome breve, ad esempio `cisonauti-booking` |
+| Variabile | `AZURE_RESOURCE_GROUP` | `cissonauti-rg` |
+| Variabile | `APP_NAME` | nome breve, ad esempio `cissonauti-booking` |
 | Variabile | `ADMIN_EMAIL` | email del primo admin |
 | Segreto | `SQL_ADMIN_PASSWORD` | password lunga del database (maiuscole, minuscole, numeri, simboli) |
 | Segreto | `SECRET_KEY` | stringa casuale lunga |
@@ -60,8 +60,8 @@ Alcuni abbonamenti non possono creare nuovi server SQL in certe regioni. Il rest
 ```bash
 for r in westeurope francecentral germanywestcentral swedencentral uksouth italynorth; do
   n="probe-$RANDOM$RANDOM"
-  if az sql server create -g cisonauti-rg -n "$n" -l "$r" -u probeadmin -p "$(openssl rand -hex 12)Aa1" -o none 2>/dev/null; then
-    echo "$r: ok"; az sql server delete -g cisonauti-rg -n "$n" --yes
+  if az sql server create -g cissonauti-rg -n "$n" -l "$r" -u probeadmin -p "$(openssl rand -hex 12)Aa1" -o none 2>/dev/null; then
+    echo "$r: ok"; az sql server delete -g cissonauti-rg -n "$n" --yes
   else
     echo "$r: no"
   fi
@@ -74,7 +74,7 @@ Poi imposta la regione scelta come variabile dell'ambiente `production` (`SQL_LO
 gh variable set SQL_LOCATION --env production --repo giulios123/CissonautiManager --body westeurope
 ```
 
-Se un deploy precedente ha lasciato un server in stato Failed, eliminalo prima: `az sql server delete -g cisonauti-rg -n <nome> --yes`.
+Se un deploy precedente ha lasciato un server in stato Failed, eliminalo prima: `az sql server delete -g cissonauti-rg -n <nome> --yes`.
 
 ## Se il login a Azure fallisce (AADSTS700213)
 
@@ -97,7 +97,7 @@ Per provare prima senza modificare nulla:
 
 ```bash
 export IMAGE=ghcr.io/<proprietario>/<repo>:<tag> ADMIN_EMAIL=... SQL_ADMIN_PASSWORD=... SECRET_KEY=...
-az deployment group what-if --resource-group cisonauti-rg \
+az deployment group what-if --resource-group cissonauti-rg \
   --template-file infra/main.bicep --parameters infra/main.bicepparam
 ```
 

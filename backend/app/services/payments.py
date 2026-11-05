@@ -50,7 +50,7 @@ def _send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -
             body=(
                 f"Ciao {participant.first_name},\n\n"
                 f"abbiamo registrato il tuo pagamento ({format_euro(paid_cents)}): "
-                "la tua iscrizione al Cisonauti Summer Camp è confermata.\n\n"
+                "la tua iscrizione al Cissonauti Summer Camp è confermata.\n\n"
                 f"I tuoi slot:\n{slots}\n\nCi vediamo presto!\n"
             ),
         )

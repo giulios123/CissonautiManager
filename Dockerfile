@@ -7,7 +7,8 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Python app with the ODBC driver for SQL Server
-FROM python:3.12-slim
+# Pinned to Debian 12: the Microsoft ODBC driver below comes from the Debian 12 repository.
+FROM python:3.12-slim-bookworm
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 ACCEPT_EULA=Y
 
 RUN apt-get update \
@@ -16,9 +17,12 @@ RUN apt-get update \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends msodbcsql18 \
-    && apt-get purge -y curl gnupg \
-    && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+
+# Fail the build, not the first database connection, if the driver cannot load
+# (a missing shared library shows up as "file not found" at runtime).
+RUN ! ldd /opt/microsoft/msodbcsql18/lib64/libmsodbcsql-*.so* | grep "not found" \
+    && odbcinst -q -d | grep -q "ODBC Driver 18 for SQL Server"
 
 COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
 

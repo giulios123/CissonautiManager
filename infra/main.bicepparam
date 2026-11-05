@@ -1,7 +1,7 @@
 using 'main.bicep'
 
 // Non-secret values live here. Secrets come from environment variables, never from the repo.
-param appName = readEnvironmentVariable('APP_NAME', 'cisonauti-booking')
+param appName = readEnvironmentVariable('APP_NAME', 'cissonauti-booking')
 param image = readEnvironmentVariable('IMAGE')
 param adminEmail = readEnvironmentVariable('ADMIN_EMAIL')
 param sqlLocation = readEnvironmentVariable('SQL_LOCATION', '')

@@ -1,6 +1,6 @@
-# Cisonauti Booking
+# Cissonauti Booking
 
-Gestione delle iscrizioni al **Cisonauti Summer Camp**, una settimana di coworking informale in un salone comunale tra amici e amici di amici.
+Gestione delle iscrizioni al **Cissonauti Summer Camp**, una settimana di coworking informale in un salone comunale tra amici e amici di amici.
 
 L'app serve a sapere quante persone ci sono ogni giorno nello spazio, ai pasti e alle attività, a ridurre le rinunce legando il posto al pagamento e a dare agli organizzatori una vista completa e modificabile.
 

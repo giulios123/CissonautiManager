@@ -72,7 +72,7 @@ export function Registration() {
   if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
     return (
       <main>
-        <h1>{edition.name ?? "Cisonauti Summer Camp"}</h1>
+        <h1>{edition.name ?? "Cissonauti Summer Camp"}</h1>
         <p>Le iscrizioni non sono ancora aperte. Torna a trovarci presto!</p>
       </main>
     );

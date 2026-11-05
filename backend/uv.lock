@@ -113,7 +113,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cisonauti-booking"
+name = "cissonauti-booking"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

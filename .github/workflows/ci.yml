@@ -47,7 +47,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      TEST_DATABASE_URL: mssql+pyodbc://sa:Ci-${{ github.run_id }}-Aa1@localhost:1433/cisonauti_test?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+      TEST_DATABASE_URL: mssql+pyodbc://sa:Ci-${{ github.run_id }}-Aa1@localhost:1433/cissonauti_test?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -78,7 +78,7 @@ jobs:
               f"UID=sa;PWD={password};TrustServerCertificate=yes",
               autocommit=True,
           )
-          conn.execute("IF DB_ID('cisonauti_test') IS NULL CREATE DATABASE cisonauti_test")
+          conn.execute("IF DB_ID('cissonauti_test') IS NULL CREATE DATABASE cissonauti_test")
           PY
       - name: Tests on SQL Server (includes migrations from scratch)
         run: uv run pytest
@@ -111,4 +111,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        run: docker build -t cisonauti-booking:ci .
+        run: docker build -t cissonauti-booking:ci .

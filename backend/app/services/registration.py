@@ -103,7 +103,7 @@ def _email_body(
     )
     return (
         f"Ciao {participant.first_name},\n\n"
-        "grazie per esserti iscritto al Cisonauti Summer Camp!\n\n"
+        "grazie per esserti iscritto al Cissonauti Summer Camp!\n\n"
         f"I tuoi slot:\n{slots}\n\n"
         f"Quota da versare: {format_euro(booking.amount_due_cents)}\n"
         f"Causale: {participant.personal_code}\n"
@@ -185,7 +185,7 @@ def register(
     sender.send(
         EmailMessage(
             to=participant.email,
-            subject="Iscrizione al Cisonauti Summer Camp",
+            subject="Iscrizione al Cissonauti Summer Camp",
             body=_email_body(
                 participant,
                 booking,
@@ -204,7 +204,7 @@ def _send_link_only(
     sender.send(
         EmailMessage(
             to=participant.email,
-            subject="Sei già iscritto al Cisonauti Summer Camp",
+            subject="Sei già iscritto al Cissonauti Summer Camp",
             body=(
                 f"Ciao {participant.first_name},\n\n"
                 "risulti già iscritto: non abbiamo creato una nuova iscrizione.\n"

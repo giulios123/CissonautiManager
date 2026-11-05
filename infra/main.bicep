@@ -1,4 +1,4 @@
-// Cisonauti Booking on Azure: one Container App (scales to zero) + Azure SQL Basic.
+// Cissonauti Booking on Azure: one Container App (scales to zero) + Azure SQL Basic.
 // Deploy at resource group scope: az deployment group create -g <rg> -f infra/main.bicep -p infra/main.bicepparam
 
 targetScope = 'resourceGroup'
@@ -16,7 +16,7 @@ param sqlLocation string = ''
 @description('Full image reference, for example ghcr.io/owner/repo:abc123.')
 param image string
 
-param sqlAdminLogin string = 'cisonautiadmin'
+param sqlAdminLogin string = 'cissonautiadmin'
 
 @secure()
 param sqlAdminPassword string
@@ -43,7 +43,7 @@ param emailProvider string = 'console'
 var unique = uniqueString(resourceGroup().id)
 var sqlServerName = '${appName}-sql-${unique}'
 var sqlRegion = empty(sqlLocation) ? location : sqlLocation
-var databaseName = 'cisonauti'
+var databaseName = 'cissonauti'
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: '${appName}-logs'

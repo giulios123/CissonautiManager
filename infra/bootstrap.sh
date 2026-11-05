@@ -14,10 +14,10 @@
 set -euo pipefail
 
 REPO="${REPO:-giulios123/CissonautiManager}"
-RG="${RG:-cisonauti-rg}"
+RG="${RG:-cissonauti-rg}"
 LOCATION="${LOCATION:-westeurope}"
-APP_NAME="${APP_NAME:-cisonauti-booking}"
-IDENTITY_NAME="${IDENTITY_NAME:-cisonauti-deploy}"
+APP_NAME="${APP_NAME:-cissonauti-booking}"
+IDENTITY_NAME="${IDENTITY_NAME:-cissonauti-deploy}"
 ENVIRONMENT="production"
 
 for tool in az gh openssl; do
