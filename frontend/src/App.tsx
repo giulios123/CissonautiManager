@@ -4,6 +4,7 @@ import { AdminLayout } from "./pages/AdminLayout";
 import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
 import { AdminSlots } from "./pages/AdminSlots";
+import { AdminWeek } from "./pages/AdminWeek";
 import { AdminSettings } from "./pages/AdminSettings";
 import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
@@ -51,6 +52,7 @@ export function App() {
         <Route index element={<AdminRegistrations />} />
         <Route path="iscrizioni/:id" element={<AdminRegistrationDetail />} />
         <Route path="giorni" element={<AdminSlots />} />
+        <Route path="settimana" element={<AdminWeek />} />
         <Route path="impostazioni" element={<AdminSettings />} />
       </Route>
       <Route path="*" element={<NotFound />} />

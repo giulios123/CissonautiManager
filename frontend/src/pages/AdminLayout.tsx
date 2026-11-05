@@ -17,6 +17,7 @@ export function AdminLayout() {
             Persone
           </NavLink>
           <NavLink to="/admin/giorni">Giorni e slot</NavLink>
+          <NavLink to="/admin/settimana">Settimana</NavLink>
           <NavLink to="/admin/impostazioni">Impostazioni</NavLink>
           <button type="button" className="link" onClick={logout}>
             Esci

@@ -110,3 +110,43 @@ describe("days and slots view", () => {
     expect(await screen.findByText(/configura prima l'edizione/)).toBeInTheDocument();
   });
 });
+
+describe("week view", () => {
+  const week = {
+    days: [
+      { date: "2026-07-13", morning: 2, afternoon: 1, evening: 2, evening_derived: 1, people: 3 },
+      { date: "2026-07-14", morning: 0, afternoon: 0, evening: 0, evening_derived: 0, people: 0 },
+    ],
+    total_people: 3,
+  };
+
+  it("shows the counts per day, the derived evenings and the weekly total", async () => {
+    stub(() => week);
+    renderAt("/admin/settimana");
+    const table = await screen.findByRole("table", { name: "Presenze per giorno" });
+    const monday = within(within(table).getByRole("row", { name: /13 luglio/ }));
+    expect(monday.getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "2",
+      "1",
+      "2 (di cui 1 per l'intero giorno)",
+      "3",
+    ]);
+    const tuesday = within(within(table).getByRole("row", { name: /14 luglio/ }));
+    expect(tuesday.getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+      "0",
+      "0",
+      "0",
+      "0",
+    ]);
+    expect(within(table).getByRole("row", { name: /Persone diverse/ })).toHaveTextContent("3");
+  });
+
+  it("offers the CSV download", async () => {
+    stub(() => week);
+    renderAt("/admin/settimana");
+    expect(await screen.findByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
+      "href",
+      "/api/admin/views/week?format=csv",
+    );
+  });
+});

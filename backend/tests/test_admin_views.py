@@ -147,3 +147,59 @@ class TestSlotsView:
 
     def test_without_an_edition_it_is_empty(self, admin_client):
         assert admin_client.get("/api/admin/views/slots").json() == {"days": []}
+
+
+class TestWeekView:
+    def test_counts_per_period_with_the_derived_evening_and_distinct_people(
+        self, admin_client, camp
+    ):
+        days = {d["date"]: d for d in admin_client.get("/api/admin/views/week").json()["days"]}
+        monday = days["2026-07-13"]
+        assert (monday["morning"], monday["afternoon"], monday["evening"]) == (2, 1, 2)
+        assert monday["evening_derived"] == 1
+        assert monday["people"] == 3  # Ada, Bob and Eve; the others do not count
+
+    def test_every_day_of_the_edition_is_listed_with_zeros_when_empty(self, admin_client, camp):
+        days = admin_client.get("/api/admin/views/week").json()["days"]
+        assert [d["date"] for d in days] == [f"2026-07-{n}" for n in range(13, 18)]
+        assert days[1] == {
+            "date": "2026-07-14",
+            "morning": 0,
+            "afternoon": 0,
+            "evening": 0,
+            "evening_derived": 0,
+            "people": 0,
+        }
+
+    def test_total_counts_each_person_once_across_days(self, admin_client, db, camp):
+        camp["ada"].slots.append(slot(db, 14))
+        db.commit()
+        data = admin_client.get("/api/admin/views/week").json()
+        assert data["total_people"] == 3
+        assert {d["date"]: d["people"] for d in data["days"]}["2026-07-14"] == 1
+
+    def test_csv_has_a_row_per_day_and_a_total(self, admin_client, camp):
+        response = admin_client.get("/api/admin/views/week?format=csv")
+        disposition = response.headers["content-disposition"]
+        assert disposition == 'attachment; filename="settimana-2026-07-01.csv"'
+        header, *rows = parse(response)
+        assert header == [
+            "Giorno",
+            "Mattina",
+            "Pomeriggio",
+            "Sera",
+            "di cui sera derivata",
+            "Persone",
+        ]
+        assert rows[0] == ["13/07/2026", "2", "1", "2", "1", "3"]
+        assert len(rows) == 5 + 1
+        assert rows[-1][0] == "Totale persone diverse" and rows[-1][-1] == "3"
+
+    def test_admins_only(self, client, outbox, make_participant, edition):
+        assert client.get("/api/admin/views/week").status_code == 401
+        make_participant("ada@example.com")
+        login(client, outbox)
+        assert client.get("/api/admin/views/week").status_code == 403
+
+    def test_without_an_edition_it_is_empty(self, admin_client):
+        assert admin_client.get("/api/admin/views/week").json() == {"days": [], "total_people": 0}

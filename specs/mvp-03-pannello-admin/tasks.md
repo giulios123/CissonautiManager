@@ -14,7 +14,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: filtri e ricerca; presenza serale derivata; CSV uguale alle righe filtrate; 403 per un partecipante.
 - [x] **5. Vista per giorno e slot**: endpoint (+ CSV) e pagina.
   Test: presenti, capienza e liberi; sera derivata marcata; scadute e disdette escluse; sera senza limite.
-- [ ] **6. Settimana aggregata**: endpoint (+ CSV) e pagina.
+- [x] **6. Settimana aggregata**: endpoint (+ CSV) e pagina.
   Test: conteggi per periodo; persone distinte; giorni vuoti a zero.
 - [ ] **7. Pagamenti da verificare**: endpoint (+ CSV) e pagina.
   Test: un caso per motivo; esce dalla vista quando si risolve.

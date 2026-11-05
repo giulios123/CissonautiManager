@@ -7,10 +7,10 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.csv_export import csv_filename, csv_response
+from app.csv_export import Cell, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_now, require_admin
-from app.domain.presence import presence_by_slot
+from app.domain.presence import presence_by_slot, week_summary
 from app.services import views as views_service
 from app.timefmt import period_label, status_label
 
@@ -108,3 +108,47 @@ def slots_view(
         header = ["Giorno", "Slot", "Orario", "Nome", "Cognome", "Email", "Stato", "Sera derivata"]
         return csv_response(csv_filename("giorni-slot", now), header, rows)
     return SlotsViewOut(days=days)
+
+
+class WeekDayOut(BaseModel):
+    date: date
+    morning: int
+    afternoon: int
+    evening: int
+    evening_derived: int
+    people: int
+
+
+class WeekOut(BaseModel):
+    days: list[WeekDayOut]
+    total_people: int
+
+
+@router.get("/week", response_model=None)
+def week_view(
+    fmt: Format = Query(default="json", alias="format"),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> WeekOut | Response:
+    data = views_service.load_presence(db, now)
+    summary = week_summary(data.rows, {slot.date for slot in data.slots})
+    days = [
+        WeekDayOut(
+            date=s.day,
+            morning=s.morning,
+            afternoon=s.afternoon,
+            evening=s.evening,
+            evening_derived=s.evening_derived,
+            people=s.people,
+        )
+        for s in summary
+    ]
+    total = len({row.person_id for row in data.rows})
+    if fmt == "csv":
+        header = ["Giorno", "Mattina", "Pomeriggio", "Sera", "di cui sera derivata", "Persone"]
+        rows: list[list[Cell]] = [
+            [d.date, d.morning, d.afternoon, d.evening, d.evening_derived, d.people] for d in days
+        ]
+        rows.append(["Totale persone diverse", None, None, None, None, total])
+        return csv_response(csv_filename("settimana", now), header, rows)
+    return WeekOut(days=days, total_people=total)
