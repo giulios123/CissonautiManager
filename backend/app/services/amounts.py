@@ -5,8 +5,8 @@ from app.models import MEAL_DINNER, MEAL_LUNCH, Booking, Edition
 
 
 def recompute_amount(edition: Edition, booking: Booking) -> int:
-    """Set the amount due from the booking's slots and meals, at the edition's current prices
-    (D-017), and return it."""
+    """Set the amount due from the booking's slots, meals and paid activities, at the current
+    prices (D-017), and return it."""
     kinds = [meal.kind for meal in booking.meals]
     booking.amount_due_cents = compute_amount_due(
         [s.date for s in booking.slots],
@@ -16,5 +16,6 @@ def recompute_amount(edition: Edition, booking: Booking) -> int:
         edition.per_day_fee_cents,
         edition.lunch_price_cents,
         edition.dinner_price_cents,
+        sum(activity.price_cents for activity in booking.activities),
     )
     return booking.amount_due_cents

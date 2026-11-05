@@ -26,10 +26,13 @@ def compute_amount_due(
     per_day_cents: int,
     lunch_cents: int,
     dinner_cents: int,
+    activities_cents: int = 0,
 ) -> int:
-    """What the person owes: the participation fee plus a flat price for each meal."""
+    """What the person owes: the participation fee, a flat price for each meal and the price of
+    the paid activities."""
     return (
         compute_fee(slot_dates, base_cents, per_day_cents)
         + lunches * lunch_cents
         + dinners * dinner_cents
+        + activities_cents
     )
