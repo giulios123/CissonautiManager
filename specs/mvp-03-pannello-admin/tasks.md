@@ -18,7 +18,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: conteggi per periodo; persone distinte; giorni vuoti a zero.
 - [x] **7. Pagamenti da verificare**: endpoint (+ CSV) e pagina.
   Test: un caso per motivo; esce dalla vista quando si risolve.
-- [ ] **8. Gestione admin**: servizio, endpoint e pagina.
+- [x] **8. Gestione admin**: servizio, endpoint e pagina.
   Test: promozione di un iscritto; creazione di un nuovo admin che entra col magic link; rimozione e i tre rifiuti; nessun limite di numero.
 - [ ] **9. Rimborso**: servizio, endpoint e azione nella scheda.
   Test: passaggio a `rimborsata` con importo, data e nota; oltre il pagato rifiutato; stato non valido rifiutato; nessuna email inviata; cronologia scritta.

@@ -1,5 +1,6 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { RequireLogin } from "./auth";
+import { AdminAdmins } from "./pages/AdminAdmins";
 import { AdminLayout } from "./pages/AdminLayout";
 import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
@@ -55,6 +56,7 @@ export function App() {
         <Route path="giorni" element={<AdminSlots />} />
         <Route path="settimana" element={<AdminWeek />} />
         <Route path="da-verificare" element={<AdminReview />} />
+        <Route path="amministratori" element={<AdminAdmins />} />
         <Route path="impostazioni" element={<AdminSettings />} />
       </Route>
       <Route path="*" element={<NotFound />} />
