@@ -67,8 +67,14 @@ jobs:
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
             --template-file infra/main.bicep \
             --parameters infra/main.bicepparam
-      - name: Show URL
+      - name: Wake the app and check it is healthy
+        # The app scales to zero, so after a deploy nothing runs the database migrations until
+        # the first request. Calling the health endpoint starts it and applies them.
         run: |
-          az deployment group show \
+          url=$(az deployment group show \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-            --name main --query properties.outputs.url.value -o tsv
+            --name main --query properties.outputs.url.value -o tsv)
+          echo "App: $url"
+          curl --fail --silent --show-error --retry 20 --retry-delay 6 --retry-all-errors \
+            "$url/api/health"
+          echo

@@ -6,7 +6,8 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.config import Settings
-from app.email import EmailMessage, EmailSender
+from app.email import EmailSender
+from app.email.templates import magic_link_email
 from app.models import AuthSession, MagicLinkToken, Participant
 
 MAGIC_LINK_TTL = timedelta(minutes=30)
@@ -42,17 +43,7 @@ def send_magic_link(
     now: datetime,
 ) -> None:
     raw = create_magic_link_token(db, participant, now)
-    sender.send(
-        EmailMessage(
-            to=participant.email,
-            subject="Il tuo link di accesso ai Cissonauti",
-            body=(
-                f"Ciao {participant.first_name},\n\n"
-                f"apri questo link per entrare: {magic_link_url(settings, raw)}\n\n"
-                "Il link vale 30 minuti e si può usare una sola volta."
-            ),
-        )
-    )
+    sender.send(magic_link_email(participant, magic_link_url(settings, raw)))
 
 
 def consume_magic_link(db: Session, raw_token: str, now: datetime) -> Participant | None:

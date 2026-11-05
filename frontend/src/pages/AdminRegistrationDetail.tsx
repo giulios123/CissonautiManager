@@ -1,11 +1,18 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
+import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
+import { AdminEditDetails } from "./AdminEditDetails";
+import { AdminHistory, type HistoryEntry } from "./AdminHistory";
+import { AdminHoldActions } from "./AdminHoldActions";
+import { AdminPayments } from "./AdminPayments";
+import { AdminRefundForm } from "./AdminRefundForm";
+import { AdminSlotEditor } from "./AdminSlotEditor";
 
-type Detail = {
+export type Detail = {
   participant: {
     first_name: string;
     last_name: string;
@@ -18,6 +25,8 @@ type Detail = {
   booking: BookingView;
   privacy: { version: number; accepted_at: string };
   disclaimer: { version: number; accepted_at: string };
+  refund: { amount_cents: number; refunded_on: string | null; note: string | null } | null;
+  history: HistoryEntry[];
   warning: string | null;
 };
 
@@ -30,6 +39,8 @@ const CHANNELS = [
 
 export function AdminRegistrationDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [editingSlots, setEditingSlots] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [failed, setFailed] = useState(false);
   const [amount, setAmount] = useState("");
@@ -45,6 +56,26 @@ export function AdminRegistrationDetail() {
   if (!detail) return <main aria-busy="true">Caricamento…</main>;
 
   const { participant, booking } = detail;
+
+  function afterCancel(result: AdminCancelResult) {
+    if (result.outcome === "removed" || !result.detail) {
+      navigate("/admin", {
+        state: {
+          notice: `Iscrizione di ${participant.first_name} ${participant.last_name} disdetta e rimossa.`,
+        },
+      });
+      return;
+    }
+    showUpdated(
+      result.detail,
+      "Disdetta registrata: i posti sono liberi e la persona è stata avvisata.",
+    );
+  }
+
+  function showUpdated(updated: Detail, text: string) {
+    setDetail(updated);
+    setNotice({ ok: true, text });
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,6 +124,11 @@ export function AdminRegistrationDetail() {
           {detail.warning}
         </p>
       )}
+      {notice && (
+        <p role={notice.ok ? "status" : "alert"} className={`notice ${notice.ok ? "ok" : "error"}`}>
+          {notice.text}
+        </p>
+      )}
 
       <section aria-labelledby="who">
         <h2 id="who">Dati</h2>
@@ -133,17 +169,66 @@ export function AdminRegistrationDetail() {
             <> Il posto è bloccato fino al {formatDeadline(booking.hold_expires_at)}.</>
           )}
         </p>
-        {booking.payments.length > 0 && (
-          <ul>
-            {booking.payments.map((payment, index) => (
-              <li key={index}>
-                {formatEuro(payment.amount_cents)} il {formatDay(payment.paid_on)} (
-                {payment.channel}){payment.note ? `: ${payment.note}` : ""}
-              </li>
-            ))}
-          </ul>
-        )}
+        <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
       </section>
+
+      {(booking.editable || booking.can_cancel) && (
+        <section aria-labelledby="actions-title">
+          <h2 id="actions-title">Azioni sull&apos;iscrizione</h2>
+          <div className="actions">
+            {booking.editable && (
+              <button
+                type="button"
+                className="secondary"
+                aria-expanded={editingSlots}
+                onClick={() => setEditingSlots((value) => !value)}
+              >
+                {editingSlots ? "Chiudi la modifica degli slot" : "Cambia gli slot"}
+              </button>
+            )}
+            {booking.can_cancel && (
+              <AdminCancelBooking bookingId={booking.id} booking={booking} onDone={afterCancel} />
+            )}
+          </div>
+          {editingSlots && booking.editable && (
+            <AdminSlotEditor
+              bookingId={booking.id}
+              booking={booking}
+              onDone={(updated, text) => {
+                showUpdated(updated, text);
+              }}
+            />
+          )}
+        </section>
+      )}
+
+      <AdminHoldActions
+        bookingId={booking.id}
+        status={booking.status}
+        holdExpiresAt={booking.hold_expires_at}
+        onDone={showUpdated}
+      />
+
+      {detail.refund && (
+        <p className="notice ok">
+          Rimborsati {formatEuro(detail.refund.amount_cents)}
+          {detail.refund.refunded_on && <> il {formatDay(detail.refund.refunded_on)}</>}
+          {detail.refund.note ? ` (${detail.refund.note})` : ""}.
+        </p>
+      )}
+      {booking.status === "disdetta_richiesta" && (
+        <AdminRefundForm
+          bookingId={booking.id}
+          paidCents={booking.paid_cents}
+          onDone={(updated) => {
+            setDetail(updated);
+            setNotice({
+              ok: true,
+              text: "Disdetta chiusa. Ricorda di scrivere tu alla persona.",
+            });
+          }}
+        />
+      )}
 
       <form onSubmit={submit} aria-labelledby="pay-title">
         <h2 id="pay-title">Registra un pagamento</h2>
@@ -186,15 +271,11 @@ export function AdminRegistrationDetail() {
           <input name="note" maxLength={1000} />
         </label>
         <button type="submit">Registra pagamento</button>
-        {notice && (
-          <p
-            role={notice.ok ? "status" : "alert"}
-            className={`notice ${notice.ok ? "ok" : "error"}`}
-          >
-            {notice.text}
-          </p>
-        )}
       </form>
+
+      <AdminEditDetails bookingId={booking.id} participant={participant} onDone={showUpdated} />
+
+      <AdminHistory history={detail.history ?? []} />
     </main>
   );
 }

@@ -1,20 +1,31 @@
+from collections import defaultdict
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from fastapi.responses import Response
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.schemas import BookingView, booking_view
+from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_email_sender, get_now, require_admin
+from app.domain.booking import occupies_seats
+from app.domain.presence import has_evening
 from app.email import EmailSender
 from app.models import STATUS_EXPIRED, Booking, LegalDocument, Participant
+from app.services import audit as audit_service
+from app.services import booking_admin as booking_admin_service
+from app.services import booking_changes
 from app.services import edition as edition_service
 from app.services import payments as payment_service
+from app.services import refunds as refund_service
+from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue
-from app.timefmt import to_rome
+from app.timefmt import ROME, format_euro, format_slot, status_label, to_rome
 
 router = APIRouter(
     prefix="/api/admin/registrations", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -28,8 +39,10 @@ class RegistrationRow(BaseModel):
     first_name: str
     last_name: str
     email: str
+    phone: str | None
     personal_code: str
     days: int
+    evenings: int
     status: str
     amount_due_cents: int
     paid_cents: int
@@ -54,12 +67,49 @@ class LegalAcceptance(BaseModel):
     accepted_at: datetime
 
 
+class RefundOut(BaseModel):
+    amount_cents: int
+    refunded_on: date | None
+    note: str | None
+
+
+class HistoryEntry(BaseModel):
+    at: datetime
+    actor: str
+    action: str
+    detail: str
+
+
 class RegistrationDetail(BaseModel):
     participant: ParticipantView
     booking: BookingView
     privacy: LegalAcceptance
     disclaimer: LegalAcceptance
+    refund: RefundOut | None = None
+    history: list[HistoryEntry] = []
     warning: str | None = None
+
+
+class RefundIn(BaseModel):
+    amount_cents: int = Field(ge=0, le=1_000_000)
+    refunded_on: date | None = None
+    note: str | None = Field(default=None, max_length=1000)
+
+
+Text = Annotated[str, StringConstraints(strip_whitespace=True)]
+
+
+class RegistrationPatch(BaseModel):
+    """Fields left out stay as they are; phone and invited_by can be cleared with null or ''."""
+
+    first_name: Annotated[Text, Field(min_length=1, max_length=100)] | None = None
+    last_name: Annotated[Text, Field(min_length=1, max_length=100)] | None = None
+    email: EmailStr | None = None
+    phone: Annotated[Text, Field(max_length=50)] | None = None
+    invited_by: Annotated[Text, Field(max_length=200)] | None = None
+    can_bring: Annotated[Text, Field(min_length=1, max_length=2000)] | None = None
+    # Without a time zone the value is read as Europe/Rome time.
+    hold_expires_at: datetime | None = None
 
 
 class PaymentIn(BaseModel):
@@ -67,6 +117,16 @@ class PaymentIn(BaseModel):
     channel: Literal["revolut", "satispay", "paypal", "iban"]
     paid_on: date | None = None
     note: str | None = Field(default=None, max_length=1000)
+
+
+def _evenings(booking: Booking, status: str) -> int:
+    """Days on which the person is present in the evening, booked or derived (D-009)."""
+    if not occupies_seats(status):
+        return 0
+    periods: dict[date, set[str]] = defaultdict(set)
+    for slot in booking.slots:
+        periods[slot.date].add(slot.period)
+    return sum(1 for day_periods in periods.values() if has_evening(day_periods))
 
 
 def _row(booking: Booking, now: datetime) -> RegistrationRow:
@@ -77,8 +137,10 @@ def _row(booking: Booking, now: datetime) -> RegistrationRow:
         first_name=participant.first_name,
         last_name=participant.last_name,
         email=participant.email,
+        phone=participant.phone,
         personal_code=participant.personal_code,
         days=len({s.date for s in booking.slots}),
+        evenings=_evenings(booking, view.status),
         status=view.status,
         amount_due_cents=view.amount_due_cents,
         paid_cents=view.paid_cents,
@@ -112,6 +174,24 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
         disclaimer=LegalAcceptance(
             version=disclaimer.version, accepted_at=booking.disclaimer_accepted_at
         ),
+        refund=(
+            RefundOut(
+                amount_cents=booking.refund_cents,
+                refunded_on=booking.refunded_on,
+                note=booking.refund_note,
+            )
+            if booking.refund_cents is not None
+            else None
+        ),
+        history=[
+            HistoryEntry(
+                at=entry.at,
+                actor=f"{actor.first_name} {actor.last_name}".strip(),
+                action=entry.action,
+                detail=entry.detail,
+            )
+            for entry, actor in audit_service.history(db, booking.id)
+        ],
         warning=warning,
     )
 
@@ -123,42 +203,83 @@ def _get_booking(db: Session, booking_id: int) -> Booking:
     return booking
 
 
-@router.get("")
+def _csv_rows(rows: list[RegistrationRow]):
+    for row in rows:
+        yield [
+            row.first_name,
+            row.last_name,
+            row.email,
+            row.phone,
+            row.personal_code,
+            row.days,
+            row.evenings,
+            status_label(row.status),
+            Amount(row.amount_due_cents),
+            Amount(row.paid_cents),
+            Amount(row.balance_cents),
+            row.hold_expires_at if row.status == "in_attesa_pagamento" else None,
+            row.created_at,
+        ]
+
+
+CSV_HEADER = [
+    "Nome",
+    "Cognome",
+    "Email",
+    "Telefono",
+    "Codice",
+    "Giorni",
+    "Sere",
+    "Stato",
+    "Dovuto",
+    "Versato",
+    "Saldo",
+    "Scadenza blocco",
+    "Iscritto il",
+]
+
+
+@router.get("", response_model=None)
 def list_registrations(
     status: Status | None = None,
     q: str | None = Query(default=None, max_length=100),
+    fmt: Literal["json", "csv"] = Query(default="json", alias="format"),
     db: Session = Depends(get_db),
     now: datetime = Depends(get_now),
-) -> list[RegistrationRow]:
+) -> list[RegistrationRow] | Response:
     expire_overdue(db, now)
     db.commit()
     edition = edition_service.get_active_edition(db)
     if edition is None:
-        return []
-    query = (
-        select(Booking)
-        .join(Participant, Participant.id == Booking.participant_id)
-        .where(Booking.edition_id == edition.id)
-        .order_by(Booking.created_at.desc(), Booking.id.desc())
-    )
-    if status:
-        query = query.where(Booking.status == status)
-    if q and q.strip():
-        needle = q.strip().lower()
-        query = query.where(
-            or_(
-                *[
-                    func.lower(column).contains(needle, autoescape=True)
-                    for column in (
-                        Participant.first_name,
-                        Participant.last_name,
-                        Participant.email,
-                        Participant.personal_code,
-                    )
-                ]
-            )
+        rows: list[RegistrationRow] = []
+    else:
+        query = (
+            select(Booking)
+            .join(Participant, Participant.id == Booking.participant_id)
+            .where(Booking.edition_id == edition.id)
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
         )
-    return [_row(b, now) for b in db.scalars(query)]
+        if status:
+            query = query.where(Booking.status == status)
+        if q and q.strip():
+            needle = q.strip().lower()
+            query = query.where(
+                or_(
+                    *[
+                        func.lower(column).contains(needle, autoescape=True)
+                        for column in (
+                            Participant.first_name,
+                            Participant.last_name,
+                            Participant.email,
+                            Participant.personal_code,
+                        )
+                    ]
+                )
+            )
+        rows = [_row(b, now) for b in db.scalars(query)]
+    if fmt == "csv":
+        return csv_response(csv_filename("persone", now), CSV_HEADER, _csv_rows(rows))
+    return rows
 
 
 @router.get("/{booking_id}")
@@ -193,3 +314,219 @@ def add_payment(
     )
     db.refresh(booking)
     return _detail(db, booking, now, warning=result.warning)
+
+
+@router.post("/{booking_id}/refund")
+def add_refund(
+    booking_id: int,
+    body: RefundIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        refund_service.record_refund(
+            db,
+            admin,
+            booking,
+            amount_cents=body.amount_cents,
+            refunded_on=body.refunded_on or to_rome(now).date(),
+            note=body.note,
+        )
+    except refund_service.NotRefundable as exc:
+        raise HTTPException(
+            status_code=409, detail="Si può registrare un rimborso solo su una disdetta richiesta"
+        ) from exc
+    except refund_service.RefundTooHigh as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Il rimborso non può superare quanto versato ({format_euro(exc.paid_cents)})",
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
+
+
+@router.patch("/{booking_id}")
+def edit_registration(
+    booking_id: int,
+    body: RegistrationPatch,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    changes: dict[str, str | None] = {}
+    for field in booking_admin_service.PERSON_FIELDS:
+        if field not in body.model_fields_set:
+            continue
+        value = getattr(body, field)
+        if value is None and field not in ("phone", "invited_by"):
+            raise HTTPException(status_code=422, detail="Questo campo non può essere vuoto")
+        optional = field in ("phone", "invited_by")
+        changes[field] = (value or None) if optional else value
+    new_expires = body.hold_expires_at
+    if new_expires is not None and new_expires.tzinfo is None:
+        new_expires = new_expires.replace(tzinfo=ROME)
+    try:
+        booking_admin_service.update_details(db, admin, booking, changes, new_expires, now)
+    except booking_admin_service.EmailTaken as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa email è già usata da un'altra persona"
+        ) from exc
+    except booking_admin_service.NotExtendable as exc:
+        raise HTTPException(
+            status_code=409, detail="Si può prorogare solo un blocco in attesa di pagamento"
+        ) from exc
+    except booking_admin_service.InvalidDeadline as exc:
+        raise HTTPException(
+            status_code=422, detail="La nuova scadenza deve essere successiva a quella attuale"
+        ) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Questa email è già usata da un'altra persona"
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
+
+
+@router.post("/{booking_id}/reactivate")
+def reactivate_registration(
+    booking_id: int,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        booking_admin_service.reactivate(db, sender, admin, booking, now)
+    except booking_admin_service.NotExpired as exc:
+        raise HTTPException(
+            status_code=409, detail="Si può riattivare solo una prenotazione scaduta"
+        ) from exc
+    except booking_admin_service.AnotherActiveBooking as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Questa persona ha già un'altra iscrizione attiva: non si può riattivare "
+            "anche questa",
+        ) from exc
+    except SlotsFull as exc:
+        db.rollback()
+        labels = ", ".join(
+            format_slot(s.date, s.period, s.start_time, s.end_time) for s in exc.slots
+        )
+        raise HTTPException(
+            status_code=409, detail=f"Non c'è più posto in questi slot: {labels}"
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
+
+
+class SlotsIn(BaseModel):
+    slot_ids: list[int] = Field(max_length=60)
+    # Accept a slot that is already full.
+    force: bool = False
+
+
+@router.put("/{booking_id}/slots")
+def change_registration_slots(
+    booking_id: int,
+    body: SlotsIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        result = booking_changes.change_slots(
+            db,
+            sender,
+            booking,
+            body.slot_ids,
+            now,
+            force=body.force,
+            allow_past=True,
+            actor=admin,
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except booking_changes.EmptySelection as exc:
+        raise HTTPException(
+            status_code=422, detail="Scegli almeno uno slot. Per rinunciare usa la disdetta"
+        ) from exc
+    except InvalidSlots as exc:
+        raise HTTPException(status_code=422, detail="Gli slot scelti non sono validi") from exc
+    except SlotsFull as exc:
+        db.rollback()
+        labels = ", ".join(
+            format_slot(s.date, s.period, s.start_time, s.end_time) for s in exc.slots
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=f"Questi slot sono al completo: {labels}. Per aggiungerli comunque spunta "
+            "«Forza oltre la capienza».",
+        ) from exc
+    db.refresh(booking)
+    warning = None
+    if result.over_capacity:
+        labels = ", ".join(
+            format_slot(s.date, s.period, s.start_time, s.end_time) for s in result.over_capacity
+        )
+        warning = f"Attenzione: capienza superata in {labels}."
+    return _detail(db, booking, now, warning=warning)
+
+
+class CancelOut(BaseModel):
+    outcome: str
+    # None when the booking was removed altogether.
+    detail: RegistrationDetail | None = None
+
+
+@router.post("/{booking_id}/cancel")
+def cancel_registration(
+    booking_id: int,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> CancelOut:
+    booking = _get_booking(db, booking_id)
+    try:
+        outcome = booking_changes.request_cancellation(db, sender, booking, now, actor=admin)
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più disdire"
+        ) from exc
+    if outcome == "removed":
+        return CancelOut(outcome=outcome)
+    db.refresh(booking)
+    return CancelOut(outcome=outcome, detail=_detail(db, booking, now))
+
+
+class VoidIn(BaseModel):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+
+
+@router.post("/{booking_id}/payments/{payment_id}/void")
+def void_registration_payment(
+    booking_id: int,
+    payment_id: int,
+    body: VoidIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        payment_service.void_payment(db, admin, booking, payment_id, body.reason, now)
+    except payment_service.PaymentNotFound as exc:
+        raise HTTPException(status_code=404, detail="Pagamento non trovato") from exc
+    except payment_service.AlreadyVoided as exc:
+        raise HTTPException(status_code=409, detail="Questo pagamento è già annullato") from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)

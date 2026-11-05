@@ -1,14 +1,47 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
+import { CancelBooking, type CancelOutcome } from "./CancelBooking";
+import { SlotEditor } from "./SlotEditor";
 
 type State = { status: "loading" } | { status: "anonymous" } | { status: "ready"; me: Me };
 
-function BookingCard({ booking, me }: { booking: BookingView; me: Me }) {
+function PaymentInstructions({ me }: { me: Me }) {
+  return (
+    <>
+      <p>
+        Causale: <strong>{me.personal_code}</strong>
+      </p>
+      <ul>
+        {me.payment_channels.map((channel) => (
+          <li key={channel.code}>
+            <strong>{channel.label}</strong>
+            <br />
+            <span className="legal">{channel.instructions}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function BookingCard({
+  booking,
+  me,
+  reload,
+  onCancelled,
+}: {
+  booking: BookingView;
+  me: Me;
+  reload: () => Promise<void>;
+  onCancelled: (outcome: CancelOutcome) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
   const pending = booking.status === "in_attesa_pagamento";
+  const confirmedWithBalance = booking.status === "confermata" && booking.balance_cents > 0;
   return (
     <section aria-label={`Iscrizione ${statusLabel(booking.status)}`} className="card">
       <h2>{statusLabel(booking.status)}</h2>
@@ -38,22 +71,30 @@ function BookingCard({ booking, me }: { booking: BookingView; me: Me }) {
         <>
           <p>
             Il posto è bloccato fino al <strong>{formatDeadline(booking.hold_expires_at)}</strong>.
-            Causale: <strong>{me.personal_code}</strong>
           </p>
-          <ul>
-            {me.payment_channels.map((channel) => (
-              <li key={channel.code}>
-                <strong>{channel.label}</strong>
-                <br />
-                <span className="legal">{channel.instructions}</span>
-              </li>
-            ))}
-          </ul>
+          <PaymentInstructions me={me} />
+        </>
+      )}
+      {confirmedWithBalance && (
+        <>
+          <p>Hai cambiato gli slot: la differenza si versa con le stesse istruzioni.</p>
+          <PaymentInstructions me={me} />
         </>
       )}
       {booking.status === "scaduta" && (
         <p>
           Il blocco è scaduto e i posti sono stati liberati.{" "}
+          <Link to="/iscrizione">Iscriviti di nuovo</Link>
+        </p>
+      )}
+      {booking.status === "disdetta_richiesta" && (
+        <p>
+          Hai chiesto la disdetta: i posti sono liberi e chi organizza ti scriverà per il rimborso.
+        </p>
+      )}
+      {booking.status === "rimborsata" && (
+        <p>
+          La disdetta è conclusa e il rimborso è stato gestito.{" "}
           <Link to="/iscrizione">Iscriviti di nuovo</Link>
         </p>
       )}
@@ -70,6 +111,22 @@ function BookingCard({ booking, me }: { booking: BookingView; me: Me }) {
           </ul>
         </details>
       )}
+      {(booking.editable || booking.can_cancel) && (
+        <div className="actions">
+          {booking.editable && (
+            <button
+              type="button"
+              className="secondary"
+              aria-expanded={editing}
+              onClick={() => setEditing((value) => !value)}
+            >
+              {editing ? "Chiudi la modifica" : "Cambia i tuoi slot"}
+            </button>
+          )}
+          {booking.can_cancel && <CancelBooking booking={booking} onDone={onCancelled} />}
+        </div>
+      )}
+      {editing && booking.editable && <SlotEditor booking={booking} onSaved={reload} />}
     </section>
   );
 }
@@ -120,15 +177,30 @@ function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
   );
 }
 
+const CANCEL_NOTICES: Record<CancelOutcome, string> = {
+  removed:
+    "Disdetta registrata: l'iscrizione è annullata e i posti sono liberi. Ti abbiamo scritto una email.",
+  requested:
+    "Disdetta registrata: i posti sono liberi. Chi organizza ti scriverà per il rimborso. Ti abbiamo scritto una email.",
+};
+
 export function Personal() {
   const [state, setState] = useState<State>({ status: "loading" });
+  const [notice, setNotice] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Reloading keeps the current page on screen: only the data is replaced.
+  const reload = useCallback(
+    () =>
+      api<Me>("/api/me")
+        .then((me) => setState({ status: "ready", me }))
+        .catch(() => setState({ status: "anonymous" })),
+    [],
+  );
+
   useEffect(() => {
-    api<Me>("/api/me")
-      .then((me) => setState({ status: "ready", me }))
-      .catch(() => setState({ status: "anonymous" }));
-  }, []);
+    void reload();
+  }, [reload]);
 
   if (state.status === "loading") return <main aria-busy="true">Caricamento…</main>;
   if (state.status === "anonymous") return <Navigate to="/accedi" replace />;
@@ -139,9 +211,19 @@ export function Personal() {
     navigate("/accedi");
   }
 
+  async function onCancelled(outcome: CancelOutcome) {
+    setNotice(CANCEL_NOTICES[outcome]);
+    await reload();
+  }
+
   return (
     <main>
       <h1>Ciao {me.first_name}!</h1>
+      {notice && (
+        <p role="status" className="notice ok">
+          {notice}
+        </p>
+      )}
       {me.role === "admin" && (
         <p>
           <Link to="/admin">Vai al pannello organizzatori</Link>
@@ -152,7 +234,15 @@ export function Personal() {
           Non hai ancora un&apos;iscrizione. <Link to="/iscrizione">Iscriviti al camp</Link>
         </p>
       ) : (
-        me.bookings.map((booking) => <BookingCard key={booking.id} booking={booking} me={me} />)
+        me.bookings.map((booking) => (
+          <BookingCard
+            key={booking.id}
+            booking={booking}
+            me={me}
+            reload={reload}
+            onCancelled={onCancelled}
+          />
+        ))
       )}
       <PasswordForm hasPassword={me.has_password} />
       <button type="button" onClick={logout}>

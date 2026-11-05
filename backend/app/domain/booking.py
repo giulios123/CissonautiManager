@@ -1,7 +1,14 @@
 from collections.abc import Iterable
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
-from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING
+from app.domain.fees import is_covered
+from app.models import (
+    STATUS_CANCEL_REQUESTED,
+    STATUS_CONFIRMED,
+    STATUS_EXPIRED,
+    STATUS_PENDING,
+)
+from app.timefmt import to_rome
 
 
 def hold_deadline(created_at: datetime, hold_days: int) -> datetime:
@@ -42,3 +49,34 @@ def has_free_seat(free: int | None) -> bool:
 def can_reactivate(free_seats_per_slot: Iterable[int | None]) -> bool:
     """An expired booking can come back only if every one of its slots still has a free seat."""
     return all(has_free_seat(free) for free in free_seats_per_slot)
+
+
+def can_edit_slots(status: str) -> bool:
+    """A participant can change slots only on a pending or confirmed booking."""
+    return status in (STATUS_PENDING, STATUS_CONFIRMED)
+
+
+def can_request_cancellation(status: str) -> bool:
+    return status in (STATUS_PENDING, STATUS_CONFIRMED)
+
+
+def is_past_day(day: date, now: datetime) -> bool:
+    """True when the day is over in Europe/Rome. Today still counts as not past."""
+    return day < to_rome(now).date()
+
+
+def can_refund(status: str, paid_cents: int, refund_cents: int) -> bool:
+    """A refund closes a requested cancellation and cannot exceed what was paid."""
+    return status == STATUS_CANCEL_REQUESTED and 0 <= refund_cents <= paid_cents
+
+
+def can_extend_hold(status: str) -> bool:
+    """Only a booking still waiting for payment has a hold to extend."""
+    return status == STATUS_PENDING
+
+
+def status_after_void(status: str, due_cents: int, paid_cents: int) -> str:
+    """A confirmed booking whose payments no longer cover the amount goes back to waiting."""
+    if status == STATUS_CONFIRMED and not is_covered(due_cents, paid_cents):
+        return STATUS_PENDING
+    return status

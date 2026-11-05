@@ -9,8 +9,18 @@ export type BookingView = {
   paid_cents: number;
   balance_cents: number;
   hold_expires_at: string;
-  slots: { date: string; period: string; label: string }[];
-  payments: { amount_cents: number; channel: string; paid_on: string; note?: string | null }[];
+  editable: boolean;
+  can_cancel: boolean;
+  slots: { id: number; date: string; period: string; label: string }[];
+  payments: {
+    id: number;
+    amount_cents: number;
+    channel: string;
+    paid_on: string;
+    note?: string | null;
+    voided?: boolean;
+    void_reason?: string | null;
+  }[];
 };
 
 export type Me = {

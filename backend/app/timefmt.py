@@ -7,6 +7,23 @@ _WEEKDAYS = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"]
 _PERIODS = {"morning": "mattina", "afternoon": "pomeriggio", "evening": "sera"}
 
 
+STATUS_LABELS = {
+    "in_attesa_pagamento": "In attesa di pagamento",
+    "confermata": "Confermata",
+    "scaduta": "Scaduta",
+    "disdetta_richiesta": "Disdetta richiesta",
+    "rimborsata": "Rimborsata",
+}
+
+
+def period_label(period: str) -> str:
+    return _PERIODS.get(period, period).capitalize()
+
+
+def status_label(status: str) -> str:
+    return STATUS_LABELS.get(status, status)
+
+
 def to_rome(value: datetime) -> datetime:
     return value.astimezone(ROME)
 
@@ -17,6 +34,13 @@ def format_deadline(value: datetime) -> str:
 
 def format_euro(cents: int) -> str:
     return f"{cents // 100},{cents % 100:02d} €"
+
+
+def format_amount(cents: int) -> str:
+    """Plain amount with a decimal comma and no currency symbol, for spreadsheets."""
+    sign = "-" if cents < 0 else ""
+    cents = abs(cents)
+    return f"{sign}{cents // 100},{cents % 100:02d}"
 
 
 def format_slot(day: date, period: str, start: time, end: time) -> str:

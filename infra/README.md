@@ -1,6 +1,6 @@
 # Infrastruttura Azure
 
-Un solo gruppo di risorse con: Container App (si spegne quando nessuno la usa), database Azure SQL tier Basic, Log Analytics. L'immagine sta su GitHub Container Registry. Tutto è in `main.bicep`.
+Un solo gruppo di risorse con: Container App (si spegne quando nessuno la usa), database Azure SQL tier Basic, Azure Communication Services per le email, un job orario per i promemoria di pagamento, Log Analytics. L'immagine sta su GitHub Container Registry. Tutto è in `main.bicep`.
 
 > Stato: scritto ma **non ancora validato né provato** (nessun accesso ad Azure in fase di sviluppo). Il primo deploy serve anche a questo: parti da `what-if`.
 
@@ -8,6 +8,8 @@ Un solo gruppo di risorse con: Container App (si spegne quando nessuno la usa), 
 
 - **Container App**: zero repliche quando non è usata, quindi non si paga il calcolo. Il primo accesso dopo una pausa impiega qualche secondo. Controlla che resti `minReplicas: 0`.
 - **Database Basic**: circa 5 € al mese (stima, da verificare nel calcolatore Azure), sempre acceso, non si mette in pausa. Se l'evento è finito e non serve più, esporta i dati ed elimina il database o l'intero gruppo di risorse.
+- **Email**: Azure Communication Services con dominio gestito Azure, gratuito; si paga solo l'invio (frazioni di centesimo a messaggio, per un camp di poche decine di persone è trascurabile).
+- **Job promemoria**: parte ogni ora, gira pochi secondi e si spegne.
 - **Log**: 30 giorni di conservazione, ben sotto la quota gratuita mensile.
 
 ## Prima configurazione (una volta sola)
@@ -105,5 +107,7 @@ Dopo il deploy `GET <url>/api/health` deve rispondere 200. L'indirizzo è nell'o
 
 ## Da sapere
 
-- Finché non c'è l'invio email reale (MVP 2) i magic link compaiono solo nei log (Log Analytics). L'admin entra con email e password.
+- **Email**: con `EMAIL_PROVIDER=acs` (default) le email partono dall'indirizzo `DoNotReply@<id>.azurecomm.net`, visibile nell'output `emailSender` del deploy. Il dominio gestito ha limiti di invio bassi (alcune decine di messaggi al minuto) e può finire nella posta indesiderata: se succede, la strada è un dominio proprio da collegare al servizio email. Per tornare ai log basta `EMAIL_PROVIDER=console` (parametro `emailProvider`).
+- **Promemoria**: il job `<app>-reminders` (Container Apps Job) gira ogni ora (`0 * * * *`, orario UTC) con la stessa immagine e il comando `python -m app.jobs.send_reminders`. Per vedere cosa ha fatto: portale Azure, risorsa del job, "Execution history" e i log (riga `Reminders: examined=... mid=... final=...`). Per lanciarlo subito: `az containerapp job start -g <gruppo> -n <app>-reminders`.
+- **Migrazioni**: partono all'avvio dell'app. Dopo ogni deploy il workflow chiama `/api/health` per svegliarla, così le migrazioni sono applicate prima che il job giri con il nuovo codice.
 - Il database accetta connessioni dai servizi Azure. L'accesso con identità gestita al posto della password è un'evoluzione possibile.

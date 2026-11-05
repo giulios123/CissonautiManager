@@ -214,3 +214,72 @@ dt {
 dd {
   margin: 0;
 }
+
+button.secondary {
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+}
+
+button.danger {
+  background: #9b2c1f;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 55%);
+}
+
+[role="dialog"] {
+  max-width: 28rem;
+  padding: 1.25rem;
+  background: #fff;
+  border-radius: 0.75rem;
+}
+
+a.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: var(--accent);
+  border-radius: 0.5rem;
+}
+
+a.button.secondary {
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+}
+
+ul.plain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+caption {
+  padding: 0.5rem 0;
+  font-weight: 700;
+  text-align: left;
+}

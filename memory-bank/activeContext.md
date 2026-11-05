@@ -2,25 +2,38 @@
 
 ## Ora
 
-MVP 1, Parte 1a completata sul branch `feat/mvp-01-iscrizione-base` (task 1-12 spuntati). Backend 173 test, frontend 33 test, lint verdi, provato end to end in locale.
+MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 implementati sul branch `claude/magical-gauss-vbss2u` (backend 470 test, frontend 96 test, lint verdi, provati in browser da telefono). Aperto solo il task 9 dell'MVP 2: infrastruttura Azure (ACS, job orario) scritta ma mai validata.
 
 ## Prossimo passo
 
-Task 13 (slot serale) fatto. Task 14 scritto (Bicep, workflow, README in `infra/`) ma da validare con un primo deploy: servono i passi di `infra/README.md` e i dati Azure. Il task 15 (verifica in Google Sites e chiusura) è in attesa: si sblocca dopo alcuni MVP. Il maintainer sta valutando Container Apps contro Static Web Apps con Functions (costi).
+1. Passaggio su `main` quando il maintainer lo decide (decisione: tutto insieme a fine sviluppi, nessuna PR intermedia). Prima: CI su SQL Server sul branch, poi `az bicep build`, `what-if` e deploy per validare il task 9 dell'MVP 2 (vedi `infra/README.md`).
+2. Prova con le descrizioni di PR per gli organizzatori: `specs/mvp-02-pagina-personale/pr-description.md` e `specs/mvp-03-pannello-admin/pr-description.md`.
+3. MVP 4 (lista d'attesa), dopo il passaggio su `main`. Da chiarire prima: dettagli della priorità per chi porta un +1 (vedi Backlog).
 
-## Dubbi aperti
+## Risolto il 2026-11-05 (conferma del maintainer)
 
-- La CI su SQL Server non è mai girata: al primo push può mostrare differenze tra SQLite e SQL Server da correggere.
-- Il Dockerfile non è stato costruito in sessione (nessun daemon Docker).
-- Per la 1b servono: abbonamento e resource group Azure, nome dell'app, dominio (o quello di default di Container Apps), mittente email per l'MVP 2.
-- Chiarito: due slot diurni più la sera come terzo slot (default 19-24, senza limite).
+- Spec 2 e 3 confermate, parte l'MVP 2.
+- Disdetta senza pagamenti: la prenotazione si rimuove e basta. Con pagamenti: `disdetta_richiesta`.
+- Giorni passati: il partecipante non può cambiare gli slot, solo l'admin.
+- La proroga della scadenza resta nell'MVP 3; l'importo dovuto modificabile a mano resta nel Backlog.
+- Modifiche a `domain.md` approvate (5 per l'MVP 2, 6 per l'MVP 3): si applicano in chiusura di ciascun MVP.
+
+## Stato degli MVP 2 e 3
+
+Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/...`, per il vincolo di push della sessione). Decisioni D-014 a D-019 (MVP 2) e D-020 a D-024 (MVP 3) in `decisions.md`; le modifiche a `domain.md` approvate sono applicate.
+
+## Domande aperte
+
+- MVP 3: l'admin non può cambiare a mano l'importo dovuto (sconti, organizzatori gratis): resta nel Backlog.
+- MVP 3: se un admin cambia gli slot a una persona, a lei non parte nessuna email (Backlog).
+
+- Il dominio gestito Azure può finire nella posta indesiderata: se succede, serve un dominio proprio (Backlog).
+- La pagina pubblica di iscrizione permette di scegliere giorni già passati: bloccarli durante l'evento? (Backlog).
+
+## Dubbi aperti ereditati
+
+- Task 15: verifica dell'embed reale in Google Sites e chiusura dell'MVP 1.
+- Finché il task 9 non è validato in produzione i magic link compaiono solo nei log (`EMAIL_PROVIDER=console`).
+- Il database Basic non si mette in pausa; la Container App deve restare a `minReplicas: 0`.
 - Da chiarire prima dell'MVP 5: serve la presenza di giorno per il pranzo?
-- Conferma pagamento via email già nell'MVP 1 (assunto sì, non era stato risposto).
-- In setup (task 14): ricordare al maintainer che la Container App deve scalare a zero. Il database Basic non si mette in pausa.
-- Esiti della call decisi (D-008): due promemoria, magic link senza codice numerico, pranzi nell'app, MVP 7 ridotto, stack Azure.
-- Deciso (D-009): la sera dell'intero giorno è una regola derivata, non si aggiunge alle prenotazioni.
-- Task 14: Bicep, workflow di deploy e Dockerfile (migrazioni all'avvio) non sono mai stati eseguiti. Da verificare: `az bicep build`, `what-if`, build dell'immagine, primo deploy, `minReplicas: 0` e l'avvio da zero.
-- Finché non c'è l'email reale (MVP 2) in produzione i magic link compaiono solo nei log.
-- Deploy su Azure riuscito ma l'app non parte: il driver ODBC non caricava nel container (base Debian 13 contro repository Debian 12). Corretto nel Dockerfile con base Debian 12 e controllo in build, da verificare dopo il merge.
-- Nome con due s (D-012): testi corretti; restano da decidere i nomi tecnici su Azure.
-- Risorse Azure da ricreare con i nomi a due s (D-013): eliminare `cisonauti-rg` e la vecchia identità, rilanciare `bootstrap.sh`, poi merge e deploy. L'indirizzo dell'app cambia.
+- Esiti della call (D-008), sera derivata (D-009), nome con due s (D-012) e risorse ricreate (D-013): già registrati in `decisions.md`.

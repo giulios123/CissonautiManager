@@ -165,6 +165,7 @@ def make_booking(db, edition, clock):
             participant_id=participant.id,
             status=status,
             hold_expires_at=hold_expires_at or clock() + timedelta(days=3),
+            hold_started_at=clock(),
             amount_due_cents=amount_due_cents if amount_due_cents is not None else 1100,
             privacy_document_id=privacy.id,
             privacy_accepted_at=clock(),

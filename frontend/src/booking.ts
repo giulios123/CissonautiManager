@@ -9,7 +9,8 @@ export type SlotInfo = {
   // null means no limit (the evening)
   available: number | null;
 };
-export type Day = { date: string; slots: SlotInfo[] };
+// `past` is sent by the API: the day is over (Europe/Rome) and its slots can no longer change.
+export type Day = { date: string; past?: boolean; slots: SlotInfo[] };
 
 export function distinctDays(days: Day[], selected: Set<number>): number {
   return days.filter((day) => day.slots.some((slot) => selected.has(slot.id))).length;
@@ -35,6 +36,21 @@ const deadlineFormat = new Intl.DateTimeFormat("it-IT", {
   timeStyle: "short",
   timeZone: "Europe/Rome",
 });
+
+/** An ISO instant as "YYYY-MM-DDTHH:mm" in Europe/Rome time, the format of datetime-local inputs. */
+export function toRomeLocalInput(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(iso));
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
+}
 
 export const formatDay = (isoDate: string) => dayFormat.format(new Date(`${isoDate}T00:00:00Z`));
 export const formatDeadline = (isoDateTime: string) => deadlineFormat.format(new Date(isoDateTime));

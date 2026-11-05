@@ -1,4 +1,5 @@
-// Cissonauti Booking on Azure: one Container App (scales to zero) + Azure SQL Basic.
+// Cissonauti Booking on Azure: one Container App (scales to zero), Azure SQL Basic, email through
+// Azure Communication Services and an hourly job for the payment reminders.
 // Deploy at resource group scope: az deployment group create -g <rg> -f infra/main.bicep -p infra/main.bicepparam
 
 targetScope = 'resourceGroup'
@@ -37,8 +38,9 @@ param ghcrUsername string = ''
 @secure()
 param ghcrToken string = ''
 
-@description('console writes emails to the logs; real email arrives with MVP 2.')
-param emailProvider string = 'console'
+@description('acs sends real emails through Azure Communication Services; console only writes them to the logs.')
+@allowed(['acs', 'console'])
+param emailProvider string = 'acs'
 
 var unique = uniqueString(resourceGroup().id)
 var sqlServerName = '${appName}-sql-${unique}'
@@ -105,24 +107,68 @@ resource database 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   }
 }
 
+// Email: Azure Communication Services with an Azure managed domain. It is free and ready at once
+// (sender like DoNotReply@<id>.azurecomm.net); sending limits are low but plenty for a camp.
+resource emailService 'Microsoft.Communication/emailServices@2023-04-01' = {
+  name: '${appName}-email-${unique}'
+  location: 'global'
+  properties: {
+    dataLocation: 'Europe'
+  }
+}
+
+resource emailDomain 'Microsoft.Communication/emailServices/domains@2023-04-01' = {
+  parent: emailService
+  name: 'AzureManagedDomain'
+  location: 'global'
+  properties: {
+    domainManagement: 'AzureManaged'
+  }
+}
+
+resource communication 'Microsoft.Communication/communicationServices@2023-04-01' = {
+  name: '${appName}-acs-${unique}'
+  location: 'global'
+  properties: {
+    dataLocation: 'Europe'
+    linkedDomains: [
+      emailDomain.id
+    ]
+  }
+}
+
+var emailSender = 'DoNotReply@${emailDomain.properties.mailFromSenderDomain}'
+var acsConnectionString = communication.listKeys().primaryConnectionString
+
 var databaseUrl = 'mssql+pyodbc://${sqlAdminLogin}:${uriComponent(sqlAdminPassword)}@${sqlServer.properties.fullyQualifiedDomainName}:1433/${databaseName}?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no'
 
 var baseSecrets = [
   { name: 'database-url', value: databaseUrl }
   { name: 'secret-key', value: secretKey }
+  { name: 'acs-connection-string', value: acsConnectionString }
 ]
 var adminSecrets = empty(adminPassword) ? [] : [{ name: 'admin-password', value: adminPassword }]
 var registrySecrets = empty(ghcrToken) ? [] : [{ name: 'ghcr-token', value: ghcrToken }]
 
-var baseEnv = [
+// Settings shared by the app and the reminders job.
+var commonEnv = [
   { name: 'APP_ENV', value: 'production' }
   { name: 'APP_BASE_URL', value: 'https://${appName}.${environment.properties.defaultDomain}' }
-  { name: 'ADMIN_EMAIL', value: adminEmail }
   { name: 'EMAIL_PROVIDER', value: emailProvider }
+  { name: 'EMAIL_FROM', value: emailSender }
+  { name: 'ACS_CONNECTION_STRING', secretRef: 'acs-connection-string' }
   { name: 'DATABASE_URL', secretRef: 'database-url' }
   { name: 'SECRET_KEY', secretRef: 'secret-key' }
 ]
 var adminEnv = empty(adminPassword) ? [] : [{ name: 'ADMIN_PASSWORD', secretRef: 'admin-password' }]
+var appEnv = concat(commonEnv, [{ name: 'ADMIN_EMAIL', value: adminEmail }], adminEnv)
+var registries = empty(ghcrToken) ? [] : [
+  {
+    server: 'ghcr.io'
+    username: ghcrUsername
+    passwordSecretRef: 'ghcr-token'
+  }
+]
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
@@ -137,13 +183,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         allowInsecure: false
       }
       secrets: concat(baseSecrets, adminSecrets, registrySecrets)
-      registries: empty(ghcrToken) ? [] : [
-        {
-          server: 'ghcr.io'
-          username: ghcrUsername
-          passwordSecretRef: 'ghcr-token'
-        }
-      ]
+      registries: registries
     }
     template: {
       containers: [
@@ -154,7 +194,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
-          env: concat(baseEnv, adminEnv)
+          env: appEnv
           probes: [
             {
               // Migrations run before the server starts, so allow a long start.
@@ -192,5 +232,51 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
   ]
 }
 
+// Payment reminders. A separate scheduled job because the app scales to zero and would not be
+// awake at the right hour. It runs every hour on the same image and exits when done.
+resource reminderJob 'Microsoft.App/jobs@2024-03-01' = {
+  name: '${appName}-reminders'
+  location: location
+  properties: {
+    environmentId: environment.id
+    configuration: {
+      triggerType: 'Schedule'
+      replicaTimeout: 300
+      replicaRetryLimit: 0
+      scheduleTriggerConfig: {
+        cronExpression: '0 * * * *'
+        parallelism: 1
+        replicaCompletionCount: 1
+      }
+      secrets: concat(baseSecrets, registrySecrets)
+      registries: registries
+    }
+    template: {
+      containers: [
+        {
+          name: 'reminders'
+          image: image
+          command: [
+            'python'
+            '-m'
+            'app.jobs.send_reminders'
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          env: commonEnv
+        }
+      ]
+    }
+  }
+  dependsOn: [
+    database
+    allowAzureServices
+  ]
+}
+
 output url string = 'https://${app.properties.configuration.ingress.fqdn}'
 output sqlServer string = sqlServer.properties.fullyQualifiedDomainName
+output emailSender string = emailSender
+output reminderJob string = reminderJob.name

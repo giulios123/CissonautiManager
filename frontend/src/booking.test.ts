@@ -1,4 +1,11 @@
-import { distinctDays, feePreview, formatDeadline, formatDay, type Day } from "./booking";
+import {
+  distinctDays,
+  feePreview,
+  formatDeadline,
+  formatDay,
+  toRomeLocalInput,
+  type Day,
+} from "./booking";
 
 const slot = (id: number, period = "morning") => ({
   id,
@@ -48,5 +55,19 @@ describe("date formatting", () => {
 
   it("shows deadlines in Rome time", () => {
     expect(formatDeadline("2026-07-04T10:00:00Z")).toContain("12:00");
+  });
+});
+
+describe("toRomeLocalInput", () => {
+  it("writes an instant in Rome summer time", () => {
+    expect(toRomeLocalInput("2026-07-04T10:00:00Z")).toBe("2026-07-04T12:00");
+  });
+
+  it("writes an instant in Rome winter time", () => {
+    expect(toRomeLocalInput("2026-01-15T10:00:00Z")).toBe("2026-01-15T11:00");
+  });
+
+  it("crosses midnight, whatever the time zone of the browser", () => {
+    expect(toRomeLocalInput("2026-07-13T22:30:00Z")).toBe("2026-07-14T00:30");
   });
 });

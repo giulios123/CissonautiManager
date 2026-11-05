@@ -107,6 +107,16 @@ class Booking(Base):
     participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
     status: Mapped[str] = mapped_column(Unicode(32), default=STATUS_PENDING)
     hold_expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    # Start of the current hold. Changes only when an expired booking is reactivated, because
+    # payment reminders are relative to the hold, not to the creation of the booking.
+    hold_started_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    reminder_mid_sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    reminder_final_sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    refund_cents: Mapped[int | None] = mapped_column(Integer)
+    refunded_on: Mapped[date | None] = mapped_column(Date)
+    refund_note: Mapped[str | None] = mapped_column(UnicodeText)
+    refunded_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     amount_due_cents: Mapped[int] = mapped_column(Integer)
     privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
     privacy_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
@@ -114,7 +124,7 @@ class Booking(Base):
     disclaimer_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
-    participant: Mapped[Participant] = relationship()
+    participant: Mapped[Participant] = relationship(foreign_keys=[participant_id])
     slots: Mapped[list[Slot]] = relationship(secondary="booking_slot")
     payments: Mapped[list["Payment"]] = relationship(
         back_populates="booking", order_by="Payment.id"
@@ -152,6 +162,10 @@ class Payment(Base):
     note: Mapped[str | None] = mapped_column(UnicodeText)
     recorded_by_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    # A payment entered by mistake is voided, never deleted: it stays visible but does not count.
+    voided_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    voided_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
+    void_reason: Mapped[str | None] = mapped_column(UnicodeText)
 
     booking: Mapped[Booking] = relationship(back_populates="payments")
 
@@ -174,6 +188,25 @@ class AuthSession(Base):
     token_hash: Mapped[str] = mapped_column(Unicode(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class AuditLog(Base):
+    """What an admin changed by hand. `booking_id` is deliberately not a foreign key: the history
+    must outlive a booking that gets removed."""
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    booking_id: Mapped[int | None] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(Unicode(40))
+    detail: Mapped[str] = mapped_column(UnicodeText, default="")
+
+
+def active_payments(booking: Booking) -> list[Payment]:
+    """Payments that count: voided ones stay on record but are ignored everywhere."""
+    return [p for p in booking.payments if p.voided_at is None]
 
 
 def slot_sort_key(slot: Slot) -> tuple[date, time]:
