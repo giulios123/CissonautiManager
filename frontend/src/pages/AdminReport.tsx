@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "../api";
+import { intlTag } from "../i18n/locale";
 import { formatDay, periodLabel } from "../booking";
 import { formatEuro } from "../money";
 import { StatusBadge } from "../StatusBadge";
@@ -77,7 +78,7 @@ const CHANNEL_LABELS: Record<string, string> = {
   iban: "Bonifico (IBAN)",
 };
 const decimal = (value: number) =>
-  value.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  value.toLocaleString(intlTag(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (

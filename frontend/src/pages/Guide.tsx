@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useMe } from "../auth";
+import { intlTag } from "../i18n/locale";
 import { loadAdminGuide, participantGuide, type GuideSection } from "../guide/content";
 
 type Release = { version: string; date: string | null; features: string[]; fixes: string[] };
@@ -15,10 +16,12 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-const dateFormat = new Intl.DateTimeFormat("it-IT", { dateStyle: "long", timeZone: "Europe/Rome" });
-
 function formatDate(iso: string | null): string {
-  return iso ? dateFormat.format(new Date(iso)) : "";
+  return iso
+    ? new Intl.DateTimeFormat(intlTag(), { dateStyle: "long", timeZone: "Europe/Rome" }).format(
+        new Date(iso),
+      )
+    : "";
 }
 
 /** The guide files are written in the repository, so their Markdown is trusted. */

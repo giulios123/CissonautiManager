@@ -1,3 +1,4 @@
+import { intlTag } from "./i18n/locale";
 import { computeFee } from "./money";
 
 export type SlotInfo = {
@@ -27,17 +28,19 @@ export function feePreview(
   return computeFee(distinctDays(days, selected), baseCents, perDayCents);
 }
 
-const dayFormat = new Intl.DateTimeFormat("it-IT", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  timeZone: "UTC",
-});
-const deadlineFormat = new Intl.DateTimeFormat("it-IT", {
-  dateStyle: "long",
-  timeStyle: "short",
-  timeZone: "Europe/Rome",
-});
+const cache = new Map<string, Intl.DateTimeFormat>();
+
+/** A date formatter in the current language; built once per language and option set. */
+function fmt(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const tag = intlTag();
+  const key = `${tag}|${JSON.stringify(options)}`;
+  let format = cache.get(key);
+  if (!format) {
+    format = new Intl.DateTimeFormat(tag, options);
+    cache.set(key, format);
+  }
+  return format;
+}
 
 /** An ISO instant as "YYYY-MM-DDTHH:mm" in Europe/Rome time, the format of datetime-local inputs. */
 export function toRomeLocalInput(iso: string): string {
@@ -54,30 +57,31 @@ export function toRomeLocalInput(iso: string): string {
   return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
 }
 
-const shortDayFormat = new Intl.DateTimeFormat("it-IT", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-});
-const weekdayFormat = new Intl.DateTimeFormat("it-IT", { weekday: "long", timeZone: "UTC" });
-const monthFormat = new Intl.DateTimeFormat("it-IT", { month: "short", timeZone: "UTC" });
-
-/** "sab 21 nov", for compact lists. */
+/** "sab 21 nov" / "Sat 21 Nov", for compact lists. */
 export const formatDayShort = (isoDate: string) =>
-  shortDayFormat.format(new Date(`${isoDate}T00:00:00Z`)).replace(/\./g, "");
+  fmt({ weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .format(new Date(`${isoDate}T00:00:00Z`))
+    .replace(/\./g, "");
 /** Month and day number for the date badge: "nov", 21. */
 export const dayBadge = (isoDate: string) => ({
-  month: monthFormat.format(new Date(`${isoDate}T00:00:00Z`)).replace(/\./g, ""),
+  month: fmt({ month: "short", timeZone: "UTC" })
+    .format(new Date(`${isoDate}T00:00:00Z`))
+    .replace(/\./g, ""),
   day: Number(isoDate.slice(8, 10)),
 });
 /** "Venerdì", the weekday alone, for headings that already show the date in a badge. */
 export const formatWeekday = (isoDate: string) => {
-  const name = weekdayFormat.format(new Date(`${isoDate}T00:00:00Z`));
+  const name = fmt({ weekday: "long", timeZone: "UTC" }).format(new Date(`${isoDate}T00:00:00Z`));
   return name.charAt(0).toUpperCase() + name.slice(1);
 };
-export const formatDay = (isoDate: string) => dayFormat.format(new Date(`${isoDate}T00:00:00Z`));
-export const formatDeadline = (isoDateTime: string) => deadlineFormat.format(new Date(isoDateTime));
+export const formatDay = (isoDate: string) =>
+  fmt({ weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(
+    new Date(`${isoDate}T00:00:00Z`),
+  );
+export const formatDeadline = (isoDateTime: string) =>
+  fmt({ dateStyle: "long", timeStyle: "short", timeZone: "Europe/Rome" }).format(
+    new Date(isoDateTime),
+  );
 const PERIOD_LABELS: Record<string, string> = {
   morning: "Mattina",
   afternoon: "Pomeriggio",

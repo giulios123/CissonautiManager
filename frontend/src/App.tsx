@@ -19,16 +19,18 @@ import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
 import { Verify } from "./pages/Verify";
+import { useT } from "./i18n";
 import { usePageTitle } from "./pageTitle";
 import { canonicalPath, canonicalSearch, ROUTES } from "./routes";
 import { SiteHeader } from "./SiteHeader";
 
 function Home() {
+  const t = useT();
   return (
     <main>
       <h1>Cissonauti Summer Camp</h1>
       <p>
-        <Link to={ROUTES.register}>Iscriviti al camp</Link>
+        <Link to={ROUTES.register}>{t("home.register")}</Link>
       </p>
     </main>
   );
@@ -36,14 +38,15 @@ function Home() {
 
 /** Italian addresses typed by hand lead to the English ones, keeping query and hash. */
 function NotFound() {
+  const t = useT();
   const { pathname, search, hash } = useLocation();
   const english = canonicalPath(pathname);
   if (english) return <Navigate to={`${english}${canonicalSearch(search)}${hash}`} replace />;
   return (
     <main>
-      <h1>Pagina non trovata</h1>
+      <h1>{t("notFound.title")}</h1>
       <p>
-        <Link to="/">Torna alla home</Link>
+        <Link to="/">{t("notFound.home")}</Link>
       </p>
     </main>
   );
