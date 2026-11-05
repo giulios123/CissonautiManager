@@ -52,7 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
 
     app = FastAPI(
-        title="Cisonauti Booking",
+        title="Cissonauti Booking",
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
         lifespan=lifespan,

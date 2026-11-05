@@ -4,7 +4,7 @@
 
 ## Contesto
 
-Il Cisonauti Summer Camp è un evento informale di circa una settimana in un salone polivalente comunale usato come coworking. Partecipano persone che si conoscono, amici di amici, passaparola: l'anno scorso 45 persone in totale, 25-28 presenti contemporaneamente. Non è un servizio commerciale: niente partita IVA né associazione, i contributi coprono i costi.
+Il Cissonauti Summer Camp è un evento informale di circa una settimana in un salone polivalente comunale usato come coworking. Partecipano persone che si conoscono, amici di amici, passaparola: l'anno scorso 45 persone in totale, 25-28 presenti contemporaneamente. Non è un servizio commerciale: niente partita IVA né associazione, i contributi coprono i costi.
 
 Problemi da risolvere:
 

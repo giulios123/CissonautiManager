@@ -45,7 +45,7 @@ def send_magic_link(
     sender.send(
         EmailMessage(
             to=participant.email,
-            subject="Il tuo link di accesso ai Cisonauti",
+            subject="Il tuo link di accesso ai Cissonauti",
             body=(
                 f"Ciao {participant.first_name},\n\n"
                 f"apri questo link per entrare: {magic_link_url(settings, raw)}\n\n"

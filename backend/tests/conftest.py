@@ -126,7 +126,7 @@ def make_participant(db):
 
 
 DEFAULT_EDITION_VALUES = dict(
-    name="Cisonauti Summer Camp 2026",
+    name="Cissonauti Summer Camp 2026",
     start_date=date(2026, 7, 13),
     end_date=date(2026, 7, 17),
     morning_start=time(9, 0),

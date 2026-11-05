@@ -9,7 +9,7 @@ describe("App routing", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByRole("heading", { name: "Cisonauti Summer Camp" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Cissonauti Summer Camp" })).toBeInTheDocument();
   });
 
   it("shows a not found page for unknown routes", () => {

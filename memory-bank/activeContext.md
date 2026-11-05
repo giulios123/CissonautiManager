@@ -21,3 +21,5 @@ Task 13 (slot serale) fatto. Task 14 scritto (Bicep, workflow, README in `infra/
 - Deciso (D-009): la sera dell'intero giorno è una regola derivata, non si aggiunge alle prenotazioni.
 - Task 14: Bicep, workflow di deploy e Dockerfile (migrazioni all'avvio) non sono mai stati eseguiti. Da verificare: `az bicep build`, `what-if`, build dell'immagine, primo deploy, `minReplicas: 0` e l'avvio da zero.
 - Finché non c'è l'email reale (MVP 2) in produzione i magic link compaiono solo nei log.
+- Deploy su Azure riuscito ma l'app non parte: il driver ODBC non caricava nel container (base Debian 13 contro repository Debian 12). Corretto nel Dockerfile con base Debian 12 e controllo in build, da verificare dopo il merge.
+- Nome con due s (D-012): testi corretti; restano da decidere i nomi tecnici su Azure.

@@ -12,7 +12,7 @@ import { Verify } from "./pages/Verify";
 function Home() {
   return (
     <main>
-      <h1>Cisonauti Summer Camp</h1>
+      <h1>Cissonauti Summer Camp</h1>
       <p>
         <Link to="/iscrizione">Iscriviti al camp</Link>
       </p>

@@ -1,4 +1,4 @@
-// Cisonauti Booking on Azure: one Container App (scales to zero) + Azure SQL Basic.
+// Cissonauti Booking on Azure: one Container App (scales to zero) + Azure SQL Basic.
 // Deploy at resource group scope: az deployment group create -g <rg> -f infra/main.bicep -p infra/main.bicepparam
 
 targetScope = 'resourceGroup'
