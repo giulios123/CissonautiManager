@@ -32,6 +32,11 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY backend/ ./
 COPY --from=frontend /frontend/dist ./static
 
+# Which commit is running and when it was built, shown in the in-app guide.
+ARG APP_VERSION=dev
+ARG BUILT_AT=
+ENV APP_VERSION=$APP_VERSION BUILT_AT=$BUILT_AT
+
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 # Apply migrations, then start the server. Safe because the app runs one replica at most.

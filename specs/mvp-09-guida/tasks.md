@@ -7,7 +7,7 @@ Branch: `claude/dreamy-ride-bzr112` (vincolo di push della sessione). **Dimensio
   Test: admin 200, partecipante 403, anonimo 401, file assente → lista vuota, file corrotto → lista vuota.
 - [x] **3. Script delle note**: `scripts/release_notes.py`.
   Test: merge come rilascio, filtro dei tipi, scope tolto, ordine, limite di 30, commit diretto.
-- [ ] **4. Deploy e Dockerfile**: `fetch-depth: 0`, generazione, `APP_VERSION` e `BUILT_AT`; `.gitignore`, `.env.example`.
+- [x] **4. Deploy e Dockerfile**: `fetch-depth: 0`, generazione, `APP_VERSION` e `BUILT_AT`; `.gitignore`, `.env.example`.
 - [ ] **5. Contenuti**: `content.ts` e `parseSections`, dipendenza `marked`.
   Test: ordinamento, titolo dalla prima riga, slug, file senza titolo.
 - [ ] **6. Pagina `/guida`**: filtro per ruolo, schede admin, versione.
