@@ -59,7 +59,7 @@ Come admin voglio l'elenco di tutti gli iscritti, "come un Excel navigabile".
 - Quando modifico gli slot dalla scheda, allora valgono le stesse regole del partecipante (posti, importo ricalcolato, scadenza invariata), ma posso scegliere anche giorni passati.
 - Quando uno slot è pieno, allora ricevo l'errore; se spunto «Forza oltre la capienza» e confermo, allora lo slot viene aggiunto comunque e la scheda lo segnala.
 - Quando prorogo la scadenza del blocco di una prenotazione `in_attesa_pagamento`, allora la nuova scadenza vale e i promemoria vengono ricalcolati.
-- Quando disdico a nome del partecipante, allora la prenotazione passa a `disdetta_richiesta` come se l'avesse chiesta lui (senza obbligo di email, parte comunque la conferma).
+- Quando disdico a nome del partecipante, allora valgono le regole della disdetta dell'MVP 2: con pagamenti passa a `disdetta_richiesta`, senza pagamenti viene rimossa; parte comunque la conferma.
 - Quando riattivo a mano una prenotazione `scaduta` e c'è posto, allora torna `in_attesa_pagamento` con un nuovo blocco.
 - Ogni modifica manuale lascia traccia: chi, quando, cosa.
 
@@ -76,7 +76,7 @@ Come admin voglio l'elenco di tutti gli iscritti, "come un Excel navigabile".
 
 ## Modifiche a domain.md
 
-Da applicare solo con il consenso del maintainer:
+Proposte (approvate dal maintainer il 2026-11-05, da riportare in `domain.md` alla chiusura dell'MVP):
 
 1. **Capienza**: l'admin può superare la capienza di uno slot con conferma esplicita.
 2. **Pagamenti**: non si cancellano, si annullano con motivo.

@@ -17,13 +17,19 @@ MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante
 - Prenotazione confermata che aggiunge giorni: resta confermata, il saldo mostra la differenza.
 - MVP 3 resta unico (13 task, sopra la soglia di circa 10): punto di taglio naturale dopo il task 7.
 
-## Domande aperte
+## Risolto il 2026-11-05 (conferma del maintainer)
 
-- MVP 2: una prenotazione senza pagamenti che si disdice passa comunque a `disdetta_richiesta` (e l'admin la chiude) o a uno stato finale diretto? Nella spec passa a `disdetta_richiesta`.
-- MVP 2: va bene bloccare la modifica degli slot di giorni già passati?
-- MVP 3: l'admin può modificare a mano l'importo dovuto (sconti, organizzatori gratis)? Per ora nel Backlog.
-- MVP 3: la proroga della scadenza del blocco resta qui?
-- Le sezioni «Modifiche a domain.md» delle due spec (4 voci per l'MVP 2, 6 per l'MVP 3) vanno approvate prima di toccare `domain.md`.
+- Spec 2 e 3 confermate, parte l'MVP 2.
+- Disdetta senza pagamenti: la prenotazione si rimuove e basta. Con pagamenti: `disdetta_richiesta`.
+- Giorni passati: il partecipante non può cambiare gli slot, solo l'admin.
+- La proroga della scadenza resta nell'MVP 3; l'importo dovuto modificabile a mano resta nel Backlog.
+- Modifiche a `domain.md` approvate (5 per l'MVP 2, 6 per l'MVP 3): si applicano in chiusura di ciascun MVP.
+
+## Stato dell'MVP 2
+
+In corso, task 1 (migrazione 0003) fatto. Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/mvp-02-...`, per il vincolo di push della sessione).
+
+## Domande aperte
 
 ## Dubbi aperti ereditati
 

@@ -2,14 +2,14 @@
 
 Branch di implementazione: `feat/mvp-02-pagina-personale`.
 
-- [ ] **1. Migrazione 0003**: colonne `hold_started_at` (backfill da `created_at`), `reminder_mid_sent_at`, `reminder_final_sent_at`, `cancel_requested_at`; modello aggiornato.
+- [x] **1. Migrazione 0003**: colonne `hold_started_at` (backfill da `created_at`), `reminder_mid_sent_at`, `reminder_final_sent_at`, `cancel_requested_at`; modello aggiornato.
   Test: upgrade e downgrade da zero; il backfill riempie `hold_started_at` su una riga esistente.
 - [ ] **2. Regole pure**: `can_edit_slots`, `can_request_cancellation`, `is_past_day`, `due_reminder`.
   Test: stati modificabili; giorno passato in Europe/Rome a cavallo della mezzanotte; promemoria a metà; finale; sovrapposizione sotto 48 ore; in ritardo solo il finale; già inviati; scaduta.
 - [ ] **3. Modifica slot (servizio e API)**: `change_slots` e `PUT /api/me/booking/slots`.
   Test: aggiunta con posto; aggiunta su slot pieno 409; rimozione libera il posto; slot già miei non bloccano su capienza piena; selezione vuota; importo ricalcolato con giorni distinti; scadenza invariata; confermata resta confermata con saldo da versare e con credito; stati vietati; giorno passato; accesso senza sessione 401.
 - [ ] **4. Disdetta (servizio e API)**: `request_cancellation`, `POST /api/me/booking/cancel`, email di conferma.
-  Test: stato e posti liberati; email inviata una volta; stati vietati; riscrizione dopo disdetta crea nuova prenotazione.
+  Test: con pagamenti passa a `disdetta_richiesta`; senza pagamenti la prenotazione sparisce (anche `booking_slot`) e la persona resta; posti liberati in entrambi i casi; email inviata una volta; stati vietati; riscrizione dopo disdetta crea nuova prenotazione.
 - [ ] **5. Riattivazione e blocco**: la riattivazione in `services/payments.py` reimposta `hold_started_at` e azzera i promemoria; `register` imposta `hold_started_at`.
   Test: dopo la riattivazione i promemoria possono ripartire.
 - [ ] **6. Email reali**: `AcsEmailSender`, `build_email_sender` con `acs`, testi in `app/email/templates.py`, errori solo loggati.

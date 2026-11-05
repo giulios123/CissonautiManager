@@ -168,6 +168,7 @@ def register(
         participant_id=participant.id,
         status=STATUS_PENDING,
         hold_expires_at=hold_deadline(now, edition.hold_days),
+        hold_started_at=now,
         amount_due_cents=compute_fee(
             [s.date for s in slots], edition.base_fee_cents, edition.per_day_fee_cents
         ),

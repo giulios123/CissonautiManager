@@ -107,6 +107,12 @@ class Booking(Base):
     participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
     status: Mapped[str] = mapped_column(Unicode(32), default=STATUS_PENDING)
     hold_expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    # Start of the current hold. Changes only when an expired booking is reactivated, because
+    # payment reminders are relative to the hold, not to the creation of the booking.
+    hold_started_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    reminder_mid_sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    reminder_final_sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     amount_due_cents: Mapped[int] = mapped_column(Integer)
     privacy_document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
     privacy_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)

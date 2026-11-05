@@ -25,7 +25,7 @@ Come partecipante voglio cambiare i miei slot senza scrivere agli organizzatori.
 - Quando la prenotazione è `confermata` e l'importo scende, allora resta `confermata` e il saldo mostra il credito.
 - Quando lo stato è `scaduta`, `disdetta_richiesta` o `rimborsata`, allora la modifica è rifiutata.
 - Prima di salvare vedo l'anteprima del nuovo importo e della differenza.
-- Quando lo slot è nel passato (giorno già trascorso in Europe/Rome), allora non si può né aggiungere né togliere.
+- Quando lo slot è nel passato (giorno già trascorso in Europe/Rome), allora il partecipante non può né aggiungerlo né toglierlo; solo l'admin può cambiarlo (MVP 3).
 
 ## US-3 · Saldo e istruzioni
 
@@ -35,10 +35,11 @@ Come partecipante voglio cambiare i miei slot senza scrivere agli organizzatori.
 ## US-4 · Richiesta di disdetta
 
 - Quando premo «Richiedi disdetta», allora compare una conferma esplicita che spiega che i posti si liberano subito e che il rimborso, se dovuto, lo gestiscono gli organizzatori.
-- Quando confermo, allora la prenotazione passa a `disdetta_richiesta`, i posti si liberano subito e parte un'email di conferma disdetta.
+- Quando confermo e la prenotazione ha pagamenti registrati, allora passa a `disdetta_richiesta`, i posti si liberano subito e parte un'email di conferma disdetta: il rimborso lo gestisce l'admin.
+- Quando confermo e la prenotazione non ha pagamenti registrati, allora viene rimossa (nessun passaggio dall'admin), i posti si liberano subito e parte la stessa email di conferma. La persona resta registrata e può iscriversi di nuovo.
 - Quando annullo la conferma, allora non cambia nulla.
 - Quando lo stato non è `in_attesa_pagamento` o `confermata`, allora il pulsante non compare e l'API risponde con un errore.
-- Quando ho una disdetta richiesta e mi iscrivo di nuovo con la stessa email, allora viene creata una nuova prenotazione (se c'è posto).
+- Quando ho disdetto (con o senza pagamenti) e mi iscrivo di nuovo con la stessa email, allora viene creata una nuova prenotazione (se c'è posto).
 
 ## US-5 · Promemoria di pagamento
 
@@ -58,9 +59,12 @@ Come partecipante voglio cambiare i miei slot senza scrivere agli organizzatori.
 
 ## Modifiche a domain.md
 
-Da applicare solo con il consenso del maintainer:
+Proposte (approvate, da riportare in `domain.md` alla chiusura):
 
 1. **Modifica slot**: modificando gli slot la scadenza del blocco non cambia.
 2. **Confermata con importo che sale**: la prenotazione resta `confermata`; il saldo positivo è la differenza da versare e compare tra i pagamenti da verificare (MVP 3).
 3. **Giorni passati**: gli slot di giorni già trascorsi (Europe/Rome) non si aggiungono né si tolgono.
 4. **Promemoria**: se il blocco è più corto di 48 ore parte solo quello a metà.
+5. **Disdetta senza pagamenti**: la prenotazione viene rimossa e i posti si liberano; con pagamenti passa a `disdetta_richiesta` come oggi.
+
+Approvate dal maintainer il 2026-11-05: si applicano a `domain.md` in chiusura dell'MVP.

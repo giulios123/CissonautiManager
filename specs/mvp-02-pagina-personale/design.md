@@ -43,7 +43,7 @@ La logica di stato resta in `effective_status`; il job non decide da solo se una
   4. rifiuta giorni passati (salvo `force`, usato solo dall'admin);
   5. ricalcola `amount_due_cents` con `compute_fee` sull'insieme finale;
   6. non tocca stato né `hold_expires_at`.
-- `request_cancellation(db, sender, booking, now)`: stato `disdetta_richiesta`, `cancel_requested_at`, email di conferma.
+- `request_cancellation(db, sender, booking, now) -> CancelOutcome`: senza pagamenti registrati elimina `booking_slot` e `booking` (esito `removed`); con pagamenti stato `disdetta_richiesta` e `cancel_requested_at` (esito `requested`). In entrambi i casi i dati dell'email si leggono prima dell'eliminazione e l'email di conferma parte dopo il commit.
 
 Errori di dominio: `SlotsFull`, `InvalidSlots`, `NotEditable`, `PastDay`, `EmptySelection`.
 
@@ -68,7 +68,7 @@ Errori di dominio: `SlotsFull`, `InvalidSlots`, `NotEditable`, `PastDay`, `Empty
 | Metodo e path | Accesso | Scopo |
 |---------------|---------|-------|
 | `PUT /api/me/booking/slots` | sessione | `{slot_ids}`: modifica gli slot, risponde con la prenotazione aggiornata. 409 con l'elenco degli slot pieni, 422 per selezione vuota o giorno passato, 409 `not_editable` per stato non valido |
-| `POST /api/me/booking/cancel` | sessione | richiesta di disdetta |
+| `POST /api/me/booking/cancel` | sessione | disdetta; risponde `{outcome: "removed" | "requested"}` |
 | `GET /api/me` | sessione | esteso con `editable` e `can_cancel` |
 | `GET /api/public/edition` | pubblico | già esistente, usato per i posti liberi |
 
@@ -103,3 +103,4 @@ La prenotazione su cui si agisce è quella più recente del partecipante nell'ed
 - Dominio gestito Azure per l'email, evoluzione a dominio proprio.
 - Segno l'invio prima di spedire (al più una volta, mai doppio).
 - Importo che sale su prenotazione confermata: resta confermata.
+- Disdetta senza pagamenti: la prenotazione si elimina (si perde la traccia dei testi legali accettati, accettato perché non è mai stato versato nulla).
