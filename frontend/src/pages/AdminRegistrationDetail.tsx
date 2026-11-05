@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
-import { type BookingView } from "../auth";
+import { type ActivityOffer, type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
 import { AdminEditDetails } from "./AdminEditDetails";
@@ -11,6 +11,7 @@ import { AdminHoldActions } from "./AdminHoldActions";
 import { AdminPayments } from "./AdminPayments";
 import { AdminRefundForm } from "./AdminRefundForm";
 import { AdminSlotEditor } from "./AdminSlotEditor";
+import { ActivityPicker } from "./ActivityPicker";
 import { MealEditor } from "./MealEditor";
 
 export type Detail = {
@@ -32,6 +33,7 @@ export type Detail = {
   waitlist?: { id: number; label: string; position: number; created_at: string }[];
   lunch_price_cents?: number;
   dinner_price_cents?: number;
+  activity_offers?: ActivityOffer[];
 };
 
 const DIET_LABELS: Record<string, string> = {
@@ -52,6 +54,7 @@ export function AdminRegistrationDetail() {
   const navigate = useNavigate();
   const [editingSlots, setEditingSlots] = useState(false);
   const [editingMeals, setEditingMeals] = useState(false);
+  const [editingActivities, setEditingActivities] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [failed, setFailed] = useState(false);
   const [amount, setAmount] = useState("");
@@ -220,6 +223,40 @@ export function AdminRegistrationDetail() {
             path={`/api/admin/registrations/${booking.id}/meals`}
             allowPast
             onSaved={(updated) => showUpdated(updated, "Pasti aggiornati.")}
+          />
+        )}
+      </section>
+
+      <section aria-labelledby="activities-title">
+        <h2 id="activities-title">Attività</h2>
+        {(booking.activities ?? []).length === 0 ? (
+          <p>Nessuna attività.</p>
+        ) : (
+          <ul>
+            {(booking.activities ?? []).map((activity) => (
+              <li key={activity.id}>
+                <Link to={`/admin/attivita/${activity.id}`}>{activity.label}</Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {booking.editable && (
+          <button
+            type="button"
+            className="secondary"
+            aria-expanded={editingActivities}
+            onClick={() => setEditingActivities((value) => !value)}
+          >
+            {editingActivities ? "Chiudi la modifica delle attività" : "Cambia le attività"}
+          </button>
+        )}
+        {editingActivities && booking.editable && (
+          <ActivityPicker<Detail>
+            booking={booking}
+            offers={detail.activity_offers ?? []}
+            path={`/api/admin/registrations/${booking.id}/activities`}
+            admin
+            onSaved={(updated) => showUpdated(updated, "Attività aggiornate.")}
           />
         )}
       </section>

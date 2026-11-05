@@ -9,7 +9,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.schemas import BookingView, booking_view
+from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
 from app.config import Settings
 from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
@@ -116,6 +116,7 @@ class RegistrationDetail(BaseModel):
     warning: str | None = None
     lunch_price_cents: int = 0
     dinner_price_cents: int = 0
+    activity_offers: list[ActivityOffer] = []
 
 
 class RefundIn(BaseModel):
@@ -268,6 +269,7 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
         warning=warning,
         lunch_price_cents=edition.lunch_price_cents if edition else 0,
         dinner_price_cents=edition.dinner_price_cents if edition else 0,
+        activity_offers=activity_offers(db, booking, now),
     )
 
 
@@ -633,6 +635,62 @@ def change_registration_meals(
         ) from exc
     db.refresh(booking)
     return _detail(db, booking, now)
+
+
+class ActivitiesIn(BaseModel):
+    activity_ids: list[int] = Field(max_length=200)
+    # Accept an activity that is already full.
+    force: bool = False
+
+
+@router.put("/{booking_id}/activities")
+def change_registration_activities(
+    booking_id: int,
+    body: ActivitiesIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        result = activity_service.change_activities(
+            db,
+            sender,
+            booking,
+            body.activity_ids,
+            now,
+            allow_past=True,
+            force=body.force,
+            actor=admin,
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except activity_service.InvalidActivities as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail="Le attività scelte non sono valide") from exc
+    except activity_service.ActivitiesRefused as exc:
+        db.rollback()
+        names = activity_service.labels(exc.activities)
+        if exc.reason == "full":
+            detail = (
+                f"Queste attività sono al completo: {names}. Per aggiungerle comunque spunta "
+                "«Forza oltre la capienza»."
+            )
+            raise HTTPException(status_code=409, detail=detail) from exc
+        detail = (
+            f"La persona non è presente nel momento di queste attività: {names}. "
+            "Aggiungi prima lo slot."
+        )
+        raise HTTPException(status_code=422, detail=detail) from exc
+    db.refresh(booking)
+    warning = None
+    if result.over_capacity_activities:
+        names = activity_service.labels(result.over_capacity_activities)
+        warning = f"Attenzione: capienza superata in {names}."
+    return _detail(db, booking, now, warning=warning)
 
 
 class CancelOut(BaseModel):

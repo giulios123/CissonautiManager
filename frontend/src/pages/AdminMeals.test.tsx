@@ -151,3 +151,56 @@ describe("meals view", () => {
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("dati sanitari"));
   });
 });
+
+describe("activities in the admin detail", () => {
+  it("forces a full activity and shows the warning", async () => {
+    const offers = [
+      {
+        id: 3,
+        title: "Escursione",
+        description: null,
+        date: "2026-07-13",
+        period: "morning",
+        time_label: null,
+        price_cents: 1500,
+        capacity: 1,
+        free: 0,
+        joined: false,
+        past: false,
+      },
+    ];
+    const calls = serve(detailFixture({ activity_offers: offers }), (call) =>
+      call.url === "/api/admin/registrations/7/activities"
+        ? {
+            body: detailFixture(
+              { warning: "Attenzione: capienza superata in Escursione (lun 13/07 mattina)." },
+              {
+                activities: [
+                  {
+                    id: 3,
+                    title: "Escursione",
+                    label: "Escursione (lun 13/07 mattina)",
+                    price_cents: 1500,
+                  },
+                ],
+              },
+            ),
+          }
+        : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    await userEvent.click(await screen.findByRole("button", { name: "Cambia le attività" }));
+    const form = within(screen.getByRole("form", { name: "Scegli le attività" }));
+    const hike = form.getByRole("checkbox", { name: /Escursione/ });
+    expect(hike).toBeEnabled();
+    await userEvent.click(hike);
+    await userEvent.click(form.getByRole("checkbox", { name: "Forza oltre la capienza" }));
+    await userEvent.click(form.getByRole("button", { name: "Salva le attività" }));
+    expect(await screen.findByText(/capienza superata in Escursione/)).toBeInTheDocument();
+    expect(calls.find((c) => c.method === "PUT")?.body).toEqual({ activity_ids: [3], force: true });
+    expect(screen.getByRole("link", { name: "Escursione (lun 13/07 mattina)" })).toHaveAttribute(
+      "href",
+      "/admin/attivita/3",
+    );
+  });
+});

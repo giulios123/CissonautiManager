@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.public import ChannelPublic, LegalPublic
-from app.api.schemas import BookingView, booking_view
+from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
 from app.config import Settings
 from app.db import get_db
 from app.deps import current_user, get_email_sender, get_now, get_settings_dep
@@ -35,20 +35,6 @@ class WaitlistView(BaseModel):
     period: str
     label: str
     position: int
-
-
-class ActivityOffer(BaseModel):
-    id: int
-    title: str
-    description: str | None
-    date: date
-    period: str
-    time_label: str | None
-    price_cents: int
-    capacity: int | None
-    free: int | None
-    joined: bool
-    past: bool
 
 
 class MeOut(BaseModel):
@@ -119,24 +105,7 @@ def get_me(
 
 def _offers(db: Session, user: Participant, now: datetime) -> list[ActivityOffer]:
     booking = booking_changes.get_current_booking(db, user)
-    if booking is None:
-        return []
-    return [
-        ActivityOffer(
-            id=a.id,
-            title=a.title,
-            description=a.description,
-            date=a.date,
-            period=a.period,
-            time_label=a.time_label,
-            price_cents=a.price_cents,
-            capacity=a.capacity,
-            free=free,
-            joined=joined,
-            past=past,
-        )
-        for a, free, joined, past in activity_service.offers_for(db, booking, now)
-    ]
+    return [] if booking is None else activity_offers(db, booking, now)
 
 
 def _health_consent(db: Session, edition: Edition | None) -> LegalPublic | None:

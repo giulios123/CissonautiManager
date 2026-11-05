@@ -14,7 +14,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: adesione e ritiro con importo ricalcolato; in attesa coperta che diventa confermata; piena rifiutata; non presente rifiutata; giorno passato rifiutato e oggi ammesso; query con l'hint per SQL Server. Frontend: solo attività dove si è presenti, posti liberi.
 - [x] **5. Attività e cambi della prenotazione**: `change_slots` toglie le attività senza titolo; riattivazione con controllo dei posti.
   Test: attività tolta e riportata nella risposta e nella cronologia; posto liberato da scadenza e disdetta; riattivazione rifiutata con attività piena e accettata con «forza».
-- [ ] **6. Attività dalla scheda admin**: `PUT /api/admin/registrations/{id}/activities` con `force`.
+- [x] **6. Attività dalla scheda admin**: `PUT /api/admin/registrations/{id}/activities` con `force`.
   Test: capienza superata solo con `force` e segnalata; giorni passati ammessi; presenza sempre richiesta; cronologia.
 - [ ] **7. Vista per attività**: elenco e dettaglio con CSV.
   Test: iscritti e posti; scadute e disdette escluse; CSV per attività e complessivo.

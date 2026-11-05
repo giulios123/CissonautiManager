@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from datetime import date, datetime
 
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.domain.booking import (
     can_edit_slots,
@@ -131,4 +132,40 @@ def _meal_views(meals: Iterable[tuple[date, str]], now: datetime) -> list[MealVi
     return [
         MealView(date=day, kind=kind, label=format_meal(day, kind), past=is_past_day(day, now))
         for day, kind in sorted(meals, key=meal_sort_key)
+    ]
+
+
+class ActivityOffer(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    date: date
+    period: str
+    time_label: str | None
+    price_cents: int
+    capacity: int | None
+    free: int | None
+    joined: bool
+    past: bool
+
+
+def activity_offers(db: Session, booking: Booking, now: datetime) -> list[ActivityOffer]:
+    """Activities the booking holds or that its presence allows, with free seats."""
+    from app.services.activities import offers_for
+
+    return [
+        ActivityOffer(
+            id=a.id,
+            title=a.title,
+            description=a.description,
+            date=a.date,
+            period=a.period,
+            time_label=a.time_label,
+            price_cents=a.price_cents,
+            capacity=a.capacity,
+            free=free,
+            joined=joined,
+            past=past,
+        )
+        for a, free, joined, past in offers_for(db, booking, now)
     ]
