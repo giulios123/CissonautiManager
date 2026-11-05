@@ -16,7 +16,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
   Test: presenti, capienza e liberi; sera derivata marcata; scadute e disdette escluse; sera senza limite.
 - [x] **6. Settimana aggregata**: endpoint (+ CSV) e pagina.
   Test: conteggi per periodo; persone distinte; giorni vuoti a zero.
-- [ ] **7. Pagamenti da verificare**: endpoint (+ CSV) e pagina.
+- [x] **7. Pagamenti da verificare**: endpoint (+ CSV) e pagina.
   Test: un caso per motivo; esce dalla vista quando si risolve.
 - [ ] **8. Gestione admin**: servizio, endpoint e pagina.
   Test: promozione di un iscritto; creazione di un nuovo admin che entra col magic link; rimozione e i tre rifiuti; nessun limite di numero.

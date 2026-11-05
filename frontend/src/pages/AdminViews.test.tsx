@@ -150,3 +150,62 @@ describe("week view", () => {
     );
   });
 });
+
+describe("payments to review", () => {
+  const reviewRow = (over: Record<string, unknown>) => ({
+    booking_id: 7,
+    first_name: "Ada",
+    last_name: "Lovelace",
+    email: "ada@example.com",
+    personal_code: "CSC-7K3P",
+    status: "confermata",
+    amount_due_cents: 1100,
+    paid_cents: 1200,
+    balance_cents: -100,
+    reason: "credito",
+    reason_label: "Confermata con un credito (ha versato in più)",
+    ...over,
+  });
+
+  it("lists each case with its reason and amounts, linking to the booking", async () => {
+    stub(() => [
+      reviewRow({}),
+      reviewRow({
+        booking_id: 8,
+        first_name: "Bob",
+        last_name: "Builder",
+        reason: "disdetta_da_rimborsare",
+        reason_label: "Disdetta richiesta: da rimborsare",
+        status: "disdetta_richiesta",
+        balance_cents: 0,
+      }),
+    ]);
+    renderAt("/admin/da-verificare");
+    const table = await screen.findByRole("table", { name: "Iscrizioni da verificare" });
+    const ada = within(within(table).getByRole("row", { name: /Ada Lovelace/ }));
+    expect(ada.getByText(/ha versato in più/)).toBeInTheDocument();
+    expect(ada.getByText(/-1,00/)).toBeInTheDocument();
+    expect(ada.getByRole("link", { name: /Ada Lovelace/ })).toHaveAttribute(
+      "href",
+      "/admin/iscrizioni/7",
+    );
+    expect(screen.getByText("Disdetta richiesta: da rimborsare")).toBeInTheDocument();
+    expect(screen.getByText("2 da verificare")).toBeInTheDocument();
+  });
+
+  it("offers the CSV download", async () => {
+    stub(() => [reviewRow({})]);
+    renderAt("/admin/da-verificare");
+    expect(await screen.findByRole("link", { name: "Scarica CSV" })).toHaveAttribute(
+      "href",
+      "/api/admin/views/payments-review?format=csv",
+    );
+  });
+
+  it("says so when everything is in order", async () => {
+    stub(() => []);
+    renderAt("/admin/da-verificare");
+    expect(await screen.findByText(/Tutto in ordine/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Scarica CSV" })).not.toBeInTheDocument();
+  });
+});

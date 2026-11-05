@@ -7,9 +7,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.booking import effective_status, occupies_seats
+from app.domain.payments_review import REASON_LABELS, review_reason
 from app.domain.presence import Presence, presences
 from app.models import Booking, Edition, Slot, slot_sort_key
 from app.services import edition as edition_service
+from app.services.payments import paid_total
 from app.services.seats import expire_overdue
 
 
@@ -64,3 +66,61 @@ def load_presence(db: Session, now: datetime) -> PresenceData:
         rows=presences(booked),
         people=people,
     )
+
+
+@dataclass(frozen=True)
+class ReviewRow:
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    personal_code: str
+    status: str
+    amount_due_cents: int
+    paid_cents: int
+    reason: str
+
+    @property
+    def balance_cents(self) -> int:
+        return self.amount_due_cents - self.paid_cents
+
+    @property
+    def reason_label(self) -> str:
+        return REASON_LABELS[self.reason]
+
+
+def review_rows(db: Session, now: datetime) -> list[ReviewRow]:
+    """Bookings that need an admin's attention about money, most urgent kind of case first.
+
+    A booking drops out of the list on its own once the problem is solved (balance settled,
+    refund recorded), because the reason is recomputed on every read.
+    """
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return []
+    expire_overdue(db, now)
+    db.commit()
+    rows: list[ReviewRow] = []
+    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+        status = effective_status(booking.status, booking.hold_expires_at, now)
+        paid = paid_total(booking)
+        reason = review_reason(status, booking.amount_due_cents, paid)
+        if reason is None:
+            continue
+        participant = booking.participant
+        rows.append(
+            ReviewRow(
+                booking_id=booking.id,
+                first_name=participant.first_name,
+                last_name=participant.last_name,
+                email=participant.email,
+                personal_code=participant.personal_code,
+                status=status,
+                amount_due_cents=booking.amount_due_cents,
+                paid_cents=paid,
+                reason=reason,
+            )
+        )
+    order = list(REASON_LABELS)
+    rows.sort(key=lambda r: (order.index(r.reason), r.last_name.lower(), r.first_name.lower()))
+    return rows

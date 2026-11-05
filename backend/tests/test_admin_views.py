@@ -203,3 +203,105 @@ class TestWeekView:
 
     def test_without_an_edition_it_is_empty(self, admin_client):
         assert admin_client.get("/api/admin/views/week").json() == {"days": [], "total_people": 0}
+
+
+class TestPaymentsReview:
+    @pytest.fixture
+    def cases(self, db, edition, make_participant, make_booking, admin_client, clock):
+        from tests.test_change_slots import pay
+
+        def case(last, status=STATUS_PENDING, due=1100, paid=0, **kw):
+            who = make_participant(f"{last.lower()}@example.com", first_name="Test", last_name=last)
+            booking = make_booking(who, [slot(db, 13)], status=status, amount_due_cents=due, **kw)
+            if paid:
+                pay(db, booking, paid)
+            return booking
+
+        return dict(
+            expired=case("Expired", STATUS_EXPIRED, paid=500),
+            balance=case("Balance", STATUS_CONFIRMED, due=1200, paid=1100),
+            credit=case("Credit", STATUS_CONFIRMED, due=1100, paid=1200),
+            refund=case("Refund", STATUS_CANCEL_REQUESTED, paid=1100),
+            close=case("Close", STATUS_CANCEL_REQUESTED),
+            partial=case("Partial", paid=400),
+            overdue=case("Overdue", paid=300, hold_expires_at=clock() - timedelta(minutes=1)),
+            # nothing to look at below
+            waiting=case("Waiting"),
+            settled=case("Settled", STATUS_CONFIRMED, paid=1100),
+            refunded=case("Refunded", STATUS_REFUNDED, paid=1100),
+            lapsed=case("Lapsed", STATUS_EXPIRED),
+        )
+
+    def reasons(self, client):
+        return {
+            r["last_name"]: r["reason"]
+            for r in client.get("/api/admin/views/payments-review").json()
+        }
+
+    def test_lists_each_kind_of_case_with_its_reason(self, admin_client, cases):
+        assert self.reasons(admin_client) == {
+            "Expired": "scaduta_con_pagamenti",
+            "Overdue": "scaduta_con_pagamenti",
+            "Balance": "saldo_positivo",
+            "Credit": "credito",
+            "Refund": "disdetta_da_rimborsare",
+            "Close": "disdetta_da_chiudere",
+            "Partial": "pagamento_parziale",
+        }
+
+    def test_amounts_balance_and_label(self, admin_client, cases):
+        rows = {
+            r["last_name"]: r for r in admin_client.get("/api/admin/views/payments-review").json()
+        }
+        balance, credit = rows["Balance"], rows["Credit"]
+        assert (balance["amount_due_cents"], balance["paid_cents"], balance["balance_cents"]) == (
+            1200,
+            1100,
+            100,
+        )
+        assert credit["balance_cents"] == -100
+        assert balance["reason_label"] == "Confermata con una differenza da versare"
+        assert rows["Overdue"]["status"] == STATUS_EXPIRED
+        assert rows["Balance"]["booking_id"] == cases["balance"].id
+
+    def test_cases_come_in_a_stable_order_by_kind_then_surname(self, admin_client, cases):
+        order = [
+            r["last_name"] for r in admin_client.get("/api/admin/views/payments-review").json()
+        ]
+        assert order == ["Expired", "Overdue", "Balance", "Credit", "Refund", "Close", "Partial"]
+
+    def test_a_case_leaves_the_view_once_it_is_solved(self, admin_client, cases):
+        response = admin_client.post(
+            f"/api/admin/registrations/{cases['balance'].id}/payments",
+            json={"amount_cents": 100, "channel": "iban"},
+        )
+        assert response.status_code == 201
+        assert "Balance" not in self.reasons(admin_client)
+
+    def test_voided_payments_do_not_count(self, admin_client, db, cases):
+        for payment in cases["partial"].payments:
+            payment.voided_at = payment.created_at
+            payment.voided_by_id = payment.recorded_by_id
+        db.commit()
+        assert "Partial" not in self.reasons(admin_client)
+
+    def test_csv(self, admin_client, cases):
+        response = admin_client.get("/api/admin/views/payments-review?format=csv")
+        disposition = response.headers["content-disposition"]
+        assert disposition == 'attachment; filename="pagamenti-da-verificare-2026-07-01.csv"'
+        header, *rows = parse(response)
+        assert header[-1] == "Motivo"
+        assert len(rows) == 7
+        credit = next(r for r in rows if r[1] == "Credit")
+        values = dict(zip(header, credit, strict=True))
+        assert (values["Dovuto"], values["Versato"], values["Saldo"]) == ("11,00", "12,00", "-1,00")
+        assert values["Motivo"] == "Confermata con un credito (ha versato in più)"
+
+    def test_admins_only(self, client, outbox, make_participant, edition):
+        assert client.get("/api/admin/views/payments-review").status_code == 401
+        make_participant("ada@example.com")
+        login(client, outbox)
+        assert client.get("/api/admin/views/payments-review").status_code == 403
+
+    def test_without_an_edition_it_is_empty(self, admin_client):
+        assert admin_client.get("/api/admin/views/payments-review").json() == []

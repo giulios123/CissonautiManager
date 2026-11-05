@@ -3,6 +3,7 @@ import { RequireLogin } from "./auth";
 import { AdminLayout } from "./pages/AdminLayout";
 import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
+import { AdminReview } from "./pages/AdminReview";
 import { AdminSlots } from "./pages/AdminSlots";
 import { AdminWeek } from "./pages/AdminWeek";
 import { AdminSettings } from "./pages/AdminSettings";
@@ -53,6 +54,7 @@ export function App() {
         <Route path="iscrizioni/:id" element={<AdminRegistrationDetail />} />
         <Route path="giorni" element={<AdminSlots />} />
         <Route path="settimana" element={<AdminWeek />} />
+        <Route path="da-verificare" element={<AdminReview />} />
         <Route path="impostazioni" element={<AdminSettings />} />
       </Route>
       <Route path="*" element={<NotFound />} />

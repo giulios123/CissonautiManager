@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.csv_export import Cell, csv_filename, csv_response
+from app.csv_export import Amount, Cell, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_now, require_admin
 from app.domain.presence import presence_by_slot, week_summary
@@ -152,3 +152,69 @@ def week_view(
         rows.append(["Totale persone diverse", None, None, None, None, total])
         return csv_response(csv_filename("settimana", now), header, rows)
     return WeekOut(days=days, total_people=total)
+
+
+class ReviewRowOut(BaseModel):
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    personal_code: str
+    status: str
+    amount_due_cents: int
+    paid_cents: int
+    balance_cents: int
+    reason: str
+    reason_label: str
+
+
+@router.get("/payments-review", response_model=None)
+def payments_review(
+    fmt: Format = Query(default="json", alias="format"),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> list[ReviewRowOut] | Response:
+    rows = views_service.review_rows(db, now)
+    if fmt == "csv":
+        header = [
+            "Nome",
+            "Cognome",
+            "Email",
+            "Codice",
+            "Stato",
+            "Dovuto",
+            "Versato",
+            "Saldo",
+            "Motivo",
+        ]
+        csv_rows: list[list[Cell]] = [
+            [
+                r.first_name,
+                r.last_name,
+                r.email,
+                r.personal_code,
+                status_label(r.status),
+                Amount(r.amount_due_cents),
+                Amount(r.paid_cents),
+                Amount(r.balance_cents),
+                r.reason_label,
+            ]
+            for r in rows
+        ]
+        return csv_response(csv_filename("pagamenti-da-verificare", now), header, csv_rows)
+    return [
+        ReviewRowOut(
+            booking_id=r.booking_id,
+            first_name=r.first_name,
+            last_name=r.last_name,
+            email=r.email,
+            personal_code=r.personal_code,
+            status=r.status,
+            amount_due_cents=r.amount_due_cents,
+            paid_cents=r.paid_cents,
+            balance_cents=r.balance_cents,
+            reason=r.reason,
+            reason_label=r.reason_label,
+        )
+        for r in rows
+    ]
