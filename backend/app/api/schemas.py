@@ -10,8 +10,8 @@ from app.domain.booking import (
     is_past_day,
 )
 from app.domain.fees import balance_cents
-from app.domain.meals import allowed_meals, periods_by_day
-from app.models import MEAL_DINNER, MEAL_LUNCH, Booking, active_payments, slot_sort_key
+from app.domain.meals import allowed_meals, meal_sort_key, periods_by_day
+from app.models import Booking, active_payments, slot_sort_key
 from app.timefmt import format_meal, format_slot
 
 
@@ -109,11 +109,8 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
     )
 
 
-MEAL_ORDER = {MEAL_LUNCH: 0, MEAL_DINNER: 1}
-
-
 def _meal_views(meals: Iterable[tuple[date, str]], now: datetime) -> list[MealView]:
     return [
         MealView(date=day, kind=kind, label=format_meal(day, kind), past=is_past_day(day, now))
-        for day, kind in sorted(meals, key=lambda m: (m[0], MEAL_ORDER.get(m[1], 9)))
+        for day, kind in sorted(meals, key=meal_sort_key)
     ]

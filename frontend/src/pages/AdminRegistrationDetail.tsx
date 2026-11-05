@@ -11,6 +11,7 @@ import { AdminHoldActions } from "./AdminHoldActions";
 import { AdminPayments } from "./AdminPayments";
 import { AdminRefundForm } from "./AdminRefundForm";
 import { AdminSlotEditor } from "./AdminSlotEditor";
+import { MealEditor } from "./MealEditor";
 
 export type Detail = {
   participant: {
@@ -29,6 +30,14 @@ export type Detail = {
   history: HistoryEntry[];
   warning: string | null;
   waitlist?: { id: number; label: string; position: number; created_at: string }[];
+  lunch_price_cents?: number;
+  dinner_price_cents?: number;
+};
+
+const DIET_LABELS: Record<string, string> = {
+  omnivore: "onnivoro",
+  vegetarian: "vegetariano",
+  vegan: "vegano",
 };
 
 const CHANNELS = [
@@ -42,6 +51,7 @@ export function AdminRegistrationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [editingSlots, setEditingSlots] = useState(false);
+  const [editingMeals, setEditingMeals] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [failed, setFailed] = useState(false);
   const [amount, setAmount] = useState("");
@@ -171,6 +181,47 @@ export function AdminRegistrationDetail() {
           )}
         </p>
         <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
+      </section>
+
+      <section aria-labelledby="meals-title">
+        <h2 id="meals-title">Pasti ed esigenze alimentari</h2>
+        {(booking.meals ?? []).length === 0 ? (
+          <p>Nessun pasto.</p>
+        ) : (
+          <ul>
+            {(booking.meals ?? []).map((meal) => (
+              <li key={`${meal.date}:${meal.kind}`}>{meal.label}</li>
+            ))}
+          </ul>
+        )}
+        <p>
+          Regime: {booking.diet ? DIET_LABELS[booking.diet] : "non indicato"}.
+          <br />
+          Allergie e intolleranze: {booking.allergies ?? "nessuna indicata"}
+          {booking.health_consent_version != null &&
+            ` (consenso versione ${booking.health_consent_version})`}
+          .
+        </p>
+        {booking.editable && (
+          <button
+            type="button"
+            className="secondary"
+            aria-expanded={editingMeals}
+            onClick={() => setEditingMeals((value) => !value)}
+          >
+            {editingMeals ? "Chiudi la modifica dei pasti" : "Cambia i pasti"}
+          </button>
+        )}
+        {editingMeals && booking.editable && (
+          <MealEditor<Detail>
+            booking={booking}
+            lunchCents={detail.lunch_price_cents ?? 0}
+            dinnerCents={detail.dinner_price_cents ?? 0}
+            path={`/api/admin/registrations/${booking.id}/meals`}
+            allowPast
+            onSaved={(updated) => showUpdated(updated, "Pasti aggiornati.")}
+          />
+        )}
       </section>
 
       {(booking.editable || booking.can_cancel) && (

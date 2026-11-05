@@ -13,7 +13,7 @@ from app.domain.booking import (
     is_past_day,
 )
 from app.domain.fees import is_covered
-from app.domain.meals import meals_to_drop, periods_by_day
+from app.domain.meals import meal_sort_key, meals_to_drop, periods_by_day
 from app.email import EmailSender
 from app.email.templates import cancellation_email
 from app.models import (
@@ -151,7 +151,12 @@ def change_slots(
             actor,
             "slots_changed",
             _describe_slot_change(
-                added, removed, full, old_amount, booking.amount_due_cents, sorted(dropped)
+                added,
+                removed,
+                full,
+                old_amount,
+                booking.amount_due_cents,
+                sorted(dropped, key=meal_sort_key),
             ),
             booking.id,
         )
@@ -167,7 +172,9 @@ def change_slots(
     db.commit()
     if confirmed_now:
         send_confirmation(sender, booking, total)
-    return ChangeResult(booking, confirmed_now, full, [s.id for s in removed], sorted(dropped))
+    return ChangeResult(
+        booking, confirmed_now, full, [s.id for s in removed], sorted(dropped, key=meal_sort_key)
+    )
 
 
 def _labels(slots: list[Slot]) -> str:

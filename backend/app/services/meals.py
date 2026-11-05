@@ -7,7 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.domain.booking import can_edit_slots, effective_status, is_past_day
 from app.domain.fees import is_covered
-from app.domain.meals import Meal, allowed_meals, check_meal_change, periods_by_day
+from app.domain.meals import (
+    Meal,
+    allowed_meals,
+    check_meal_change,
+    meal_sort_key,
+    periods_by_day,
+)
 from app.email import EmailSender
 from app.models import STATUS_CONFIRMED, STATUS_PENDING, Booking, BookingMeal, Edition, Participant
 from app.services import audit
@@ -65,7 +71,7 @@ def change_meals(
     assert edition is not None
     old_amount = booking.amount_due_cents
     kept = [m for m in booking.meals if (m.date, m.kind) in wanted_set]
-    added = sorted(wanted_set - current)
+    added = sorted(wanted_set - current, key=meal_sort_key)
     booking.meals = kept + [BookingMeal(date=day, kind=kind) for day, kind in added]
     recompute_amount(edition, booking)
     if actor is not None:
@@ -73,7 +79,12 @@ def change_meals(
             db,
             actor,
             "meals_changed",
-            _describe(added, sorted(current - wanted_set), old_amount, booking.amount_due_cents),
+            _describe(
+                added,
+                sorted(current - wanted_set, key=meal_sort_key),
+                old_amount,
+                booking.amount_due_cents,
+            ),
             booking.id,
         )
     total = paid_total(booking)

@@ -34,6 +34,11 @@ class HealthData:
     reason: HealthRefusal | None = None
 
 
+def meal_sort_key(meal: Meal) -> tuple[date, int]:
+    """Chronological order: by day, lunch before dinner."""
+    return (meal[0], 0 if meal[1] == MEAL_LUNCH else 1)
+
+
 def can_have_lunch(periods: Collection[str]) -> bool:
     return PERIOD_MORNING in periods or PERIOD_AFTERNOON in periods
 

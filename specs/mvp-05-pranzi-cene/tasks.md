@@ -16,7 +16,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: adesione e ritiro con importo ricalcolato; in attesa coperta che diventa confermata con email; confermata che resta tale; stato non valido rifiutato; pasto non ammesso rifiutato; giorno passato rifiutato e oggi ammesso. Frontend: caselle solo nei giorni di presenza, anteprima.
 - [x] **6. Esigenze alimentari**: `PUT /api/me/booking/dietary`, sezione nella pagina.
   Test: regime senza consenso; allergie con consenso e versione salvata; errore senza consenso; consenso tolto che cancella; campo assente senza testo pubblicato; allergie assenti da email e risposte pubbliche; prenotazione rimossa che porta via i dati.
-- [ ] **7. Pasti dalla scheda admin**: `PUT /api/admin/registrations/{id}/meals`, scheda estesa.
+- [x] **7. Pasti dalla scheda admin**: `PUT /api/admin/registrations/{id}/meals`, scheda estesa.
   Test: giorni passati ammessi; cronologia scritta; 403 per un partecipante; regime e allergie visibili all'admin.
 - [ ] **8. Vista Pasti**: endpoint (+ CSV) e pagina.
   Test: conteggi per giorno e pasto; scadute e disdette escluse; conteggio per regime con «senza indicazione»; allergie con nome; CSV con una riga per persona; avviso prima del download.

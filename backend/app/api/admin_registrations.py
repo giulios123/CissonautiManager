@@ -17,11 +17,19 @@ from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.domain.booking import occupies_seats
 from app.domain.presence import has_evening
 from app.email import EmailSender
-from app.models import STATUS_EXPIRED, Booking, LegalDocument, Participant, WaitlistEntry
+from app.models import (
+    STATUS_EXPIRED,
+    Booking,
+    Edition,
+    LegalDocument,
+    Participant,
+    WaitlistEntry,
+)
 from app.services import audit as audit_service
 from app.services import booking_admin as booking_admin_service
 from app.services import booking_changes
 from app.services import edition as edition_service
+from app.services import meals as meals_service
 from app.services import payments as payment_service
 from app.services import refunds as refund_service
 from app.services import waitlist as waitlist_service
@@ -104,6 +112,8 @@ class RegistrationDetail(BaseModel):
     refund: RefundOut | None = None
     history: list[HistoryEntry] = []
     warning: str | None = None
+    lunch_price_cents: int = 0
+    dinner_price_cents: int = 0
 
 
 class RefundIn(BaseModel):
@@ -205,6 +215,7 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
     privacy = db.get(LegalDocument, booking.privacy_document_id)
     disclaimer = db.get(LegalDocument, booking.disclaimer_document_id)
     assert privacy is not None and disclaimer is not None
+    edition = db.get(Edition, booking.edition_id)
     if warning is None and view.status == STATUS_EXPIRED and view.paid_cents > 0:
         warning = "Ci sono pagamenti registrati su una prenotazione scaduta."
     return RegistrationDetail(
@@ -253,6 +264,8 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
             for entry, actor in audit_service.history(db, booking.id)
         ],
         warning=warning,
+        lunch_price_cents=edition.lunch_price_cents if edition else 0,
+        dinner_price_cents=edition.dinner_price_cents if edition else 0,
     )
 
 
@@ -568,6 +581,50 @@ def change_registration_slots(
         dropped = f"Tolti anche i pasti senza più presenza: {meals}."
         warning = f"{warning} {dropped}" if warning else dropped
     return _detail(db, booking, now, warning=warning)
+
+
+class MealIn(BaseModel):
+    date: date
+    kind: Literal["lunch", "dinner"]
+
+
+class MealsIn(BaseModel):
+    meals: list[MealIn] = Field(max_length=200)
+
+
+@router.put("/{booking_id}/meals")
+def change_registration_meals(
+    booking_id: int,
+    body: MealsIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        meals_service.change_meals(
+            db,
+            sender,
+            booking,
+            [(m.date, m.kind) for m in body.meals],
+            now,
+            allow_past=True,
+            actor=admin,
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(
+            status_code=409, detail="Questa iscrizione non si può più modificare"
+        ) from exc
+    except meals_service.MealsRefused as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail="Un pasto si può dare solo nei giorni e nelle fasce in cui la persona è "
+            "presente: aggiungi prima lo slot",
+        ) from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
 
 
 class CancelOut(BaseModel):

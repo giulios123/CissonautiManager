@@ -23,16 +23,21 @@ export function mealsPreview(
   return booking.amount_due_cents - before + after;
 }
 
-export function MealEditor({
+export function MealEditor<T = unknown>({
   booking,
   lunchCents,
   dinnerCents,
   onSaved,
+  path = "/api/me/booking/meals",
+  allowPast = false,
 }: {
   booking: BookingView;
   lunchCents: number;
   dinnerCents: number;
-  onSaved: () => Promise<void> | void;
+  onSaved: (result: T) => Promise<void> | void;
+  // Admins save through their own endpoint and can change days already over.
+  path?: string;
+  allowPast?: boolean;
 }) {
   const original = new Set((booking.meals ?? []).map(key));
   const [selected, setSelected] = useState<Set<string>>(new Set(original));
@@ -63,8 +68,8 @@ export function MealEditor({
       const meals = allowed
         .filter((meal) => selected.has(key(meal)))
         .map(({ date, kind }) => ({ date, kind }));
-      await api("/api/me/booking/meals", { method: "PUT", json: { meals } });
-      await onSaved();
+      const result = await api<T>(path, { method: "PUT", json: { meals } });
+      await onSaved(result);
       setSaved(true);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
@@ -91,12 +96,12 @@ export function MealEditor({
                 <input
                   type="checkbox"
                   checked={selected.has(key(meal))}
-                  disabled={Boolean(meal.past)}
+                  disabled={Boolean(meal.past) && !allowPast}
                   onChange={(e) => toggle(meal, e.target.checked)}
                 />
                 <span>
                   {KIND_LABELS[meal.kind]}
-                  {meal.past ? " · giorno passato" : ""}
+                  {meal.past && !allowPast ? " · giorno passato" : ""}
                 </span>
               </label>
             ))}
