@@ -5,7 +5,10 @@ import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/600.css";
 import "@fontsource/montserrat/700.css";
 import { App } from "./App";
+import { isInFrame } from "./frame";
 import "./styles.css";
+
+if (isInFrame()) document.documentElement.classList.add("in-frame");
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

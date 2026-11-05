@@ -12,6 +12,7 @@ import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
 import { Verify } from "./pages/Verify";
+import { SiteHeader } from "./SiteHeader";
 
 function Home() {
   return (
@@ -37,29 +38,32 @@ function NotFound() {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/iscrizione" element={<Registration />} />
-      <Route path="/accedi" element={<Login />} />
-      <Route path="/accedi/verifica" element={<Verify />} />
-      <Route path="/io" element={<Personal />} />
-      <Route
-        path="/admin"
-        element={
-          <RequireLogin admin>
-            <AdminLayout />
-          </RequireLogin>
-        }
-      >
-        <Route index element={<AdminRegistrations />} />
-        <Route path="iscrizioni/:id" element={<AdminRegistrationDetail />} />
-        <Route path="giorni" element={<AdminSlots />} />
-        <Route path="settimana" element={<AdminWeek />} />
-        <Route path="da-verificare" element={<AdminReview />} />
-        <Route path="amministratori" element={<AdminAdmins />} />
-        <Route path="impostazioni" element={<AdminSettings />} />
-      </Route>
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <SiteHeader />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/iscrizione" element={<Registration />} />
+        <Route path="/accedi" element={<Login />} />
+        <Route path="/accedi/verifica" element={<Verify />} />
+        <Route path="/io" element={<Personal />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireLogin admin>
+              <AdminLayout />
+            </RequireLogin>
+          }
+        >
+          <Route index element={<AdminRegistrations />} />
+          <Route path="iscrizioni/:id" element={<AdminRegistrationDetail />} />
+          <Route path="giorni" element={<AdminSlots />} />
+          <Route path="settimana" element={<AdminWeek />} />
+          <Route path="da-verificare" element={<AdminReview />} />
+          <Route path="amministratori" element={<AdminAdmins />} />
+          <Route path="impostazioni" element={<AdminSettings />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }

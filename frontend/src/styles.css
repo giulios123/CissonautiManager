@@ -31,6 +31,51 @@ body {
   margin: 0;
 }
 
+html.in-frame,
+html.in-frame body {
+  background: transparent;
+}
+
+.site-header {
+  background: var(--color-bg);
+  border-bottom: 4px solid var(--color-cta);
+}
+
+.site-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  max-width: 72rem;
+  min-height: 2.75rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+}
+
+.site-brand img {
+  width: auto;
+  height: 1.875rem;
+}
+
+.site-name {
+  margin: 0;
+  color: var(--color-heading);
+  font-weight: 700;
+}
+
+.site-header.compact {
+  background: transparent;
+  border-bottom: 0;
+}
+
+.site-header.compact .site-name {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 0;
+  font-size: 0.875rem;
+}
+
 main {
   max-width: 40rem;
   margin: 0 auto;

@@ -28,3 +28,5 @@ Issue e pull request sono benvenute. Prima di proporre una modifica leggi `AGENT
 ## Licenza
 
 [MIT](LICENSE)
+
+Il logo di Cissone (`frontend/src/assets/logo-cissone.png`) appartiene alla Pro Loco di Cissone ed è usato con il suo permesso: non rientra nella licenza MIT. Il font Montserrat è distribuito con licenza SIL Open Font License.

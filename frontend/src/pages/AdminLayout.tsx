@@ -11,7 +11,7 @@ export function AdminLayout() {
 
   return (
     <>
-      <header className="admin-nav">
+      <div className="admin-nav">
         <nav aria-label="Pannello organizzatori">
           <NavLink to="/admin" end>
             Persone
@@ -25,7 +25,7 @@ export function AdminLayout() {
             Esci
           </button>
         </nav>
-      </header>
+      </div>
       <Outlet />
     </>
   );

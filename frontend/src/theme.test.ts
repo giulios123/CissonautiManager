@@ -46,10 +46,10 @@ describe("theme tokens", () => {
     expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(3);
   });
 
-  it("keeps the amber away from text on white", () => {
+  it("never uses the amber for text or focus, only as a fill or decoration", () => {
     expect(contrast(token("color-cta"), token("color-bg"))).toBeLessThan(3);
     const outsideRoot = css.replace(/:root\s*{[^}]*}/, "");
-    expect(outsideRoot).not.toMatch(/(color|outline|border)[a-z-]*:[^;]*var\(--color-cta\)/);
+    expect(outsideRoot).not.toMatch(/(^|[\s;{])(color|outline(-color)?):[^;]*var\(--color-cta\)/m);
   });
 
   it("defines colors only in :root", () => {
