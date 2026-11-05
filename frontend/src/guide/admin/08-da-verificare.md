@@ -9,3 +9,5 @@ L'elenco delle iscrizioni che chiedono un'occhiata per via dei soldi, con il mot
 - disdetta richiesta da rimborsare, oppure senza pagamenti da chiudere.
 
 Aprendo la scheda registri il pagamento mancante, il rimborso o la chiusura. Una riga sparisce da sola quando la situazione torna in ordine. Se la vista è vuota, «Tutto in ordine».
+
+L'attesa normale di chi non ha ancora pagato non compare qui: per controllare il conto e segnare i pagamenti c'è la pagina «Da incassare».

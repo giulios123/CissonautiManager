@@ -65,6 +65,7 @@ describe("admin guide", () => {
       "/admin/attivita",
       "/admin/contributi",
       "/admin/report",
+      "/admin/da-incassare",
       "/admin/da-verificare",
       "/admin/amministratori",
       "/admin/impostazioni",
