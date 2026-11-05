@@ -2,14 +2,15 @@
 
 ## Ora
 
-MVP 4, 5 e 6 implementati e provati in locale sul branch `claude/quirky-meitner-qn9hwh`; descrizioni PR in `specs/mvp-0{4,5,6}-*/pr-description.md`. Modifiche a `domain.md` dei tre MVP applicate. Aperti e non bloccanti: task 15 dell'MVP 1 e task 9 dell'MVP 2.
+MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 su `main` e deployati su Azure (PR #4 e #5, task 9 dell'MVP 2 validato): `https://cissonauti-booking.wonderfulbush-cbda30f0.italynorth.azurecontainerapps.io`. MVP 4, 5 e 6 implementati e provati in locale sul branch `claude/quirky-meitner-qn9hwh`, in PR verso `main`; descrizioni per gli organizzatori in `specs/mvp-0{4,5,6}-*/pr-description.md`. Modifiche a `domain.md` dei tre MVP applicate.
 
 ## Prossimo passo
 
-1. CI su SQL Server sul branch (migrazioni 0005-0007 mai girate su SQL Server) e validazione del task 9 dell'MVP 2.
-2. Passaggio su `main` quando il maintainer lo decide.
-3. MVP 7 (inviti e report): la priorità del +1 si innesta in `domain/waitlist.queue`; da definire come si verifica il +1 (Backlog).
-4. Importi definitivi di pranzo e cena (oggi 8 € e 12 €, segnaposto).
+1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
+2. Dopo il merge il deploy applica le migrazioni 0005-0007 all'avvio: il primo avvio a freddo può essere lento (circa 4 minuti con la PR #5).
+3. Prove manuali in produzione con le checklist di MVP 2-6: email vera nella casella e fuori dallo spam, il job `cissonauti-booking-reminders` che gira ogni ora (portale Azure, «Execution history»), viste e CSV con dati veri, lista d'attesa che si sblocca dopo una scadenza.
+4. MVP 7 (inviti e report): la priorità del +1 si innesta in `domain/waitlist.queue`; da definire come si verifica il +1 (Backlog).
+5. Importi definitivi di pranzo e cena (oggi 8 € e 12 €, segnaposto).
 
 ## Scelte del maintainer per MVP 4-6 (2026-11-05)
 

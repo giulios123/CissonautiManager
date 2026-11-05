@@ -18,7 +18,7 @@ Branch di implementazione: `feat/mvp-02-pagina-personale`.
   Test: mid e final una sola volta; rilancio idempotente; niente su confermata, scaduta, disdetta, coperta; in ritardo solo il finale; riattivata riparte; riepilogo stampato.
 - [x] **8. Interfaccia `/io`**: modifica slot con anteprima, saldo o credito, disdetta con dialogo di conferma.
   Test vitest: anteprima e differenza; slot pieno non selezionabile; slot passati disabilitati; dialogo (apre, annulla, conferma); errore 409 mostrato.
-- [ ] **9. Infrastruttura** (SCRITTO, NON VALIDATO: `az` e il compilatore Bicep non erano disponibili in sessione): Bicep (ACS, dominio gestito, job orario), `deploy.yml` con passo di risveglio dell'app dopo il deploy, `infra/README.md`. Il job riceve l'immagine nuova dallo stesso deploy Bicep.
+- [x] **9. Infrastruttura** (VALIDATO il 2026-11-05 con un deploy reale su Azure, dopo aver registrato il provider `Microsoft.Communication`; restano da provare a mano email vera e job orario): Bicep (ACS, dominio gestito, job orario), `deploy.yml` con passo di risveglio dell'app dopo il deploy, `infra/README.md`. Il job riceve l'immagine nuova dallo stesso deploy Bicep.
   Test: `az bicep build` senza errori; `what-if`; dopo il deploy il job compare e gira.
 - [x] **10. Chiusura**: lint e test verdi, migrazioni da zero, aggiornamento di Memory Bank e README, descrizione PR con checklist per organizzatori (ricevere una email vera, cambiare slot, disdire, verificare un promemoria).
 
