@@ -70,6 +70,13 @@ class LocaleMiddleware:
             _current.reset(token)
 
 
+def channel_label(code: str, stored: str, locale: str | None = None) -> str:
+    """Name of a payment channel in the language. Channels the catalog does not know keep the
+    label stored with them."""
+    key = f"channel.{code}"
+    return t(key, locale) if key in MESSAGES else stored
+
+
 def t(key: str, locale: str | None = None, **params: object) -> str:
     """The message `key` in `locale` (default: the language of the request)."""
     texts = MESSAGES[key]
@@ -360,6 +367,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Il giorno di questo slot è già passato",
         "en": "This slot's day has already passed",
     },
+    # --- payment channels (their codes are fixed)
+    "channel.iban": {"it": "Bonifico (IBAN)", "en": "Bank transfer (IBAN)"},
     # --- sign-up and sign-in
     "register.slots_required": {"it": "Scegli almeno uno slot", "en": "Choose at least one slot"},
     "register.privacy_required": {

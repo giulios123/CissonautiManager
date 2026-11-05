@@ -14,7 +14,7 @@ Branch: `claude/relaxed-dijkstra-9z2e5o` (vincolo della sessione). **Dimensione*
 - [x] **6. Pagine partecipante tradotte**.
   Test: iscrizione, accesso e pagina personale in inglese.
 - [x] **7. Guida**: nuova struttura `{it,en}/{participant,admin}`, guida partecipante in inglese, test di parità, `check-guide.sh`.
-- [ ] **8. Chiusura**: lint, test, migrazioni da zero, `progress.md`, `activeContext.md`, `decisions.md`, `domain.md`, `pr-description.md`.
+- [x] **8. Chiusura**: lint, test, migrazioni da zero, `progress.md`, `activeContext.md`, `decisions.md`, `domain.md`, `pr-description.md`.
 
 ## Da verificare a mano
 

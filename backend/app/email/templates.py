@@ -5,7 +5,7 @@ in `app/email_texts.py`; this module only assembles it.
 """
 
 from app.email.base import EmailMessage
-from app.i18n import normalize_locale, t
+from app.i18n import channel_label, normalize_locale, t
 from app.models import Booking, Participant, PaymentChannel, Slot, slot_sort_key
 from app.timefmt import format_deadline, format_euro, format_slot
 
@@ -39,9 +39,10 @@ def _waitlist_section(waitlisted: list[Slot], loc: str) -> str:
 
 
 def _payment_lines(channels: list[PaymentChannel], loc: str) -> str:
-    return "\n".join(f"- {c.label}: {c.instructions}".rstrip(": ") for c in channels) or t(
-        "email.pay_default", loc
-    )
+    lines = [
+        f"- {channel_label(c.code, c.label, loc)}: {c.instructions}".rstrip(": ") for c in channels
+    ]
+    return "\n".join(lines) or t("email.pay_default", loc)
 
 
 def cancellation_email(

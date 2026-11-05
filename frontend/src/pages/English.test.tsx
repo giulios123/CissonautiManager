@@ -160,6 +160,18 @@ describe("the app in English", () => {
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
   });
 
+  it("asks the server again when the language is switched, so its labels follow", async () => {
+    const calls = stub((url) => ({ body: url === "/api/me" ? me : edition }));
+    renderEnglish("/me");
+    const user = userEvent.setup();
+    await screen.findByRole("heading", { name: "Hi Ada!" });
+    const before = calls.filter((c) => c.url === "/api/me").length;
+    await user.click(screen.getByRole("button", { name: "Italian" }));
+    expect(await screen.findByRole("heading", { name: "Ciao Ada!" })).toBeInTheDocument();
+    await waitFor(() => expect(calls.filter((c) => c.url === "/api/me").length).toBe(before + 1));
+    expect(calls.filter((c) => c.url === "/api/me").at(-1)?.language).toBe("it");
+  });
+
   it("opens the cancellation dialog in English", async () => {
     stub((url) => ({ body: url === "/api/me" ? me : edition }));
     renderEnglish("/me");

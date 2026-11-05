@@ -13,7 +13,7 @@ from app.config import Settings
 from app.db import get_db
 from app.deps import current_user, get_email_sender, get_now, get_settings_dep
 from app.email import EmailSender
-from app.i18n import t
+from app.i18n import channel_label, t
 from app.models import DOC_HEALTH, Booking, Contribution, Edition, Participant, WaitlistEntry
 from app.services import activities as activity_service
 from app.services import booking_changes
@@ -110,7 +110,9 @@ def get_me(
             )
         )
         channels = [
-            ChannelPublic(code=c.code, label=c.label, instructions=c.instructions)
+            ChannelPublic(
+                code=c.code, label=channel_label(c.code, c.label), instructions=c.instructions
+            )
             for c in registration_service.enabled_channels(db, edition)
         ]
     return MeOut(

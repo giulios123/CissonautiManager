@@ -53,6 +53,7 @@
 - Pagina pubblica di iscrizione senza login, incorporabile in Google Sites tramite iframe: header CSP `frame-ancestors` che autorizza `https://sites.google.com` e `https://*.googleusercontent.com`. Dopo l'invio mostra riepilogo, importo, istruzioni di pagamento e scadenza, e invia un'email con il magic link.
 - Magic link: token monouso valido 30 minuti, apre la pagina personale in una finestra normale (fuori dall'iframe). Dopo il login un cookie di sessione httpOnly, Secure, SameSite=Lax dura 14 giorni. Chi non ha un cookie valido può richiedere un nuovo link inserendo l'email.
 - Password (opzionale): oltre al magic link si può accedere con email e password. La password si imposta dalla pagina personale dopo un accesso con magic link; il magic link resta sempre disponibile come recupero.
+- Lingue: l'app è in italiano e in inglese. La lingua si sceglie con il selettore IT/EN (o con `?lang=`), altrimenti è quella del browser; si salva sul partecipante alla registrazione e a ogni cambio da loggato. Gli indirizzi sono in inglese (`/register`, `/login`, `/me`...): gli indirizzi italiani scritti a mano reindirizzano.
 - Pagina personale: modifica degli slot, adesione a pranzi, cene e attività, esigenze alimentari, contributi offerti (talk, temi per l'unconference, competenze), saldo e istruzioni di pagamento, richiesta di disdetta.
 - Admin: stessa app, ruolo `admin`. Gli admin si aggiungono e rimuovono dal pannello, senza limite di numero. Il primo admin viene creato da variabile d'ambiente e non si rimuove dal pannello (si cambia da lì); non si può rimuovere se stessi né l'ultimo admin.
 
@@ -70,6 +71,8 @@
 - Ogni modifica manuale dell'admin è registrata (chi, quando, cosa) e compare nella cronologia della scheda.
 
 ## Email
+
+Ogni email parte nella lingua del partecipante (italiano o inglese).
 
 Conferma iscrizione con magic link (o di ingresso in lista d'attesa) · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza, ciascuno una sola volta per blocco; con un blocco sotto le 48 ore parte solo quello a metà; ripartono se la prenotazione viene riattivata) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
 

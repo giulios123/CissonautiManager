@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
-import { useT, type MessageKey } from "../i18n";
+import { useI18n, type MessageKey } from "../i18n";
 import { formatEuro } from "../money";
 import { ROUTES } from "../routes";
 import { StatusBadge } from "../StatusBadge";
@@ -18,7 +18,7 @@ import { Waitlist } from "./Waitlist";
 type State = { status: "loading" } | { status: "anonymous" } | { status: "ready"; me: Me };
 
 function PaymentInstructions({ me }: { me: Me }) {
-  const t = useT();
+  const { t } = useI18n();
   return (
     <>
       <p>
@@ -48,7 +48,7 @@ function BookingCard({
   reload: () => Promise<void>;
   onCancelled: (outcome: CancelOutcome) => Promise<void>;
 }) {
-  const t = useT();
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [editingMeals, setEditingMeals] = useState(false);
   const [editingActivities, setEditingActivities] = useState(false);
@@ -219,7 +219,7 @@ function BookingCard({
 }
 
 function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
-  const t = useT();
+  const { t } = useI18n();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -271,7 +271,7 @@ const CANCEL_NOTICES: Record<CancelOutcome, MessageKey> = {
 };
 
 export function Personal() {
-  const t = useT();
+  const { t, locale } = useI18n();
   const [state, setState] = useState<State>({ status: "loading" });
   const [notice, setNotice] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -285,9 +285,11 @@ export function Personal() {
     [],
   );
 
+  // The labels of slots, meals and activities come from the server in the language of the
+  // request: when the language changes, ask again.
   useEffect(() => {
     void reload();
-  }, [reload]);
+  }, [reload, locale]);
 
   if (state.status === "loading") return <main aria-busy="true">{t("common.loading")}</main>;
   if (state.status === "anonymous") return <Navigate to={ROUTES.login} replace />;

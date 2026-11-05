@@ -164,3 +164,27 @@ def test_migration_0011_gives_existing_people_italian(
     columns = {column["name"] for column in inspect(engine).get_columns("participant")}
     assert "locale" not in columns
     engine.dispose()
+
+
+class TestChannelLabels:
+    def test_known_channel_is_translated(self):
+        from app.i18n import channel_label
+
+        assert channel_label("iban", "Bonifico (IBAN)", "en") == "Bank transfer (IBAN)"
+        assert channel_label("iban", "Bonifico (IBAN)", "it") == "Bonifico (IBAN)"
+
+    def test_other_channels_keep_their_stored_label(self):
+        from app.i18n import channel_label
+
+        assert channel_label("revolut", "Revolut", "en") == "Revolut"
+        assert channel_label("cash", "Contanti", "en") == "Contanti"
+
+    def test_public_edition_follows_the_language(self, client, edition, admin_client):
+        admin_client.put(
+            "/api/admin/payment-channels",
+            json=[{"code": "iban", "instructions": "IT00", "enabled": True}],
+        )
+        english = client.get("/api/public/edition", headers={"Accept-Language": "en"}).json()
+        assert english["payment_channels"][0]["label"] == "Bank transfer (IBAN)"
+        italian = client.get("/api/public/edition").json()
+        assert italian["payment_channels"][0]["label"] == "Bonifico (IBAN)"

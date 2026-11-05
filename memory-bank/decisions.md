@@ -289,3 +289,28 @@
 - **Motivo**: richiesta del maintainer: controllare il conto e segnare le quote in fila, con rimedio a un clic sbagliato. L'app scala a zero, quindi un timer solo in memoria può perdere l'email.
 - **Alternative scartate**: solo timer in memoria (email perse a ogni riavvio); coda o job ogni minuto (infrastruttura in più); ritardare l'email anche dalla scheda (scelta del maintainer: solo dalla vista); conferma con dialogo a ogni riga (più lento per chi controlla il conto).
 - **Limiti noti**: se il timer si perde l'email arriva al passaggio orario successivo; un errore di consegna non si ritenta; con due admin sulla stessa riga il tasto registra l'importo mostrato.
+
+
+## D-041 · Due lingue senza libreria: dizionari tipizzati e lingua in una variabile di contesto
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) frontend: dizionari piatti `i18n/it.ts` e `i18n/en.ts`, con `en` tipizzato su `keyof typeof it` (una chiave mancante non compila) e un test sui segnaposto; hook `useT()`/`useI18n()`, plurali con le chiavi `.one`/`.other` e `Intl.PluralRules`; lingua da `?lang`, poi scelta salvata, poi lingua del browser (`it*` → italiano, altrimenti inglese); (2) backend: catalogo `app/i18n.py` con `t(chiave, **parametri)` che legge la lingua da una variabile di contesto impostata da un middleware ASGI su `Accept-Language`, così i servizi non si passano la lingua; email e job, che non hanno una richiesta, la prendono da `participant.locale`; (3) il frontend manda `Accept-Language` a ogni chiamata, quindi anche le etichette fatte dal server (slot, pasti, attività) escono nella lingua giusta e la pagina personale ricarica i dati quando si cambia lingua; (4) l'oggetto delle email usa il nome del marchio fisso «Cissonauti Summer Camp», non `edition.name` (la spec lo prevedeva, ma cambiava l'oggetto delle email esistenti: resta all'MVP 13, dove l'oggetto diventa modificabile).
+- **Motivo**: richiesta del maintainer di un'app in italiano e inglese; ogni nuova funzione deve nascere bilingue (regola in `AGENTS.md`).
+- **Alternative scartate**: libreria i18n (react-i18next o simili: una dipendenza per 400 chiavi piatte, senza controllo di compilazione sulle chiavi mancanti); `AppError(chiave)` con handler (obbligava a cambiare ogni punto in cui si lancia un errore e a far passare la lingua nei servizi); rimontare le pagine a ogni cambio di lingua (farebbe perdere i campi già scritti nell'iscrizione).
+- **Limiti noti**: i contenuti scritti dagli organizzatori (nomi e testi delle attività, istruzioni di pagamento, testi legali) restano come scritti (Backlog); le voci di cronologia e i testi di sistema delle viste admin si traducono con l'MVP 12; i messaggi del server nelle pagine admin dipendono dalla lingua della richiesta.
+
+## D-042 · Indirizzi in inglese con alias italiani che reindirizzano
+
+- **Data**: 2026-11-05
+- **Decisione**: i percorsi sono definiti in `frontend/src/routes.ts` (inglese: `/register`, `/login`, `/login/verify`, `/me`, `/guide`, `/admin/days`...). La rotta `*` chiama `canonicalPath()`: se il percorso è un alias italiano (scritto a mano o da un vecchio link) fa un redirect con `replace`, conservando query e hash; la query `?scheda=organizzatori` della guida diventa `?tab=organizers`. Il backend genera solo link inglesi; la CSP `frame-ancestors` di Google Sites vale sia per `/register` sia per `/iscrizione`, perché il redirect avviene dentro l'iframe.
+- **Motivo**: link leggibili in inglese, ma i magic link già nelle caselle e l'iframe già incorporato nel sito non devono rompersi.
+- **Alternative scartate**: due insiemi di rotte uguali (due indirizzi per la stessa pagina, titoli e link doppi); redirect lato server (il frontend è una app a pagina singola servita con un fallback unico).
+- **Limiti noti**: gli alias coprono solo i percorsi che esistevano; nessun alias per quelli nuovi.
+
+## D-043 · Guida in due lingue con file omonimi
+
+- **Data**: 2026-11-05
+- **Decisione**: la guida sta in `frontend/src/guide/{it,en}/{participant,admin}/NN-<slug-inglese>.md`: stessa numerazione e stesso nome nelle due lingue, ancore in inglese. Un test confronta le sezioni dei due elenchi, e `check-guide.sh` chiede di toccare la guida in tutte e due le lingue. Fino all'MVP 12 la guida organizzatori inglese manca e il caricamento ricade sull'italiano.
+- **Motivo**: le due versioni si rivedono insieme nella stessa PR e non si disallineano.
+- **Alternative scartate**: guida inglese generata da traduzione automatica a ogni build (testi non rivisti); un solo file con le due lingue (diff illeggibili).
+

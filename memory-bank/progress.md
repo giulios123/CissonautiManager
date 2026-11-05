@@ -15,6 +15,9 @@
 | 8 | Stile del sito | fatto e provato in locale (task 1-7) |
 | 9 | Guida in app e note di rilascio | fatto e provato in locale (task 1-10) |
 | 10 | Incassi (Da incassare) | fatto e provato in locale (task 1-10) |
+| 11 | Lingue e indirizzi | fatto e provato in locale (task 1-8) |
+| 12 | Pannello admin in inglese | da fare |
+| 13 | Email di iscrizione personalizzabile | da fare |
 
 ## Verifiche manuali
 
@@ -53,6 +56,9 @@
 
 - **MVP 10**, provato in locale con Chromium a 390 px (iPhone 13, DB nuovo da migrazioni 0001-0010, tre iscrizioni in attesa): ricerca per causale (`g8ax` lascia una riga), canale Bonifico, «Segna pagato» registra 19,00 € e la riga mostra «Pagato · Annulla»; esce dall'elenco dopo 10,4 secondi; annullo di un'altra riga che la riporta da incassare; l'email di conferma è partita solo per il pagamento non annullato; nessun errore in console, nessuno scorrimento laterale della pagina (la tabella scorre dentro il suo riquadro).
 - **Non verificato (MVP 10)**: CI su SQL Server con la migrazione 0010 e l'UPDATE condizionale; il timer da 30 secondi su Azure con l'app che scala a zero (la rete di sicurezza è nel job orario); email vera nella casella; due admin sulla stessa riga. **Da verificare a mano**: dopo il deploy segna un pagamento vero, aspetta 30 secondi e controlla l'email; annulla entro 10 secondi e controlla che non arrivi.
+
+- **MVP 11**, provato in locale con Chromium a 390 px (lingua del browser inglese, DB nuovo da migrazioni 0001-0011, build di produzione servita dal backend): `/iscrizione` porta a `/register`, `/accedi?x=1` a `/login?x=1`, `/guida` a `/guide`; iscrizione in inglese con riepilogo «1 shift · 1 day», pagina di conferma, email in console in inglese con il link `/login/verify` e «Bank transfer (IBAN)»; accesso dal link, pagina personale in inglese con titolo e pulsanti tradotti; cambio in italiano che ricarica le etichette degli slot dal server («lun 09/11 mattina»), lingua che resta dopo il ricaricamento e salvata sul profilo; `?lang=it` vince sulla lingua del browser; guida partecipante in inglese; nessuno scorrimento laterale, nessun errore in console. Trovato e corretto in prova: le etichette del server non si aggiornavano al cambio di lingua.
+- **Non verificato (MVP 11)**: CI su SQL Server con la migrazione 0011; embed reale in Google Sites con `/iscrizione` (redirect dentro l'iframe) e `?lang=en`; email vere in inglese nella casella; Safari e Firefox; il pannello admin resta in italiano (MVP 12). **Da verificare a mano**: leggere i testi inglesi con una persona madrelingua o di fiducia.
 
 ## Bug corretti fuori MVP
 

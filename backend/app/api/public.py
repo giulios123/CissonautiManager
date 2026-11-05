@@ -13,7 +13,7 @@ from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
 from app.domain.booking import is_past_day
 from app.email import EmailSender
-from app.i18n import current_locale, t
+from app.i18n import channel_label, current_locale, t
 from app.models import slot_sort_key
 from app.services import edition as edition_service
 from app.services import registration as registration_service
@@ -133,7 +133,9 @@ class RegistrationOut(BaseModel):
 
 def _channels(db: Session, edition) -> list[ChannelPublic]:
     return [
-        ChannelPublic(code=c.code, label=c.label, instructions=c.instructions)
+        ChannelPublic(
+            code=c.code, label=channel_label(c.code, c.label), instructions=c.instructions
+        )
         for c in registration_service.enabled_channels(db, edition)
     ]
 
