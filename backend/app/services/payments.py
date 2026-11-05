@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
-from app.domain.booking import can_reactivate, hold_deadline
+from app.domain.booking import can_reactivate, hold_deadline, status_after_void
 from app.domain.fees import is_covered
 from app.email import EmailSender
 from app.email.templates import payment_confirmation_email
@@ -16,8 +16,10 @@ from app.models import (
     Payment,
     active_payments,
 )
+from app.services import audit
 from app.services import edition as edition_service
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
+from app.timefmt import format_euro, status_label
 
 EXPIRED_NO_ROOM = (
     "Pagamento registrato, ma la prenotazione è scaduta e almeno uno slot è ormai pieno: "
@@ -113,3 +115,58 @@ def record_payment(
 def _hold_days(db: Session, booking: Booking) -> int:
     edition = edition_service.get_active_edition(db)
     return edition.hold_days if edition else 3
+
+
+class PaymentNotFound(Exception):
+    pass
+
+
+class AlreadyVoided(Exception):
+    pass
+
+
+def void_payment(
+    db: Session,
+    admin: Participant,
+    booking: Booking,
+    payment_id: int,
+    reason: str,
+    now: datetime,
+) -> Payment:
+    """Cancel a payment entered by mistake. It stays on record, struck out, and stops counting.
+
+    A confirmed booking that the remaining payments no longer cover goes back to waiting for
+    payment, with a new hold counted from now (and fresh reminders).
+    """
+    expire_overdue(db, now)
+    db.refresh(booking)
+    payment = next((p for p in booking.payments if p.id == payment_id), None)
+    if payment is None:
+        raise PaymentNotFound()
+    if payment.voided_at is not None:
+        raise AlreadyVoided()
+
+    old_status = booking.status
+    payment.voided_at = now
+    payment.voided_by_id = admin.id
+    payment.void_reason = reason
+    new_status = status_after_void(old_status, booking.amount_due_cents, paid_total(booking))
+    if new_status != old_status:
+        booking.status = new_status
+        booking.hold_started_at = now
+        booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))
+        booking.reminder_mid_sent_at = None
+        booking.reminder_final_sent_at = None
+
+    channel = edition_service.PAYMENT_CHANNELS.get(payment.channel, payment.channel)
+    detail = (
+        f"Pagamento annullato: {format_euro(payment.amount_cents)} del "
+        f"{payment.paid_on:%d/%m/%Y} ({channel}). Motivo: {reason}."
+    )
+    if new_status != old_status:
+        detail += (
+            f" Stato: {status_label(old_status)} → {status_label(new_status)}, con un nuovo blocco."
+        )
+    audit.log(db, admin, "payment_voided", detail, booking.id)
+    db.commit()
+    return payment

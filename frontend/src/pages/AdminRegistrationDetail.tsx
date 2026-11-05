@@ -8,6 +8,7 @@ import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking
 import { AdminEditDetails } from "./AdminEditDetails";
 import { AdminHistory, type HistoryEntry } from "./AdminHistory";
 import { AdminHoldActions } from "./AdminHoldActions";
+import { AdminPayments } from "./AdminPayments";
 import { AdminRefundForm } from "./AdminRefundForm";
 import { AdminSlotEditor } from "./AdminSlotEditor";
 
@@ -168,16 +169,7 @@ export function AdminRegistrationDetail() {
             <> Il posto è bloccato fino al {formatDeadline(booking.hold_expires_at)}.</>
           )}
         </p>
-        {booking.payments.length > 0 && (
-          <ul>
-            {booking.payments.map((payment, index) => (
-              <li key={index}>
-                {formatEuro(payment.amount_cents)} il {formatDay(payment.paid_on)} (
-                {payment.channel}){payment.note ? `: ${payment.note}` : ""}
-              </li>
-            ))}
-          </ul>
-        )}
+        <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
       </section>
 
       {(booking.editable || booking.can_cancel) && (

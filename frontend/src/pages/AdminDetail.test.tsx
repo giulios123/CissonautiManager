@@ -493,3 +493,103 @@ describe("admin cancellation", () => {
     expect(await dialog.findByRole("alert")).toHaveTextContent("non si può più disdire");
   });
 });
+
+describe("voiding a payment", () => {
+  const payments = [
+    {
+      id: 11,
+      amount_cents: 400,
+      channel: "iban",
+      paid_on: "2026-07-02",
+      note: "via Anna",
+      voided: false,
+      void_reason: null,
+    },
+    {
+      id: 12,
+      amount_cents: 700,
+      channel: "revolut",
+      paid_on: "2026-07-02",
+      note: null,
+      voided: true,
+      void_reason: "doppio",
+    },
+  ];
+  const withPayments = () => detailFixture({}, { paid_cents: 400, balance_cents: 700, payments });
+
+  it("strikes out voided payments with their reason and offers the action only on the others", async () => {
+    serve(withPayments());
+    renderAt("/admin/iscrizioni/7");
+    const items = await screen.findAllByRole("listitem");
+    const voided = items.find((item) => item.textContent?.includes("annullato"))!;
+    expect(within(voided).getByText(/7,00/).tagName).toBe("S");
+    expect(voided).toHaveTextContent("doppio");
+    expect(within(voided).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Annulla il pagamento/ })).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: /Annulla il pagamento di 4,00/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("needs a reason before it can be confirmed, then sends it", async () => {
+    const after = detailFixture(
+      {},
+      {
+        paid_cents: 0,
+        balance_cents: 1100,
+        payments: [{ ...payments[0], voided: true, void_reason: "inserito per errore" }],
+      },
+    );
+    const calls = serve(withPayments(), (call) =>
+      call.method === "POST" ? { body: after } : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ }));
+    const dialog = within(
+      await screen.findByRole("dialog", { name: "Annullare questo pagamento?" }),
+    );
+    const confirm = dialog.getByRole("button", { name: "Sì, annullo" });
+    expect(confirm).toBeDisabled();
+    await user.type(dialog.getByLabelText("Motivo (obbligatorio)"), "  inserito per errore ");
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+    expect(await screen.findByRole("status")).toHaveTextContent("Pagamento annullato");
+    const post = calls.find((call) => call.method === "POST")!;
+    expect(post.url).toBe("/api/admin/registrations/7/payments/11/void");
+    expect(post.body).toEqual({ reason: "inserito per errore" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Annulla il pagamento/ })).not.toBeInTheDocument();
+  });
+
+  it("does nothing if you go back, and the reason does not leak into the next dialog", async () => {
+    const calls = serve(withPayments());
+    renderAt("/admin/iscrizioni/7");
+    const user = userEvent.setup();
+    const button = await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ });
+    await user.click(button);
+    await user.type(screen.getByLabelText("Motivo (obbligatorio)"), "boh");
+    await user.click(screen.getByRole("button", { name: "No, torno indietro" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(button).toHaveFocus();
+    await user.click(button);
+    expect(screen.getByLabelText("Motivo (obbligatorio)")).toHaveValue("");
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+  });
+
+  it("keeps the dialog open and shows the server's message on failure", async () => {
+    serve(withPayments(), (call) =>
+      call.method === "POST"
+        ? { status: 409, body: { detail: "Questo pagamento è già annullato" } }
+        : undefined,
+    );
+    renderAt("/admin/iscrizioni/7");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ }));
+    await user.type(screen.getByLabelText("Motivo (obbligatorio)"), "x");
+    await user.click(screen.getByRole("button", { name: "Sì, annullo" }));
+    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent(
+      "già annullato",
+    );
+  });
+});

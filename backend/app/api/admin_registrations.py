@@ -500,3 +500,27 @@ def cancel_registration(
         return CancelOut(outcome=outcome)
     db.refresh(booking)
     return CancelOut(outcome=outcome, detail=_detail(db, booking, now))
+
+
+class VoidIn(BaseModel):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+
+
+@router.post("/{booking_id}/payments/{payment_id}/void")
+def void_registration_payment(
+    booking_id: int,
+    payment_id: int,
+    body: VoidIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> RegistrationDetail:
+    booking = _get_booking(db, booking_id)
+    try:
+        payment_service.void_payment(db, admin, booking, payment_id, body.reason, now)
+    except payment_service.PaymentNotFound as exc:
+        raise HTTPException(status_code=404, detail="Pagamento non trovato") from exc
+    except payment_service.AlreadyVoided as exc:
+        raise HTTPException(status_code=409, detail="Questo pagamento è già annullato") from exc
+    db.refresh(booking)
+    return _detail(db, booking, now)
