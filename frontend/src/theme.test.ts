@@ -35,6 +35,11 @@ describe("theme tokens", () => {
     ["color-error", "color-bg"],
     ["color-error", "color-error-bg"],
     ["color-text", "color-success-bg"],
+    ["status-pending-fg", "status-pending-bg"],
+    ["status-confirmed-fg", "status-confirmed-bg"],
+    ["status-expired-fg", "status-expired-bg"],
+    ["status-cancel-fg", "status-cancel-bg"],
+    ["status-refunded-fg", "status-refunded-bg"],
   ])("%s on %s reaches AA for normal text", (fg, bg) => {
     expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(4.5);
   });

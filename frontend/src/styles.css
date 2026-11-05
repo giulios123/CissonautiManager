@@ -16,6 +16,16 @@
   --color-danger: #9b2c1f;
   --color-on-danger: #ffffff;
   --color-backdrop: rgb(0 0 0 / 55%);
+  --status-pending-bg: #fdf0c2;
+  --status-pending-fg: #6b4e00;
+  --status-confirmed-bg: #e3f3ec;
+  --status-confirmed-fg: #1e5e3f;
+  --status-expired-bg: #ececec;
+  --status-expired-fg: #4a4a4a;
+  --status-cancel-bg: #fbe4e1;
+  --status-cancel-fg: #8a1c10;
+  --status-refunded-bg: #e0eef0;
+  --status-refunded-fg: #005c68;
   --radius: 0;
   --font-body: "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-family: var(--font-body);
@@ -397,4 +407,38 @@ caption {
   color: var(--color-heading);
   font-weight: 700;
   text-align: left;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border-left: 4px solid currentcolor;
+  border-radius: var(--radius);
+}
+
+.status-in_attesa_pagamento {
+  color: var(--status-pending-fg);
+  background: var(--status-pending-bg);
+}
+
+.status-confermata {
+  color: var(--status-confirmed-fg);
+  background: var(--status-confirmed-bg);
+}
+
+.status-scaduta {
+  color: var(--status-expired-fg);
+  background: var(--status-expired-bg);
+}
+
+.status-disdetta_richiesta {
+  color: var(--status-cancel-fg);
+  background: var(--status-cancel-bg);
+}
+
+.status-rimborsata {
+  color: var(--status-refunded-fg);
+  background: var(--status-refunded-bg);
 }

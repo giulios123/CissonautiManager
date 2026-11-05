@@ -32,6 +32,7 @@
 - **B0**: l'MVP 2 non è completo (task 9 aperto). Il maintainer ha chiesto di procedere e di validare tutto insieme al passaggio su `main`.
 
 - **MVP 8**, provato in locale con Chromium (telefono iPhone 13 e computer a 1280 px, DB nuovo da migrazioni, edizione di prova con due iscritti): iscrizione, accesso, pagina personale, pannello (Persone, Giorni e slot, scheda). Iscrizione dentro un iframe ospitato su un finto `sites.google.com` con la CSP vera: classe `in-frame`, sfondo trasparente, intestazione ridotta senza logo, Montserrat caricato. Nessuno scorrimento orizzontale, controlli alti almeno 44 px, nessun errore in console. Gli script di prova sono rimasti fuori dal repo (servono un backend con dati), contrariamente a quanto previsto dal design.
+- **MVP 8, rifinitura** (richiesta del maintainer dopo la prova): «Esci» della pagina personale diventa secondario; gli stati della prenotazione sono etichette colorate (`StatusBadge`), con il testo sempre presente e contrasti AA controllati da `theme.test.ts`. Provato in browser con iscrizioni in attesa, confermate, disdette e rimborsate.
 - **Non verificato (MVP 8)**: embed nel sito Google vero; Safari e Firefox; spaziature del sito (CSS di Google Sites non raggiungibile dalla sessione).
 
 ## Bug corretti fuori MVP

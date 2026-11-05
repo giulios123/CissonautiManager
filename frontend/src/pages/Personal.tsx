@@ -4,6 +4,7 @@ import { api, ApiError } from "../api";
 import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
 import { formatEuro } from "../money";
+import { StatusBadge } from "../StatusBadge";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
 import { SlotEditor } from "./SlotEditor";
 
@@ -44,7 +45,9 @@ function BookingCard({
   const confirmedWithBalance = booking.status === "confermata" && booking.balance_cents > 0;
   return (
     <section aria-label={`Iscrizione ${statusLabel(booking.status)}`} className="card">
-      <h2>{statusLabel(booking.status)}</h2>
+      <h2>
+        <StatusBadge status={booking.status} />
+      </h2>
       <ul>
         {booking.slots.map((slot) => (
           <li key={slot.label}>{slot.label}</li>

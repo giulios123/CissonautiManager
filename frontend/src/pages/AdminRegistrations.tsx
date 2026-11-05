@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "../api";
 import { formatDeadline, statusLabel } from "../booking";
+import { StatusBadge } from "../StatusBadge";
 import { formatEuro } from "../money";
 import { CsvButton } from "./CsvButton";
 
@@ -126,7 +127,9 @@ export function AdminRegistrations() {
                     <td>{row.personal_code}</td>
                     <td>{row.days}</td>
                     <td>{row.evenings}</td>
-                    <td>{statusLabel(row.status)}</td>
+                    <td>
+                      <StatusBadge status={row.status} />
+                    </td>
                     <td>{formatEuro(row.amount_due_cents)}</td>
                     <td>{formatEuro(row.paid_cents)}</td>
                     <td>{formatEuro(row.balance_cents)}</td>

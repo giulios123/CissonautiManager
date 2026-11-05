@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import { formatDay, hhmm, periodLabel, statusLabel } from "../booking";
+import { formatDay, hhmm, periodLabel } from "../booking";
+import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
 
 type Person = {
@@ -88,7 +89,7 @@ export function AdminSlots() {
                                   {person.first_name} {person.last_name}
                                 </Link>{" "}
                                 <small>
-                                  {statusLabel(person.status)}
+                                  <StatusBadge status={person.status} />
                                   {person.derived && ", sera dell'intero giorno"}
                                 </small>
                               </li>

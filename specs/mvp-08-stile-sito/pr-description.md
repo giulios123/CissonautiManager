@@ -12,7 +12,8 @@ L'app prende l'aspetto del sito Cissone Eventi: font Montserrat, petrolio del lo
 
 **Fuori dal sito**
 - [ ] Apri il link dell'email: in alto vedi il logo di Cissone e «Cissonauti Summer Camp», con una riga gialla sotto.
-- [ ] Nella pagina personale i bottoni principali sono gialli con testo scuro, quelli secondari bianchi con il bordo petrolio, «Richiedi disdetta» è rosso.
+- [ ] Nella pagina personale i bottoni principali sono gialli con testo scuro, quelli secondari bianchi con il bordo petrolio (anche «Esci»), «Richiedi disdetta» è rosso.
+- [ ] Lo stato dell'iscrizione ha un colore: giallo «In attesa di pagamento», verde «Confermata», grigio «Scaduta», rosa «Disdetta richiesta», petrolio «Rimborsata». Lo trovi nella pagina personale, in «Persone», «Giorni e slot», «Da verificare» e nella scheda.
 - [ ] Nel pannello organizzatori la barra del menu è petrolio, la voce aperta è sottolineata, le tabelle hanno l'intestazione grigia e le righe alterne.
 
 **Accessibilità**

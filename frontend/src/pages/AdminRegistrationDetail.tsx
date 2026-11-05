@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
-import { formatDay, formatDeadline, statusLabel } from "../booking";
+import { formatDay, formatDeadline } from "../booking";
+import { StatusBadge } from "../StatusBadge";
 import { type BookingView } from "../auth";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
@@ -155,7 +156,9 @@ export function AdminRegistrationDetail() {
       </section>
 
       <section aria-labelledby="booking">
-        <h2 id="booking">Iscrizione: {statusLabel(booking.status)}</h2>
+        <h2 id="booking">
+          Iscrizione: <StatusBadge status={booking.status} />
+        </h2>
         <ul>
           {booking.slots.map((slot) => (
             <li key={slot.label}>{slot.label}</li>
