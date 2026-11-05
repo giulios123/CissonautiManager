@@ -37,3 +37,26 @@ def review_reason(status: str, due_cents: int, paid_cents: int) -> str | None:
     if status == STATUS_PENDING and paid_cents > 0 and paid_cents < due_cents:
         return PARTIAL_PAYMENT
     return None
+
+
+# Groups of the "to collect" view, in the order they are listed.
+COLLECT_WAITING = 0
+COLLECT_BALANCE = 1
+COLLECT_EXPIRED = 2
+
+
+def collect_group(status: str, due_cents: int, paid_cents: int) -> int | None:
+    """Where a booking goes in the "to collect" view, or None when there is nothing to collect.
+
+    Only bookings with money still to come count: waiting ones (even with nothing paid yet),
+    confirmed ones with a balance, and expired ones, because a late transfer can still arrive.
+    """
+    if paid_cents >= due_cents:
+        return None
+    if status == STATUS_PENDING:
+        return COLLECT_WAITING
+    if status == STATUS_CONFIRMED:
+        return COLLECT_BALANCE
+    if status == STATUS_EXPIRED:
+        return COLLECT_EXPIRED
+    return None

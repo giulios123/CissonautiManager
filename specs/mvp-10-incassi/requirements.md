@@ -17,14 +17,14 @@
    - Quando non ho mai scelto allora il canale preselezionato è il primo disponibile.
 4. **Segna come pagato**. Come admin voglio un tasto per riga che registra il saldo intero.
    - Quando premo «Segna pagato» allora si registra un pagamento pari al saldo, sul canale scelto, con data di oggi (ora di Roma), a mio nome.
-   - Quando il saldo è coperto allora l'iscrizione diventa `confermata` e parte l'email di conferma, come dalla scheda.
+   - Quando il saldo è coperto allora l'iscrizione diventa `confermata` subito, ma l'email di conferma parte dopo 30 secondi, per lasciare il tempo di annullare (dalla scheda l'email resta immediata).
    - Quando l'iscrizione era scaduta e si riattiva (o non si riesce) allora vedo l'avviso che la scheda già mostra.
    - Quando il pagamento fallisce allora la riga resta com'era e leggo l'errore accanto alla riga.
 5. **Annulla subito**. Come admin voglio rimediare a un clic sbagliato senza aprire la scheda.
-   - Quando ho appena segnato una riga allora per circa 8 secondi vedo «Pagato 11,00 € · Annulla».
-   - Quando premo «Annulla» allora il pagamento è annullato con il motivo «Annullato subito dalla vista Da incassare», la riga torna da incassare e, se la prenotazione era stata confermata, torna in attesa con un nuovo blocco (regola già in `domain.md`).
-   - Quando passano gli 8 secondi allora la riga esce dall'elenco; l'annullo resta possibile dalla scheda.
-   - L'email di conferma già partita non si ritira: lo dice la guida.
+   - Quando ho appena segnato una riga allora per 10 secondi vedo «Pagato 11,00 € · Annulla».
+   - Quando premo «Annulla» allora il pagamento è annullato con il motivo «Annullato subito dalla vista Da incassare», la riga torna da incassare e, se la prenotazione era stata confermata, torna in attesa con un nuovo blocco (regola già in `domain.md`). L'email di conferma non parte mai.
+   - Quando passano i 10 secondi allora la riga esce dall'elenco; l'annullo resta possibile dalla scheda, ma dopo 30 secondi l'email di conferma è già partita e non si ritira (lo dice la guida).
+   - Quando l'app si ferma o si riavvia prima dei 30 secondi allora l'email parte comunque al passaggio successivo del job orario, se il pagamento non è stato annullato.
 6. **Importo diverso dal saldo**. Come admin voglio gestire un bonifico di importo diverso.
    - Quando l'importo sul conto non è il saldo allora un link «Altro importo» porta alla scheda dell'iscrizione, dove il pagamento libero esiste già.
 7. **Accessibile e da telefono**. Come admin voglio usarla dal telefono.
@@ -36,4 +36,5 @@
 - Importare l'estratto conto (CSV della banca) e abbinare i movimenti da solo.
 - Pagamenti con importo parziale dal tasto rapido (si usa la scheda).
 - Sollecito ai non paganti da questa pagina.
-- Ritirare o ritardare l'email di conferma.
+- Ritardare l'email di conferma anche per i pagamenti registrati dalla scheda.
+- Ritirare un'email già partita.

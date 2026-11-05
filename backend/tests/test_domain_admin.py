@@ -5,7 +5,13 @@ import pytest
 from app.domain import admins
 from app.domain.admins import can_remove_admin
 from app.domain.booking import can_extend_hold, can_refund, status_after_void
-from app.domain.payments_review import review_reason
+from app.domain.payments_review import (
+    COLLECT_BALANCE,
+    COLLECT_EXPIRED,
+    COLLECT_WAITING,
+    collect_group,
+    review_reason,
+)
 from app.domain.presence import (
     DaySummary,
     Presence,
@@ -191,3 +197,31 @@ class TestHoldExtension:
 
     def test_nothing_sent_stays_nothing(self):
         assert self.keep(self.START + timedelta(hours=70), None, None) == (None, None)
+
+
+class TestCollectGroup:
+    @pytest.mark.parametrize(
+        ("status", "due", "paid", "group"),
+        [
+            (STATUS_PENDING, 1100, 0, COLLECT_WAITING),
+            (STATUS_PENDING, 1100, 500, COLLECT_WAITING),
+            (STATUS_CONFIRMED, 1200, 1100, COLLECT_BALANCE),
+            (STATUS_EXPIRED, 1100, 0, COLLECT_EXPIRED),
+            (STATUS_EXPIRED, 1100, 500, COLLECT_EXPIRED),
+        ],
+    )
+    def test_money_still_to_come(self, status, due, paid, group):
+        assert collect_group(status, due, paid) == group
+
+    @pytest.mark.parametrize(
+        ("status", "due", "paid"),
+        [
+            (STATUS_CONFIRMED, 1100, 1100),  # settled
+            (STATUS_CONFIRMED, 1100, 1200),  # credit: a job for "to review"
+            (STATUS_PENDING, 1100, 1100),  # nothing left to pay
+            (STATUS_CANCEL_REQUESTED, 1100, 0),
+            (STATUS_REFUNDED, 1100, 1100),
+        ],
+    )
+    def test_nothing_to_collect(self, status, due, paid):
+        assert collect_group(status, due, paid) is None

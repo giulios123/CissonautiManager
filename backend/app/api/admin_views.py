@@ -484,6 +484,40 @@ def payments_review(
     ]
 
 
+class CollectRowOut(BaseModel):
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    personal_code: str
+    status: str
+    amount_due_cents: int
+    paid_cents: int
+    balance_cents: int
+    hold_expires_at: datetime
+
+
+@router.get("/to-collect")
+def to_collect(
+    db: Session = Depends(get_db), now: datetime = Depends(get_now)
+) -> list[CollectRowOut]:
+    return [
+        CollectRowOut(
+            booking_id=r.booking_id,
+            first_name=r.first_name,
+            last_name=r.last_name,
+            email=r.email,
+            personal_code=r.personal_code,
+            status=r.status,
+            amount_due_cents=r.amount_due_cents,
+            paid_cents=r.paid_cents,
+            balance_cents=r.balance_cents,
+            hold_expires_at=r.hold_expires_at,
+        )
+        for r in views_service.collect_rows(db, now)
+    ]
+
+
 @router.get("/report", response_model=None)
 def report_view(
     fmt: Format = Query(default="json", alias="format"),

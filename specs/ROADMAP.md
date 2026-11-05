@@ -59,8 +59,8 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 ## MVP 10 · Incassi (controllo del conto)
 
 - **Obiettivo**: far controllare il conto e segnare le quote incassate in fila, da una sola pagina.
-- **Contenuto**: pagina «Da incassare» con le iscrizioni in attesa o con un saldo da versare, ricerca per nome, email e causale, canale scelto una volta, tasto «Segna pagato» che registra il saldo, annullo immediato per circa 8 secondi, link alla scheda per importi diversi. Nessuna migrazione.
-- **Fatto quando**: dall'elenco un admin cerca la causale di un bonifico, segna il pagamento in un clic, l'iscrizione diventa `confermata` e parte l'email; un clic sbagliato si annulla subito e la prenotazione torna in attesa.
+- **Contenuto**: pagina «Da incassare» con le iscrizioni in attesa o con un saldo da versare, ricerca per nome, email e causale, canale scelto una volta, tasto «Segna pagato» che registra il saldo, annullo immediato per 10 secondi, email di conferma differita di 30 secondi (con rete di sicurezza nel job orario), link alla scheda per importi diversi. Una migrazione.
+- **Fatto quando**: dall'elenco un admin cerca la causale di un bonifico, segna il pagamento in un clic, l'iscrizione diventa `confermata` e parte l'email; un clic sbagliato si annulla entro 10 secondi, la prenotazione torna in attesa e l'email non parte.
 
 ## Backlog
 
@@ -93,4 +93,4 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Iscrizione in 3 passi con indicatore (scegli i turni, dati, pagamento) come nel mockup; accordion per giorno su telefono.
 - Note di rilascio riscritte per gli organizzatori in italiano (oggi sono i testi dei commit, in inglese), emerso nella spec dell'MVP 9.
 - Guida in più lingue, ricerca nel testo e immagini (MVP 9).
-- Importare l'estratto conto (CSV della banca) e abbinare i movimenti ai codici in automatico; ritardare o ritirare l'email di conferma dopo un clic sbagliato; sollecito ai non paganti dalla vista «Da incassare» (emersi nella spec dell'MVP 10).
+- Importare l'estratto conto (CSV della banca) e abbinare i movimenti ai codici in automatico; ritardo dell'email di conferma anche dalla scheda; ritiro di un'email già partita; sollecito ai non paganti dalla vista «Da incassare» (emersi nella spec dell'MVP 10).

@@ -10,7 +10,7 @@ Richiesta del maintainer: guida dopo il login filtrata per ruolo, aggiornata a o
 
 ## MVP 10 · Incassi (2026-11-05)
 
-Richiesta del maintainer: un modo veloce per l'admin di controllare il conto e segnare le quote come coperte. «Da verificare» resta per le anomalie (con zero versato una iscrizione in attesa non vi compare, per regola). Spec in `specs/mvp-10-incassi/`, in attesa di conferma. Scelte concordate: pagina nuova «Da incassare»; canale scelto una volta; tasto rapido sul saldo intero con link alla scheda per altri importi; un clic con annullo visibile per circa 8 secondi; ricerca per causale. Nessuna migrazione, si riusano registrazione e annullo dei pagamenti. Domande aperte: scadute incluse in coda (proposta sì); email di conferma non ritirabile dopo l'annullo (Backlog).
+Richiesta del maintainer: un modo veloce per l'admin di controllare il conto e segnare le quote come coperte. «Da verificare» resta per le anomalie (con zero versato una iscrizione in attesa non vi compare, per regola). Spec in `specs/mvp-10-incassi/`, confermata. Scelte concordate: pagina nuova «Da incassare»; canale scelto una volta; tasto rapido sul saldo intero con link alla scheda per altri importi; un clic con annullo visibile per 10 secondi; email di conferma differita di 30 secondi (colonne su `payment`, migrazione 0010, rete di sicurezza nel job orario); ricerca per causale; scadute incluse in coda. Spec confermata dal maintainer, implementazione in corso.
 
 ## Prossimo passo
 

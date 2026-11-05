@@ -320,3 +320,87 @@ class TestPaymentsReview:
 
     def test_without_an_edition_it_is_empty(self, admin_client):
         assert admin_client.get("/api/admin/views/payments-review").json() == []
+
+
+class TestToCollect:
+    @pytest.fixture
+    def cases(self, db, edition, make_participant, make_booking, admin_client, clock):
+        from tests.test_change_slots import pay
+
+        def case(last, status=STATUS_PENDING, due=1100, paid=0, **kw):
+            who = make_participant(f"{last.lower()}@example.com", first_name="Test", last_name=last)
+            booking = make_booking(who, [slot(db, 13)], status=status, amount_due_cents=due, **kw)
+            if paid:
+                pay(db, booking, paid)
+            return booking
+
+        soon = clock() + timedelta(hours=5)
+        return dict(
+            late=case("Late", hold_expires_at=clock() + timedelta(days=2)),
+            soon=case("Soon", hold_expires_at=soon),
+            partial=case("Partial", paid=400, hold_expires_at=clock() + timedelta(days=1)),
+            balance=case("Balance", STATUS_CONFIRMED, due=1200, paid=1100),
+            expired=case("Expired", STATUS_EXPIRED),
+            overdue=case("Overdue", hold_expires_at=clock() - timedelta(minutes=1)),
+            # nothing to collect below
+            settled=case("Settled", STATUS_CONFIRMED, paid=1100),
+            credit=case("Credit", STATUS_CONFIRMED, due=1100, paid=1200),
+            refund=case("Refund", STATUS_CANCEL_REQUESTED, paid=1100),
+            refunded=case("Refunded", STATUS_REFUNDED, paid=1100),
+        )
+
+    def names(self, client):
+        return [r["last_name"] for r in client.get("/api/admin/views/to-collect").json()]
+
+    def test_waiting_by_deadline_then_balance_then_expired(self, admin_client, cases):
+        assert self.names(admin_client) == [
+            "Soon",
+            "Partial",
+            "Late",
+            "Balance",
+            "Expired",
+            "Overdue",
+        ]
+
+    def test_amounts_and_status(self, admin_client, cases):
+        rows = {r["last_name"]: r for r in admin_client.get("/api/admin/views/to-collect").json()}
+        partial = rows["Partial"]
+        assert (partial["amount_due_cents"], partial["paid_cents"], partial["balance_cents"]) == (
+            1100,
+            400,
+            700,
+        )
+        assert partial["personal_code"].startswith("CSC-")
+        assert rows["Overdue"]["status"] == STATUS_EXPIRED
+        assert rows["Soon"]["booking_id"] == cases["soon"].id
+        assert rows["Soon"]["hold_expires_at"]
+
+    def test_voided_payments_do_not_count(self, admin_client, db, cases):
+        for payment in cases["balance"].payments:
+            payment.voided_at = payment.created_at
+            payment.voided_by_id = payment.recorded_by_id
+        db.commit()
+        rows = {r["last_name"]: r for r in admin_client.get("/api/admin/views/to-collect").json()}
+        assert rows["Balance"]["paid_cents"] == 0
+
+    def test_a_booking_leaves_once_its_balance_is_paid(self, admin_client, cases):
+        response = admin_client.post(
+            f"/api/admin/registrations/{cases['soon'].id}/payments",
+            json={"amount_cents": 1100, "channel": "iban"},
+        )
+        assert response.status_code == 201
+        assert "Soon" not in self.names(admin_client)
+
+    def test_other_editions_are_left_out(self, admin_client, db, cases, edition):
+        edition.is_active = False
+        db.commit()
+        assert self.names(admin_client) == []
+
+    def test_admins_only(self, client, outbox, make_participant, edition):
+        assert client.get("/api/admin/views/to-collect").status_code == 401
+        make_participant("ada@example.com")
+        login(client, outbox)
+        assert client.get("/api/admin/views/to-collect").status_code == 403
+
+    def test_without_an_edition_it_is_empty(self, admin_client):
+        assert admin_client.get("/api/admin/views/to-collect").json() == []

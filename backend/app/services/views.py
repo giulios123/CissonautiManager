@@ -7,7 +7,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.domain.booking import effective_status, occupies_seats
-from app.domain.payments_review import REASON_LABELS, review_reason
+from app.domain.payments_review import (
+    COLLECT_WAITING,
+    REASON_LABELS,
+    collect_group,
+    review_reason,
+)
 from app.domain.presence import Presence, presences
 from app.domain.report import (
     ActivityFacts,
@@ -140,6 +145,61 @@ def review_rows(db: Session, now: datetime) -> list[ReviewRow]:
     order = list(REASON_LABELS)
     rows.sort(key=lambda r: (order.index(r.reason), r.last_name.lower(), r.first_name.lower()))
     return rows
+
+
+@dataclass(frozen=True)
+class CollectRow:
+    booking_id: int
+    first_name: str
+    last_name: str
+    email: str
+    personal_code: str
+    status: str
+    amount_due_cents: int
+    paid_cents: int
+    hold_expires_at: datetime
+
+    @property
+    def balance_cents(self) -> int:
+        return self.amount_due_cents - self.paid_cents
+
+
+def collect_rows(db: Session, now: datetime) -> list[CollectRow]:
+    """Bookings with money still to come, to be ticked off against the bank account.
+
+    Waiting ones first, the nearest deadline first; then confirmed ones with a balance; then
+    expired ones, whose transfer may still arrive late. Each group is by surname.
+    """
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return []
+    expire_overdue(db, now)
+    db.commit()
+    keyed: list[tuple[tuple, CollectRow]] = []
+    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+        status = effective_status(booking.status, booking.hold_expires_at, now)
+        paid = paid_total(booking)
+        group = collect_group(status, booking.amount_due_cents, paid)
+        if group is None:
+            continue
+        participant = booking.participant
+        row = CollectRow(
+            booking_id=booking.id,
+            first_name=participant.first_name,
+            last_name=participant.last_name,
+            email=participant.email,
+            personal_code=participant.personal_code,
+            status=status,
+            amount_due_cents=booking.amount_due_cents,
+            paid_cents=paid,
+            hold_expires_at=booking.hold_expires_at,
+        )
+        deadline = booking.hold_expires_at.timestamp() if group == COLLECT_WAITING else 0
+        keyed.append(
+            ((group, deadline, row.last_name.lower(), row.first_name.lower(), row.booking_id), row)
+        )
+    keyed.sort(key=lambda pair: pair[0])
+    return [row for _, row in keyed]
 
 
 @dataclass(frozen=True)
