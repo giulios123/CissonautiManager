@@ -37,6 +37,8 @@ class BookingView(BaseModel):
     can_cancel: bool
     slots: list[SlotView]
     payments: list[PaymentView]
+    # After a change of slots: meals that went because the new slots no longer allow them.
+    dropped_meals: list[str] = []
 
 
 def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -> BookingView:

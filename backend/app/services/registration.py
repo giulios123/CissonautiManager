@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.domain.booking import effective_status, has_free_seat, hold_deadline
-from app.domain.fees import compute_fee
 from app.email import EmailSender
 from app.email.templates import (
     already_registered_email,
@@ -27,6 +26,7 @@ from app.models import (
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services import waitlist as waitlist_service
+from app.services.amounts import recompute_amount
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 
@@ -197,9 +197,7 @@ def _new_booking(
         status=STATUS_PENDING,
         hold_expires_at=hold_deadline(now, edition.hold_days),
         hold_started_at=now,
-        amount_due_cents=compute_fee(
-            [s.date for s in slots], edition.base_fee_cents, edition.per_day_fee_cents
-        ),
+        amount_due_cents=0,
         privacy_document_id=privacy.id,
         privacy_accepted_at=now,
         disclaimer_document_id=disclaimer.id,
@@ -207,6 +205,7 @@ def _new_booking(
         created_at=now,
     )
     booking.slots = slots
+    recompute_amount(edition, booking)
     db.add(booking)
     db.flush()
     return booking

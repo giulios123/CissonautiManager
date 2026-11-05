@@ -16,7 +16,7 @@ from app.domain.booking import (
     is_past_day,
     occupies_seats,
 )
-from app.domain.fees import compute_fee, is_covered
+from app.domain.fees import is_covered
 from app.domain.reminders import reminders_to_keep_after_extension
 from app.domain.waitlist import (
     JoinRefusal,
@@ -46,6 +46,7 @@ from app.models import (
 from app.services import audit
 from app.services import auth as auth_service
 from app.services import edition as edition_service
+from app.services.amounts import recompute_amount
 from app.services.payments import paid_total
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 from app.timefmt import format_slot
@@ -345,9 +346,7 @@ def _new_booking(
         status=STATUS_PENDING,
         hold_expires_at=hold_deadline(now, edition.hold_days),
         hold_started_at=now,
-        amount_due_cents=compute_fee(
-            [slot.date], edition.base_fee_cents, edition.per_day_fee_cents
-        ),
+        amount_due_cents=0,
         privacy_document_id=entry.privacy_document_id,
         privacy_accepted_at=entry.privacy_accepted_at,
         disclaimer_document_id=entry.disclaimer_document_id,
@@ -355,6 +354,7 @@ def _new_booking(
         created_at=now,
     )
     booking.slots = [slot]
+    recompute_amount(edition, booking)
     db.add(booking)
     return booking
 
@@ -366,9 +366,7 @@ def _add_slot(booking: Booking, edition: Edition, slot: Slot, kind: str, now: da
     balance shows the difference (D-017).
     """
     booking.slots = sorted([*booking.slots, slot], key=slot_sort_key)
-    booking.amount_due_cents = compute_fee(
-        [s.date for s in booking.slots], edition.base_fee_cents, edition.per_day_fee_cents
-    )
+    recompute_amount(edition, booking)
     if kind != "add_to_pending":
         return
     new_expiry = hold_after_promotion(booking.hold_expires_at, now, edition.hold_days)

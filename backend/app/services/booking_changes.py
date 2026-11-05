@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from sqlalchemy import select, update
@@ -12,7 +12,8 @@ from app.domain.booking import (
     has_free_seat,
     is_past_day,
 )
-from app.domain.fees import compute_fee, is_covered
+from app.domain.fees import is_covered
+from app.domain.meals import meals_to_drop, periods_by_day
 from app.email import EmailSender
 from app.email.templates import cancellation_email
 from app.models import (
@@ -31,10 +32,11 @@ from app.models import (
 )
 from app.services import audit
 from app.services import edition as edition_service
+from app.services.amounts import recompute_amount
 from app.services.payments import paid_total, send_confirmation
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
-from app.timefmt import format_euro, format_slot
+from app.timefmt import format_euro, format_meal, format_slot
 
 
 def close_entries_for(
@@ -76,6 +78,8 @@ class ChangeResult:
     over_capacity: list[Slot] = field(default_factory=list)
     # Slots taken off the booking: their seats can go to the waitlist.
     removed_slot_ids: list[int] = field(default_factory=list)
+    # Meals dropped because the new slots no longer allow them, as (day, kind).
+    dropped_meals: list[tuple[date, str]] = field(default_factory=list)
 
 
 def get_current_booking(db: Session, participant: Participant) -> Booking | None:
@@ -134,15 +138,21 @@ def change_slots(
     assert edition is not None
     old_amount = booking.amount_due_cents
     booking.slots = sorted(slots, key=slot_sort_key)
-    booking.amount_due_cents = compute_fee(
-        [s.date for s in slots], edition.base_fee_cents, edition.per_day_fee_cents
+    # Meals follow presence: those the new slots no longer allow go.
+    dropped = meals_to_drop(
+        [(m.date, m.kind) for m in booking.meals],
+        periods_by_day((s.date, s.period) for s in slots),
     )
+    booking.meals = [m for m in booking.meals if (m.date, m.kind) not in dropped]
+    recompute_amount(edition, booking)
     if actor is not None:
         audit.log(
             db,
             actor,
             "slots_changed",
-            _describe_slot_change(added, removed, full, old_amount, booking.amount_due_cents),
+            _describe_slot_change(
+                added, removed, full, old_amount, booking.amount_due_cents, sorted(dropped)
+            ),
             booking.id,
         )
 
@@ -157,7 +167,7 @@ def change_slots(
     db.commit()
     if confirmed_now:
         send_confirmation(sender, booking, total)
-    return ChangeResult(booking, confirmed_now, full, [s.id for s in removed])
+    return ChangeResult(booking, confirmed_now, full, [s.id for s in removed], sorted(dropped))
 
 
 def _labels(slots: list[Slot]) -> str:
@@ -168,13 +178,21 @@ def _labels(slots: list[Slot]) -> str:
 
 
 def _describe_slot_change(
-    added: list[Slot], removed: list[Slot], full: list[Slot], old_cents: int, new_cents: int
+    added: list[Slot],
+    removed: list[Slot],
+    full: list[Slot],
+    old_cents: int,
+    new_cents: int,
+    dropped_meals: list[tuple[date, str]] | None = None,
 ) -> str:
     parts = ["Slot modificati."]
     if added:
         parts.append(f"Aggiunti: {_labels(added)}.")
     if removed:
         parts.append(f"Tolti: {_labels(removed)}.")
+    if dropped_meals:
+        meals = ", ".join(format_meal(day, kind) for day, kind in dropped_meals)
+        parts.append(f"Tolti anche i pasti: {meals}.")
     parts.append(f"Quota: {format_euro(old_cents)} → {format_euro(new_cents)}.")
     if full:
         parts.append(f"Oltre la capienza: {_labels(full)}.")

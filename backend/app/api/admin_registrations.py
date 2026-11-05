@@ -27,7 +27,7 @@ from app.services import refunds as refund_service
 from app.services import waitlist as waitlist_service
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue
-from app.timefmt import ROME, format_euro, format_slot, status_label, to_rome
+from app.timefmt import ROME, format_euro, format_meal, format_slot, status_label, to_rome
 
 router = APIRouter(
     prefix="/api/admin/registrations", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -563,6 +563,10 @@ def change_registration_slots(
             format_slot(s.date, s.period, s.start_time, s.end_time) for s in result.over_capacity
         )
         warning = f"Attenzione: capienza superata in {labels}."
+    if result.dropped_meals:
+        meals = ", ".join(format_meal(day, kind) for day, kind in result.dropped_meals)
+        dropped = f"Tolti anche i pasti senza più presenza: {meals}."
+        warning = f"{warning} {dropped}" if warning else dropped
     return _detail(db, booking, now, warning=warning)
 
 
