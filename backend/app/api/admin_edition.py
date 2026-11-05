@@ -9,7 +9,7 @@ from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.email import EmailSender
-from app.models import Edition, LegalDocument, PaymentChannel, slot_sort_key
+from app.models import DOC_HEALTH, Edition, LegalDocument, PaymentChannel, slot_sort_key
 from app.services import edition as edition_service
 from app.services import waitlist as waitlist_service
 
@@ -43,6 +43,8 @@ class EditionIn(BaseModel):
     waitlist_percent: int = Field(default=20, ge=0, le=100)
     base_fee_cents: int = Field(default=1000, ge=0)
     per_day_fee_cents: int = Field(default=100, ge=0)
+    lunch_price_cents: int = Field(default=800, ge=0, le=100_000)
+    dinner_price_cents: int = Field(default=1200, ge=0, le=100_000)
 
     @model_validator(mode="after")
     def check_consistency(self) -> Self:
@@ -93,6 +95,8 @@ class EditionOut(EditionIn):
     payment_channels: list[ChannelOut]
     privacy: LegalOut | None
     disclaimer: LegalOut | None
+    # Specific consent for health data (allergies); optional, it does not close registrations.
+    health: LegalOut | None = None
 
 
 class ChannelIn(BaseModel):
@@ -102,7 +106,7 @@ class ChannelIn(BaseModel):
 
 
 class LegalIn(BaseModel):
-    kind: Literal["privacy", "disclaimer"]
+    kind: Literal["privacy", "disclaimer", "health"]
     body: str = Field(min_length=1, max_length=50000)
 
 
@@ -110,6 +114,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
     slots = sorted(edition.slots, key=slot_sort_key)
     privacy = edition_service.latest_legal_document(db, edition, "privacy")
     disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
+    health = edition_service.latest_legal_document(db, edition, DOC_HEALTH)
     base = EditionIn.model_validate(edition, from_attributes=True)
     return EditionOut(
         **base.model_dump(),
@@ -120,6 +125,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
         ],
         privacy=LegalOut.model_validate(privacy) if privacy else None,
         disclaimer=LegalOut.model_validate(disclaimer) if disclaimer else None,
+        health=LegalOut.model_validate(health) if health else None,
     )
 
 

@@ -21,6 +21,8 @@ const edition = {
   waitlist_percent: 20,
   base_fee_cents: 1000,
   per_day_fee_cents: 100,
+  lunch_price_cents: 800,
+  dinner_price_cents: 1200,
   slots: [],
   payment_channels: [],
   privacy: null,
@@ -43,5 +45,29 @@ describe("settings", () => {
         (calls.find((c) => c.method === "PUT")?.body as Record<string, unknown>).waitlist_percent,
       ).toBe(30),
     );
+  });
+
+  it("edits the meal prices", async () => {
+    const calls = stubAdminApi((call) =>
+      call.url === "/api/admin/edition" ? { body: edition } : undefined,
+    );
+    renderAt("/admin/impostazioni");
+    const lunch = await screen.findByLabelText("Prezzo del pranzo (€)");
+    expect(lunch).toHaveValue("8,00");
+    await userEvent.clear(lunch);
+    await userEvent.type(lunch, "9,50");
+    await userEvent.click(screen.getByRole("button", { name: "Salva edizione" }));
+    await waitFor(() => {
+      const body = calls.find((c) => c.method === "PUT")?.body as Record<string, unknown>;
+      expect([body.lunch_price_cents, body.dinner_price_cents]).toEqual([950, 1200]);
+    });
+  });
+
+  it("offers the health consent text", async () => {
+    stubAdminApi((call) => (call.url === "/api/admin/edition" ? { body: edition } : undefined));
+    renderAt("/admin/impostazioni");
+    expect(
+      await screen.findByRole("heading", { name: /Consenso per allergie e intolleranze/ }),
+    ).toBeInTheDocument();
   });
 });

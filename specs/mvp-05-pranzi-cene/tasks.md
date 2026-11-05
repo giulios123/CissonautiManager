@@ -10,7 +10,7 @@ Branch di implementazione: `claude/quirky-meitner-qn9hwh` (vincolo di push della
   Test: pranzo con sola mattina e con solo pomeriggio; cena con sera esplicita e derivata; nessun pasto senza presenza; pasti che cadono togliendo uno slot (e cena che resta con l'intero giorno); giorno passato; allergie senza consenso rifiutate e consenso tolto che le svuota; importo a zero pasti uguale a `compute_fee`.
 - [x] **3. Importo unico e pasti che cadono**: `recompute_amount` al posto di `compute_fee`; `change_slots` toglie i pasti senza titolo.
   Test: tutti i test esistenti su importi e cambio slot restano verdi; pasto tolto riportato nella risposta e nella cronologia admin.
-- [ ] **4. Impostazioni**: prezzi di pranzo e cena, testo del consenso sanitario versionato.
+- [x] **4. Impostazioni**: prezzi di pranzo e cena, testo del consenso sanitario versionato.
   Test: prezzi negativi rifiutati; nuova versione del consenso; l'iscrizione resta aperta senza testo del consenso.
 - [ ] **5. Pasti dalla pagina personale**: `change_meals`, `PUT /api/me/booking/meals` con anteprima, `MealEditor`.
   Test: adesione e ritiro con importo ricalcolato; in attesa coperta che diventa confermata con email; confermata che resta tale; stato non valido rifiutato; pasto non ammesso rifiutato; giorno passato rifiutato e oggi ammesso. Frontend: caselle solo nei giorni di presenza, anteprima.

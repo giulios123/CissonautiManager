@@ -200,3 +200,29 @@ class TestWaitlistPercent:
                 "/api/admin/edition", json=dict(PAYLOAD, waitlist_percent=value)
             )
             assert response.status_code == 422
+
+
+class TestMealSettings:
+    def test_meal_prices_default_and_change(self, admin_client):
+        saved = admin_client.put("/api/admin/edition", json=PAYLOAD).json()
+        assert (saved["lunch_price_cents"], saved["dinner_price_cents"]) == (800, 1200)
+        body = dict(PAYLOAD, lunch_price_cents=700, dinner_price_cents=1500)
+        saved = admin_client.put("/api/admin/edition", json=body).json()
+        assert (saved["lunch_price_cents"], saved["dinner_price_cents"]) == (700, 1500)
+
+    def test_negative_prices_are_rejected(self, admin_client):
+        body = dict(PAYLOAD, lunch_price_cents=-1)
+        assert admin_client.put("/api/admin/edition", json=body).status_code == 422
+
+    def test_health_consent_is_versioned(self, admin_client):
+        admin_client.put("/api/admin/edition", json=PAYLOAD)
+        for text in ("Consenso v1", "Consenso v2"):
+            response = admin_client.post(
+                "/api/admin/legal-documents", json={"kind": "health", "body": text}
+            )
+            assert response.status_code == 201
+        health = admin_client.get("/api/admin/edition").json()["health"]
+        assert (health["version"], health["body"]) == (2, "Consenso v2")
+
+    def test_registrations_stay_open_without_the_health_consent(self, client, edition):
+        assert client.get("/api/public/edition").json()["registration_open"] is True
