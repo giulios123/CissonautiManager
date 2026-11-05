@@ -1,7 +1,8 @@
 from collections.abc import Iterable
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING
+from app.timefmt import to_rome
 
 
 def hold_deadline(created_at: datetime, hold_days: int) -> datetime:
@@ -42,3 +43,17 @@ def has_free_seat(free: int | None) -> bool:
 def can_reactivate(free_seats_per_slot: Iterable[int | None]) -> bool:
     """An expired booking can come back only if every one of its slots still has a free seat."""
     return all(has_free_seat(free) for free in free_seats_per_slot)
+
+
+def can_edit_slots(status: str) -> bool:
+    """A participant can change slots only on a pending or confirmed booking."""
+    return status in (STATUS_PENDING, STATUS_CONFIRMED)
+
+
+def can_request_cancellation(status: str) -> bool:
+    return status in (STATUS_PENDING, STATUS_CONFIRMED)
+
+
+def is_past_day(day: date, now: datetime) -> bool:
+    """True when the day is over in Europe/Rome. Today still counts as not past."""
+    return day < to_rome(now).date()
