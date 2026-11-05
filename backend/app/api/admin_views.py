@@ -35,11 +35,17 @@ class SlotPerson(BaseModel):
 
 class WaitingPerson(BaseModel):
     entry_id: int
+    # The person, for actions that are about them and not about a booking (they may have none).
+    participant_id: int
+    # Place in the real promotion order: verified +1s come first (MVP 7).
     position: int
     first_name: str
     last_name: str
     email: str
     since: datetime
+    # An admin verified that they were invited by `invited_by`.
+    plus_one: bool = False
+    invited_by: str | None = None
 
 
 class SlotPresenceOut(BaseModel):
@@ -104,11 +110,14 @@ def slots_view(
                     waitlist=[
                         WaitingPerson(
                             entry_id=entry.id,
+                            participant_id=entry.participant_id,
                             position=position,
                             first_name=entry.participant.first_name,
                             last_name=entry.participant.last_name,
                             email=entry.participant.email,
                             since=entry.created_at,
+                            plus_one=entry.participant.plus_one_verified_at is not None,
+                            invited_by=entry.participant.invited_by,
                         )
                         for position, entry in enumerate(queues.get(slot.id, []), start=1)
                     ],
@@ -127,6 +136,8 @@ def slots_view(
                 status_label(person.status),
                 person.derived,
                 None,
+                None,
+                None,
             ]
             for day in days
             for slot in day.slots
@@ -142,6 +153,8 @@ def slots_view(
                 "In lista d'attesa",
                 False,
                 waiting.position,
+                waiting.plus_one,
+                waiting.invited_by,
             ]
             for day in days
             for slot in day.slots
@@ -157,6 +170,8 @@ def slots_view(
             "Stato",
             "Sera derivata",
             "Posizione in lista",
+            "+1 verificato",
+            "Invitato da",
         ]
         return csv_response(csv_filename("giorni-slot", now), header, rows)
     return SlotsViewOut(days=days)

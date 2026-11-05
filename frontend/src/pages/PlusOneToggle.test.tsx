@@ -14,8 +14,7 @@ function stub(status = 200, body: unknown = {}) {
 const base = {
   participantId: 12,
   invitedBy: "Ada",
-  verifiedAt: null,
-  verifiedBy: null,
+  verified: false,
 };
 
 describe("PlusOneToggle", () => {
@@ -36,6 +35,7 @@ describe("PlusOneToggle", () => {
     render(
       <PlusOneToggle
         {...base}
+        verified
         verifiedAt="2026-11-05T09:04:00Z"
         verifiedBy="Boss Admin"
         onChanged={vi.fn()}

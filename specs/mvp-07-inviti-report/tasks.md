@@ -12,7 +12,7 @@ Branch di implementazione: `feat/mvp-07-inviti-report` (se la sessione non può 
   Test: liberando un posto viene promosso il +1 verificato; una verifica fatta dopo l'ingresso vale alla promozione successiva; togliendo la verifica torna l'ordine di arrivo; il limite della lista non cambia (con la lista piena nemmeno un +1 entra); `position_of` e la pagina personale seguono; email e promozione come nell'MVP 4.
 - [x] **4. Verifica del +1 da admin**: servizio, `PUT /api/admin/participants/{id}/plus-one`, estensione della scheda, spunta nella scheda. La spunta in «Giorni e slot» arriva nel task 5, insieme ai dati della lista.
   Test: verifica e rimozione salvate con chi e quando; 422 senza «invitato da»; 404 persona sconosciuta; 403 per un partecipante; cronologia scritta, anche senza prenotazione; svuotare «invitato da» dalla modifica dati fa cadere la verifica; vitest sulla spunta (etichetta, stato, errore).
-- [ ] **5. Lista d'attesa con la priorità visibile**: posizione effettiva, «+1» e «da verificare» in `AdminSlots.tsx`, colonne nel CSV.
+- [x] **5. Lista d'attesa con la priorità visibile**: posizione effettiva, «+1» e «da verificare» in `AdminSlots.tsx`, colonne nel CSV.
   Test: l'ordine della vista è quello di promozione; colonne e valori del CSV; vitest sull'etichetta.
 - [ ] **6. Regole pure del report**: `edition_report`.
   Test: ogni sezione con dati minimi; confermate e in attesa separate; scadute, disdette e rimborsate escluse da presenze, pasti e attività ma contate negli incassi; pagamenti annullati esclusi; netto, da incassare e crediti; scomposizione del dovuto che torna al totale anche con un prezzo cambiato (riga «scarto»); picco, media e giorni-persona; sezioni vuote a zero.

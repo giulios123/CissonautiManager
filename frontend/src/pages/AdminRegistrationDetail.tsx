@@ -171,6 +171,7 @@ export function AdminRegistrationDetail() {
                 <PlusOneToggle
                   participantId={participant.id}
                   invitedBy={participant.invited_by}
+                  verified={Boolean(participant.plus_one_verified_at)}
                   verifiedAt={participant.plus_one_verified_at ?? null}
                   verifiedBy={participant.plus_one_verified_by ?? null}
                   onChanged={reload}

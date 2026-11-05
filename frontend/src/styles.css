@@ -5,6 +5,7 @@
   --color-text: #1c1c1c;
   --color-heading: #22383d;
   --color-primary: #005c68;
+  --color-primary-soft: #e0eef0;
   --color-on-primary: #ffffff;
   --color-cta: #f4b400;
   --color-on-cta: #1c1c1c;
@@ -275,6 +276,22 @@ summary {
   align-items: center;
   gap: 0.25rem 0.75rem;
   margin: 0.5rem 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0 0.375rem;
+  color: var(--color-primary);
+  font-weight: 700;
+  background: var(--color-primary-soft);
+  border-radius: var(--radius);
+}
+
+.item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
 }
 
 .item > span:first-child {

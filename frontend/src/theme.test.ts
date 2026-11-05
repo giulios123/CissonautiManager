@@ -35,6 +35,7 @@ describe("theme tokens", () => {
     ["color-error", "color-bg"],
     ["color-error", "color-error-bg"],
     ["color-text", "color-success-bg"],
+    ["color-primary", "color-primary-soft"],
     ["status-pending-fg", "status-pending-bg"],
     ["status-confirmed-fg", "status-confirmed-bg"],
     ["status-expired-fg", "status-expired-bg"],

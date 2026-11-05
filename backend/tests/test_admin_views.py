@@ -129,6 +129,8 @@ class TestSlotsView:
             "Stato",
             "Sera derivata",
             "Posizione in lista",
+            "+1 verificato",
+            "Invitato da",
         ]
         assert len(rows) == 2 + 1 + 2  # morning, afternoon, evening
         ada_evening = next(r for r in rows if r[3] == "Ada" and r[1] == "Sera")

@@ -6,8 +6,11 @@ type Props = {
   participantId: number;
   /** What the person wrote in «chi ti ha invitato?». */
   invitedBy: string | null;
-  verifiedAt: string | null;
-  verifiedBy: string | null;
+  verified: boolean;
+  verifiedAt?: string | null;
+  verifiedBy?: string | null;
+  /** In a table cell: the explanation stays for screen readers and is not drawn. */
+  compact?: boolean;
   /** Called after the server accepted the change, so the page can reload what depends on it. */
   onChanged: () => void;
 };
@@ -17,8 +20,10 @@ type Props = {
 export function PlusOneToggle({
   participantId,
   invitedBy,
-  verifiedAt,
-  verifiedBy,
+  verified,
+  verifiedAt = null,
+  verifiedBy = null,
+  compact = false,
   onChanged,
 }: Props) {
   const [busy, setBusy] = useState(false);
@@ -26,13 +31,13 @@ export function PlusOneToggle({
   const helpId = useId();
   const hasInvite = Boolean(invitedBy?.trim());
 
-  async function change(verified: boolean) {
+  async function change(next: boolean) {
     setBusy(true);
     setError(null);
     try {
       await api(`/api/admin/participants/${participantId}/plus-one`, {
         method: "PUT",
-        json: { verified },
+        json: { verified: next },
       });
       onChanged();
     } catch (failure) {
@@ -47,18 +52,18 @@ export function PlusOneToggle({
       <label className="check">
         <input
           type="checkbox"
-          checked={verifiedAt !== null}
-          disabled={busy || (!hasInvite && verifiedAt === null)}
+          checked={verified}
+          disabled={busy || (!hasInvite && !verified)}
           aria-describedby={helpId}
           onChange={(event) => void change(event.target.checked)}
         />
         +1 verificato
       </label>
-      <small id={helpId}>
-        {!hasInvite && verifiedAt === null
+      <small id={helpId} className={compact ? "sr-only" : undefined}>
+        {!hasInvite && !verified
           ? "Serve che la persona abbia indicato chi l'ha invitata."
-          : verifiedAt !== null
-            ? `Verificato${verifiedBy ? ` da ${verifiedBy}` : ""} il ${formatDeadline(verifiedAt)}. Passa davanti nelle liste d'attesa.`
+          : verified
+            ? `Verificato${verifiedBy ? ` da ${verifiedBy}` : ""}${verifiedAt ? ` il ${formatDeadline(verifiedAt)}` : ""}. Passa davanti nelle liste d'attesa.`
             : "Se confermi che è davvero un invitato, passa davanti nelle liste d'attesa."}
       </small>
       {error && (
