@@ -1,4 +1,5 @@
 from collections import Counter
+from dataclasses import asdict
 from datetime import date, datetime, time
 from itertools import groupby
 from typing import Literal
@@ -14,6 +15,7 @@ from app.deps import get_now, require_admin
 from app.domain.meals import diet_counts, meal_counts_by_day
 from app.domain.presence import presence_by_slot, week_summary
 from app.models import MEAL_DINNER, MEAL_LUNCH
+from app.services import report_export
 from app.services import views as views_service
 from app.services import waitlist as waitlist_service
 from app.timefmt import meal_label, period_label, status_label
@@ -480,3 +482,28 @@ def payments_review(
         )
         for r in rows
     ]
+
+
+@router.get("/report", response_model=None)
+def report_view(
+    fmt: Format = Query(default="json", alias="format"),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> dict | Response:
+    """The numbers of the edition on one page. Allergies appear only as a count (health data)."""
+    data = views_service.load_report(db, now)
+    if fmt == "csv":
+        return csv_response(
+            csv_filename("report", now),
+            report_export.HEADER,
+            report_export.report_rows(data.report),
+        )
+    edition = data.edition
+    return {
+        "edition": (
+            {"name": edition.name, "start_date": edition.start_date, "end_date": edition.end_date}
+            if edition
+            else None
+        ),
+        **asdict(data.report),
+    }

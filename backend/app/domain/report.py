@@ -98,10 +98,11 @@ class Split:
 
     confirmed: int = 0
     pending: int = 0
+    # A field and not a property, so that it travels with the others when the report is sent.
+    total: int = field(init=False)
 
-    @property
-    def total(self) -> int:
-        return self.confirmed + self.pending
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "total", self.confirmed + self.pending)
 
 
 @dataclass(frozen=True)
