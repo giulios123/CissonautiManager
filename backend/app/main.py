@@ -16,6 +16,7 @@ from app.api import admin_registrations as admin_registrations_api
 from app.api import admin_views as admin_views_api
 from app.api import admin_waitlist as admin_waitlist_api
 from app.api import auth as auth_api
+from app.api import guide as guide_api
 from app.api import me as me_api
 from app.api import public as public_api
 from app.config import Settings, get_settings
@@ -85,6 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_views_api.router)
     app.include_router(admin_participants_api.router)
     app.include_router(admin_waitlist_api.router)
+    app.include_router(guide_api.router)
     app.include_router(public_api.router)
 
     @app.middleware("http")

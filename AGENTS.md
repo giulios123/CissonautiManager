@@ -33,6 +33,9 @@ cd frontend && npm run lint
 # Job dei promemoria di pagamento (in produzione gira ogni ora come Container Apps Job)
 cd backend && uv run python -m app.jobs.send_reminders
 
+# Note di rilascio (in produzione le genera il deploy; serve la storia git completa)
+python scripts/release_notes.py --out backend/release_notes.json
+
 # Migrazioni
 cd backend && uv run alembic upgrade head
 cd backend && uv run alembic revision --autogenerate -m "short description"
@@ -58,6 +61,7 @@ docker build -t cissonauti-booking .
 - Ogni regola di dominio ha almeno un test.
 - Ogni modifica allo schema passa da una migrazione Alembic.
 - Nessun segreto nel repo: configurazione tramite variabili d'ambiente con un `.env.example`.
+- Ogni modifica a una funzione visibile (pagine in `frontend/src/pages/`, API in `backend/app/api/`) aggiorna la sezione giusta della guida in `frontend/src/guide/` (`partecipante/` o `admin/`, un file Markdown in italiano per sezione). Il controllo `Guide` della CI fallisce se una PR tocca pagine o API senza toccare la guida; se non cambia nulla di visibile, si salta con la label `senza-guida`. La guida si pubblica con ogni deploy, le note di rilascio sono generate dai commit (Conventional Commits fatti bene = note leggibili).
 - `memory-bank/domain.md` è la fonte di verità: se una spec la contraddice, vince `domain.md` finché non viene aggiornato con il consenso del maintainer.
 
 ## Come iniziare ogni sessione
@@ -97,7 +101,8 @@ Verifica in `progress.md` che l'MVP precedente sia completato. Se non lo è, dim
    * `progress.md`: MVP completato e cosa va verificato a mano;
    * `activeContext.md`: prossimo MVP e dubbi aperti;
    * `domain.md`: solo le modifiche approvate;
-   * `README.md` e `AGENTS.md`: se sono cambiati setup o comandi.
+   * `README.md` e `AGENTS.md`: se sono cambiati setup o comandi;
+   * la guida in `frontend/src/guide/`: se è cambiata una funzione visibile.
 3. Prepara la descrizione della PR con una checklist di test manuali scritta per gli organizzatori, non per sviluppatori.
 4. Riassumimi il lavoro in massimo 10 righe.
 

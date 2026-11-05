@@ -50,6 +50,12 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 - **Contenuto**: colori, font, logo e componenti ripresi dal sito su tutte le pagine; modalità iframe senza intestazione doppia; font self-hosted; accessibilità invariata.
 - **Fatto quando**: dentro il sito il modulo di iscrizione sembra parte della pagina, login, pagina personale e pannello admin hanno lo stesso stile e i contrasti restano AA.
 
+## MVP 9 · Guida in app e note di rilascio
+
+- **Obiettivo**: spiegare le funzioni dentro l'app, per ruolo, e tenere la spiegazione allineata a ogni deploy.
+- **Contenuto**: pagina «Guida» dopo il login (partecipante: sua guida; admin: guida organizzatori, guida partecipanti e «Novità»), versione in pagina, note di rilascio generate dai commit al deploy, regola in `AGENTS.md` e controllo CI.
+- **Fatto quando**: un partecipante vede solo la sua guida, un admin vede anche organizzatori e novità del deploy, e una PR che cambia pagine senza toccare la guida fallisce in CI.
+
 ## Backlog
 
 Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementano.
@@ -79,3 +85,5 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Report che confronta più edizioni, emerso nella spec dell'MVP 7.
 - Modalità scura e stile configurabile dal pannello admin, emersi nella spec dell'MVP 8.
 - Iscrizione in 3 passi con indicatore (scegli i turni, dati, pagamento) come nel mockup; accordion per giorno su telefono.
+- Note di rilascio riscritte per gli organizzatori in italiano (oggi sono i testi dei commit, in inglese), emerso nella spec dell'MVP 9.
+- Guida in più lingue, ricerca nel testo e immagini (MVP 9).

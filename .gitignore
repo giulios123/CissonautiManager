@@ -25,3 +25,6 @@ backend/static/
 .idea/
 .DS_Store
 *.db
+
+# Generated at deploy time by scripts/release_notes.py
+backend/release_notes.json

@@ -25,6 +25,9 @@ jobs:
       image: ${{ steps.meta.outputs.image }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The release notes are built from the git history.
+          fetch-depth: 0
       - name: Image reference
         id: meta
         run: echo "image=${IMAGE_NAME,,}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
@@ -33,11 +36,19 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build release notes and version
+        id: version
+        run: |
+          python3 scripts/release_notes.py --out backend/release_notes.json
+          echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.image }}
+          build-args: |
+            APP_VERSION=${{ github.sha }}
+            BUILT_AT=${{ steps.version.outputs.built_at }}
 
   deploy:
     name: Deploy to Azure

@@ -13,6 +13,7 @@ import { AdminReview } from "./pages/AdminReview";
 import { AdminSlots } from "./pages/AdminSlots";
 import { AdminWeek } from "./pages/AdminWeek";
 import { AdminSettings } from "./pages/AdminSettings";
+import { Guide } from "./pages/Guide";
 import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
@@ -53,6 +54,7 @@ export function App() {
         <Route path="/accedi" element={<Login />} />
         <Route path="/accedi/verifica" element={<Verify />} />
         <Route path="/io" element={<Personal />} />
+        <Route path="/guida" element={<Guide />} />
         <Route
           path="/admin"
           element={
