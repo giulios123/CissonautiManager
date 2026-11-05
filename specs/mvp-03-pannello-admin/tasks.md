@@ -4,7 +4,7 @@ Branch di implementazione: `feat/mvp-03-pannello-admin`. Parte dopo la chiusura 
 
 **Dimensione**: 13 task, sopra la soglia di circa 10. Il maintainer ha scelto di tenerlo unico. Se in corso d'opera pesa troppo, il punto naturale di taglio è dopo il task 7 (viste e CSV) contro i task 8-12 (azioni).
 
-- [ ] **1. Migrazione 0004**: colonne rimborso su `booking`, colonne annullamento su `payment`, tabella `audit_log`; `paid_total` e `booking_view` escludono i pagamenti annullati.
+- [x] **1. Migrazione 0004**: colonne rimborso su `booking`, colonne annullamento su `payment`, tabella `audit_log`; `paid_total` e `booking_view` escludono i pagamenti annullati.
   Test: upgrade e downgrade da zero; i saldi dell'MVP 1 restano invariati; un pagamento annullato non conta.
 - [ ] **2. Regole pure**: `has_evening`, `presence_by_slot`, `week_summary`, `review_reason`, `can_remove_admin`, `can_refund`, `status_after_void`.
   Test: sera esplicita, derivata e assente; scadute e disdette escluse dai presenti; ogni motivo di revisione; rimozione di sé, dell'ultimo admin e dell'admin seed rifiutata; rimborso oltre il pagato; confermata che scende sotto il dovuto torna in attesa.

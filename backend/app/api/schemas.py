@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from app.domain.booking import can_edit_slots, can_request_cancellation, effective_status
 from app.domain.fees import balance_cents
-from app.models import Booking, slot_sort_key
+from app.models import Booking, active_payments, slot_sort_key
 from app.timefmt import format_slot
 
 
@@ -16,10 +16,13 @@ class SlotView(BaseModel):
 
 
 class PaymentView(BaseModel):
+    id: int
     amount_cents: int
     channel: str
     paid_on: date
     note: str | None = None
+    voided: bool = False
+    void_reason: str | None = None
 
 
 class BookingView(BaseModel):
@@ -37,7 +40,7 @@ class BookingView(BaseModel):
 
 
 def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -> BookingView:
-    paid = sum(p.amount_cents for p in booking.payments)
+    paid = sum(p.amount_cents for p in active_payments(booking))
     slots = sorted(booking.slots, key=slot_sort_key)
     status = effective_status(booking.status, booking.hold_expires_at, now)
     return BookingView(
@@ -59,13 +62,17 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             )
             for s in slots
         ],
+        # Admins see voided payments too (struck through); participants only the ones that count.
         payments=[
             PaymentView(
+                id=p.id,
                 amount_cents=p.amount_cents,
                 channel=p.channel,
                 paid_on=p.paid_on,
                 note=p.note if include_notes else None,
+                voided=p.voided_at is not None,
+                void_reason=p.void_reason if include_notes else None,
             )
-            for p in booking.payments
+            for p in (booking.payments if include_notes else active_payments(booking))
         ],
     )

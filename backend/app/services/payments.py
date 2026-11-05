@@ -14,6 +14,7 @@ from app.models import (
     Booking,
     Participant,
     Payment,
+    active_payments,
 )
 from app.services import edition as edition_service
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
@@ -33,7 +34,7 @@ class PaymentResult:
 
 
 def paid_total(booking: Booking) -> int:
-    return sum(p.amount_cents for p in booking.payments)
+    return sum(p.amount_cents for p in active_payments(booking))
 
 
 def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
