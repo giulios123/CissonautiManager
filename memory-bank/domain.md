@@ -53,6 +53,7 @@
 - Pagina pubblica di iscrizione senza login, incorporabile in Google Sites tramite iframe: header CSP `frame-ancestors` che autorizza `https://sites.google.com` e `https://*.googleusercontent.com`. Dopo l'invio mostra riepilogo, importo, istruzioni di pagamento e scadenza, e invia un'email con il magic link.
 - Magic link: token monouso valido 30 minuti, apre la pagina personale in una finestra normale (fuori dall'iframe). Dopo il login un cookie di sessione httpOnly, Secure, SameSite=Lax dura 14 giorni. Chi non ha un cookie valido può richiedere un nuovo link inserendo l'email.
 - Password (opzionale): oltre al magic link si può accedere con email e password. La password si imposta dalla pagina personale dopo un accesso con magic link; il magic link resta sempre disponibile come recupero.
+- Lingue: l'app è in italiano e in inglese. La lingua si sceglie con il selettore IT/EN (o con `?lang=`), altrimenti è quella del browser; si salva sul partecipante alla registrazione e a ogni cambio da loggato. Gli indirizzi sono in inglese (`/register`, `/login`, `/me`...): gli indirizzi italiani scritti a mano reindirizzano.
 - Pagina personale: modifica degli slot, adesione a pranzi, cene e attività, esigenze alimentari, contributi offerti (talk, temi per l'unconference, competenze), saldo e istruzioni di pagamento, richiesta di disdetta.
 - Admin: stessa app, ruolo `admin`. Gli admin si aggiungono e rimuovono dal pannello, senza limite di numero. Il primo admin viene creato da variabile d'ambiente e non si rimuove dal pannello (si cambia da lì); non si può rimuovere se stessi né l'ultimo admin.
 
@@ -64,12 +65,15 @@
 
 ## Pannello admin
 
-- Impostazioni: date, slot e orari, capienze, giorni di blocco, percentuale della lista d'attesa, quote, prezzi di pranzo e cena, canali e istruzioni di pagamento, testi legali (compreso il consenso per i dati sanitari), gestione degli admin.
+- Impostazioni: date, slot e orari, testo e immagine della email di iscrizione (con anteprima e invio di prova), capienze, giorni di blocco, percentuale della lista d'attesa, quote, prezzi di pranzo e cena, canali e istruzioni di pagamento, testi legali (compreso il consenso per i dati sanitari), gestione degli admin.
+- Lingue del pannello: tutto il pannello è in italiano e inglese. I CSV escono nella lingua dell'app al momento del download, con lo stesso formato (separatore `;`, virgola decimale, date `gg/mm/aaaa`, ora di Roma). Le voci della cronologia restano nella lingua in cui furono scritte.
 - Viste: per persona, per giorno e slot, per attività, settimana aggregata (coworking, pranzi, cene, attività), esigenze alimentari per pasto, pagamenti da incassare (iscrizioni in attesa o con un saldo da versare, con ricerca per causale), pagamenti da verificare, report di riepilogo dell'edizione (iscrizioni, presenze, pasti, attività, contributi, lista d'attesa, incassi, con confermate e in attesa di pagamento separate; le allergie solo come numero; anche in stampa). Export CSV per ogni vista. La presenza serale di chi ha prenotato l'intero giorno è derivata (D-009) e nelle viste è indicata come tale.
 - L'admin può modificare a mano qualsiasi iscrizione, comprese le disdette che il partecipante non riesce a fare. Può superare la capienza di uno slot solo con una conferma esplicita.
 - Ogni modifica manuale dell'admin è registrata (chi, quando, cosa) e compare nella cronologia della scheda.
 
 ## Email
+
+Ogni email parte nella lingua del partecipante (italiano o inglese). La conferma di iscrizione ha oggetto e testo iniziale modificabili dall'admin per ciascuna lingua (segnaposto: nome, cognome, evento, data di inizio e di fine); slot, quota, causale, scadenza, istruzioni di pagamento e link personale restano sempre in fondo e non si modificano. Se l'admin ha caricato uno sfondo, la email contiene un'immagine con la frase «Sono nome cognome e sarò a evento dal … al …» (in inglese «I'm … and I'll be at … from … to …»), modificabile per lingua con colore e posizione; non la riceve chi è solo in lista d'attesa.
 
 Conferma iscrizione con magic link (o di ingresso in lista d'attesa) · conferma pagamento · due promemoria di pagamento (a metà del blocco e 24 ore prima della scadenza, ciascuno una sola volta per blocco; con un blocco sotto le 48 ore parte solo quello a metà; ripartono se la prenotazione viene riattivata) · posto liberato dalla lista d'attesa · conferma disdetta. Nessun altro sollecito.
 

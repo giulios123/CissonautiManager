@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, vi } from "vitest";
 import { App } from "../App";
+import { I18nProvider } from "../i18n";
 import { UNDO_WINDOW_MS } from "./AdminCollect";
 
 const admin = {
@@ -81,7 +82,7 @@ afterEach(() => {
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={["/admin/da-incassare"]}>
+    <MemoryRouter initialEntries={["/admin/to-collect"]}>
       <App />
     </MemoryRouter>,
   );
@@ -96,7 +97,7 @@ describe("to collect view", () => {
     expect(screen.getByText("2 da incassare")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ada Lovelace" })).toHaveAttribute(
       "href",
-      "/admin/iscrizioni/7",
+      "/admin/registrations/7",
     );
     expect(screen.getAllByRole("link", { name: "Altro importo" })).toHaveLength(2);
   });
@@ -276,5 +277,36 @@ describe("to collect view", () => {
       await vi.advanceTimersByTimeAsync(5_000);
     });
     await waitFor(() => expect(screen.queryByText("CSC-G8AX")).not.toBeInTheDocument());
+  });
+});
+
+describe("changing language on the to collect view", () => {
+  it("keeps the undo of a payment marked a moment ago, without asking the server again", async () => {
+    render(
+      <I18nProvider locale="it">
+        <MemoryRouter initialEntries={["/admin/to-collect"]}>
+          <App />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Segna pagato per Ada Lovelace" }));
+    expect(
+      await screen.findByRole("button", { name: "Annulla il pagamento di Ada Lovelace" }),
+    ).toBeInTheDocument();
+    const loads = () => calls.filter((c) => c.url === "/api/admin/views/to-collect").length;
+    const before = loads();
+
+    fireEvent.click(screen.getByRole("button", { name: "Inglese" }));
+
+    // Same row, same payment, now in English: the page was not started over.
+    const undo = await screen.findByRole("button", { name: "Undo the payment of Ada Lovelace" });
+    expect(undo).toBeEnabled();
+    expect(loads()).toBe(before);
+    fireEvent.click(undo);
+    await waitFor(() =>
+      expect(calls.some((c) => c.url.endsWith("/payments/41/void") && c.method === "POST")).toBe(
+        true,
+      ),
+    );
   });
 });

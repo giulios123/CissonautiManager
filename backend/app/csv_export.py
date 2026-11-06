@@ -14,6 +14,7 @@ from typing import NamedTuple
 
 from fastapi.responses import Response
 
+from app.i18n import tr
 from app.timefmt import format_amount, to_rome
 
 BOM = "﻿"
@@ -41,7 +42,7 @@ def format_cell(value: Cell) -> str:
     if value is None:
         return ""
     if isinstance(value, bool):  # before int: bool is an int
-        return "sì" if value else "no"
+        return tr("sì") if value else tr("no")
     if isinstance(value, Amount):
         return format_amount(value.cents)
     if isinstance(value, datetime):
@@ -56,14 +57,14 @@ def format_cell(value: Cell) -> str:
 def render_csv(header: Sequence[str], rows: Iterable[Sequence[Cell]]) -> str:
     buffer = io.StringIO()
     writer = csv.writer(buffer, delimiter=";", lineterminator="\r\n")
-    writer.writerow(header)
+    writer.writerow([tr(cell) for cell in header])
     for row in rows:
         writer.writerow([format_cell(cell) for cell in row])
     return BOM + buffer.getvalue()
 
 
 def csv_filename(prefix: str, now: datetime) -> str:
-    return f"{prefix}-{to_rome(now).strftime('%Y-%m-%d')}.csv"
+    return f"{tr(prefix)}-{to_rome(now).strftime('%Y-%m-%d')}.csv"
 
 
 def csv_response(filename: str, header: Sequence[str], rows: Iterable[Sequence[Cell]]) -> Response:

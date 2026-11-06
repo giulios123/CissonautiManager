@@ -4,6 +4,8 @@ import { api } from "../api";
 import { priceLabel, seatsLabel, type Activity } from "../activities";
 import { formatDay, periodLabel } from "../booking";
 import { StatusBadge } from "../StatusBadge";
+import { useI18n } from "../i18n";
+import { adminRegistrationPath, ROUTES } from "../routes";
 import { CsvButton } from "./CsvButton";
 
 type Person = {
@@ -17,6 +19,7 @@ type Person = {
 type Detail = Activity & { people: Person[] };
 
 export function AdminActivityDetail() {
+  const { t, tn } = useI18n();
   const { id } = useParams();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [failed, setFailed] = useState(false);
@@ -27,24 +30,24 @@ export function AdminActivityDetail() {
       .catch(() => setFailed(true));
   }, [id]);
 
-  if (failed) return <main role="alert">Attività non trovata.</main>;
-  if (!detail) return <main aria-busy="true">Caricamento…</main>;
+  if (failed) return <main role="alert">{t("aact.notFound")}</main>;
+  if (!detail) return <main aria-busy="true">{t("common.loading")}</main>;
 
   return (
     <main className="wide">
       <p>
-        <Link to="/admin/attivita">← Tutte le attività</Link>
+        <Link to={ROUTES.adminActivities}>{t("aact.backAll")}</Link>
       </p>
       <h1>{detail.title}</h1>
       <p>
         {formatDay(detail.date)}, {periodLabel(detail.period).toLowerCase()}
         {detail.time_label && ` (${detail.time_label})`} · {priceLabel(detail.price_cents)} ·{" "}
         {seatsLabel(detail)}
-        {detail.free !== null && `, ${detail.free} posti liberi`}
+        {detail.free !== null && tn("aact.freePlaces", detail.free)}
       </p>
       {detail.description && <p>{detail.description}</p>}
       {detail.people.length === 0 ? (
-        <p>Nessun iscritto per ora.</p>
+        <p>{t("aact.noneSignedUp")}</p>
       ) : (
         <>
           <p>
@@ -52,19 +55,19 @@ export function AdminActivityDetail() {
           </p>
           <div className="table-wrap">
             <table>
-              <caption>Iscritti</caption>
+              <caption>{t("aact.signedUpCaption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Persona</th>
-                  <th scope="col">Telefono</th>
-                  <th scope="col">Stato</th>
+                  <th scope="col">{t("people.colPerson")}</th>
+                  <th scope="col">{t("people.colPhone")}</th>
+                  <th scope="col">{t("people.colStatus")}</th>
                 </tr>
               </thead>
               <tbody>
                 {detail.people.map((person) => (
                   <tr key={person.booking_id}>
                     <th scope="row">
-                      <Link to={`/admin/iscrizioni/${person.booking_id}`}>
+                      <Link to={adminRegistrationPath(person.booking_id)}>
                         {person.first_name} {person.last_name}
                       </Link>
                       <br />

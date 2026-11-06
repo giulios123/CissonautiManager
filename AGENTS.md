@@ -46,7 +46,7 @@ docker build -t cissonauti-booking .
 
 ## Convenzioni di codice
 
-- Codice, nomi, commit e commenti in **inglese**. Memory Bank, spec, README e testi della UI in **italiano**.
+- Codice, nomi, commit e commenti in **inglese**. Memory Bank, spec e README in **italiano**. I testi della UI, le email e la guida sono in **italiano e inglese** (vedi la regola «Bilingue da subito»).
 - Commit in formato Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:`).
 - Backend: FastAPI, SQLAlchemy 2 (stile tipizzato `Mapped[...]`), Alembic, Pydantic per input e output. Le regole di dominio stanno in funzioni pure, testabili senza database.
 - Importi sempre in centesimi interi (`int`), mai `float`.
@@ -61,7 +61,8 @@ docker build -t cissonauti-booking .
 - Ogni regola di dominio ha almeno un test.
 - Ogni modifica allo schema passa da una migrazione Alembic.
 - Nessun segreto nel repo: configurazione tramite variabili d'ambiente con un `.env.example`.
-- Ogni modifica a una funzione visibile (pagine in `frontend/src/pages/`, API in `backend/app/api/`) aggiorna la sezione giusta della guida in `frontend/src/guide/` (`partecipante/` o `admin/`, un file Markdown in italiano per sezione). Il controllo `Guide` della CI fallisce se una PR tocca pagine o API senza toccare la guida; se non cambia nulla di visibile, si salta con la label `senza-guida`. La guida si pubblica con ogni deploy, le note di rilascio sono generate dai commit (Conventional Commits fatti bene = note leggibili).
+- Ogni modifica a una funzione visibile (pagine in `frontend/src/pages/`, API in `backend/app/api/`) aggiorna la sezione giusta della guida in `frontend/src/guide/{it,en}/` (`participant/` o `admin/`, un file Markdown per sezione e per lingua, con lo stesso nome). Il controllo `Guide` della CI fallisce se una PR tocca pagine o API senza toccare la guida in tutte e due le lingue; se non cambia nulla di visibile, si salta con la label `senza-guida`. La guida si pubblica con ogni deploy, le note di rilascio sono generate dai commit (Conventional Commits fatti bene = note leggibili).
+- **Bilingue da subito**: ogni funzione nuova o modificata nasce in italiano e in inglese (testi della UI nei dizionari `frontend/src/i18n/{it,en}.ts`, messaggi del server e email nel catalogo `backend/app/i18n.py`, guida in `frontend/src/guide/{it,en}/`). Gli indirizzi (rotte) sono solo in inglese, definiti in `frontend/src/routes.ts`; un alias italiano esiste solo se serve a non rompere link già in circolazione. Una PR che aggiunge testi in una lingua sola non è completa.
 - `memory-bank/domain.md` è la fonte di verità: se una spec la contraddice, vince `domain.md` finché non viene aggiornato con il consenso del maintainer.
 
 ## Come iniziare ogni sessione
@@ -102,13 +103,13 @@ Verifica in `progress.md` che l'MVP precedente sia completato. Se non lo è, dim
    * `activeContext.md`: prossimo MVP e dubbi aperti;
    * `domain.md`: solo le modifiche approvate;
    * `README.md` e `AGENTS.md`: se sono cambiati setup o comandi;
-   * la guida in `frontend/src/guide/`: se è cambiata una funzione visibile.
+   * la guida in `frontend/src/guide/{it,en}/`: se è cambiata una funzione visibile.
 3. Prepara la descrizione della PR con una checklist di test manuali scritta per gli organizzatori, non per sviluppatori.
 4. Riassumimi il lavoro in massimo 10 righe.
 
 ### Regole sempre valide
 
 * Niente refactor o feature non richiesti dalla spec.
-* Codice in inglese, testi della UI e documentazione in italiano.
+* Codice in inglese; testi della UI, email e guida in italiano e inglese; documentazione (memory bank, spec, README) in italiano.
 * Nessun segreto nel repo.
 * Bug o piccole richieste fuori MVP: se è un bug, correggilo con un test che lo riproduce e annotalo in `progress.md`; altrimenti mettilo nel Backlog.

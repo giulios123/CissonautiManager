@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 from itertools import groupby
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -13,6 +13,7 @@ from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
 from app.domain.booking import is_past_day
 from app.email import EmailSender
+from app.i18n import channel_label, current_locale, t
 from app.models import slot_sort_key
 from app.services import edition as edition_service
 from app.services import registration as registration_service
@@ -81,6 +82,8 @@ class RegistrationIn(BaseModel):
     slot_ids: list[int] = Field(default_factory=list, max_length=60)
     # Full slots to wait for: someone can register with these only.
     waitlist_slot_ids: list[int] = Field(default_factory=list, max_length=60)
+    # Language of the form: the one of the later emails. Missing means the request language.
+    locale: Literal["it", "en"] | None = None
     accept_privacy: bool
     accept_disclaimer: bool
     privacy_version: int
@@ -89,11 +92,11 @@ class RegistrationIn(BaseModel):
     @model_validator(mode="after")
     def check_acceptances(self) -> Self:
         if not self.slot_ids and not self.waitlist_slot_ids:
-            raise ValueError("Scegli almeno uno slot")
+            raise ValueError(t("register.slots_required"))
         if not self.accept_privacy:
-            raise ValueError("Per iscriverti devi accettare l'informativa privacy")
+            raise ValueError(t("register.privacy_required"))
         if not self.accept_disclaimer:
-            raise ValueError("Per iscriverti devi accettare lo scarico di responsabilità")
+            raise ValueError(t("register.disclaimer_required"))
         return self
 
 
@@ -130,7 +133,9 @@ class RegistrationOut(BaseModel):
 
 def _channels(db: Session, edition) -> list[ChannelPublic]:
     return [
-        ChannelPublic(code=c.code, label=c.label, instructions=c.instructions)
+        ChannelPublic(
+            code=c.code, label=channel_label(c.code, c.label), instructions=c.instructions
+        )
         for c in registration_service.enabled_channels(db, edition)
     ]
 
@@ -193,20 +198,19 @@ def create_registration(
     sender: EmailSender = Depends(get_email_sender),
     now: datetime = Depends(get_now),
 ) -> RegistrationOut | JSONResponse:
-    data = registration_service.RegistrationData(
-        **body.model_dump(exclude={"accept_privacy", "accept_disclaimer"})
-    )
+    fields = body.model_dump(exclude={"accept_privacy", "accept_disclaimer", "locale"})
+    data = registration_service.RegistrationData(**fields, locale=body.locale or current_locale())
     try:
         result = registration_service.register(db, sender, settings, data, now)
     except registration_service.RegistrationClosed as exc:
-        raise HTTPException(status_code=409, detail="Le iscrizioni non sono aperte") from exc
+        raise HTTPException(status_code=409, detail=t("register.closed")) from exc
     except registration_service.LegalTextsChanged as exc:
         raise HTTPException(
             status_code=409,
-            detail="I testi legali sono stati aggiornati: ricarica la pagina e rileggili",
+            detail=t("register.legal_outdated"),
         ) from exc
     except registration_service.InvalidSlots as exc:
-        raise HTTPException(status_code=422, detail="Gli slot scelti non sono validi") from exc
+        raise HTTPException(status_code=422, detail=t("slots.invalid")) from exc
     except registration_service.SlotsFull as exc:
         db.rollback()
         labels = ", ".join(
@@ -215,29 +219,22 @@ def create_registration(
         return JSONResponse(
             status_code=409,
             content={
-                "detail": f"Questi slot sono al completo: {labels}. Scegline altri.",
+                "detail": t("slots.full_choose_others", labels=labels),
                 "full_slot_ids": [s.id for s in exc.slots],
             },
         )
     except waitlist_service.WaitlistRefused as exc:
         db.rollback()
-        detail = (
-            "Nel frattempo si è liberato un posto in uno slot che avevi messo in lista: "
-            "ricarica la pagina e prenotalo direttamente."
-            if exc.reason == "not_full"
-            else "Nel frattempo una lista d'attesa si è riempita: ricarica la pagina e riprova."
-        )
+        detail = t("register.slot_freed") if exc.reason == "not_full" else t("register.list_filled")
         raise HTTPException(status_code=409, detail=detail) from exc
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409, detail="Esiste già una richiesta in corso, riprova tra poco"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("register.in_progress")) from exc
 
     if not result.created:
         return RegistrationOut(
             result="already_registered",
-            message="Risulti già iscritto. Ti abbiamo inviato un link per entrare.",
+            message=t("register.already"),
         )
     waitlist = [
         WaitlistedSlot(
@@ -251,7 +248,7 @@ def create_registration(
     if result.booking is None:
         return RegistrationOut(
             result="waitlisted",
-            message="Sei in lista d'attesa. Ti abbiamo inviato un link per entrare.",
+            message=t("register.waitlisted"),
             personal_code=result.participant.personal_code,
             waitlist=waitlist,
         )

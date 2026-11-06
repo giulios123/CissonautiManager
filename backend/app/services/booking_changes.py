@@ -249,6 +249,7 @@ def request_cancellation(
         raise NotEditable()
     # Read before a possible delete: the email goes out after the commit.
     to, first_name = booking.participant.email, booking.participant.first_name
+    locale = booking.participant.locale
     # Cancelling means not coming: the person's waitlist entries go too.
     left_waitlist = close_entries_for(db, booking.participant_id, None, CLOSE_CANCELLED, now)
 
@@ -282,7 +283,11 @@ def request_cancellation(
     db.commit()
     sender.send(
         cancellation_email(
-            to, first_name, removed=outcome == "removed", left_waitlist=left_waitlist > 0
+            to,
+            first_name,
+            removed=outcome == "removed",
+            left_waitlist=left_waitlist > 0,
+            locale=locale,
         )
     )
     return outcome

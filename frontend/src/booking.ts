@@ -1,3 +1,6 @@
+import { intlTag } from "./i18n/locale";
+import { tNow, translatePlural } from "./i18n/messages";
+import { getLocale } from "./i18n/locale";
 import { computeFee } from "./money";
 
 export type SlotInfo = {
@@ -27,17 +30,19 @@ export function feePreview(
   return computeFee(distinctDays(days, selected), baseCents, perDayCents);
 }
 
-const dayFormat = new Intl.DateTimeFormat("it-IT", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  timeZone: "UTC",
-});
-const deadlineFormat = new Intl.DateTimeFormat("it-IT", {
-  dateStyle: "long",
-  timeStyle: "short",
-  timeZone: "Europe/Rome",
-});
+const cache = new Map<string, Intl.DateTimeFormat>();
+
+/** A date formatter in the current language; built once per language and option set. */
+function fmt(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const tag = intlTag();
+  const key = `${tag}|${JSON.stringify(options)}`;
+  let format = cache.get(key);
+  if (!format) {
+    format = new Intl.DateTimeFormat(tag, options);
+    cache.set(key, format);
+  }
+  return format;
+}
 
 /** An ISO instant as "YYYY-MM-DDTHH:mm" in Europe/Rome time, the format of datetime-local inputs. */
 export function toRomeLocalInput(iso: string): string {
@@ -54,56 +59,58 @@ export function toRomeLocalInput(iso: string): string {
   return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
 }
 
-const shortDayFormat = new Intl.DateTimeFormat("it-IT", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-});
-const weekdayFormat = new Intl.DateTimeFormat("it-IT", { weekday: "long", timeZone: "UTC" });
-const monthFormat = new Intl.DateTimeFormat("it-IT", { month: "short", timeZone: "UTC" });
-
-/** "sab 21 nov", for compact lists. */
+/** "sab 21 nov" / "Sat 21 Nov", for compact lists. */
 export const formatDayShort = (isoDate: string) =>
-  shortDayFormat.format(new Date(`${isoDate}T00:00:00Z`)).replace(/\./g, "");
+  fmt({ weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .format(new Date(`${isoDate}T00:00:00Z`))
+    .replace(/\./g, "");
 /** Month and day number for the date badge: "nov", 21. */
 export const dayBadge = (isoDate: string) => ({
-  month: monthFormat.format(new Date(`${isoDate}T00:00:00Z`)).replace(/\./g, ""),
+  month: fmt({ month: "short", timeZone: "UTC" })
+    .format(new Date(`${isoDate}T00:00:00Z`))
+    .replace(/\./g, ""),
   day: Number(isoDate.slice(8, 10)),
 });
 /** "Venerdì", the weekday alone, for headings that already show the date in a badge. */
 export const formatWeekday = (isoDate: string) => {
-  const name = weekdayFormat.format(new Date(`${isoDate}T00:00:00Z`));
+  const name = fmt({ weekday: "long", timeZone: "UTC" }).format(new Date(`${isoDate}T00:00:00Z`));
   return name.charAt(0).toUpperCase() + name.slice(1);
 };
-export const formatDay = (isoDate: string) => dayFormat.format(new Date(`${isoDate}T00:00:00Z`));
-export const formatDeadline = (isoDateTime: string) => deadlineFormat.format(new Date(isoDateTime));
-const PERIOD_LABELS: Record<string, string> = {
-  morning: "Mattina",
-  afternoon: "Pomeriggio",
-  evening: "Sera",
-};
-export const periodLabel = (period: string) => PERIOD_LABELS[period] ?? period;
+export const formatDay = (isoDate: string) =>
+  fmt({ weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(
+    new Date(`${isoDate}T00:00:00Z`),
+  );
+export const formatDeadline = (isoDateTime: string) =>
+  fmt({ dateStyle: "long", timeStyle: "short", timeZone: "Europe/Rome" }).format(
+    new Date(isoDateTime),
+  );
+export const periodLabel = (period: string) =>
+  period === "morning" || period === "afternoon" || period === "evening"
+    ? tNow(`period.${period}` as const)
+    : period;
 export const isFull = (slot: SlotInfo) => slot.available !== null && slot.available < 1;
 export const seatsLabel = (slot: SlotInfo) =>
   slot.available === null
-    ? "senza limite di posti"
+    ? tNow("seats.unlimited")
     : slot.available < 1
-      ? "completo"
-      : `${slot.available} posti liberi`;
+      ? tNow("seats.full")
+      : translatePlural(getLocale(), "seats.free", slot.available);
 export const canJoinWaitlist = (slot: SlotInfo) =>
   isFull(slot) && slot.waitlist_free != null && slot.waitlist_free > 0;
 export const hhmm = (time: string) => time.slice(0, 5);
 
-const STATUS_LABELS: Record<string, string> = {
-  in_attesa_pagamento: "In attesa di pagamento",
-  confermata: "Confermata",
-  scaduta: "Scaduta",
-  disdetta_richiesta: "Disdetta richiesta",
-  rimborsata: "Rimborsata",
-  in_lista: "Solo in lista d'attesa",
-};
-export const statusLabel = (status: string) => STATUS_LABELS[status] ?? status;
+const STATUSES = [
+  "in_attesa_pagamento",
+  "confermata",
+  "scaduta",
+  "disdetta_richiesta",
+  "rimborsata",
+  "in_lista",
+] as const;
+export const statusLabel = (status: string) =>
+  (STATUSES as readonly string[]).includes(status)
+    ? tNow(`status.${status as (typeof STATUSES)[number]}` as const)
+    : status;
 
 /** Present in that part of the day: the evening also counts for whoever has morning and
  * afternoon (D-009). */

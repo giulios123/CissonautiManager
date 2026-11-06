@@ -1,6 +1,6 @@
 # Persone e scheda iscrizione
 
-È la pagina di partenza del pannello: una riga per persona, con codice, stato, giorni, sere, versato, dovuto, saldo e scadenza. Con il campo di ricerca trovi qualcuno per nome, email o codice, con il filtro scegli lo stato, con «Scarica CSV» esporti l'elenco (si apre in Excel).
+È la pagina di partenza del pannello: una riga per persona, con codice, stato, giorni, sere, versato, dovuto, saldo e scadenza. Con il campo di ricerca trovi qualcuno per nome, email o codice, con il filtro scegli lo stato, con «Scarica CSV» esporti l'elenco (si apre in Excel). I CSV escono nella lingua dell'app in quel momento (intestazioni e stati), con lo stesso formato di sempre.
 
 Toccando una persona si apre la **scheda iscrizione**.
 

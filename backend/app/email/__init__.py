@@ -1,6 +1,6 @@
 from app.config import Settings
 from app.email.acs import AcsEmailSender
-from app.email.base import EmailMessage, EmailSender
+from app.email.base import EmailAttachment, EmailMessage, EmailSender, RegistrationExtras
 from app.email.console import ConsoleEmailSender
 
 
@@ -17,6 +17,8 @@ def build_email_sender(settings: Settings) -> EmailSender:
 __all__ = [
     "AcsEmailSender",
     "ConsoleEmailSender",
+    "EmailAttachment",
+    "RegistrationExtras",
     "EmailMessage",
     "EmailSender",
     "build_email_sender",

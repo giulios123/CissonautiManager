@@ -1,5 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
+import { useT } from "../i18n";
+import { hasMessage, tNow } from "../i18n/messages";
+import { AdminRegistrationEmail } from "./AdminRegistrationEmail";
 import { centsToInput, parseEuroToCents } from "../money";
 
 type Channel = { code: string; label: string; instructions: string; enabled: boolean };
@@ -34,7 +37,13 @@ type Notice = { kind: "ok" | "error"; text: string } | null;
 const hhmm = (value: string) => value.slice(0, 5);
 
 function errorText(error: unknown): string {
-  return error instanceof ApiError ? error.message : "Qualcosa è andato storto. Riprova.";
+  return error instanceof ApiError ? error.message : tNow("common.somethingWrong");
+}
+
+/** Name of a payment channel in the current language; unknown codes keep their stored label. */
+function channelName(code: string, label: string): string {
+  const key = `channel.${code}`;
+  return hasMessage(key) ? tNow(key) : label;
 }
 
 function NoticeLine({ notice }: { notice: Notice }) {
@@ -53,6 +62,7 @@ function EditionSection({
   edition: Edition | null;
   onSaved: (edition: Edition) => void;
 }) {
+  const t = useT();
   const [notice, setNotice] = useState<Notice>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -64,7 +74,7 @@ function EditionSection({
     const lunch = parseEuroToCents(text("lunch_price"));
     const dinner = parseEuroToCents(text("dinner_price"));
     if (base === null || perDay === null || lunch === null || dinner === null) {
-      setNotice({ kind: "error", text: "Gli importi devono essere numeri, ad esempio 10,00." });
+      setNotice({ kind: "error", text: t("set.amountsInvalid") });
       return;
     }
     try {
@@ -90,7 +100,7 @@ function EditionSection({
         },
       });
       onSaved(saved);
-      setNotice({ kind: "ok", text: `Salvato. Slot dell'edizione: ${saved.slots.length}.` });
+      setNotice({ kind: "ok", text: t("set.saved", { n: saved.slots.length }) });
     } catch (error) {
       setNotice({ kind: "error", text: errorText(error) });
     }
@@ -98,26 +108,26 @@ function EditionSection({
 
   return (
     <form onSubmit={submit} aria-labelledby="edition-title" key={edition?.id ?? "new"}>
-      <h2 id="edition-title">Edizione</h2>
+      <h2 id="edition-title">{t("set.edition")}</h2>
       <label>
-        Nome
+        {t("set.name")}
         <input name="name" required defaultValue={edition?.name ?? ""} />
       </label>
       <div className="row">
         <label>
-          Primo giorno
+          {t("set.firstDay")}
           <input type="date" name="start_date" defaultValue={edition?.start_date ?? ""} />
         </label>
         <label>
-          Ultimo giorno
+          {t("set.lastDay")}
           <input type="date" name="end_date" defaultValue={edition?.end_date ?? ""} />
         </label>
       </div>
       <fieldset>
-        <legend>Orari degli slot</legend>
+        <legend>{t("set.slotTimes")}</legend>
         <div className="row">
           <label>
-            Mattina dalle
+            {t("set.morningFrom")}
             <input
               type="time"
               name="morning_start"
@@ -126,7 +136,7 @@ function EditionSection({
             />
           </label>
           <label>
-            alle
+            {t("set.to")}
             <input
               type="time"
               name="morning_end"
@@ -137,7 +147,7 @@ function EditionSection({
         </div>
         <div className="row">
           <label>
-            Pomeriggio dalle
+            {t("set.afternoonFrom")}
             <input
               type="time"
               name="afternoon_start"
@@ -146,7 +156,7 @@ function EditionSection({
             />
           </label>
           <label>
-            alle
+            {t("set.to")}
             <input
               type="time"
               name="afternoon_end"
@@ -157,7 +167,7 @@ function EditionSection({
         </div>
         <div className="row">
           <label>
-            Sera dalle
+            {t("set.eveningFrom")}
             <input
               type="time"
               name="evening_start"
@@ -166,7 +176,7 @@ function EditionSection({
             />
           </label>
           <label>
-            alle (00:00 = mezzanotte)
+            {t("set.toMidnight")}
             <input
               type="time"
               name="evening_end"
@@ -178,7 +188,7 @@ function EditionSection({
       </fieldset>
       <div className="row">
         <label>
-          Posti per slot di giorno (la sera è senza limite)
+          {t("set.capacity")}
           <input
             type="number"
             name="default_capacity"
@@ -188,7 +198,7 @@ function EditionSection({
           />
         </label>
         <label>
-          Giorni di blocco del posto
+          {t("set.holdDays")}
           <input
             type="number"
             name="hold_days"
@@ -198,7 +208,7 @@ function EditionSection({
           />
         </label>
         <label>
-          Lista d&apos;attesa (% dei posti)
+          {t("set.waitlistPercent")}
           <input
             type="number"
             name="waitlist_percent"
@@ -211,7 +221,7 @@ function EditionSection({
       </div>
       <div className="row">
         <label>
-          Quota base (€)
+          {t("set.baseFee")}
           <input
             name="base_fee"
             inputMode="decimal"
@@ -220,7 +230,7 @@ function EditionSection({
           />
         </label>
         <label>
-          Quota per ogni giorno (€)
+          {t("set.perDayFee")}
           <input
             name="per_day_fee"
             inputMode="decimal"
@@ -231,7 +241,7 @@ function EditionSection({
       </div>
       <div className="row">
         <label>
-          Prezzo del pranzo (€)
+          {t("set.lunchPrice")}
           <input
             name="lunch_price"
             inputMode="decimal"
@@ -240,7 +250,7 @@ function EditionSection({
           />
         </label>
         <label>
-          Prezzo della cena (€)
+          {t("set.dinnerPrice")}
           <input
             name="dinner_price"
             inputMode="decimal"
@@ -249,13 +259,14 @@ function EditionSection({
           />
         </label>
       </div>
-      <button type="submit">Salva edizione</button>
+      <button type="submit">{t("set.saveEdition")}</button>
       <NoticeLine notice={notice} />
     </form>
   );
 }
 
 function ChannelsSection({ edition }: { edition: Edition }) {
+  const t = useT();
   const [channels, setChannels] = useState(edition.payment_channels);
   const [notice, setNotice] = useState<Notice>(null);
 
@@ -270,7 +281,7 @@ function ChannelsSection({ edition }: { edition: Edition }) {
         json: channels.map(({ code, instructions, enabled }) => ({ code, instructions, enabled })),
       });
       setChannels(saved);
-      setNotice({ kind: "ok", text: "Canali salvati." });
+      setNotice({ kind: "ok", text: t("set.channelsSaved") });
     } catch (error) {
       setNotice({ kind: "error", text: errorText(error) });
     }
@@ -278,20 +289,20 @@ function ChannelsSection({ edition }: { edition: Edition }) {
 
   return (
     <form onSubmit={submit} aria-labelledby="channels-title">
-      <h2 id="channels-title">Canali di pagamento</h2>
+      <h2 id="channels-title">{t("set.channelsTitle")}</h2>
       {channels.map((channel) => (
         <fieldset key={channel.code}>
-          <legend>{channel.label}</legend>
+          <legend>{channelName(channel.code, channel.label)}</legend>
           <label className="check">
             <input
               type="checkbox"
               checked={channel.enabled}
               onChange={(e) => update(channel.code, { enabled: e.target.checked })}
             />
-            Attivo
+            {t("set.active")}
           </label>
           <label>
-            Istruzioni per {channel.label}
+            {t("set.instructionsFor", { name: channelName(channel.code, channel.label) })}
             <textarea
               rows={3}
               value={channel.instructions}
@@ -300,7 +311,7 @@ function ChannelsSection({ edition }: { edition: Edition }) {
           </label>
         </fieldset>
       ))}
-      <button type="submit">Salva canali</button>
+      <button type="submit">{t("set.saveChannels")}</button>
       <NoticeLine notice={notice} />
     </form>
   );
@@ -315,6 +326,7 @@ function LegalSection({
   title: string;
   current: Legal;
 }) {
+  const t = useT();
   const [body, setBody] = useState(current?.body ?? "");
   const [version, setVersion] = useState(current?.version ?? 0);
   const [notice, setNotice] = useState<Notice>(null);
@@ -327,7 +339,7 @@ function LegalSection({
         json: { kind, body },
       });
       setVersion(saved.version);
-      setNotice({ kind: "ok", text: `Pubblicata la versione ${saved.version}.` });
+      setNotice({ kind: "ok", text: t("set.published", { n: saved.version }) });
     } catch (error) {
       setNotice({ kind: "error", text: errorText(error) });
     }
@@ -336,18 +348,19 @@ function LegalSection({
   return (
     <form onSubmit={submit} aria-labelledby={`${kind}-title`}>
       <h3 id={`${kind}-title`}>{title}</h3>
-      <p>{version ? `Versione attuale: ${version}` : "Nessun testo pubblicato."}</p>
+      <p>{version ? t("set.currentVersion", { n: version }) : t("set.noText")}</p>
       <label>
-        Testo
+        {t("set.text")}
         <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} required />
       </label>
-      <button type="submit">Pubblica nuova versione</button>
+      <button type="submit">{t("set.publish")}</button>
       <NoticeLine notice={notice} />
     </form>
   );
 }
 
 export function AdminSettings() {
+  const t = useT();
   const [edition, setEdition] = useState<Edition | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
@@ -362,34 +375,35 @@ export function AdminSettings() {
       );
   }, []);
 
-  if (state === "loading") return <main aria-busy="true">Caricamento…</main>;
-  if (state === "error") return <main role="alert">Non riesco a caricare le impostazioni.</main>;
+  if (state === "loading") return <main aria-busy="true">{t("common.loading")}</main>;
+  if (state === "error") return <main role="alert">{t("set.loadError")}</main>;
 
   return (
     <main>
-      <h1>Impostazioni</h1>
+      <h1>{t("set.title")}</h1>
       <EditionSection edition={edition} onSaved={setEdition} />
       {edition ? (
         <>
           <ChannelsSection edition={edition} />
+          <AdminRegistrationEmail />
           <section aria-labelledby="legal-title">
-            <h2 id="legal-title">Testi legali</h2>
-            <p>Ogni modifica crea una nuova versione. Le iscrizioni conservano quella accettata.</p>
-            <LegalSection kind="privacy" title="Informativa privacy" current={edition.privacy} />
+            <h2 id="legal-title">{t("set.legalTitle")}</h2>
+            <p>{t("set.legalIntro")}</p>
+            <LegalSection kind="privacy" title={t("set.privacyTitle")} current={edition.privacy} />
             <LegalSection
               kind="disclaimer"
-              title="Scarico di responsabilità"
+              title={t("set.disclaimerTitle")}
               current={edition.disclaimer}
             />
             <LegalSection
               kind="health"
-              title="Consenso per allergie e intolleranze (dati sanitari)"
+              title={t("set.healthTitle")}
               current={edition.health ?? null}
             />
           </section>
         </>
       ) : (
-        <p>Salva l'edizione per configurare canali di pagamento e testi legali.</p>
+        <p>{t("set.saveEditionFirst")}</p>
       )}
     </main>
   );

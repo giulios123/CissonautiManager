@@ -18,6 +18,7 @@ from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.domain.booking import occupies_seats
 from app.domain.presence import has_evening
 from app.email import EmailSender
+from app.i18n import t
 from app.models import (
     STATUS_EXPIRED,
     Activity,
@@ -232,7 +233,7 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
     assert privacy is not None and disclaimer is not None
     edition = db.get(Edition, booking.edition_id)
     if warning is None and view.status == STATUS_EXPIRED and view.paid_cents > 0:
-        warning = "Ci sono pagamenti registrati su una prenotazione scaduta."
+        warning = t("warn.expired_with_payments")
     return RegistrationDetail(
         participant=ParticipantView(
             id=participant.id,
@@ -295,7 +296,7 @@ def _entries_of(db: Session, participant: Participant) -> list[WaitlistEntry]:
 def _get_booking(db: Session, booking_id: int) -> Booking:
     booking = db.get(Booking, booking_id)
     if booking is None:
-        raise HTTPException(status_code=404, detail="Iscrizione non trovata")
+        raise HTTPException(status_code=404, detail=t("booking.not_found"))
     return booking
 
 
@@ -475,13 +476,11 @@ def add_refund(
             note=body.note,
         )
     except refund_service.NotRefundable as exc:
-        raise HTTPException(
-            status_code=409, detail="Si può registrare un rimborso solo su una disdetta richiesta"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("refund.only_cancelled")) from exc
     except refund_service.RefundTooHigh as exc:
         raise HTTPException(
             status_code=422,
-            detail=f"Il rimborso non può superare quanto versato ({format_euro(exc.paid_cents)})",
+            detail=t("refund.too_high", amount=format_euro(exc.paid_cents)),
         ) from exc
     db.refresh(booking)
     return _detail(db, booking, now)
@@ -502,7 +501,7 @@ def edit_registration(
             continue
         value = getattr(body, field)
         if value is None and field not in ("phone", "invited_by"):
-            raise HTTPException(status_code=422, detail="Questo campo non può essere vuoto")
+            raise HTTPException(status_code=422, detail=t("field.required"))
         optional = field in ("phone", "invited_by")
         changes[field] = (value or None) if optional else value
     new_expires = body.hold_expires_at
@@ -511,22 +510,14 @@ def edit_registration(
     try:
         booking_admin_service.update_details(db, admin, booking, changes, new_expires, now)
     except booking_admin_service.EmailTaken as exc:
-        raise HTTPException(
-            status_code=409, detail="Questa email è già usata da un'altra persona"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("email.in_use")) from exc
     except booking_admin_service.NotExtendable as exc:
-        raise HTTPException(
-            status_code=409, detail="Si può prorogare solo un blocco in attesa di pagamento"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("hold.extend_only_pending")) from exc
     except booking_admin_service.InvalidDeadline as exc:
-        raise HTTPException(
-            status_code=422, detail="La nuova scadenza deve essere successiva a quella attuale"
-        ) from exc
+        raise HTTPException(status_code=422, detail=t("hold.later")) from exc
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409, detail="Questa email è già usata da un'altra persona"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("email.in_use")) from exc
     db.refresh(booking)
     return _detail(db, booking, now)
 
@@ -544,23 +535,18 @@ def reactivate_registration(
     try:
         booking_admin_service.reactivate(db, sender, admin, booking, now, dropped)
     except booking_admin_service.NotExpired as exc:
-        raise HTTPException(
-            status_code=409, detail="Si può riattivare solo una prenotazione scaduta"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("booking.reactivate_only_expired")) from exc
     except booking_admin_service.AnotherActiveBooking as exc:
         raise HTTPException(
             status_code=409,
-            detail="Questa persona ha già un'altra iscrizione attiva: non si può riattivare "
-            "anche questa",
+            detail=t("booking.reactivate_other_active"),
         ) from exc
     except SlotsFull as exc:
         db.rollback()
         labels = ", ".join(
             format_slot(s.date, s.period, s.start_time, s.end_time) for s in exc.slots
         )
-        raise HTTPException(
-            status_code=409, detail=f"Non c'è più posto in questi slot: {labels}"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("slots.no_room", labels=labels)) from exc
     db.refresh(booking)
     warning = payment_service.dropped_activities_warning(dropped) if dropped else None
     return _detail(db, booking, now, warning=warning)
@@ -595,15 +581,11 @@ def change_registration_slots(
             actor=admin,
         )
     except booking_changes.NotEditable as exc:
-        raise HTTPException(
-            status_code=409, detail="Questa iscrizione non si può più modificare"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("booking.not_editable")) from exc
     except booking_changes.EmptySelection as exc:
-        raise HTTPException(
-            status_code=422, detail="Scegli almeno uno slot. Per rinunciare usa la disdetta"
-        ) from exc
+        raise HTTPException(status_code=422, detail=t("slots.at_least_one")) from exc
     except InvalidSlots as exc:
-        raise HTTPException(status_code=422, detail="Gli slot scelti non sono validi") from exc
+        raise HTTPException(status_code=422, detail=t("slots.invalid")) from exc
     except SlotsFull as exc:
         db.rollback()
         labels = ", ".join(
@@ -611,8 +593,7 @@ def change_registration_slots(
         )
         raise HTTPException(
             status_code=409,
-            detail=f"Questi slot sono al completo: {labels}. Per aggiungerli comunque spunta "
-            "«Forza oltre la capienza».",
+            detail=t("slots.full_force", labels=labels),
         ) from exc
     waitlist_service.promote_freed(db, sender, settings, result.removed_slot_ids, now)
     db.refresh(booking)
@@ -621,14 +602,14 @@ def change_registration_slots(
         labels = ", ".join(
             format_slot(s.date, s.period, s.start_time, s.end_time) for s in result.over_capacity
         )
-        warning = f"Attenzione: capienza superata in {labels}."
+        warning = t("warn.over_capacity", labels=labels)
     if result.dropped_meals:
         meals = ", ".join(format_meal(day, kind) for day, kind in result.dropped_meals)
-        dropped = f"Tolti anche i pasti senza più presenza: {meals}."
+        dropped = t("warn.dropped_meals", meals=meals)
         warning = f"{warning} {dropped}" if warning else dropped
     if result.dropped_activities:
         names = activity_service.labels(result.dropped_activities)
-        dropped = f"Tolte anche le attività senza più presenza: {names}."
+        dropped = t("warn.dropped_activities", names=names)
         warning = f"{warning} {dropped}" if warning else dropped
     return _detail(db, booking, now, warning=warning)
 
@@ -663,15 +644,12 @@ def change_registration_meals(
             actor=admin,
         )
     except booking_changes.NotEditable as exc:
-        raise HTTPException(
-            status_code=409, detail="Questa iscrizione non si può più modificare"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("booking.not_editable")) from exc
     except meals_service.MealsRefused as exc:
         db.rollback()
         raise HTTPException(
             status_code=422,
-            detail="Un pasto si può dare solo nei giorni e nelle fasce in cui la persona è "
-            "presente: aggiungi prima lo slot",
+            detail=t("meals.admin_not_present"),
         ) from exc
     db.refresh(booking)
     return _detail(db, booking, now)
@@ -705,31 +683,23 @@ def change_registration_activities(
             actor=admin,
         )
     except booking_changes.NotEditable as exc:
-        raise HTTPException(
-            status_code=409, detail="Questa iscrizione non si può più modificare"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("booking.not_editable")) from exc
     except activity_service.InvalidActivities as exc:
         db.rollback()
-        raise HTTPException(status_code=422, detail="Le attività scelte non sono valide") from exc
+        raise HTTPException(status_code=422, detail=t("activities.invalid")) from exc
     except activity_service.ActivitiesRefused as exc:
         db.rollback()
         names = activity_service.labels(exc.activities)
         if exc.reason == "full":
-            detail = (
-                f"Queste attività sono al completo: {names}. Per aggiungerle comunque spunta "
-                "«Forza oltre la capienza»."
-            )
+            detail = t("activities.full_force", names=names)
             raise HTTPException(status_code=409, detail=detail) from exc
-        detail = (
-            f"La persona non è presente nel momento di queste attività: {names}. "
-            "Aggiungi prima lo slot."
-        )
+        detail = t("activities.admin_not_present", names=names)
         raise HTTPException(status_code=422, detail=detail) from exc
     db.refresh(booking)
     warning = None
     if result.over_capacity_activities:
         names = activity_service.labels(result.over_capacity_activities)
-        warning = f"Attenzione: capienza superata in {names}."
+        warning = t("warn.over_capacity", labels=names)
     return _detail(db, booking, now, warning=warning)
 
 
@@ -753,9 +723,7 @@ def cancel_registration(
     try:
         outcome = booking_changes.request_cancellation(db, sender, booking, now, actor=admin)
     except booking_changes.NotEditable as exc:
-        raise HTTPException(
-            status_code=409, detail="Questa iscrizione non si può più disdire"
-        ) from exc
+        raise HTTPException(status_code=409, detail=t("booking.not_cancellable")) from exc
     waitlist_service.promote_freed(db, sender, settings, freed, now)
     if outcome == "removed":
         return CancelOut(outcome=outcome)
@@ -780,8 +748,8 @@ def void_registration_payment(
     try:
         payment_service.void_payment(db, admin, booking, payment_id, body.reason, now)
     except payment_service.PaymentNotFound as exc:
-        raise HTTPException(status_code=404, detail="Pagamento non trovato") from exc
+        raise HTTPException(status_code=404, detail=t("payment.not_found")) from exc
     except payment_service.AlreadyVoided as exc:
-        raise HTTPException(status_code=409, detail="Questo pagamento è già annullato") from exc
+        raise HTTPException(status_code=409, detail=t("payment.already_voided")) from exc
     db.refresh(booking)
     return _detail(db, booking, now)

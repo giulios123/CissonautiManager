@@ -46,7 +46,7 @@ def test_set_password_then_login_with_it(client, outbox, db, make_participant):
     fresh = TestClient(client.app, base_url="https://testserver")
     response = fresh.post("/api/auth/login", json={"email": "ada@example.com", "password": GOOD})
     assert response.status_code == 200
-    assert response.json()["redirect"] == "/io"
+    assert response.json()["redirect"] == "/me"
     assert fresh.get("/api/me").status_code == 200
     assert "csc_session" in response.headers["set-cookie"]
 

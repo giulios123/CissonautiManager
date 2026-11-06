@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { RequireLogin } from "./auth";
 import { AdminAdmins } from "./pages/AdminAdmins";
 import { AdminActivities } from "./pages/AdminActivities";
@@ -19,26 +19,38 @@ import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
 import { Verify } from "./pages/Verify";
+import { useT } from "./i18n";
 import { usePageTitle } from "./pageTitle";
+import { canonicalGuideHash, canonicalPath, canonicalSearch, ROUTES } from "./routes";
 import { SiteHeader } from "./SiteHeader";
 
 function Home() {
+  const t = useT();
   return (
     <main>
       <h1>Cissonauti Summer Camp</h1>
       <p>
-        <Link to="/iscrizione">Iscriviti al camp</Link>
+        <Link to={ROUTES.register}>{t("home.register")}</Link>
       </p>
     </main>
   );
 }
 
+/** Italian addresses typed by hand lead to the English ones, keeping query and hash. */
 function NotFound() {
+  const t = useT();
+  const { pathname, search, hash } = useLocation();
+  const english = canonicalPath(pathname);
+  if (english) {
+    // The old guide had Italian section anchors: they follow the renamed sections.
+    const anchor = english === ROUTES.guide ? canonicalGuideHash(hash) : hash;
+    return <Navigate to={`${english}${canonicalSearch(search)}${anchor}`} replace />;
+  }
   return (
     <main>
-      <h1>Pagina non trovata</h1>
+      <h1>{t("notFound.title")}</h1>
       <p>
-        <Link to="/">Torna alla home</Link>
+        <Link to="/">{t("notFound.home")}</Link>
       </p>
     </main>
   );
@@ -51,11 +63,11 @@ export function App() {
       <SiteHeader />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/iscrizione" element={<Registration />} />
-        <Route path="/accedi" element={<Login />} />
-        <Route path="/accedi/verifica" element={<Verify />} />
-        <Route path="/io" element={<Personal />} />
-        <Route path="/guida" element={<Guide />} />
+        <Route path={ROUTES.register} element={<Registration />} />
+        <Route path={ROUTES.login} element={<Login />} />
+        <Route path={ROUTES.loginVerify} element={<Verify />} />
+        <Route path={ROUTES.me} element={<Personal />} />
+        <Route path={ROUTES.guide} element={<Guide />} />
         <Route
           path="/admin"
           element={
@@ -65,18 +77,18 @@ export function App() {
           }
         >
           <Route index element={<AdminRegistrations />} />
-          <Route path="iscrizioni/:id" element={<AdminRegistrationDetail />} />
-          <Route path="giorni" element={<AdminSlots />} />
-          <Route path="settimana" element={<AdminWeek />} />
-          <Route path="pasti" element={<AdminMeals />} />
-          <Route path="attivita" element={<AdminActivities />} />
-          <Route path="attivita/:id" element={<AdminActivityDetail />} />
-          <Route path="contributi" element={<AdminContributions />} />
+          <Route path="registrations/:id" element={<AdminRegistrationDetail />} />
+          <Route path="days" element={<AdminSlots />} />
+          <Route path="week" element={<AdminWeek />} />
+          <Route path="meals" element={<AdminMeals />} />
+          <Route path="activities" element={<AdminActivities />} />
+          <Route path="activities/:id" element={<AdminActivityDetail />} />
+          <Route path="contributions" element={<AdminContributions />} />
           <Route path="report" element={<AdminReport />} />
-          <Route path="da-incassare" element={<AdminCollect />} />
-          <Route path="da-verificare" element={<AdminReview />} />
-          <Route path="amministratori" element={<AdminAdmins />} />
-          <Route path="impostazioni" element={<AdminSettings />} />
+          <Route path="to-collect" element={<AdminCollect />} />
+          <Route path="to-review" element={<AdminReview />} />
+          <Route path="admins" element={<AdminAdmins />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

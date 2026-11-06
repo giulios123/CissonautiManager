@@ -5,6 +5,8 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Integer,
+    LargeBinary,
+    String,
     Time,
     Unicode,
     UnicodeText,
@@ -112,6 +114,8 @@ class Participant(Base):
     personal_code: Mapped[str] = mapped_column(Unicode(16), unique=True)
     role: Mapped[str] = mapped_column(Unicode(16), default=ROLE_PARTICIPANT)
     password_hash: Mapped[str | None] = mapped_column(Unicode(255))
+    # Language of the emails and messages for this person: "it" or "en".
+    locale: Mapped[str] = mapped_column(String(2), default="it")
     # An admin confirmed that `invited_by` names who really invited this person (a +1): the
     # waitlist then puts them first (MVP 7). Empty means not verified.
     plus_one_verified_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
@@ -344,3 +348,35 @@ def active_payments(booking: Booking) -> list[Payment]:
 def slot_sort_key(slot: Slot) -> tuple[date, time]:
     """Chronological order: by day, then by start time (so morning comes before afternoon)."""
     return (slot.date, slot.start_time)
+
+
+class EmailTemplate(Base):
+    """Subject and text of an email the organizers can edit, one per edition, kind and language."""
+
+    __tablename__ = "email_template"
+    __table_args__ = (UniqueConstraint("edition_id", "kind", "locale"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
+    kind: Mapped[str] = mapped_column(Unicode(32))  # "registration"
+    locale: Mapped[str] = mapped_column(String(2))
+    subject: Mapped[str] = mapped_column(Unicode(200), default="")
+    body: Mapped[str] = mapped_column(UnicodeText, default="")
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
+
+
+class RegistrationCard(Base):
+    """The picture of the registration email: a background and the sentence written on it."""
+
+    __tablename__ = "registration_card"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"), unique=True)
+    # The background as PNG, already checked and resized. Empty: no picture in the email.
+    image: Mapped[bytes | None] = mapped_column(LargeBinary)
+    text_it: Mapped[str] = mapped_column(UnicodeText, default="")
+    text_en: Mapped[str] = mapped_column(UnicodeText, default="")
+    text_color: Mapped[str] = mapped_column(String(7), default="#ffffff")
+    text_position: Mapped[str] = mapped_column(String(8), default="bottom")
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)

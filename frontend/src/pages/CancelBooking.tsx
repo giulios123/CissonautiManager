@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView } from "../auth";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { useT } from "../i18n";
 import { formatEuro } from "../money";
 
 export type CancelOutcome = "removed" | "requested";
@@ -13,6 +14,7 @@ export function CancelBooking({
   booking: BookingView;
   onDone: (outcome: CancelOutcome) => Promise<void> | void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function CancelBooking({
       setOpen(false);
       await onDone(result.outcome);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
     } finally {
       setWorking(false);
     }
@@ -42,26 +44,23 @@ export function CancelBooking({
   return (
     <>
       <button type="button" className="danger" ref={triggerRef} onClick={() => setOpen(true)}>
-        Richiedi disdetta
+        {t("cancel.button")}
       </button>
       {open && (
         <ConfirmDialog
-          title="Vuoi disdire l'iscrizione?"
-          confirmLabel="Sì, disdico"
+          title={t("cancel.title")}
+          confirmLabel={t("cancel.confirm")}
           working={working}
           error={error}
           onConfirm={confirm}
           onCancel={close}
           returnFocusTo={triggerRef}
         >
-          <p>I tuoi posti si liberano subito e non potrai riaverli senza iscriverti di nuovo.</p>
+          <p>{t("cancel.warning")}</p>
           {booking.paid_cents > 0 ? (
-            <p>
-              Hai già versato {formatEuro(booking.paid_cents)}: chi organizza ti scriverà per il
-              rimborso.
-            </p>
+            <p>{t("cancel.paid", { amount: formatEuro(booking.paid_cents) })}</p>
           ) : (
-            <p>Non risultano pagamenti, quindi l&apos;iscrizione viene annullata.</p>
+            <p>{t("cancel.unpaid")}</p>
           )}
         </ConfirmDialog>
       )}

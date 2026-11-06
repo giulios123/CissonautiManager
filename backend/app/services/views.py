@@ -23,6 +23,7 @@ from app.domain.report import (
     WaitlistFacts,
     edition_report,
 )
+from app.i18n import tr
 from app.models import (
     Activity,
     Booking,
@@ -107,7 +108,7 @@ class ReviewRow:
 
     @property
     def reason_label(self) -> str:
-        return REASON_LABELS[self.reason]
+        return tr(REASON_LABELS[self.reason])
 
 
 def review_rows(db: Session, now: datetime) -> list[ReviewRow]:

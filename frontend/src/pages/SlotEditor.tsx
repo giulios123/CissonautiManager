@@ -11,6 +11,7 @@ import {
   type PricedExtras,
 } from "../booking";
 import type { PickerDay } from "../daySelection";
+import { useT } from "../i18n";
 import { formatEuro } from "../money";
 import { DayPicker } from "./DayPicker";
 
@@ -32,6 +33,7 @@ export function SlotEditor({
   // Meals and activities of the booking, so the preview includes the ones that stay.
   extras?: PricedExtras;
 }) {
+  const t = useT();
   const original = new Set(booking.slots.map((slot) => slot.id));
   const [edition, setEdition] = useState<PublicEdition | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -47,8 +49,8 @@ export function SlotEditor({
       .catch(() => setLoadError(true));
   }, []);
 
-  if (loadError) return <p role="alert">Non riesco a caricare i giorni. Riprova tra poco.</p>;
-  if (!edition) return <p aria-busy="true">Caricamento…</p>;
+  if (loadError) return <p role="alert">{t("edit.slotsLoadError")}</p>;
+  if (!edition) return <p aria-busy="true">{t("common.loading")}</p>;
 
   const fee =
     feePreview(
@@ -65,7 +67,7 @@ export function SlotEditor({
     setError(null);
     setSaved(false);
     if (selected.size === 0) {
-      setError("Scegli almeno uno slot. Per rinunciare usa la disdetta.");
+      setError(t("edit.chooseOne"));
       return;
     }
     setSaving(true);
@@ -80,7 +82,7 @@ export function SlotEditor({
       setEdition(await fetchEdition().catch(() => edition));
       setSaved(true);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
       // Seats may have changed while the page was open: show the current ones.
       setEdition(await fetchEdition().catch(() => edition));
     } finally {
@@ -100,18 +102,18 @@ export function SlotEditor({
         full: isFull(slot),
         disabled: Boolean(day.past) || (isFull(slot) && !mine && !selected.has(slot.id)),
         hint: day.past
-          ? "giorno passato"
+          ? t("edit.pastDay")
           : isFull(slot) && mine
-            ? "il tuo posto"
+            ? t("edit.yourPlace")
             : canJoinWaitlist(slot)
-              ? "completo, puoi metterti in lista d'attesa"
+              ? t("edit.fullJoinWaitlist")
               : seatsLabel(slot),
       };
     }),
   }));
 
   return (
-    <form onSubmit={save} aria-label="Modifica i tuoi slot">
+    <form onSubmit={save} aria-label={t("edit.aria")}>
       <DayPicker
         days={pickerDays}
         selected={selected}
@@ -121,16 +123,18 @@ export function SlotEditor({
         }}
       />
       <p aria-live="polite" className="fee">
-        Nuova quota: <strong>{formatEuro(fee)}</strong>
+        {t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
         {delta !== 0 && (
           <>
             {" "}
-            ({formatEuro(Math.abs(delta))} {delta > 0 ? "in più" : "in meno"} di ora)
+            {t(delta > 0 ? "edit.delta.more" : "edit.delta.less", {
+              amount: formatEuro(Math.abs(delta)),
+            })}
           </>
         )}
       </p>
       {booking.status === "in_attesa_pagamento" && (
-        <p className="legal">La scadenza del blocco non cambia.</p>
+        <p className="legal">{t("edit.holdUnchanged")}</p>
       )}
       {error && (
         <p role="alert" className="notice error">
@@ -139,13 +143,12 @@ export function SlotEditor({
       )}
       {saved && (
         <p role="status" className="notice ok">
-          Slot aggiornati.
-          {dropped.length > 0 &&
-            ` Tolti anche pasti e attività dei momenti in cui non ci sei più: ${dropped.join(", ")}.`}
+          {t("edit.slotsUpdated")}
+          {dropped.length > 0 && ` ${t("edit.droppedAlso", { list: dropped.join(", ") })}`}
         </p>
       )}
       <button type="submit" disabled={!changed || saving}>
-        Salva gli slot
+        {t("edit.saveSlots")}
       </button>
     </form>
   );

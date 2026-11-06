@@ -69,7 +69,7 @@ def send_due_reminders(
     db.commit()
     summary = ReminderSummary()
     channels: dict[int, list[PaymentChannel]] = {}
-    login_url = f"{settings.app_base_url.rstrip('/')}/accedi"
+    login_url = f"{settings.app_base_url.rstrip('/')}/login"
 
     pending = db.scalars(
         select(Booking)

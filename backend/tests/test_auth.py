@@ -41,7 +41,7 @@ class TestMagicLinkRequest:
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
         assert len(outbox.sent) == 1
         assert outbox.sent[0].to == "ada@example.com"
-        assert "https://camp.example.org/accedi/verifica?token=" in outbox.sent[0].body
+        assert "https://camp.example.org/login/verify?token=" in outbox.sent[0].body
 
     def test_email_lookup_ignores_case_and_spaces(self, client, outbox, make_participant):
         make_participant("ada@example.com")
@@ -59,7 +59,7 @@ class TestVerify:
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
         response = client.post("/api/auth/verify", json={"token": token_from(outbox)})
         assert response.status_code == 200
-        assert response.json() == {"role": ROLE_PARTICIPANT, "redirect": "/io"}
+        assert response.json() == {"role": ROLE_PARTICIPANT, "redirect": "/me"}
         cookie = response.headers["set-cookie"].lower()
         assert "csc_session=" in cookie
         assert "httponly" in cookie

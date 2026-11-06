@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError } from "../api";
+import { useT } from "../i18n";
+import { ROUTES } from "../routes";
 
 /**
  * The token is consumed only when the person presses the button, never on page load, so email
  * clients and security scanners that pre-open links cannot burn the single-use token.
  */
 export function Verify() {
+  const t = useT();
   const [params] = useSearchParams();
   const token = params.get("token");
   const navigate = useNavigate();
@@ -23,7 +26,7 @@ export function Verify() {
       });
       navigate(result.redirect);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
       setBusy(false);
     }
   }
@@ -31,9 +34,9 @@ export function Verify() {
   if (!token) {
     return (
       <main>
-        <h1>Link non valido</h1>
+        <h1>{t("verify.invalidTitle")}</h1>
         <p>
-          <Link to="/accedi">Richiedi un nuovo link</Link>
+          <Link to={ROUTES.login}>{t("verify.requestNew")}</Link>
         </p>
       </main>
     );
@@ -41,9 +44,9 @@ export function Verify() {
 
   return (
     <main>
-      <h1>Entra nella tua pagina</h1>
+      <h1>{t("verify.title")}</h1>
       <button type="button" onClick={enter} disabled={busy}>
-        Entra
+        {t("verify.enter")}
       </button>
       {error && (
         <>
@@ -51,7 +54,7 @@ export function Verify() {
             {error}
           </p>
           <p>
-            <Link to="/accedi">Richiedi un nuovo link</Link>
+            <Link to={ROUTES.login}>{t("verify.requestNew")}</Link>
           </p>
         </>
       )}

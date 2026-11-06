@@ -1,4 +1,5 @@
 import { statusLabel } from "./booking";
+import { useT } from "./i18n";
 
 const KNOWN = new Set([
   "in_attesa_pagamento",
@@ -10,6 +11,7 @@ const KNOWN = new Set([
 
 /** Booking status as a colored label. The text is always there: color only helps. */
 export function StatusBadge({ status }: { status: string }) {
+  useT(); // re-renders when the language changes
   const className = KNOWN.has(status) ? `status status-${status}` : "status";
   return <span className={className}>{statusLabel(status)}</span>;
 }

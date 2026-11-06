@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { formatDay } from "../booking";
+import { useT, type MessageKey } from "../i18n";
+import { tNow } from "../i18n/messages";
+import { adminRegistrationPath } from "../routes";
 import { CsvButton } from "./CsvButton";
 
 type MealPerson = {
@@ -19,24 +22,24 @@ type Meal = {
 };
 type MealDay = { date: string; meals: Meal[] };
 
-const KIND = { lunch: "Pranzo", dinner: "Cena" } as const;
-const DIETS: [string, string][] = [
-  ["omnivore", "onnivori"],
-  ["vegetarian", "vegetariani"],
-  ["vegan", "vegani"],
-  ["none", "senza indicazione"],
+const KIND = { lunch: "meals.kindLunch", dinner: "meals.kindDinner" } as const;
+const DIETS: [string, MessageKey][] = [
+  ["omnivore", "meals.dietOmnivore"],
+  ["vegetarian", "meals.dietVegetarian"],
+  ["vegan", "meals.dietVegan"],
+  ["none", "meals.dietNone"],
 ];
 
-export const HEALTH_DATA_WARNING =
-  "Il file contiene allergie e intolleranze, che sono dati sanitari: conservalo con cura e non condividerlo. Vuoi scaricarlo?";
+export const healthDataWarning = () => tNow("meals.healthWarning");
 
 function dietSummary(diets: Record<string, number>) {
   return DIETS.filter(([key]) => diets[key])
-    .map(([key, label]) => `${diets[key]} ${label}`)
+    .map(([key, label]) => `${diets[key]} ${tNow(label)}`)
     .join(", ");
 }
 
 export function AdminMeals() {
+  const t = useT();
   const [days, setDays] = useState<MealDay[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -48,20 +51,17 @@ export function AdminMeals() {
 
   return (
     <main className="wide">
-      <h1>Pasti</h1>
-      <p>
-        Chi mangia a ogni pranzo e cena, con regime e allergie. Allergie e intolleranze sono dati
-        sanitari: le vedono solo gli organizzatori.
-      </p>
-      {failed && <p role="alert">Non riesco a caricare la vista.</p>}
+      <h1>{t("meals.title")}</h1>
+      <p>{t("meals.intro")}</p>
+      {failed && <p role="alert">{t("slots.loadError")}</p>}
       {days === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : days.length === 0 ? (
-        <p>Nessun giorno: configura prima l&apos;edizione nelle Impostazioni.</p>
+        <p>{t("week.noDays")}</p>
       ) : (
         <>
           <p>
-            <CsvButton path="/api/admin/views/meals" warning={HEALTH_DATA_WARNING} />
+            <CsvButton path="/api/admin/views/meals" warning={healthDataWarning()} />
           </p>
           {days.map((day) => (
             <div className="table-wrap" key={day.date}>
@@ -69,11 +69,11 @@ export function AdminMeals() {
                 <caption>{formatDay(day.date)}</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Pasto</th>
-                    <th scope="col">Persone</th>
-                    <th scope="col">Regimi</th>
-                    <th scope="col">Chi c&apos;è</th>
-                    <th scope="col">Allergie e intolleranze</th>
+                    <th scope="col">{t("meals.colMeal")}</th>
+                    <th scope="col">{t("slots.colPeople")}</th>
+                    <th scope="col">{t("meals.colDiets")}</th>
+                    <th scope="col">{t("meals.colWho")}</th>
+                    <th scope="col">{t("meals.colAllergies")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -81,7 +81,7 @@ export function AdminMeals() {
                     const allergic = meal.people.filter((p) => p.allergies);
                     return (
                       <tr key={meal.kind}>
-                        <th scope="row">{KIND[meal.kind]}</th>
+                        <th scope="row">{t(KIND[meal.kind])}</th>
                         <td>{meal.count}</td>
                         <td>{meal.count === 0 ? "-" : dietSummary(meal.diets)}</td>
                         <td>
@@ -91,7 +91,7 @@ export function AdminMeals() {
                             <ul className="plain">
                               {meal.people.map((person) => (
                                 <li key={person.booking_id}>
-                                  <Link to={`/admin/iscrizioni/${person.booking_id}`}>
+                                  <Link to={adminRegistrationPath(person.booking_id)}>
                                     {person.first_name} {person.last_name}
                                   </Link>
                                 </li>

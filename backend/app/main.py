@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.api import admin_activities as admin_activities_api
 from app.api import admin_admins as admin_admins_api
 from app.api import admin_edition as admin_edition_api
+from app.api import admin_email as admin_email_api
 from app.api import admin_participants as admin_participants_api
 from app.api import admin_registrations as admin_registrations_api
 from app.api import admin_views as admin_views_api
@@ -23,12 +24,15 @@ from app.api import public as public_api
 from app.config import Settings, get_settings
 from app.db import get_db, make_engine, make_session_factory, utcnow
 from app.email import build_email_sender
+from app.i18n import LocaleMiddleware
 from app.services.participants import ensure_admin
 
 logger = logging.getLogger(__name__)
 
 # Only the public registration page may be embedded, and only by Google Sites.
 EMBED_ANCESTORS = "https://sites.google.com https://*.googleusercontent.com"
+# The registration form is embedded in Google Sites. The Italian address redirects inside the frame.
+EMBEDDABLE_PATHS = {"/register", "/iscrizione"}
 
 
 def _mount_frontend(app: FastAPI, static_dir: Path) -> None:
@@ -91,6 +95,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_activities_api.router)
     app.include_router(admin_admins_api.router)
     app.include_router(admin_edition_api.router)
+    app.include_router(admin_email_api.router)
     app.include_router(admin_registrations_api.router)
     app.include_router(admin_views_api.router)
     app.include_router(admin_participants_api.router)
@@ -98,10 +103,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(guide_api.router)
     app.include_router(public_api.router)
 
+    app.add_middleware(LocaleMiddleware)
+
     @app.middleware("http")
     async def frame_policy(request: Request, call_next):
         response = await call_next(request)
-        embeddable = request.url.path.rstrip("/") == "/iscrizione"
+        embeddable = request.url.path.rstrip("/") in EMBEDDABLE_PATHS
         response.headers["Content-Security-Policy"] = (
             f"frame-ancestors {EMBED_ANCESTORS}" if embeddable else "frame-ancestors 'self'"
         )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { formatDay } from "../booking";
+import { useT } from "../i18n";
 import { CsvButton } from "./CsvButton";
 
 type DayRow = {
@@ -23,6 +24,7 @@ type Week = {
 };
 
 export function AdminWeek() {
+  const t = useT();
   const [week, setWeek] = useState<Week | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -34,15 +36,13 @@ export function AdminWeek() {
 
   return (
     <main className="wide">
-      <h1>Settimana</h1>
-      <p>
-        Quante persone ci sono ogni giorno. La sera include chi ha prenotato l&apos;intero giorno.
-      </p>
-      {failed && <p role="alert">Non riesco a caricare la vista.</p>}
+      <h1>{t("week.title")}</h1>
+      <p>{t("week.intro")}</p>
+      {failed && <p role="alert">{t("slots.loadError")}</p>}
       {week === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : week.days.length === 0 ? (
-        <p>Nessun giorno: configura prima l&apos;edizione nelle Impostazioni.</p>
+        <p>{t("week.noDays")}</p>
       ) : (
         <>
           <p>
@@ -50,17 +50,17 @@ export function AdminWeek() {
           </p>
           <div className="table-wrap">
             <table>
-              <caption>Presenze per giorno</caption>
+              <caption>{t("week.caption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Giorno</th>
-                  <th scope="col">Mattina</th>
-                  <th scope="col">Pomeriggio</th>
-                  <th scope="col">Sera</th>
-                  <th scope="col">Persone</th>
-                  <th scope="col">Pranzi</th>
-                  <th scope="col">Cene</th>
-                  <th scope="col">Attività</th>
+                  <th scope="col">{t("week.colDay")}</th>
+                  <th scope="col">{t("week.colMorning")}</th>
+                  <th scope="col">{t("week.colAfternoon")}</th>
+                  <th scope="col">{t("week.colEvening")}</th>
+                  <th scope="col">{t("slots.colPeople")}</th>
+                  <th scope="col">{t("week.colLunches")}</th>
+                  <th scope="col">{t("week.colDinners")}</th>
+                  <th scope="col">{t("week.colActivities")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -72,7 +72,7 @@ export function AdminWeek() {
                     <td>
                       {day.evening}
                       {day.evening_derived > 0 && (
-                        <small> (di cui {day.evening_derived} per l&apos;intero giorno)</small>
+                        <small>{t("week.derived", { n: day.evening_derived })}</small>
                       )}
                     </td>
                     <td>{day.people}</td>
@@ -85,7 +85,7 @@ export function AdminWeek() {
               <tfoot>
                 <tr>
                   <th scope="row" colSpan={4}>
-                    Persone diverse in tutta la settimana, pasti e adesioni totali
+                    {t("week.totals")}
                   </th>
                   <td>{week.total_people}</td>
                   <td>{week.total_lunches ?? 0}</td>

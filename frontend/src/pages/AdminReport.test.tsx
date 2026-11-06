@@ -141,7 +141,7 @@ describe("report page", () => {
     serve(report);
     renderAt("/admin/report");
     const csv = await screen.findByRole("link", { name: "Scarica CSV" });
-    expect(csv).toHaveAttribute("href", "/api/admin/views/report?format=csv");
+    expect(csv).toHaveAttribute("href", "/api/admin/views/report?format=csv&lang=it");
   });
 
   it("shows empty sections as zero, not as an error", async () => {

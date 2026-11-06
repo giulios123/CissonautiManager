@@ -1,3 +1,4 @@
+import { tNow } from "./i18n/messages";
 import { formatEuro } from "./money";
 
 export type Activity = {
@@ -13,11 +14,12 @@ export type Activity = {
   free: number | null;
 };
 
-export const priceLabel = (cents: number) => (cents === 0 ? "gratuita" : formatEuro(cents));
+export const priceLabel = (cents: number) =>
+  cents === 0 ? tNow("activity.free") : formatEuro(cents);
 
 export function seatsLabel(activity: { capacity: number | null; joined: number }) {
   return activity.capacity === null
-    ? `${activity.joined} iscritti, senza limite`
+    ? tNow("activity.signedUpNoLimit", { joined: activity.joined })
     : `${activity.joined} / ${activity.capacity}`;
 }
 

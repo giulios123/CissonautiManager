@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView, Me } from "../auth";
+import { useT, type MessageKey } from "../i18n";
 
-const DIETS = [
-  ["", "Non indicato"],
-  ["omnivore", "Onnivoro"],
-  ["vegetarian", "Vegetariano"],
-  ["vegan", "Vegano"],
-] as const;
+const DIETS: readonly (readonly [string, MessageKey])[] = [
+  ["", "diet.notSpecified"],
+  ["omnivore", "diet.omnivore"],
+  ["vegetarian", "diet.vegetarian"],
+  ["vegan", "diet.vegan"],
+];
 
 /** Diet (no consent needed) and allergies (kept only with the specific health data consent). */
 export function DietaryForm({
@@ -19,6 +20,7 @@ export function DietaryForm({
   me: Me;
   onSaved: () => Promise<void> | void;
 }) {
+  const t = useT();
   const [diet, setDiet] = useState(booking.diet ?? "");
   const [allergies, setAllergies] = useState(booking.allergies ?? "");
   const consentText = me.health_consent;
@@ -35,7 +37,7 @@ export function DietaryForm({
     if (allergies.trim() && !consent && !hadConsent) {
       setMessage({
         ok: false,
-        text: "Per salvare allergie e intolleranze spunta il consenso al trattamento dei dati sanitari.",
+        text: t("diet.consentNeeded"),
       });
       return;
     }
@@ -51,25 +53,25 @@ export function DietaryForm({
       });
       if (!consent) setAllergies("");
       await onSaved();
-      setMessage({ ok: true, text: "Esigenze alimentari salvate." });
+      setMessage({ ok: true, text: t("diet.saved") });
     } catch (error) {
       setMessage({
         ok: false,
-        text: error instanceof ApiError ? error.message : "Qualcosa è andato storto. Riprova.",
+        text: error instanceof ApiError ? error.message : t("common.somethingWrong"),
       });
     }
   }
 
   return (
     <form onSubmit={save} aria-labelledby={`diet-${booking.id}`}>
-      <h3 id={`diet-${booking.id}`}>Esigenze alimentari</h3>
-      <p className="legal">Le vedono solo gli organizzatori.</p>
+      <h3 id={`diet-${booking.id}`}>{t("diet.title")}</h3>
+      <p className="legal">{t("diet.onlyOrganizers")}</p>
       <label>
-        Regime alimentare
+        {t("diet.regime")}
         <select value={diet} onChange={(e) => setDiet(e.target.value)}>
           {DIETS.map(([value, label]) => (
             <option key={value} value={value}>
-              {label}
+              {t(label)}
             </option>
           ))}
         </select>
@@ -77,7 +79,7 @@ export function DietaryForm({
       {consentText ? (
         <>
           <label>
-            Allergie e intolleranze
+            {t("diet.allergies")}
             <textarea
               rows={2}
               maxLength={2000}
@@ -86,7 +88,7 @@ export function DietaryForm({
             />
           </label>
           <details>
-            <summary>Leggi il consenso per i dati sanitari</summary>
+            <summary>{t("diet.readConsent")}</summary>
             <p className="legal">{consentText.body}</p>
           </details>
           <label className="check">
@@ -95,22 +97,15 @@ export function DietaryForm({
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
             />
-            Acconsento al trattamento dei miei dati sanitari (allergie e intolleranze)
+            {t("diet.consent")}
           </label>
-          {textChanged && (
-            <p className="legal">
-              Il testo del consenso è cambiato: rileggilo e spunta di nuovo per mantenere le
-              allergie.
-            </p>
-          )}
-          {!consent && hadConsent && (
-            <p className="legal">Salvando senza consenso le allergie vengono cancellate.</p>
-          )}
+          {textChanged && <p className="legal">{t("diet.consentChanged")}</p>}
+          {!consent && hadConsent && <p className="legal">{t("diet.withdrawWarning")}</p>}
         </>
       ) : (
-        <p>Per indicare allergie e intolleranze scrivi a chi organizza.</p>
+        <p>{t("diet.writeToOrganizers")}</p>
       )}
-      <button type="submit">Salva esigenze alimentari</button>
+      <button type="submit">{t("diet.save")}</button>
       {message && (
         <p
           role={message.ok ? "status" : "alert"}

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView } from "../auth";
 import type { PickerDay } from "../daySelection";
+import { useT } from "../i18n";
 import { formatEuro } from "../money";
 import { DayPicker } from "./DayPicker";
 import type { Detail } from "./AdminRegistrationDetail";
@@ -27,6 +28,7 @@ export function AdminSlotEditor({
   booking: BookingView;
   onDone: (detail: Detail, text: string) => void;
 }) {
+  const t = useT();
   const mine = new Set(booking.slots.map((slot) => slot.id));
   const [days, setDays] = useState<DayRow[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -40,8 +42,8 @@ export function AdminSlotEditor({
       .catch(() => setLoadError(true));
   }, []);
 
-  if (loadError) return <p role="alert">Non riesco a caricare gli slot.</p>;
-  if (!days) return <p aria-busy="true">Caricamento…</p>;
+  if (loadError) return <p role="alert">{t("dsub.slotsLoadError")}</p>;
+  if (!days) return <p aria-busy="true">{t("common.loading")}</p>;
 
   const pickerDays: PickerDay[] = days.map((day) => ({
     date: day.date,
@@ -56,8 +58,9 @@ export function AdminSlotEditor({
         disabled: full && !mine.has(slot.id) && !selected.has(slot.id) && !force,
         hint:
           slot.capacity === null
-            ? `${slot.present} presenti, senza limite`
-            : `${slot.present}/${slot.capacity} presenti${full ? ", completo" : ""}`,
+            ? t("dsub.hintUnlimited", { n: slot.present })
+            : t("dsub.hintLimited", { n: slot.present, capacity: slot.capacity }) +
+              (full ? t("dsub.hintFull") : ""),
       };
     }),
   }));
@@ -75,18 +78,18 @@ export function AdminSlotEditor({
       if (fresh) setDays(fresh.days);
       onDone(
         updated,
-        `Slot aggiornati. Nuova quota: ${formatEuro(updated.booking.amount_due_cents)}.`,
+        t("dsub.slotsUpdated", { amount: formatEuro(updated.booking.amount_due_cents) }),
       );
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
     }
   }
 
   return (
-    <form onSubmit={save} aria-label="Cambia gli slot">
+    <form onSubmit={save} aria-label={t("dsub.slotsAria")}>
       <label className="check">
         <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
-        <span>Forza oltre la capienza (per aggiungere uno slot già pieno)</span>
+        <span>{t("dsub.forceSlot")}</span>
       </label>
       <DayPicker days={pickerDays} selected={selected} onChange={setSelected} />
       {error && (
@@ -94,7 +97,7 @@ export function AdminSlotEditor({
           {error}
         </p>
       )}
-      <button type="submit">Salva gli slot</button>
+      <button type="submit">{t("edit.saveSlots")}</button>
     </form>
   );
 }

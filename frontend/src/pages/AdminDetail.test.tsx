@@ -64,7 +64,7 @@ describe("refund", () => {
 
   it("is offered only on a requested cancellation", async () => {
     serve(detailFixture());
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     await screen.findByRole("heading", { name: "Ada Lovelace" });
     expect(
       screen.queryByRole("heading", { name: "Segna come rimborsata" }),
@@ -85,7 +85,7 @@ describe("refund", () => {
     const calls = serve(cancelled, (call) =>
       call.method === "POST" ? { body: closed } : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     const form = within(await screen.findByRole("form", { name: "Segna come rimborsata" }));
     expect(form.getByLabelText("Importo rimborsato (€)")).toHaveValue("11,00");
@@ -104,7 +104,7 @@ describe("refund", () => {
       detailFixture({}, { status: "disdetta_richiesta", paid_cents: 0, balance_cents: 1100 }),
       (call) => (call.method === "POST" ? { body: detailFixture() } : undefined),
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const form = within(await screen.findByRole("form", { name: "Segna come rimborsata" }));
     expect(form.getByLabelText("Importo rimborsato (€)")).toHaveValue("0,00");
     expect(form.queryByRole("button", { name: /Tutto quanto versato/ })).not.toBeInTheDocument();
@@ -115,7 +115,7 @@ describe("refund", () => {
 
   it("rejects an invalid amount without calling the server", async () => {
     const calls = serve(cancelled);
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     const form = within(await screen.findByRole("form", { name: "Segna come rimborsata" }));
     await user.clear(form.getByLabelText("Importo rimborsato (€)"));
@@ -131,7 +131,7 @@ describe("refund", () => {
         ? { status: 422, body: { detail: "Il rimborso non può superare quanto versato (11,00 €)" } }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const form = within(await screen.findByRole("form", { name: "Segna come rimborsata" }));
     await userEvent.click(form.getByRole("button", { name: "Segna come rimborsata" }));
     expect(await form.findByRole("alert")).toHaveTextContent("non può superare");
@@ -158,7 +158,7 @@ describe("history", () => {
         ],
       }),
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const section = within(await screen.findByRole("region", { name: "Cronologia" }));
     const items = section.getAllByRole("listitem");
     expect(items).toHaveLength(2);
@@ -169,7 +169,7 @@ describe("history", () => {
 
   it("is not shown when there is nothing to tell", async () => {
     serve(detailFixture());
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     await screen.findByRole("heading", { name: "Ada Lovelace" });
     expect(screen.queryByRole("region", { name: "Cronologia" })).not.toBeInTheDocument();
   });
@@ -202,7 +202,7 @@ describe("edit details", () => {
       }),
       (call) => (call.method === "PATCH" ? { body: updated } : undefined),
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     const form = within(await screen.findByRole("form", { name: "Modifica i dati" }));
     expect(form.getByLabelText("Nome")).toHaveValue("Ada");
@@ -232,7 +232,7 @@ describe("edit details", () => {
         ? { status: 409, body: { detail: "Questa email è già usata da un'altra persona" } }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const form = within(await screen.findByRole("form", { name: "Modifica i dati" }));
     await userEvent.click(form.getByRole("button", { name: "Salva i dati" }));
     expect(await form.findByRole("alert")).toHaveTextContent("già usata");
@@ -244,7 +244,7 @@ describe("hold extension and reactivation", () => {
     const calls = serve(detailFixture(), (call) =>
       call.method === "PATCH" ? { body: detailFixture() } : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const form = within(await screen.findByRole("form", { name: "Proroga il blocco" }));
     const input = form.getByLabelText("Nuova scadenza");
     expect(input).toHaveValue("2026-07-04T12:00"); // 10:00 UTC is 12:00 in Rome
@@ -265,7 +265,7 @@ describe("hold extension and reactivation", () => {
           }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const form = within(await screen.findByRole("form", { name: "Proroga il blocco" }));
     await userEvent.click(form.getByRole("button", { name: "Proroga" }));
     expect(await form.findByRole("alert")).toHaveTextContent("successiva");
@@ -273,7 +273,7 @@ describe("hold extension and reactivation", () => {
 
   it("offers neither action on a confirmed booking", async () => {
     serve(detailFixture({}, { status: "confermata" }));
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     await screen.findByRole("heading", { name: "Ada Lovelace" });
     expect(screen.queryByRole("form", { name: "Proroga il blocco" })).not.toBeInTheDocument();
     expect(
@@ -285,7 +285,7 @@ describe("hold extension and reactivation", () => {
     const calls = serve(detailFixture({}, { status: "scaduta" }), (call) =>
       call.method === "POST" ? { body: detailFixture() } : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     expect(screen.queryByRole("form", { name: "Proroga il blocco" })).not.toBeInTheDocument();
     await userEvent.click(await screen.findByRole("button", { name: "Riattiva la prenotazione" }));
     expect(await screen.findByRole("status")).toHaveTextContent("riattivata");
@@ -301,7 +301,7 @@ describe("hold extension and reactivation", () => {
         ? { status: 409, body: { detail: "Non c'è più posto in questi slot: lun 13/07 mattina" } }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     await userEvent.click(await screen.findByRole("button", { name: "Riattiva la prenotazione" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Non c'è più posto");
   });
@@ -363,7 +363,7 @@ describe("admin slot editor", () => {
     const calls = serve(detailFixture(), (call) =>
       call.url === "/api/admin/views/slots" ? { body: slotsView } : extra?.(call),
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     await userEvent.click(await screen.findByRole("button", { name: "Cambia gli slot" }));
     return { calls, form: within(await screen.findByRole("form", { name: "Cambia gli slot" })) };
   };
@@ -422,7 +422,7 @@ describe("admin slot editor", () => {
 
   it("is not offered when the booking can no longer change", async () => {
     serve(detailFixture({}, { status: "rimborsata", editable: false, can_cancel: false }));
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     await screen.findByRole("heading", { name: "Ada Lovelace" });
     expect(screen.queryByRole("button", { name: "Cambia gli slot" })).not.toBeInTheDocument();
     expect(
@@ -441,7 +441,7 @@ describe("admin cancellation", () => {
 
   it("asks first, saying what happens to payments, and does nothing if you go back", async () => {
     const calls = serve(detailFixture({}, { paid_cents: 500, balance_cents: 600 }));
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const dialog = await ask();
     expect(dialog.getByText(/Ha già versato 5,00/)).toBeInTheDocument();
     await userEvent.click(dialog.getByRole("button", { name: "No, torno indietro" }));
@@ -457,7 +457,7 @@ describe("admin cancellation", () => {
     const calls = serve(detailFixture({}, { paid_cents: 500, balance_cents: 600 }), (call) =>
       call.method === "POST" ? { body: { outcome: "requested", detail: after } } : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const dialog = await ask();
     await userEvent.click(dialog.getByRole("button", { name: "Sì, disdico" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Disdetta registrata");
@@ -473,7 +473,7 @@ describe("admin cancellation", () => {
       if (call.url.startsWith("/api/admin/registrations?")) return { body: [] };
       return undefined;
     });
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const dialog = await ask();
     expect(dialog.getByText(/viene rimossa/)).toBeInTheDocument();
     await userEvent.click(dialog.getByRole("button", { name: "Sì, disdico" }));
@@ -487,7 +487,7 @@ describe("admin cancellation", () => {
         ? { status: 409, body: { detail: "Questa iscrizione non si può più disdire" } }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const dialog = await ask();
     await userEvent.click(dialog.getByRole("button", { name: "Sì, disdico" }));
     expect(await dialog.findByRole("alert")).toHaveTextContent("non si può più disdire");
@@ -519,7 +519,7 @@ describe("voiding a payment", () => {
 
   it("strikes out voided payments with their reason and offers the action only on the others", async () => {
     serve(withPayments());
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const items = await screen.findAllByRole("listitem");
     const voided = items.find((item) => item.textContent?.includes("annullato"))!;
     expect(within(voided).getByText(/7,00/).tagName).toBe("S");
@@ -543,7 +543,7 @@ describe("voiding a payment", () => {
     const calls = serve(withPayments(), (call) =>
       call.method === "POST" ? { body: after } : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ }));
     const dialog = within(
@@ -564,7 +564,7 @@ describe("voiding a payment", () => {
 
   it("does nothing if you go back, and the reason does not leak into the next dialog", async () => {
     const calls = serve(withPayments());
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     const button = await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ });
     await user.click(button);
@@ -583,7 +583,7 @@ describe("voiding a payment", () => {
         ? { status: 409, body: { detail: "Questo pagamento è già annullato" } }
         : undefined,
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ }));
     await user.type(screen.getByLabelText("Motivo (obbligatorio)"), "x");
@@ -608,7 +608,7 @@ describe("review follow-ups", () => {
       },
     ];
     serve(detailFixture({}, { paid_cents: 400, balance_cents: 700, payments }));
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: /Annulla il pagamento di 4,00/ }));
     const dialog = within(await screen.findByRole("dialog"));
@@ -676,7 +676,7 @@ describe("review follow-ups", () => {
         return undefined;
       },
     );
-    renderAt("/admin/iscrizioni/7");
+    renderAt("/admin/registrations/7");
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "Cambia gli slot" }));
     const form = within(await screen.findByRole("form", { name: "Cambia gli slot" }));

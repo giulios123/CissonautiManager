@@ -86,7 +86,7 @@ function me(bookings: BookingView[]): Me {
 function openAt(handler: (url: string, init?: RequestInit) => Reply) {
   const calls = stubFetch(handler);
   render(
-    <MemoryRouter initialEntries={["/io"]}>
+    <MemoryRouter initialEntries={["/me"]}>
       <App />
     </MemoryRouter>,
   );
