@@ -17,7 +17,7 @@ from tests.helpers import d
 from tests.test_admin_edition import PAYLOAD
 from tests.test_auth import login
 
-PROMOTED = "Si è liberato un posto al Cissonauti Summer Camp"
+PROMOTED = "Si è liberato un posto a Cissonauti Summer Camp 2026"
 
 
 def slot(db, day, period="morning") -> Slot:

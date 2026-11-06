@@ -65,10 +65,10 @@ def test_wrong_unknown_and_missing_password_give_the_same_error(client, make_par
     assert client.get("/api/me").status_code == 401
 
 
-def test_admin_login_with_password_goes_to_admin_panel(client, make_participant):
+def test_admin_login_with_password_lands_on_their_own_page(client, make_participant):
     make_participant("boss@example.com", role=ROLE_ADMIN, password_hash=hash_password(GOOD))
     response = client.post("/api/auth/login", json={"email": "boss@example.com", "password": GOOD})
-    assert response.json() == {"role": ROLE_ADMIN, "redirect": "/admin"}
+    assert response.json() == {"role": ROLE_ADMIN, "redirect": "/io"}
 
 
 def test_admin_password_from_env_lets_first_admin_in(settings, engine):

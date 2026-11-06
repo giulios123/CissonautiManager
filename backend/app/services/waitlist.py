@@ -47,6 +47,7 @@ from app.services import audit
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services.amounts import recompute_amount
+from app.services.email_texts import load_texts
 from app.services.payments import paid_total
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 from app.timefmt import format_slot
@@ -426,5 +427,6 @@ def _notify(
             enabled_channels(db, edition),
             booking.amount_due_cents - paid_total(booking),
             link,
+            texts=load_texts(db, "waitlist_promoted", edition),
         )
     )

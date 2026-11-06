@@ -91,6 +91,8 @@ class LegalOut(BaseModel):
 
 class EditionOut(EditionIn):
     id: int
+    # Paragraph above the sign-up form as stored (null means the default).
+    registration_intro: str | None = None
     slots: list[SlotOut]
     payment_channels: list[ChannelOut]
     privacy: LegalOut | None
@@ -119,6 +121,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
     return EditionOut(
         **base.model_dump(),
         id=edition.id,
+        registration_intro=edition.registration_intro,
         slots=[SlotOut.model_validate(s) for s in slots],
         payment_channels=[
             ChannelOut.model_validate(c) for c in edition_service.list_channels(db, edition)

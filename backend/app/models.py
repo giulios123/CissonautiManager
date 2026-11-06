@@ -78,6 +78,8 @@ class Edition(Base):
     # Flat prices per meal. Placeholders until the final amounts are known.
     lunch_price_cents: Mapped[int] = mapped_column(Integer, default=800)
     dinner_price_cents: Mapped[int] = mapped_column(Integer, default=1200)
+    # Paragraph above the sign-up form. Empty means the default text.
+    registration_intro: Mapped[str | None] = mapped_column(UnicodeText)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")
@@ -320,6 +322,22 @@ class WaitlistEntry(Base):
 
     slot: Mapped[Slot] = relationship()
     participant: Mapped[Participant] = relationship()
+
+
+class EmailText(Base):
+    """Admin-edited parts of one kind of email. A null field means the default text."""
+
+    __tablename__ = "email_text"
+    __table_args__ = (UniqueConstraint("edition_id", "kind"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
+    kind: Mapped[str] = mapped_column(Unicode(32))
+    subject: Mapped[str | None] = mapped_column(Unicode(200))
+    intro: Mapped[str | None] = mapped_column(UnicodeText)
+    closing: Mapped[str | None] = mapped_column(UnicodeText)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
 
 
 class AuditLog(Base):

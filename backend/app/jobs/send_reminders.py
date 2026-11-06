@@ -26,6 +26,7 @@ from app.models import STATUS_PENDING, Booking, Edition, PaymentChannel
 from app.services import edition as edition_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
+from app.services.email_texts import load_texts
 from app.services.payments import paid_total, send_due_confirmations
 from app.services.seats import expire_overdue
 
@@ -90,9 +91,9 @@ def send_due_reminders(
         )
         if kind is None or not _claim(db, booking, kind, now):
             continue
+        edition = db.get(Edition, booking.edition_id)
+        assert edition is not None
         if booking.edition_id not in channels:
-            edition = db.get(Edition, booking.edition_id)
-            assert edition is not None
             channels[booking.edition_id] = registration_service.enabled_channels(db, edition)
         sender.send(
             reminder_email(
@@ -101,6 +102,9 @@ def send_due_reminders(
                 channels[booking.edition_id],
                 booking.amount_due_cents - paid,
                 login_url,
+                texts=load_texts(
+                    db, "reminder_final" if kind == "final" else "reminder_mid", edition
+                ),
             )
         )
         if kind == "final":

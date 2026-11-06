@@ -58,7 +58,7 @@ def test_only_full_slots_register_the_person_without_a_booking(
     assert entry.privacy_document_id == privacy.id
     assert entry.privacy_accepted_at is not None
     [email] = outbox.sent
-    assert email.subject == "Sei in lista d'attesa al Cissonauti Summer Camp"
+    assert email.subject == "Sei in lista d'attesa a Cissonauti Summer Camp 2026"
     assert "non devi pagare nulla" in email.body
     assert "/accesso?token=" in email.body or "token=" in email.body
 
@@ -93,7 +93,7 @@ def test_someone_already_on_a_waitlist_only_gets_the_link(client, db, fill_slot,
     assert response.json()["result"] == "already_registered"
     assert db.scalar(select(Booking).where(Booking.slots.any(Slot.id == slot(db, 15).id))) is None
     [email] = outbox.sent
-    assert email.subject == "Sei già iscritto al Cissonauti Summer Camp"
+    assert email.subject == "Sei già iscritto a Cissonauti Summer Camp 2026"
 
 
 def test_at_least_one_slot_is_needed(client, edition):

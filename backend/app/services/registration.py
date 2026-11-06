@@ -27,6 +27,7 @@ from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services import waitlist as waitlist_service
 from app.services.amounts import recompute_amount
+from app.services.email_texts import load_texts
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 
@@ -172,11 +173,20 @@ def register(
     if booking is not None:
         sender.send(
             registration_email(
-                participant, booking, enabled_channels(db, edition), link, waitlisted
+                participant,
+                booking,
+                enabled_channels(db, edition),
+                link,
+                waitlisted,
+                texts=load_texts(db, "registration", edition),
             )
         )
     else:
-        sender.send(waitlist_joined_email(participant, waitlisted, link))
+        sender.send(
+            waitlist_joined_email(
+                participant, waitlisted, link, texts=load_texts(db, "waitlist_joined", edition)
+            )
+        )
     return RegistrationResult(
         created=True, booking=booking, participant=participant, waitlist=entries
     )
@@ -215,4 +225,10 @@ def _send_link_only(
     db: Session, sender: EmailSender, settings: Settings, participant: Participant, now: datetime
 ) -> None:
     raw = auth_service.create_magic_link_token(db, participant, now)
-    sender.send(already_registered_email(participant, auth_service.magic_link_url(settings, raw)))
+    sender.send(
+        already_registered_email(
+            participant,
+            auth_service.magic_link_url(settings, raw),
+            texts=load_texts(db, "already_registered"),
+        )
+    )

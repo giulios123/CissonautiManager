@@ -46,7 +46,7 @@ def test_middle_reminder_goes_out_once(db, booking, outbox, settings, clock):
     clock.advance(hours=36)
     summary = run(db, outbox, settings, clock)
     assert (summary.mid, summary.final) == (1, 0)
-    assert subjects(outbox) == ["Promemoria: il tuo posto al Cissonauti Summer Camp"]
+    assert subjects(outbox) == ["Promemoria: il tuo posto a Cissonauti Summer Camp 2026"]
     clock.advance(hours=1)
     run(db, outbox, settings, clock)
     assert len(outbox.sent) == 1  # a rerun sends nothing more
@@ -215,6 +215,6 @@ def test_a_seat_freed_by_an_expired_hold_goes_to_the_first_waiting(
     assert summary.promoted == 1
     db.refresh(entry)
     assert entry.promoted_booking_id is not None
-    assert "Si è liberato un posto al Cissonauti Summer Camp" in subjects(outbox)
+    assert "Si è liberato un posto a Cissonauti Summer Camp 2026" in subjects(outbox)
     # A second run finds nothing left to hand out.
     assert run(db, outbox, settings, clock).promoted == 0
