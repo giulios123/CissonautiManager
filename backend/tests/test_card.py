@@ -41,6 +41,13 @@ class TestNormalize:
         Image.new("RGBA", (10, 10), (0, 0, 0, 0)).save(out, format="PNG")
         assert open_png(normalize_image(out.getvalue())).mode == "RGB"
 
+    def test_transparency_can_be_preserved_for_a_logo(self):
+        out = io.BytesIO()
+        Image.new("RGBA", (10, 10), (10, 20, 30, 0)).save(out, format="PNG")
+        image = open_png(normalize_image(out.getvalue(), preserve_alpha=True))
+        assert image.mode == "RGBA"
+        assert image.getpixel((0, 0)) == (10, 20, 30, 0)
+
     def test_metadata_does_not_survive(self):
         out = io.BytesIO()
         info = Image.Exif()

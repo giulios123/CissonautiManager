@@ -6,6 +6,7 @@ import { hasMessage, tNow } from "../i18n/messages";
 import { AdminEmailTexts } from "./AdminEmailTexts";
 import { AdminRegistrationEmail } from "./AdminRegistrationEmail";
 import { centsToInput, parseEuroToCents } from "../money";
+import { AdminEditionLogo } from "./AdminEditionLogo";
 
 type Channel = { code: string; label: string; instructions: string; enabled: boolean };
 type Legal = { kind: string; version: number; body: string } | null;
@@ -28,6 +29,7 @@ type Edition = {
   lunch_price_cents?: number;
   dinner_price_cents?: number;
   slots: unknown[];
+  logo_url: string | null;
   payment_channels: Channel[];
   privacy: Legal;
   disclaimer: Legal;
@@ -388,6 +390,12 @@ export function AdminSettings() {
       <EditionSection edition={edition} onSaved={setEdition} />
       {edition ? (
         <>
+          <AdminEditionLogo
+            logoUrl={edition.logo_url}
+            onSaved={(logoUrl) =>
+              setEdition((current) => (current ? { ...current, logo_url: logoUrl } : current))
+            }
+          />
           <ChannelsSection edition={edition} />
           <AdminRegistrationEmail />
           <AdminEmailTexts />

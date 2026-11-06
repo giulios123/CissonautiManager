@@ -12,6 +12,7 @@ import {
 } from "../booking";
 import type { PickerDay } from "../daySelection";
 import { useI18n } from "../i18n";
+import { isInFrame } from "../frame";
 import { tNow } from "../i18n/messages";
 import { EVENT_NAME } from "../eventName";
 import { formatEuro } from "../money";
@@ -74,14 +75,27 @@ export function Registration() {
     if (error) errorRef.current?.focus();
   }, [error]);
 
-  if (loadError) return <main role="alert">{t("reg.loadError")}</main>;
-  if (!edition) return <main aria-busy="true">{t("common.loading")}</main>;
+  if (loadError)
+    return (
+      <main role="alert">
+        <p>{t("reg.loadError")}</p>
+        <SignInPrompt />
+      </main>
+    );
+  if (!edition)
+    return (
+      <main aria-busy="true">
+        {t("common.loading")}
+        <SignInPrompt />
+      </main>
+    );
 
   if (outcome?.kind === "already") {
     return (
       <main>
         <h1>{t("reg.alreadyTitle")}</h1>
         <p role="status">{outcome.message}</p>
+        <SignInPrompt />
       </main>
     );
   }
@@ -95,6 +109,7 @@ export function Registration() {
       <main>
         <h1>{edition.name ?? EVENT_NAME}</h1>
         <p>{t("reg.notOpen")}</p>
+        <SignInPrompt />
       </main>
     );
   }
@@ -221,6 +236,7 @@ export function Registration() {
           </li>
         </ol>
       </div>
+      <SignInPrompt />
       <form id="registration" onSubmit={submit} noValidate={false} className="with-summary">
         <div className="form-main">
           <section aria-labelledby="when-title">
@@ -350,6 +366,32 @@ export function Registration() {
   );
 }
 
+function RegistrationAccessLink({ children }: { children: string }) {
+  const { locale, t } = useI18n();
+  const framed = isInFrame();
+  return (
+    <>
+      <a
+        href={`${ROUTES.login}?lang=${locale}`}
+        target={framed ? "_blank" : undefined}
+        rel={framed ? "noopener" : undefined}
+      >
+        {children}
+      </a>
+      {framed && <> {t("reg.opensNewWindow")}</>}
+    </>
+  );
+}
+
+function SignInPrompt() {
+  const { t } = useI18n();
+  return (
+    <p>
+      {t("reg.signInPrompt")} <RegistrationAccessLink>{t("reg.signIn")}</RegistrationAccessLink>
+    </p>
+  );
+}
+
 function WaitlistSummary({ waitlist }: { waitlist: Waitlisted[] }) {
   const { t } = useI18n();
   if (waitlist.length === 0) return null;
@@ -385,10 +427,7 @@ function WaitlistConfirmation({
         {t("reg.waitConfNothingToPay")} <strong>{personalCode}</strong>.
       </p>
       <p>
-        <a href={ROUTES.login} target="_blank" rel="noopener">
-          {t("reg.goToPersonal")}
-        </a>{" "}
-        {t("reg.opensNewWindow")}
+        <RegistrationAccessLink>{t("reg.goToPersonal")}</RegistrationAccessLink>
       </p>
     </main>
   );
@@ -431,10 +470,7 @@ function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitl
         <p>{t("reg.paymentSoon")}</p>
       )}
       <p>
-        <a href={ROUTES.login} target="_blank" rel="noopener">
-          {t("reg.goToPersonal")}
-        </a>{" "}
-        {t("reg.opensNewWindow")}
+        <RegistrationAccessLink>{t("reg.goToPersonal")}</RegistrationAccessLink>
       </p>
     </main>
   );

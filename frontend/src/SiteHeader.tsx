@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "./api";
-import logoUrl from "./assets/logo-cissone.png";
-import { useEventName } from "./eventName";
+import bundledLogoUrl from "./assets/logo-cissone.png";
+import { useEventLogo, useEventName } from "./eventName";
 import { isInFrame } from "./frame";
 import { LOCALES, useI18n, type Locale } from "./i18n";
+import { ROUTES } from "./routes";
 
 type Props = {
   /** Inside the event site's iframe: name only, no logo, so the site header is not repeated. */
@@ -42,8 +43,11 @@ function LanguageSwitch() {
 
 export function SiteHeader({ compact = isInFrame() }: Props) {
   const { t } = useI18n();
-  const [logoFailed, setLogoFailed] = useState(false);
+  const [failedLogoUrls, setFailedLogoUrls] = useState<string[]>([]);
   const eventName = useEventName();
+  const logoUrl = useEventLogo();
+
+  const displayedLogoUrl = logoUrl && !failedLogoUrls.includes(logoUrl) ? logoUrl : bundledLogoUrl;
 
   if (compact) {
     return (
@@ -59,14 +63,12 @@ export function SiteHeader({ compact = isInFrame() }: Props) {
   return (
     <header className="site-header">
       <div className="site-bar">
-        <Link to="/" className="site-brand">
-          {!logoFailed && (
+        <Link to={ROUTES.me} className="site-brand">
+          {!failedLogoUrls.includes(displayedLogoUrl) && (
             <img
-              src={logoUrl}
-              alt={t("header.logoAlt")}
-              width={160}
-              height={30}
-              onError={() => setLogoFailed(true)}
+              src={displayedLogoUrl}
+              alt={t("header.logoAlt", { name: eventName })}
+              onError={() => setFailedLogoUrls((current) => [...current, displayedLogoUrl])}
             />
           )}
           <span className="site-name">{eventName}</span>

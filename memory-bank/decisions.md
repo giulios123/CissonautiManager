@@ -349,3 +349,11 @@
 - **Alternative scartate**: tabella `email_text` con apertura e chiusura separate e solo italiano (prima versione, tolta dopo l'unione con l'MVP 11-13); link monouso con la pagina «Entra» (un clic in più); link monouso che entra da solo (lo scanner lo brucia); obbligare `{event}` negli oggetti (toglie libertà all'admin); riga di `email_template` per il paragrafo del modulo (non è una email).
 - **Limiti noti**: un'email inoltrata dà accesso per 10 minuti; i testi cambiano solo le email future; un oggetto scritto senza `{event}` non segue la rinomina dell'edizione; la chiusura dopo i dati non è modificabile; anteprima dell'email completa e invio di prova delle altre email nel Backlog.
 
+
+## D-048 · Logo personalizzato per edizione e accesso dal marchio
+
+- **Data**: 2026-11-06
+- **Decisione**: (1) il logo opzionale è una colonna binaria su `edition` (migrazione 0014), elaborata come PNG con le stesse protezioni d'upload dell'immagine email, conservando la trasparenza e limitando il lato massimo a 1600 px; il file in bundle resta il ripiego; (2) endpoint admin di caricamento e rimozione, endpoint pubblico solo lettura, `logo_url` con SHA-256 completo e cache immutable; (3) il clic sul marchio apre `/me`, con il redirect login già presente; (4) il modulo mostra «Accedi» in tutte le condizioni, apre il login nella stessa scheda fuori dall'iframe e in una scheda nuova dentro il frame, conservando `?lang=`.
+- **Motivo**: richieste del maintainer. Il logo e il nome già esistono per ogni edizione, e memorizzare i byte normalizzati nel database segue la scelta fatta per la card email (D-045) senza una risorsa cloud aggiuntiva.
+- **Alternative scartate**: URL remoto per il logo (dipendenza dal server dell'immagine e origine esterna); usare il logo personalizzato dentro l'iframe (duplicazione dell'intestazione del sito ospitante).
+

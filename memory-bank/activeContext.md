@@ -20,7 +20,11 @@ Richiesta del maintainer: interfaccia in italiano e inglese, indirizzi in ingles
 
 Richiesta del maintainer: nome dell'edizione in header e oggetti email; testo delle email e del modulo modificabili da admin; dopo il login sempre la pagina personale; magic link riusabile 10 minuti senza pagina «Entra». Spec in `specs/mvp-14-testi-evento/`. Nata come «MVP 11» sul branch `feat/mvp-11-testi-evento` (PR #14), poi riallineata a `main` dopo l'unione degli MVP 11-13 (lingue, admin in inglese, email di iscrizione): i testi delle altre email usano l'editor per lingua dell'MVP 13 (D-047). Completato, descrizione PR in `specs/mvp-14-testi-evento/pr-description.md`. Da fare: provare in produzione email personalizzate e link da 10 minuti.
 
-## Prossimo passo
+## MVP 15 · Logo e accesso dalla registrazione (2026-11-06)
+
+Richiesta del maintainer: caricare e ripristinare il logo dell'edizione dalle Impostazioni; aprire la pagina personale cliccando il marchio; trovare «Accedi» dalla pagina d'iscrizione, anche nell'iframe. Spec in `specs/mvp-15-logo-accesso/`. Implementato sul branch `feat/mvp-15-logo-accesso` (D-048); test locali e migrazione SQLite verdi. Restano la CI SQL Server e la prova manuale descritta nella checklist della PR.
+
+## Contesto ereditato
 
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
 2. Dopo il merge il deploy applica le migrazioni 0005-0007 all'avvio: il primo avvio a freddo può essere lento (circa 4 minuti con la PR #5).

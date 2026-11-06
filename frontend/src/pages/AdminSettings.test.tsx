@@ -30,6 +30,44 @@ const edition = {
 };
 
 describe("settings", () => {
+  it("uploads a logo, updates its preview, and restores the original", async () => {
+    let logoUrl: string | null = null;
+    const calls = stubAdminApi((call) => {
+      if (call.url === "/api/public/edition")
+        return { body: { name: edition.name, logo_url: logoUrl, registration_open: false } };
+      if (call.url === "/api/admin/edition") return { body: { ...edition, logo_url: logoUrl } };
+      if (call.url === "/api/admin/edition/logo" && call.method === "PUT") {
+        logoUrl = "/api/public/edition/logo?v=abc";
+        return { body: { ...edition, logo_url: logoUrl } };
+      }
+      if (call.url === "/api/admin/edition/logo" && call.method === "DELETE") {
+        logoUrl = null;
+        return { body: { ...edition, logo_url: null } };
+      }
+      return undefined;
+    });
+    renderAt("/admin/impostazioni");
+    const file = new File(["png bytes"], "logo.png", { type: "image/png" });
+    await userEvent.upload(await screen.findByLabelText(/Immagine \(PNG/), file);
+    expect(await screen.findByText("Logo aggiornato.")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Anteprima del logo di Camp 2026" })).toHaveAttribute(
+      "src",
+      "/api/public/edition/logo?v=abc",
+    );
+    expect(
+      (
+        calls.find((call) => call.method === "PUT" && call.body instanceof FormData)
+          ?.body as FormData
+      ).get("file"),
+    ).toBeInstanceOf(File);
+
+    await userEvent.click(screen.getByRole("button", { name: "Ripristina il logo originale" }));
+    expect(await screen.findByText("Logo originale ripristinato.")).toBeInTheDocument();
+    expect(
+      calls.some((call) => call.method === "DELETE" && call.url === "/api/admin/edition/logo"),
+    ).toBe(true);
+  });
+
   it("edits the waitlist percentage", async () => {
     const calls = stubAdminApi((call) =>
       call.url === "/api/admin/edition" ? { body: edition } : undefined,

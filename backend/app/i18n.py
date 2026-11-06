@@ -105,6 +105,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "Set up the edition first",
     },
     "edition.none": {"it": "Nessuna edizione configurata", "en": "No edition configured"},
+    "edition.logo_none": {"it": "Nessun logo configurato", "en": "No logo configured"},
     "edition.both_dates": {
         "it": "Indica sia la data di inizio sia quella di fine",
         "en": "Enter both the start and the end date",

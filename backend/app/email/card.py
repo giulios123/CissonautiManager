@@ -29,7 +29,7 @@ class InvalidImage(Exception):
         self.reason = reason
 
 
-def normalize_image(data: bytes) -> bytes:
+def normalize_image(data: bytes, preserve_alpha: bool = False) -> bytes:
     """Checks an uploaded picture and returns it as a PNG of at most MAX_SIDE pixels."""
     if len(data) > MAX_UPLOAD_BYTES:
         raise InvalidImage("too_big")
@@ -41,7 +41,7 @@ def normalize_image(data: bytes) -> bytes:
             raise InvalidImage("too_big")
         probe.verify()
         picture = Image.open(io.BytesIO(data))
-        picture = ImageOps.exif_transpose(picture).convert("RGB")
+        picture = ImageOps.exif_transpose(picture).convert("RGBA" if preserve_alpha else "RGB")
     except InvalidImage:
         raise
     except (UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError):

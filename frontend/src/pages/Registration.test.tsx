@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
 import { App } from "../App";
+import { I18nProvider, type Locale } from "../i18n";
 
 const edition = {
   registration_open: true,
@@ -72,11 +73,13 @@ function mockFetch(responses: Record<string, { status?: number; body: unknown }>
   return calls;
 }
 
-function renderPage() {
+function renderPage(path = "/register", locale: Locale = "it") {
   render(
-    <MemoryRouter initialEntries={["/register"]}>
-      <App />
-    </MemoryRouter>,
+    <I18nProvider locale={locale}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </I18nProvider>,
   );
 }
 
@@ -89,6 +92,41 @@ describe("Registration page", () => {
     });
     renderPage();
     expect(await screen.findByText(/non sono ancora aperte/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/login?lang=it");
+  });
+
+  it("keeps the sign-in link available if loading fails", async () => {
+    mockFetch({ "/api/public/edition": { status: 500, body: { detail: "Unavailable" } } });
+    renderPage();
+    expect(await screen.findByText(/Non riesco a caricare la pagina/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/login?lang=it");
+  });
+
+  it("keeps the selected language in the sign-in link", async () => {
+    mockFetch({ "/api/public/edition": { body: { registration_open: false, days: [] } } });
+    renderPage("/register?lang=en", "en");
+    expect(await screen.findByText(/Registrations are not open/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?lang=en");
+  });
+
+  it("shows the sign-in link above the registration form", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    const link = await screen.findByRole("link", { name: "Accedi" });
+    expect(link).toHaveAttribute("href", "/login?lang=it");
+    expect(
+      link.compareDocumentPosition(screen.getByRole("group", { name: "I tuoi dati" })) & 4,
+    ).toBeTruthy();
+  });
+
+  it("opens sign-in in a new tab from inside the event iframe", async () => {
+    vi.spyOn(window, "top", "get").mockReturnValue({} as Window & typeof globalThis);
+    mockFetch({ "/api/public/edition": { body: { registration_open: false, days: [] } } });
+    renderPage();
+    const link = await screen.findByRole("link", { name: "Accedi" });
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener");
+    expect(screen.getByText(/si apre in una nuova finestra/)).toBeInTheDocument();
   });
 
   it("shows the paragraph written by the organizers, in the language of the page", async () => {
@@ -190,6 +228,30 @@ describe("Registration page", () => {
     expect(sent.slot_ids).toEqual([1]);
     expect(sent.privacy_version).toBe(1);
     expect(sent.email).toBe("ada@example.com");
+  });
+
+  it("shows the sign-in link when the email is already registered", async () => {
+    mockFetch({
+      "/api/public/edition": { body: edition },
+      "/api/public/registrations": {
+        status: 201,
+        body: { result: "already_registered", message: "Sei già iscritto." },
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByText(/Quota da versare/);
+    await user.click(screen.getByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
+    await user.type(screen.getByLabelText("Nome"), "Ada");
+    await user.type(screen.getByLabelText("Cognome"), "Lovelace");
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
+    await user.click(screen.getByLabelText(/informativa privacy$/));
+    await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await user.click(screen.getByRole("button", { name: "Iscriviti" }));
+
+    expect(await screen.findByRole("heading", { name: "Sei già iscritto" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/login?lang=it");
   });
 
   it("shows the server message when a slot became full", async () => {

@@ -83,6 +83,8 @@ class Edition(Base):
     # Paragraph above the sign-up form, per language. Empty means the default text.
     registration_intro_it: Mapped[str | None] = mapped_column(UnicodeText)
     registration_intro_en: Mapped[str | None] = mapped_column(UnicodeText)
+    # Optional event logo, validated and stored as a metadata-free PNG.
+    logo_image: Mapped[bytes | None] = mapped_column(LargeBinary)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")

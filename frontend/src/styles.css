@@ -139,7 +139,10 @@ html.in-frame body {
 
 .site-brand img {
   width: auto;
-  height: 1.875rem;
+  max-width: 10rem;
+  height: auto;
+  max-height: 2.5rem;
+  object-fit: contain;
 }
 
 .site-name {
@@ -149,6 +152,16 @@ html.in-frame body {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.edition-logo-preview {
+  display: block;
+  width: auto;
+  max-width: min(100%, 18rem);
+  height: auto;
+  max-height: 8rem;
+  margin: 1rem 0;
+  object-fit: contain;
 }
 
 .site-header.compact {
