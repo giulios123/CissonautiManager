@@ -15,4 +15,4 @@ Gli organizzatori possono caricare il logo dell'edizione dalle Impostazioni, ved
 
 - [x] 995 test backend e 357 test frontend passati; lint e build locali completati.
 - [x] Migrazione 0013→0014 e downgrade 0014→0013 verificati su SQLite.
-- [ ] Eseguire la CI SQL Server dopo la pubblicazione del branch.
+- [x] CI SQL Server completata: migrazioni da zero e suite backend passate.

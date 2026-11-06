@@ -22,7 +22,7 @@ Richiesta del maintainer: nome dell'edizione in header e oggetti email; testo de
 
 ## MVP 15 · Logo e accesso dalla registrazione (2026-11-06)
 
-Richiesta del maintainer: caricare e ripristinare il logo dell'edizione dalle Impostazioni; aprire la pagina personale cliccando il marchio; trovare «Accedi» dalla pagina d'iscrizione, anche nell'iframe. Spec in `specs/mvp-15-logo-accesso/`. Implementato sul branch `feat/mvp-15-logo-accesso` (D-048); test locali e migrazione SQLite verdi. Restano la CI SQL Server e la prova manuale descritta nella checklist della PR.
+Richiesta del maintainer: caricare e ripristinare il logo dell'edizione dalle Impostazioni; aprire la pagina personale cliccando il marchio; trovare «Accedi» dalla pagina d'iscrizione, anche nell'iframe. Spec in `specs/mvp-15-logo-accesso/`. Implementato sul branch `feat/mvp-15-logo-accesso`, in PR #15 (D-048); CI SQLite, SQL Server, frontend e build container verdi. Restano le prove manuali descritte nella checklist della PR.
 
 ## Contesto ereditato
 

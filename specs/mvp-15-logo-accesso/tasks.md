@@ -8,4 +8,4 @@
 - [x] Aggiungere «Accedi» agli stati della registrazione e scegliere scheda e lingua del login in base all'iframe.
 - [x] Aggiornare guide admin e partecipante in italiano e inglese; aggiornare Memory Bank e checklist manuale per gli organizzatori.
 - [x] Eseguire test, lint e build locali.
-- [ ] Verificare migrazione e test nella CI SQL Server.
+- [x] Verificare migrazione e test nella CI SQL Server.

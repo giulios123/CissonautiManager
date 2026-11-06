@@ -19,7 +19,7 @@
 | 12 | Pannello admin in inglese | fatto e provato in locale (task 1-5) |
 | 13 | Email di iscrizione personalizzabile | fatto e provato in locale (task 1-8) |
 | 14 | Testi dell'evento e accesso diretto | fatto e provato in locale (task 1-9) |
-| 15 | Logo dell'edizione e accesso dalla registrazione | implementato sul branch `feat/mvp-15-logo-accesso`; test locali e migrazione SQLite verdi, resta CI SQL Server e prova manuale |
+| 15 | Logo dell'edizione e accesso dalla registrazione | implementato sul branch `feat/mvp-15-logo-accesso`; CI SQLite, SQL Server, frontend e build verdi; resta prova manuale |
 
 ## Verifiche manuali
 
@@ -78,4 +78,4 @@
 
 ## MVP 15 · Logo dell'edizione e accesso dalla registrazione
 
-Richiesto il 2026-11-06. Implementato sul branch `feat/mvp-15-logo-accesso` (D-048). Passati 995 test backend, 357 test frontend, Ruff, lint/build frontend e upgrade/downgrade 0013↔0014 su SQLite. Per i test backend il runner locale ha richiesto un piccolo shim in `/tmp` per compensare il selettore asyncio che non si sveglia tra thread; non ha modificato il repository. Da verificare: CI SQL Server e checklist manuale in `specs/mvp-15-logo-accesso/pr-description.md`.
+Richiesto il 2026-11-06. Implementato sul branch `feat/mvp-15-logo-accesso` (D-048), in PR #15. Passati 995 test backend, 357 test frontend, Ruff, lint/build frontend e upgrade/downgrade 0013↔0014 su SQLite. Anche la CI GitHub è verde: backend SQLite, migrazioni e test backend su SQL Server, frontend e build dell'immagine. Per i test backend locali il runner ha richiesto un piccolo shim in `/tmp` per compensare il selettore asyncio che non si sveglia tra thread; non ha modificato il repository. Da verificare a mano la checklist per gli organizzatori in `specs/mvp-15-logo-accesso/pr-description.md`.
