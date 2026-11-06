@@ -13,7 +13,9 @@ describe("App routing", () => {
     ["/accedi", "/login"],
     ["/accedi/verifica?token=abc", "/login/verify?token=abc"],
     ["/io", "/me"],
-    ["/guida?scheda=organizzatori#giorni-e-slot", "/guide?tab=organizers#giorni-e-slot"],
+    ["/guida?scheda=organizzatori#giorni-e-slot", "/guide?tab=organizers#days-and-slots"],
+    ["/guida#iscriversi", "/guide#signing-up"],
+    ["/io#giorni-e-slot", "/me#giorni-e-slot"],
     ["/admin/giorni", "/admin/days"],
     ["/admin/registrations/12", "/admin/registrations/12"],
   ])("sends the Italian address %s to %s", (from, to) => {

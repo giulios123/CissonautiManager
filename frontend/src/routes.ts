@@ -83,3 +83,34 @@ export function canonicalSearch(search: string): string {
   const text = params.toString();
   return text ? `?${text}` : "";
 }
+
+/** Section anchors of the guide as they were when the files had Italian names. */
+const LEGACY_GUIDE_ANCHORS: Record<string, string> = {
+  // organizers
+  persone: "people",
+  "giorni-e-slot": "days-and-slots",
+  settimana: "week",
+  pasti: "meals",
+  attivita: "activities",
+  contributi: "contributions",
+  "da-verificare": "to-review",
+  amministratori: "admins",
+  impostazioni: "settings",
+  "lista-attesa-e-piu-uno": "waitlist-and-plus-one",
+  "da-incassare": "to-collect",
+  // participants
+  iscriversi: "signing-up",
+  accedere: "signing-in",
+  pagare: "paying",
+  "cambiare-slot": "changing-slots",
+  "lista-attesa": "waitlist",
+  disdetta: "cancelling",
+};
+
+/** The anchor to open on the English guide for an old Italian one (`#giorni-e-slot`).
+ * Anchors that are not old ones, such as `#report`, stay as they are. */
+export function canonicalGuideHash(hash: string): string {
+  if (!hash.startsWith("#")) return hash;
+  const mapped = LEGACY_GUIDE_ANCHORS[hash.slice(1)];
+  return mapped ? `#${mapped}` : hash;
+}

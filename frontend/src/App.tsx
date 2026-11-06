@@ -21,7 +21,7 @@ import { Registration } from "./pages/Registration";
 import { Verify } from "./pages/Verify";
 import { useT } from "./i18n";
 import { usePageTitle } from "./pageTitle";
-import { canonicalPath, canonicalSearch, ROUTES } from "./routes";
+import { canonicalGuideHash, canonicalPath, canonicalSearch, ROUTES } from "./routes";
 import { SiteHeader } from "./SiteHeader";
 
 function Home() {
@@ -41,7 +41,11 @@ function NotFound() {
   const t = useT();
   const { pathname, search, hash } = useLocation();
   const english = canonicalPath(pathname);
-  if (english) return <Navigate to={`${english}${canonicalSearch(search)}${hash}`} replace />;
+  if (english) {
+    // The old guide had Italian section anchors: they follow the renamed sections.
+    const anchor = english === ROUTES.guide ? canonicalGuideHash(hash) : hash;
+    return <Navigate to={`${english}${canonicalSearch(search)}${anchor}`} replace />;
+  }
   return (
     <main>
       <h1>{t("notFound.title")}</h1>
