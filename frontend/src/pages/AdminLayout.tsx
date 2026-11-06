@@ -45,8 +45,10 @@ export function AdminLayout() {
         </nav>
       </div>
       {/* Pages show labels the server writes in the language of the request: a new language
-          means asking again, so they start over. */}
-      <Fragment key={locale}>
+          means asking again, so they start over. "To collect" is the exception: it shows nothing
+          written by the server, and starting over would lose the payments marked a moment ago
+          and their 10-second undo, while the confirmation email is still on its way. */}
+      <Fragment key={pathname === ROUTES.adminToCollect ? "stable" : locale}>
         <Outlet />
       </Fragment>
     </>
