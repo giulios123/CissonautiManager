@@ -2,7 +2,7 @@
 
 ## Dati e migrazione
 
-- Aggiungere `Edition.logo_image`, colonna binaria nullable, con la migrazione Alembic 0014. Un `NULL` continua a indicare il logo incluso nell'app.
+- Aggiungere `Edition.logo_image`, colonna binaria nullable caricata in modo differito, con la migrazione Alembic 0014. Un `NULL` continua a indicare il logo incluso nell'app. Le richieste che non espongono o servono il logo non trasferiscono i byte dal database.
 - Normalizzare i file con l'elaborazione immagini già usata per la mail di iscrizione: PNG, JPEG e WebP; massimo 5 MB, massimo 1600 px per lato e metadati rimossi. Mantenere la modalità RGB per l'immagine email e preservare l'alpha solo per il logo.
 
 ## API

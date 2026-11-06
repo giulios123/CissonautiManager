@@ -43,11 +43,8 @@ function LanguageSwitch() {
 
 export function SiteHeader({ compact = isInFrame() }: Props) {
   const { t } = useI18n();
-  const [failedLogoUrls, setFailedLogoUrls] = useState<string[]>([]);
   const eventName = useEventName();
   const logoUrl = useEventLogo();
-
-  const displayedLogoUrl = logoUrl && !failedLogoUrls.includes(logoUrl) ? logoUrl : bundledLogoUrl;
 
   if (compact) {
     return (
@@ -64,17 +61,30 @@ export function SiteHeader({ compact = isInFrame() }: Props) {
     <header className="site-header">
       <div className="site-bar">
         <Link to={ROUTES.me} className="site-brand">
-          {!failedLogoUrls.includes(displayedLogoUrl) && (
-            <img
-              src={displayedLogoUrl}
-              alt={t("header.logoAlt", { name: eventName })}
-              onError={() => setFailedLogoUrls((current) => [...current, displayedLogoUrl])}
-            />
-          )}
+          <HeaderLogo
+            key={logoUrl ?? bundledLogoUrl}
+            logoUrl={logoUrl}
+            alt={t("header.logoAlt", { name: eventName })}
+          />
           <span className="site-name">{eventName}</span>
         </Link>
         <LanguageSwitch />
       </div>
     </header>
+  );
+}
+
+function HeaderLogo({ logoUrl, alt }: { logoUrl: string | null; alt: string }) {
+  const [failedLogoUrls, setFailedLogoUrls] = useState<string[]>([]);
+  const displayedLogoUrl = logoUrl && !failedLogoUrls.includes(logoUrl) ? logoUrl : bundledLogoUrl;
+
+  if (failedLogoUrls.includes(displayedLogoUrl)) return null;
+
+  return (
+    <img
+      src={displayedLogoUrl}
+      alt={alt}
+      onError={() => setFailedLogoUrls((current) => [...current, displayedLogoUrl])}
+    />
   );
 }

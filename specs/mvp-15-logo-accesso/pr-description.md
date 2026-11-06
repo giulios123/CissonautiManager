@@ -13,6 +13,6 @@ Gli organizzatori possono caricare il logo dell'edizione dalle Impostazioni, ved
 
 ## Verifiche automatiche
 
-- [x] 995 test backend e 357 test frontend passati; lint e build locali completati.
+- [x] 996 test backend e 358 test frontend passati; lint e build locali completati.
 - [x] Migrazione 0013→0014 e downgrade 0014→0013 verificati su SQLite.
 - [x] CI SQL Server completata: migrazioni da zero e suite backend passate.

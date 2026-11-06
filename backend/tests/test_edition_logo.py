@@ -1,8 +1,10 @@
 import io
 
 from PIL import Image
+from sqlalchemy import inspect
 
 from app.email.card import MAX_UPLOAD_BYTES
+from app.models import Edition
 from tests.test_auth import login
 
 
@@ -17,6 +19,23 @@ def upload(client, data=None, filename="logo.png", content_type="image/png"):
         "/api/admin/edition/logo",
         files={"file": (filename, data if data is not None else png(), content_type)},
     )
+
+
+def test_edition_logo_bytes_are_loaded_only_when_requested(db, edition):
+    logo = png()
+    edition_name = edition.name
+    edition.logo_image = logo
+    db.commit()
+    edition_id = edition.id
+    db.expire(edition)
+
+    reloaded = db.get(Edition, edition_id)
+    assert reloaded is not None
+    assert "logo_image" in inspect(reloaded).unloaded
+    assert reloaded.name == edition_name
+    assert "logo_image" in inspect(reloaded).unloaded
+    assert reloaded.logo_image == logo
+    assert "logo_image" not in inspect(reloaded).unloaded
 
 
 def test_admin_can_upload_replace_and_restore_the_edition_logo(admin_client, client, edition):

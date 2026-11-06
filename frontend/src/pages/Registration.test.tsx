@@ -83,7 +83,10 @@ function renderPage(path = "/register", locale: Locale = "it") {
   );
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("Registration page", () => {
   it("tells people when registrations are closed", async () => {
@@ -142,6 +145,7 @@ describe("Registration page", () => {
     const intro = await screen.findByText(/Benvenuto!/);
     expect(intro).toHaveTextContent("Benvenuto! Scegli i tuoi turni.");
     expect(intro).toHaveClass("intro-text");
+    expect(screen.getByRole("link", { name: "Accedi" })).not.toHaveAttribute("target", "_blank");
   });
 
   it("falls back to the standard paragraph when the server sends none", async () => {
