@@ -18,7 +18,7 @@ In mezzo c'è la **parte automatica**, che non si può modificare: slot, quota, 
 
 ### Segnaposto
 
-Nei testi potete scrivere `{nome}`, che diventa il nome della persona, e `{evento}`, che diventa il nome dell'edizione. Se cambiate il nome dell'edizione nelle Impostazioni, gli oggetti predefiniti lo seguono.
+Nei testi potete scrivere `{nome}`, che diventa il nome della persona, e `{evento}`, che diventa il nome dell'edizione. Se cambiate il nome dell'edizione nelle Impostazioni, gli oggetti predefiniti lo seguono. Se scrivete un oggetto tutto vostro senza `{evento}`, il nome dell'edizione non compare e non cambia con le Impostazioni: inseritelo voi, con `{evento}`, quando serve.
 
 ### Ripristinare
 

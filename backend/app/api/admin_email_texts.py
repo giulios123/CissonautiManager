@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -106,9 +107,22 @@ def put_email_text(
     if error:
         raise HTTPException(status_code=422, detail=error)
     edition = _require_edition(db)
-    row = service.save_texts(db, edition, kind, body.subject, body.intro, body.closing, admin)
-    audit.log(db, admin, "email_text_changed", f"Testo dell'email «{domain.KINDS[kind].label}»")
-    db.commit()
+    # Two first saves of the same email (a double click, two admins) can both try to insert the
+    # row: the loser hits the unique constraint, so it retries and updates the winner's row.
+    for attempt in (1, 2):
+        try:
+            row = service.save_texts(
+                db, edition, kind, body.subject, body.intro, body.closing, admin
+            )
+            audit.log(
+                db, admin, "email_text_changed", f"Testo dell'email «{domain.KINDS[kind].label}»"
+            )
+            db.commit()
+            break
+        except IntegrityError:
+            db.rollback()
+            if attempt == 2:
+                raise
     return _email_out(kind, row)
 
 

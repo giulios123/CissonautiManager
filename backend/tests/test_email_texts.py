@@ -64,6 +64,35 @@ class TestListAndSave:
         response = put_text(admin_client, subject="  ", intro="", closing=None)
         assert response.json()["stored"] == {"subject": None, "intro": None, "closing": None}
 
+    def test_overlapping_first_saves_update_instead_of_failing(
+        self, admin_client, edition, engine, monkeypatch
+    ):
+        """The other save wins the insert between our lookup and our insert: we must not 500."""
+        from sqlalchemy.orm import Session
+
+        from app.models import EmailText
+        from app.services import email_texts as service
+
+        real_save = service.save_texts
+        calls = []
+
+        def racing_save(db, edition_, kind, subject, intro, closing, actor, now=None):
+            calls.append(kind)
+            if len(calls) == 1:
+                with Session(engine) as other:
+                    other.add(EmailText(edition_id=edition_.id, kind=kind, subject="Primo"))
+                    other.commit()
+                # Our own insert now clashes with the committed row.
+                db.add(EmailText(edition_id=edition_.id, kind=kind, subject="Secondo"))
+                db.flush()
+            return real_save(db, edition_, kind, subject, intro, closing, actor, now)
+
+        monkeypatch.setattr(service, "save_texts", racing_save)
+        response = put_text(admin_client, **CUSTOM)
+        assert response.status_code == 200
+        assert response.json()["stored"] == CUSTOM
+        assert len(calls) == 2
+
     def test_unknown_kind_is_404(self, admin_client, edition):
         assert put_text(admin_client, "nope", **CUSTOM).status_code == 404
 
