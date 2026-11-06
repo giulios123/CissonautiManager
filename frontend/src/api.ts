@@ -1,3 +1,6 @@
+import { getLocale } from "./i18n/locale";
+import { tNow } from "./i18n/messages";
+
 export class ApiError extends Error {
   status: number;
 
@@ -17,7 +20,7 @@ function messageFrom(detail: unknown): string {
       .filter(Boolean)
       .join(". ");
   }
-  return "Qualcosa è andato storto. Riprova.";
+  return tNow("common.somethingWrong");
 }
 
 export async function api<T>(
@@ -28,7 +31,11 @@ export async function api<T>(
   const response = await fetch(path, {
     credentials: "same-origin",
     ...rest,
-    headers: { ...(json !== undefined ? { "Content-Type": "application/json" } : {}), ...headers },
+    headers: {
+      "Accept-Language": getLocale(),
+      ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...headers,
+    },
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   });
   if (response.status === 204) return undefined as T;

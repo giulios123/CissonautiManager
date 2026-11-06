@@ -11,8 +11,10 @@ import {
   type Day,
 } from "../booking";
 import type { PickerDay } from "../daySelection";
-import { EVENT_NAME } from "../eventName";
+import { useI18n } from "../i18n";
+import { tNow } from "../i18n/messages";
 import { formatEuro } from "../money";
+import { ROUTES } from "../routes";
 import { DayPicker } from "./DayPicker";
 
 type Channel = { code: string; label: string; instructions: string };
@@ -20,7 +22,6 @@ type Legal = { version: number; body: string };
 type PublicEdition = {
   registration_open: boolean;
   name: string | null;
-  registration_intro: string | null;
   base_fee_cents: number | null;
   per_day_fee_cents: number | null;
   hold_days: number | null;
@@ -44,14 +45,15 @@ type Outcome =
 
 /** Label of a full slot: whether its waitlist can still be joined. */
 function fullSlotLabel(slot: Day["slots"][number]) {
-  if (canJoinWaitlist(slot)) return "completo, spunta per entrare in lista d'attesa";
-  if (slot.waitlist_free === 0) return "completo, anche la lista d'attesa";
+  if (canJoinWaitlist(slot)) return tNow("reg.fullJoinable");
+  if (slot.waitlist_free === 0) return tNow("reg.fullWaitlistFull");
   return seatsLabel(slot);
 }
 
 const fetchEdition = () => api<PublicEdition>("/api/public/edition");
 
 export function Registration() {
+  const { t, tn, locale } = useI18n();
   const [edition, setEdition] = useState<PublicEdition | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -70,14 +72,13 @@ export function Registration() {
     if (error) errorRef.current?.focus();
   }, [error]);
 
-  if (loadError)
-    return <main role="alert">Non riesco a caricare la pagina. Riprova tra poco.</main>;
-  if (!edition) return <main aria-busy="true">Caricamento…</main>;
+  if (loadError) return <main role="alert">{t("reg.loadError")}</main>;
+  if (!edition) return <main aria-busy="true">{t("common.loading")}</main>;
 
   if (outcome?.kind === "already") {
     return (
       <main>
-        <h1>Sei già iscritto</h1>
+        <h1>{t("reg.alreadyTitle")}</h1>
         <p role="status">{outcome.message}</p>
       </main>
     );
@@ -90,8 +91,8 @@ export function Registration() {
   if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
     return (
       <main>
-        <h1>{edition.name ?? EVENT_NAME}</h1>
-        <p>Le iscrizioni non sono ancora aperte. Torna a trovarci presto!</p>
+        <h1>{edition.name ?? "Cissonauti Summer Camp"}</h1>
+        <p>{t("reg.notOpen")}</p>
       </main>
     );
   }
@@ -144,7 +145,7 @@ export function Registration() {
     event.preventDefault();
     setError(null);
     if (selected.size === 0) {
-      setError("Scegli almeno uno slot.");
+      setError(t("reg.chooseSlot"));
       return;
     }
     const data = new FormData(event.currentTarget);
@@ -166,6 +167,7 @@ export function Registration() {
           phone: text("phone") || null,
           invited_by: text("invited_by") || null,
           can_bring: text("can_bring"),
+          locale,
           slot_ids: [...toBook],
           waitlist_slot_ids: toWait,
           accept_privacy: data.get("accept_privacy") === "on",
@@ -183,10 +185,10 @@ export function Registration() {
           waitlist: result.waitlist ?? [],
         });
       } else {
-        setOutcome({ kind: "already", message: result.message ?? "Risulti già iscritto." });
+        setOutcome({ kind: "already", message: result.message ?? t("reg.alreadyFallback") });
       }
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
       if (caught instanceof ApiError && caught.status === 409) {
         setSelected(new Set());
         setEdition(await fetchEdition().catch(() => edition));
@@ -199,10 +201,7 @@ export function Registration() {
   return (
     <main className="wide">
       <h1>{edition.name}</h1>
-      <p className="lead intro-text">
-        {edition.registration_intro ??
-          "Scegli i momenti in cui vuoi venire. Puoi scegliere più giorni e più fasce orarie."}
-      </p>
+      <p className="lead">{t("reg.lead")}</p>
       {first && last && (
         <p className="meta">
           <span className="chip static">
@@ -211,69 +210,69 @@ export function Registration() {
         </p>
       )}
       <div className="hold-banner">
-        <p className="hold-title">Il tuo posto resta bloccato per {edition.hold_days} giorni</p>
+        <p className="hold-title">{tn("reg.holdTitle", edition.hold_days ?? 0)}</p>
         <ol className="steps">
-          <li>Scegli i turni</li>
-          <li>Inserisci i tuoi dati</li>
+          <li>{t("reg.step1")}</li>
+          <li>{t("reg.step2")}</li>
           <li>
-            <strong>Paga la quota</strong> per confermare
+            <strong>{t("reg.step3Strong")}</strong> {t("reg.step3Rest")}
           </li>
         </ol>
       </div>
       <form id="registration" onSubmit={submit} noValidate={false} className="with-summary">
         <div className="form-main">
           <section aria-labelledby="when-title">
-            <h2 id="when-title">Quando vieni</h2>
+            <h2 id="when-title">{t("reg.whenTitle")}</h2>
             <DayPicker days={pickerDays} selected={selected} onChange={setSelected} />
           </section>
 
           <fieldset>
-            <legend>I tuoi dati</legend>
+            <legend>{t("reg.detailsLegend")}</legend>
             <div className="row">
               <label>
-                Nome
+                {t("reg.firstName")}
                 <input name="first_name" autoComplete="given-name" required maxLength={100} />
               </label>
               <label>
-                Cognome
+                {t("reg.lastName")}
                 <input name="last_name" autoComplete="family-name" required maxLength={100} />
               </label>
             </div>
             <label>
-              Email
+              {t("login.email")}
               <input type="email" name="email" autoComplete="email" required />
             </label>
             <label>
-              Telefono (facoltativo)
+              {t("reg.phone")}
               <input type="tel" name="phone" autoComplete="tel" maxLength={50} />
             </label>
             <label>
-              Chi ti ha invitato? (facoltativo)
+              {t("reg.invitedBy")}
               <input name="invited_by" maxLength={200} />
             </label>
             <label>
-              Cosa puoi portare al camp?
+              {t("reg.canBring")}
               <textarea name="can_bring" rows={3} required maxLength={2000} />
             </label>
           </fieldset>
 
           <fieldset>
-            <legend>Consensi</legend>
+            <legend>{t("reg.consentsLegend")}</legend>
             <details>
-              <summary>Leggi l'informativa privacy</summary>
+              <summary>{t("reg.readPrivacy")}</summary>
               <p className="legal">{privacy.body}</p>
             </details>
             <label className="check">
               <input type="checkbox" name="accept_privacy" required />
-              Ho letto e accetto l'informativa privacy
+              {t("reg.acceptPrivacy")}
             </label>
             <details>
-              <summary>Leggi lo scarico di responsabilità</summary>
+              <summary>{t("reg.readDisclaimer")}</summary>
               <p className="legal">{disclaimer.body}</p>
             </details>
             <label className="check">
               <input type="checkbox" name="accept_disclaimer" required />
-              Ho letto e accetto lo scarico di responsabilità
+              {t("reg.acceptDisclaimer")}
             </label>
           </fieldset>
 
@@ -284,12 +283,11 @@ export function Registration() {
           )}
         </div>
 
-        <aside className="summary" aria-label="Il tuo riepilogo">
+        <aside className="summary" aria-label={t("reg.summary")}>
           <div className="summary-head">
-            <h2>Il tuo riepilogo</h2>
+            <h2>{t("reg.summary")}</h2>
             <span className="count" aria-live="polite">
-              {selected.size} {selected.size === 1 ? "turno" : "turni"} · {chosenDays.length}{" "}
-              {chosenDays.length === 1 ? "giorno" : "giorni"}
+              {tn("reg.shifts", selected.size)} · {tn("reg.days", chosenDays.length)}
             </span>
           </div>
           {chosenDays.length > 0 && (
@@ -303,8 +301,11 @@ export function Registration() {
                         type="button"
                         key={slot.id}
                         className={`summary-pill${slot.waiting ? " waiting" : ""}`}
-                        title={slot.waiting ? "Lista d'attesa" : undefined}
-                        aria-label={`Togli ${day.label} · ${slot.period}${slot.waiting ? " · lista d'attesa" : ""}`}
+                        title={slot.waiting ? t("reg.waitlistTitle") : undefined}
+                        aria-label={t(slot.waiting ? "reg.removeWaiting" : "reg.remove", {
+                          day: day.label,
+                          period: slot.period,
+                        })}
                         onClick={() =>
                           setSelected((current) => {
                             const next = new Set(current);
@@ -324,22 +325,22 @@ export function Registration() {
           )}
           <p aria-live="polite" className="fee">
             {toBook.size === 0 && toWait.length > 0 ? (
-              "Solo lista d'attesa: per ora non devi pagare nulla."
+              t("reg.waitOnly")
             ) : (
               <>
-                Quota da versare: <strong>{formatEuro(fee)}</strong>
+                {t("reg.fee")} <strong>{formatEuro(fee)}</strong>
               </>
             )}
             {toBook.size > 0 && toWait.length > 0 && (
               <>
                 <br />
-                In lista d&apos;attesa: {toWait.length} slot, si pagano solo se si libera un posto.
+                {tn("reg.waitCount", toWait.length)}
               </>
             )}
           </p>
-          <p className="summary-note">La prenotazione è confermata solo dopo il pagamento.</p>
+          <p className="summary-note">{t("reg.confirmedAfterPayment")}</p>
           <button type="submit" form="registration" disabled={sending}>
-            {sending ? "Invio in corso…" : "Iscriviti"}
+            {sending ? t("reg.sending") : t("reg.submit")}
           </button>
         </aside>
       </form>
@@ -348,18 +349,19 @@ export function Registration() {
 }
 
 function WaitlistSummary({ waitlist }: { waitlist: Waitlisted[] }) {
+  const { t } = useI18n();
   if (waitlist.length === 0) return null;
   return (
     <>
-      <h2>In lista d&apos;attesa</h2>
+      <h2>{t("reg.waitlistHeading")}</h2>
       <ul>
         {waitlist.map((item) => (
           <li key={item.label}>
-            {item.label}: sei {item.position}° in lista
+            {t("reg.position", { label: item.label, position: item.position })}
           </li>
         ))}
       </ul>
-      <p>Se si libera un posto ti scriviamo e lo slot diventa tuo.</p>
+      <p>{t("reg.waitlistNote")}</p>
     </>
   );
 }
@@ -371,52 +373,47 @@ function WaitlistConfirmation({
   personalCode: string;
   waitlist: Waitlisted[];
 }) {
+  const { t } = useI18n();
   return (
     <main>
-      <h1>Sei in lista d&apos;attesa</h1>
-      <p role="status">
-        Gli slot che hai scelto sono al completo. Ti abbiamo inviato un&apos;email con il tuo link
-        personale. Controlla anche lo spam.
-      </p>
+      <h1>{t("reg.waitConfTitle")}</h1>
+      <p role="status">{t("reg.waitConfBody")}</p>
       <WaitlistSummary waitlist={waitlist} />
       <p>
-        Finché non si libera un posto non devi pagare nulla. Il tuo codice è{" "}
-        <strong>{personalCode}</strong>.
+        {t("reg.waitConfNothingToPay")} <strong>{personalCode}</strong>.
       </p>
       <p>
-        <a href="/accedi" target="_blank" rel="noopener">
-          Vai alla tua pagina personale
+        <a href={ROUTES.login} target="_blank" rel="noopener">
+          {t("reg.goToPersonal")}
         </a>{" "}
-        (si apre in una nuova finestra)
+        {t("reg.opensNewWindow")}
       </p>
     </main>
   );
 }
 
 function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitlisted[] }) {
+  const { t } = useI18n();
   return (
     <main>
-      <h1>Iscrizione ricevuta</h1>
-      <p role="status">
-        Ti abbiamo inviato un&apos;email con il riepilogo e il tuo link personale. Controlla anche
-        lo spam.
-      </p>
-      <h2>I tuoi slot</h2>
+      <h1>{t("reg.receivedTitle")}</h1>
+      <p role="status">{t("reg.receivedBody")}</p>
+      <h2>{t("reg.yourSlots")}</h2>
       <ul>
         {booking.slots.map((slot) => (
           <li key={slot.label}>{slot.label}</li>
         ))}
       </ul>
       <WaitlistSummary waitlist={waitlist} />
-      <h2>Come pagare</h2>
+      <h2>{t("reg.howToPay")}</h2>
       <p>
-        Quota: <strong>{formatEuro(booking.amount_due_cents)}</strong>
+        {t("reg.amount")} <strong>{formatEuro(booking.amount_due_cents)}</strong>
         <br />
-        Causale: <strong>{booking.personal_code}</strong>
+        {t("reg.reference")} <strong>{booking.personal_code}</strong>
       </p>
       <p>
-        Il posto è bloccato fino al <strong>{formatDeadline(booking.hold_expires_at)}</strong>. Se
-        non paghi entro quella data si libera.
+        {t("reg.holdUntilBefore")} <strong>{formatDeadline(booking.hold_expires_at)}</strong>.{" "}
+        {t("reg.holdUntilAfter")}
       </p>
       {booking.payment_channels.length > 0 ? (
         <ul>
@@ -429,13 +426,13 @@ function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitl
           ))}
         </ul>
       ) : (
-        <p>Le istruzioni di pagamento arriveranno presto.</p>
+        <p>{t("reg.paymentSoon")}</p>
       )}
       <p>
-        <a href="/accedi" target="_blank" rel="noopener">
-          Vai alla tua pagina personale
+        <a href={ROUTES.login} target="_blank" rel="noopener">
+          {t("reg.goToPersonal")}
         </a>{" "}
-        (si apre in una nuova finestra)
+        {t("reg.opensNewWindow")}
       </p>
     </main>
   );

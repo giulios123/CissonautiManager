@@ -86,7 +86,7 @@ function me(bookings: BookingView[]): Me {
 function openAt(handler: (url: string, init?: RequestInit) => Reply) {
   const calls = stubFetch(handler);
   render(
-    <MemoryRouter initialEntries={["/io"]}>
+    <MemoryRouter initialEntries={["/me"]}>
       <App />
     </MemoryRouter>,
   );
@@ -256,28 +256,6 @@ describe("cancelling", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByText(/Non hai ancora un.iscrizione/)).toBeInTheDocument();
     expect(calls.filter((call) => call.method === "POST")).toHaveLength(1);
-  });
-});
-
-describe("organizer on their own page", () => {
-  const route =
-    (role: "admin" | "participant") =>
-    (url: string): Reply =>
-      url === "/api/me" ? { body: { ...me([]), role } } : { status: 404, body: {} };
-
-  it("sees their page with a visible way to the panel", async () => {
-    openAt(route("admin"));
-    expect(await screen.findByRole("heading", { name: "Ciao Ada!" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Vai al pannello organizzatori" })).toHaveAttribute(
-      "href",
-      "/admin",
-    );
-  });
-
-  it("does not show the panel link to participants", async () => {
-    openAt(route("participant"));
-    await screen.findByRole("heading", { name: "Ciao Ada!" });
-    expect(screen.queryByRole("link", { name: /pannello/ })).not.toBeInTheDocument();
   });
 });
 

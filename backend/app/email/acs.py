@@ -1,10 +1,22 @@
+import base64
 import logging
 
 from azure.communication.email import EmailClient
 
-from app.email.base import EmailMessage, EmailSender
+from app.email.base import EmailAttachment, EmailMessage, EmailSender
 
 logger = logging.getLogger("app.email")
+
+
+def _attachment(attachment: EmailAttachment) -> dict:
+    data = {
+        "name": attachment.name,
+        "contentType": attachment.content_type,
+        "contentInBase64": base64.b64encode(attachment.content).decode("ascii"),
+    }
+    if attachment.content_id:
+        data["contentId"] = attachment.content_id
+    return data
 
 
 class AcsEmailSender(EmailSender):
@@ -20,11 +32,16 @@ class AcsEmailSender(EmailSender):
         self._sender_address = sender_address
 
     def send(self, message: EmailMessage) -> None:
-        payload = {
+        content = {"subject": message.subject, "plainText": message.body}
+        if message.html:
+            content["html"] = message.html
+        payload: dict = {
             "senderAddress": self._sender_address,
             "recipients": {"to": [{"address": message.to}]},
-            "content": {"subject": message.subject, "plainText": message.body},
+            "content": content,
         }
+        if message.attachments:
+            payload["attachments"] = [_attachment(a) for a in message.attachments]
         try:
             self._client.begin_send(payload)
         except Exception:

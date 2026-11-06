@@ -3,12 +3,15 @@ import { api, ApiError } from "../api";
 import { priceLabel } from "../activities";
 import type { ActivityOffer, BookingView } from "../auth";
 import { formatDay, periodLabel } from "../booking";
+import { useT } from "../i18n";
+import { getLocale } from "../i18n/locale";
+import { tNow, translatePlural } from "../i18n/messages";
 import { formatEuro } from "../money";
 
 function seatsText(offer: ActivityOffer) {
-  if (offer.free === null) return "senza limite di posti";
-  if (offer.free < 1) return offer.joined ? "completo, il tuo posto c'è" : "completo";
-  return `${offer.free} posti liberi`;
+  if (offer.free === null) return tNow("act.unlimited");
+  if (offer.free < 1) return offer.joined ? tNow("act.fullMine") : tNow("act.full");
+  return translatePlural(getLocale(), "seats.free", offer.free);
 }
 
 /** Join or leave the activities of the moments the person is present. */
@@ -26,6 +29,7 @@ export function ActivityPicker<T = unknown>({
   path?: string;
   admin?: boolean;
 }) {
+  const t = useT();
   const original = new Set(offers.filter((o) => o.joined).map((o) => o.id));
   // Offers can change while the picker is open (a slot change drops an activity): only the
   // activities still offered can be chosen and sent.
@@ -62,17 +66,16 @@ export function ActivityPicker<T = unknown>({
       await onSaved(result);
       setSaved(true);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
   }
 
-  if (offers.length === 0)
-    return <p>Per ora non ci sono attività nei momenti in cui sei presente.</p>;
+  if (offers.length === 0) return <p>{t("act.none")}</p>;
 
   return (
-    <form onSubmit={save} aria-label="Scegli le attività">
+    <form onSubmit={save} aria-label={t("act.aria")}>
       {offers.map((offer) => {
         const full = offer.free !== null && offer.free < 1 && !offer.joined;
         const locked = (offer.past || full) && !admin;
@@ -88,7 +91,7 @@ export function ActivityPicker<T = unknown>({
               <strong>{offer.title}</strong>, {formatDay(offer.date)}{" "}
               {periodLabel(offer.period).toLowerCase()}
               {offer.time_label && ` (${offer.time_label})`} · {priceLabel(offer.price_cents)} ·{" "}
-              {offer.past ? "giorno passato" : seatsText(offer)}
+              {offer.past ? t("edit.pastDay") : seatsText(offer)}
               {offer.description && (
                 <>
                   <br />
@@ -102,15 +105,17 @@ export function ActivityPicker<T = unknown>({
       {admin && (
         <label className="check">
           <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
-          Forza oltre la capienza
+          {t("act.force")}
         </label>
       )}
       <p aria-live="polite" className="fee">
-        Nuova quota: <strong>{formatEuro(fee)}</strong>
+        {t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
         {delta !== 0 && (
           <>
             {" "}
-            ({formatEuro(Math.abs(delta))} {delta > 0 ? "in più" : "in meno"} di ora)
+            {t(delta > 0 ? "edit.delta.more" : "edit.delta.less", {
+              amount: formatEuro(Math.abs(delta)),
+            })}
           </>
         )}
       </p>
@@ -121,11 +126,11 @@ export function ActivityPicker<T = unknown>({
       )}
       {saved && (
         <p role="status" className="notice ok">
-          Attività aggiornate.
+          {t("act.updated")}
         </p>
       )}
       <button type="submit" disabled={!changed || saving}>
-        Salva le attività
+        {t("act.save")}
       </button>
     </form>
   );

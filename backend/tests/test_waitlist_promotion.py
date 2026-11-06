@@ -67,7 +67,7 @@ def test_pending_booking_gets_the_slot_a_longer_hold_and_the_new_amount(
     assert entry.close_reason == CLOSE_PROMOTED
     assert entry.promoted_booking_id == booking.id
     [email] = outbox.sent
-    assert email.subject == "Si è liberato un posto a Cissonauti Summer Camp 2026"
+    assert email.subject == "Si è liberato un posto al Cissonauti Summer Camp"
     assert "lun 13/07 mattina" in email.body
     assert "bloccato fino al" in email.body
     assert "Ancora da versare: 12,00 €" in email.body
@@ -159,7 +159,7 @@ def test_someone_only_on_the_list_gets_a_new_booking_with_the_texts_of_the_entry
     assert booking.privacy_document_id == entry.privacy_document_id
     assert booking.privacy_accepted_at == entry.privacy_accepted_at
     [email] = outbox.sent
-    assert "accedi/verifica?token=" in email.body
+    assert "login/verify?token=" in email.body
 
 
 def test_an_expired_booking_does_not_receive_the_slot(

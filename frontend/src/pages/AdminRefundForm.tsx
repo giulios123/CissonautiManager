@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
+import { useT } from "../i18n";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import type { Detail } from "./AdminRegistrationDetail";
 
@@ -12,6 +13,7 @@ export function AdminRefundForm({
   paidCents: number;
   onDone: (detail: Detail) => void;
 }) {
+  const t = useT();
   const [amount, setAmount] = useState(paidCents > 0 ? centsToInput(paidCents) : "0,00");
   const [error, setError] = useState<string | null>(null);
 
@@ -21,9 +23,7 @@ export function AdminRefundForm({
     const data = new FormData(event.currentTarget);
     const cents = parseEuroToCents(amount);
     if (cents === null) {
-      setError(
-        "Scrivi un importo valido, ad esempio 11,00 (anche 0 se non c'è nulla da rimborsare).",
-      );
+      setError(t("dsub.refundAmountInvalid"));
       return;
     }
     try {
@@ -38,19 +38,16 @@ export function AdminRefundForm({
         }),
       );
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
     }
   }
 
   return (
     <form onSubmit={submit} aria-labelledby="refund-title">
-      <h2 id="refund-title">Segna come rimborsata</h2>
-      <p>
-        Il rimborso lo fai fuori dal sistema e scrivi tu alla persona: qui lo registri per chiudere
-        la disdetta.
-      </p>
+      <h2 id="refund-title">{t("dsub.refundTitle")}</h2>
+      <p>{t("dsub.refundIntro")}</p>
       <label>
-        Importo rimborsato (€)
+        {t("dsub.refundAmount")}
         <input
           inputMode="decimal"
           value={amount}
@@ -65,19 +62,19 @@ export function AdminRefundForm({
             className="secondary"
             onClick={() => setAmount(centsToInput(paidCents))}
           >
-            Tutto quanto versato ({formatEuro(paidCents)})
+            {t("dsub.refundAll", { amount: formatEuro(paidCents) })}
           </button>
         </p>
       )}
       <label>
-        Data del rimborso (vuota = oggi)
+        {t("dsub.refundDate")}
         <input type="date" name="refunded_on" />
       </label>
       <label>
-        Nota (facoltativa)
+        {t("det.note")}
         <input name="note" maxLength={1000} />
       </label>
-      <button type="submit">Segna come rimborsata</button>
+      <button type="submit">{t("dsub.refundTitle")}</button>
       {error && (
         <p role="alert" className="notice error">
           {error}

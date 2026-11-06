@@ -291,11 +291,52 @@
 - **Limiti noti**: se il timer si perde l'email arriva al passaggio orario successivo; un errore di consegna non si ritenta; con due admin sulla stessa riga il tasto registra l'importo mostrato.
 
 
-## D-041 · Testi dell'evento modificabili, nome dell'edizione ovunque, accesso diretto
+## D-041 · Due lingue senza libreria: dizionari tipizzati e lingua in una variabile di contesto
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) frontend: dizionari piatti `i18n/it.ts` e `i18n/en.ts`, con `en` tipizzato su `keyof typeof it` (una chiave mancante non compila) e un test sui segnaposto; hook `useT()`/`useI18n()`, plurali con le chiavi `.one`/`.other` e `Intl.PluralRules`; lingua da `?lang`, poi scelta salvata, poi lingua del browser (`it*` → italiano, altrimenti inglese); (2) backend: catalogo `app/i18n.py` con `t(chiave, **parametri)` che legge la lingua da una variabile di contesto impostata da un middleware ASGI su `Accept-Language`, così i servizi non si passano la lingua; email e job, che non hanno una richiesta, la prendono da `participant.locale`; (3) il frontend manda `Accept-Language` a ogni chiamata, quindi anche le etichette fatte dal server (slot, pasti, attività) escono nella lingua giusta e la pagina personale ricarica i dati quando si cambia lingua; (4) l'oggetto delle email usa il nome del marchio fisso «Cissonauti Summer Camp», non `edition.name` (la spec lo prevedeva, ma cambiava l'oggetto delle email esistenti: resta all'MVP 13, dove l'oggetto diventa modificabile).
+- **Motivo**: richiesta del maintainer di un'app in italiano e inglese; ogni nuova funzione deve nascere bilingue (regola in `AGENTS.md`).
+- **Alternative scartate**: libreria i18n (react-i18next o simili: una dipendenza per 400 chiavi piatte, senza controllo di compilazione sulle chiavi mancanti); `AppError(chiave)` con handler (obbligava a cambiare ogni punto in cui si lancia un errore e a far passare la lingua nei servizi); rimontare le pagine a ogni cambio di lingua (farebbe perdere i campi già scritti nell'iscrizione).
+- **Limiti noti**: i contenuti scritti dagli organizzatori (nomi e testi delle attività, istruzioni di pagamento, testi legali) restano come scritti (Backlog); le voci di cronologia e i testi di sistema delle viste admin si traducono con l'MVP 12; i messaggi del server nelle pagine admin dipendono dalla lingua della richiesta.
+
+## D-042 · Indirizzi in inglese con alias italiani che reindirizzano
+
+- **Data**: 2026-11-05
+- **Decisione**: i percorsi sono definiti in `frontend/src/routes.ts` (inglese: `/register`, `/login`, `/login/verify`, `/me`, `/guide`, `/admin/days`...). La rotta `*` chiama `canonicalPath()`: se il percorso è un alias italiano (scritto a mano o da un vecchio link) fa un redirect con `replace`, conservando query e hash; la query `?scheda=organizzatori` della guida diventa `?tab=organizers`. Il backend genera solo link inglesi; la CSP `frame-ancestors` di Google Sites vale sia per `/register` sia per `/iscrizione`, perché il redirect avviene dentro l'iframe.
+- **Motivo**: link leggibili in inglese, ma i magic link già nelle caselle e l'iframe già incorporato nel sito non devono rompersi.
+- **Alternative scartate**: due insiemi di rotte uguali (due indirizzi per la stessa pagina, titoli e link doppi); redirect lato server (il frontend è una app a pagina singola servita con un fallback unico).
+- **Limiti noti**: gli alias coprono solo i percorsi che esistevano; nessun alias per quelli nuovi.
+
+## D-043 · Guida in due lingue con file omonimi
+
+- **Data**: 2026-11-05
+- **Decisione**: la guida sta in `frontend/src/guide/{it,en}/{participant,admin}/NN-<slug-inglese>.md`: stessa numerazione e stesso nome nelle due lingue, ancore in inglese. Un test confronta le sezioni dei due elenchi, e `check-guide.sh` chiede di toccare la guida in tutte e due le lingue. Fino all'MVP 12 la guida organizzatori inglese manca e il caricamento ricade sull'italiano.
+- **Motivo**: le due versioni si rivedono insieme nella stessa PR e non si disallineano.
+- **Alternative scartate**: guida inglese generata da traduzione automatica a ogni build (testi non rivisti); un solo file con le due lingue (diff illeggibili).
+
+
+## D-044 · Pannello admin in due lingue: tabella di etichette per i CSV, cronologia lasciata com'è
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) il pannello admin usa gli stessi dizionari dell'MVP 11 e si rimonta quando cambia la lingua (`AdminLayout`), perché le sue viste mostrano etichette scritte dal server; (2) i link «Scarica CSV» sono semplici link e non mandano `Accept-Language`: la lingua viaggia nell'indirizzo (`?lang=en`) e il middleware la preferisce all'intestazione; (3) intestazioni, nomi dei file, valori fissi e righe del report CSV restano scritti in italiano nel codice e si traducono con `tr()`, grazie alla tabella `LABELS_EN` in `app/admin_texts.py`; un test controlla che ogni intestazione di ogni CSV abbia la sua versione inglese; formato (`;`, BOM, virgola decimale, date `gg/mm/aaaa`) invariato, per Excel italiano; (4) gli avvisi che le API mostrano all'admin passano dal catalogo con `t()`; (5) la cronologia delle modifiche («Cronologia» della scheda) è un registro: le voci nuove si scrivono ancora in italiano e quelle vecchie non si toccano.
+- **Motivo**: richiesta del maintainer di un'interfaccia tutta bilingue; i CSV e la scheda sono usati ogni giorno dagli organizzatori.
+- **Alternative scartate**: scaricare i CSV con `fetch` per mandare l'intestazione (perde il download nativo e l'avviso sui dati sanitari); tradurre qualunque cella di un CSV (traduce anche nomi di persone uguali a una etichetta); voci di cronologia strutturate e tradotte alla lettura (richiede un cambio di schema, nel Backlog).
+- **Limiti noti**: la cronologia resta in italiano; il separatore `;` e le date `gg/mm/aaaa` restano anche nei CSV inglesi; i nomi e i testi scritti dagli organizzatori non si traducono.
+
+
+## D-045 · Email di iscrizione personalizzabile con immagine generata dal server
+
+- **Data**: 2026-11-05
+- **Decisione**: (1) l'admin scrive oggetto e testo iniziale per lingua (tabella `email_template`) e la frase dell'immagine, con colore e posizione (tabella `registration_card`, migrazione 0012); i segnaposto sono `{first_name}`, `{last_name}`, `{event}`, `{start_date}`, `{end_date}` e uno sconosciuto è rifiutato al salvataggio; (2) il testo scritto sostituisce solo saluto e introduzione: slot, quota, causale, scadenza, istruzioni e link restano generati dal sistema, in fondo e non modificabili; con i campi vuoti la email è identica a prima; (3) l'immagine è un PNG composto dal server con Pillow (sfondo caricato dall'admin + frase, Montserrat 800 con licenza OFL in `backend/app/assets/fonts/`): così si vede uguale in tutti i programmi di posta e la persona può salvarlo e condividerlo; (4) lo sfondo caricato non si conserva com'è: si controlla formato (JPEG, PNG, WebP), dimensione (5 MB) e numero di pixel, si corregge la rotazione, si riduce a 1600 px e si ricodifica in PNG, togliendo metadati; sta nel database come `LargeBinary`; (5) la email diventa multipart: testo semplice + HTML (tutto escapato, link cliccabili) con l'immagine inline (`cid:`) tramite gli allegati di Azure Communication Services; (6) l'immagine c'è solo se è stato caricato uno sfondo e solo per chi si iscrive con una prenotazione; (7) l'admin ha un'anteprima (con il nome «Ada Lovelace», che segue quanto scrive) e «Inviami una prova» (con il suo nome, nella lingua scelta).
+- **Motivo**: richiesta del maintainer: testo della conferma modificabile e immagine con «I'm nome cognome and I'll be at evento from data to data».
+- **Alternative scartate**: sfondo CSS con testo HTML sopra (Outlook e molte app ignorano gli sfondi, e non è un'immagine condivisibile); Azure Blob Storage per lo sfondo (una risorsa in più per un file solo); testo della email completamente libero (si poteva togliere il link di accesso per sbaglio); un testo unico bilingue (le persone riceverebbero tutto in due lingue).
+- **Limiti noti**: alcuni client (Gmail per alcuni account, Outlook) mostrano le immagini inline solo dopo un clic su «mostra immagini»; il testo accanto resta leggibile; i caratteri non latini (cirillico, arabo, CJK) non hanno glifi in Montserrat e comparirebbero come riquadri; la prova non mostra un blocco di pagamento reale ma i canali attivi; l'oggetto personalizzato non ha un limite di lunghezza oltre i 200 caratteri.
+
+
+## D-046 · Dopo la review della PR #13: lingua non modificabile dal modulo pubblico, 0011 senza default, ancore e undo
 
 - **Data**: 2026-11-06
-- **Decisione**: (1) il nome nell'intestazione, nel titolo delle pagine e negli oggetti delle email è `edition.name` (contesto React `EventNameProvider`; «Cissonauti Summer Camp» solo come ripiego); (2) ogni email = oggetto + apertura + blocco automatico + chiusura: l'admin modifica oggetto, apertura e chiusura di tutte e 9 le email (tabella `email_text`, una riga per edizione e tipo, campo null = predefinito), il blocco con i dati della prenotazione non è modificabile; segnaposto `{nome}` e `{evento}` sostituiti in una sola passata, senza `format`; (3) il paragrafo sopra il modulo è `edition.registration_intro` con un endpoint dedicato (`PUT /api/admin/registration-intro`), non dentro `EditionIn`, così salvare le Impostazioni non lo cancella; (4) dopo il login (password o link) si va sempre a `/io`, gli admin hanno il pulsante verso il pannello e «La mia pagina» nel menu admin; (5) il magic link vale 10 minuti ed è riusabile in quel tempo (`used_at` registra solo il primo uso), la pagina di verifica entra da sola, con una guardia contro la doppia chiamata di StrictMode.
-- **Motivo**: richieste del maintainer; il riuso del link dentro i 10 minuti toglie il clic «Entra» senza che gli scanner di posta lo brucino.
-- **Alternative scartate**: link monouso con la pagina «Entra» (un clic in più); link monouso che entra da solo (lo scanner lo brucia); colonne dei testi sull'edizione (9 email × 3 campi); anteprima dell'email completa (Backlog).
-- **Limiti noti**: un'email inoltrata dà accesso per 10 minuti; i testi cambiano solo le email future; l'oggetto predefinito del pagamento ricevuto è «Pagamento ricevuto: sei dentro a {evento}!».
+- **Decisione**: (1) il modulo pubblico di iscrizione non cambia mai la lingua salvata di una persona che esiste già (a differenza di quanto scritto in D-041 e nella spec dell'MVP 11): chiunque conosca un'email potrebbe farlo; le email di quella richiesta partono comunque nella lingua del modulo e la lingua salvata si cambia solo da loggati; (2) la colonna `participant.locale` nasce senza default del database (aggiunta vuota, riempita con `it`, poi resa obbligatoria): su SQL Server un default è un vincolo con nome generato che va tolto prima della colonna e il downgrade falliva; il valore `it` lo dà l'ORM; (3) i vecchi indirizzi della guida portano anche le vecchie ancore (`#giorni-e-slot` → `#days-and-slots`); (4) il cambio di lingua non rimonta «Da incassare», per non perdere i pagamenti appena segnati e i loro 10 secondi di annullo (D-040); le altre pagine admin si rimontano ancora.
+- **Motivo**: review di Copilot sulla PR #13 e controllo «Backend su SQL Server» rosso.
+- **Limiti noti**: sulle altre pagine admin un cambio di lingua perde i campi non salvati (per esempio un importo scritto e non registrato); la 0011 è stata riscritta prima del merge, quindi un database di sviluppo che l'aveva già applicata va riportato a `0010` e riapplicato.
 

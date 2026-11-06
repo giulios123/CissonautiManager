@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_now, require_admin
+from app.i18n import t
 from app.models import Participant
 from app.services import plus_one as plus_one_service
 
@@ -37,13 +38,13 @@ def put_plus_one(
     are only on a waitlist too, so it is keyed by the person and not by a booking."""
     participant = db.get(Participant, participant_id)
     if participant is None:
-        raise HTTPException(status_code=404, detail="Persona non trovata")
+        raise HTTPException(status_code=404, detail=t("person.not_found"))
     try:
         plus_one_service.set_verified(db, admin, participant, body.verified, now)
     except plus_one_service.NothingToVerify as exc:
         raise HTTPException(
             status_code=422,
-            detail="Per verificare un +1 serve che la persona abbia indicato chi l'ha invitata",
+            detail=t("plus_one.needs_inviter"),
         ) from exc
     return PlusOneOut(
         participant_id=participant.id,

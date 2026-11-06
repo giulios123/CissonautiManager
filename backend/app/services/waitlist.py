@@ -47,7 +47,6 @@ from app.services import audit
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services.amounts import recompute_amount
-from app.services.email_texts import load_texts
 from app.services.payments import paid_total
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 from app.timefmt import format_slot
@@ -76,11 +75,11 @@ class LegalAcceptance:
 
 
 REFUSAL_MESSAGES: dict[str, str] = {
-    "not_full": "Lo slot ha ancora posti liberi: prenotalo direttamente",
-    "list_full": "La lista d'attesa di questo slot è completa",
-    "already_booked": "Hai già questo slot",
-    "already_listed": "Sei già in lista per questo slot",
-    "past_day": "Il giorno di questo slot è già passato",
+    "not_full": "waitlist.not_full",
+    "list_full": "waitlist.list_full",
+    "already_booked": "waitlist.already_booked",
+    "already_listed": "waitlist.already_listed",
+    "past_day": "waitlist.past_day",
 }
 
 
@@ -418,7 +417,7 @@ def _notify(
         raw = auth_service.create_magic_link_token(db, participant, now)
         link = auth_service.magic_link_url(settings, raw)
     else:
-        link = f"{settings.app_base_url.rstrip('/')}/accedi"
+        link = f"{settings.app_base_url.rstrip('/')}/login"
     sender.send(
         waitlist_promoted_email(
             booking,
@@ -427,6 +426,5 @@ def _notify(
             enabled_channels(db, edition),
             booking.amount_due_cents - paid_total(booking),
             link,
-            texts=load_texts(db, "waitlist_promoted", edition),
         )
     )

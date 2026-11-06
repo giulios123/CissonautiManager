@@ -65,3 +65,53 @@ def test_acs_provider_without_connection_string_refuses_to_start():
 def test_unknown_provider_is_refused():
     with pytest.raises(ValueError, match="Unsupported"):
         build_email_sender(make_settings(email_provider="carrier-pigeon"))
+
+
+def test_html_and_inline_picture_are_sent_in_the_payload():
+    from app.email import EmailAttachment
+
+    client = FakeClient()
+    message = EmailMessage(
+        to="ada@example.com",
+        subject="Ciao",
+        body="Testo",
+        html='<p>Testo</p><img src="cid:card">',
+        attachments=(EmailAttachment("card.png", "image/png", b"\x89PNG", content_id="card"),),
+    )
+    AcsEmailSender("endpoint=x;accesskey=y", "a@b.c", client).send(message)
+    sent = client.sent[0]
+    assert sent["content"] == {
+        "subject": "Ciao",
+        "plainText": "Testo",
+        "html": '<p>Testo</p><img src="cid:card">',
+    }
+    assert sent["attachments"] == [
+        {
+            "name": "card.png",
+            "contentType": "image/png",
+            "contentInBase64": "iVBORw==",
+            "contentId": "card",
+        }
+    ]
+
+
+def test_a_plain_message_has_no_html_or_attachments_key():
+    client = FakeClient()
+    AcsEmailSender("endpoint=x;accesskey=y", "a@b.c", client).send(MESSAGE)
+    assert "attachments" not in client.sent[0]
+    assert "html" not in client.sent[0]["content"]
+
+
+def test_the_console_sender_names_the_extras(caplog):
+    from app.email import EmailAttachment
+
+    message = EmailMessage(
+        "a@b.c",
+        "S",
+        "B",
+        html="<p>B</p>",
+        attachments=(EmailAttachment("c.png", "image/png", b"12", "c"),),
+    )
+    with caplog.at_level(logging.WARNING, logger="app.email"):
+        ConsoleEmailSender().send(message)
+    assert "html part" in caplog.text and "c.png image/png 2 bytes cid:c" in caplog.text

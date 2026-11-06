@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDeadline } from "../booking";
 import { StatusBadge } from "../StatusBadge";
+import { useT, type MessageKey } from "../i18n";
+import { tNow } from "../i18n/messages";
 import { formatEuro } from "../money";
+import { adminRegistrationPath } from "../routes";
 import type { Detail } from "./AdminRegistrationDetail";
 
 type Row = {
@@ -24,16 +27,15 @@ type Row = {
 type Done = { paymentId: number; amountCents: number; row: Row };
 
 const CHANNELS = [
-  ["revolut", "Revolut"],
-  ["satispay", "Satispay"],
-  ["paypal", "PayPal"],
-  ["iban", "Bonifico (IBAN)"],
-] as const;
+  ["revolut", "channel.revolut"],
+  ["satispay", "channel.satispay"],
+  ["paypal", "channel.paypal"],
+  ["iban", "channel.iban"],
+] as const satisfies readonly (readonly [string, MessageKey])[];
 
 /** How long a row shows "Annulla" after it was marked as paid. */
 export const UNDO_WINDOW_MS = 10_000;
 const CHANNEL_KEY = "collect-channel";
-const UNDO_REASON = "Annullato subito dalla vista Da incassare";
 
 function savedChannel(): string {
   try {
@@ -64,6 +66,7 @@ function matches(row: Row, needle: string): boolean {
 }
 
 export function AdminCollect() {
+  const t = useT();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
@@ -160,13 +163,13 @@ export function AdminCollect() {
         setTimeout(() => finish(row.booking_id, true), UNDO_WINDOW_MS),
       );
       setMessage(
-        `Pagamento di ${formatEuro(row.balance_cents)} registrato per ${name}.` +
+        t("collect.paymentRecorded", { amount: formatEuro(row.balance_cents), name }) +
           (detail.warning ? ` ${detail.warning}` : ""),
       );
     } catch (error) {
       setErrors((current) => ({
         ...current,
-        [row.booking_id]: error instanceof ApiError ? error.message : "Non riesco a registrarlo.",
+        [row.booking_id]: error instanceof ApiError ? error.message : t("collect.cannotRecord"),
       }));
     } finally {
       setBusyFor(row.booking_id, false);
@@ -179,16 +182,16 @@ export function AdminCollect() {
     try {
       await api<Detail>(`/api/admin/registrations/${row.booking_id}/payments/${paymentId}/void`, {
         method: "POST",
-        json: { reason: UNDO_REASON },
+        json: { reason: tNow("collect.undoReason") },
       });
       const timer = timers.current.get(row.booking_id);
       if (timer) clearTimeout(timer);
-      setMessage(`Pagamento annullato per ${name}.`);
+      setMessage(t("collect.paymentUndone", { name }));
       finish(row.booking_id, false);
     } catch (error) {
       setErrors((current) => ({
         ...current,
-        [row.booking_id]: error instanceof ApiError ? error.message : "Non riesco ad annullarlo.",
+        [row.booking_id]: error instanceof ApiError ? error.message : t("collect.cannotUndo"),
       }));
     } finally {
       setBusyFor(row.booking_id, false);
@@ -200,54 +203,50 @@ export function AdminCollect() {
 
   return (
     <main className="wide">
-      <h1>Da incassare</h1>
-      <p>
-        Le iscrizioni che aspettano un pagamento. Controlla il conto, cerca la causale e segna il
-        pagamento: dopo averlo segnato hai 10 secondi per annullare, e l&apos;email di conferma
-        parte dopo 30 secondi.
-      </p>
+      <h1>{t("collect.title")}</h1>
+      <p>{t("collect.intro")}</p>
       <div className="row filters">
         <label>
-          Canale dei pagamenti che segni
+          {t("collect.channel")}
           <select value={channel} onChange={(e) => chooseChannel(e.target.value)}>
             {CHANNELS.map(([code, label]) => (
               <option key={code} value={code}>
-                {label}
+                {t(label)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Cerca per nome, email o causale
+          {t("collect.search")}
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
         </label>
       </div>
       <p role="status" aria-live="polite" className="notice ok" hidden={!message}>
         {message}
       </p>
-      {failed && <p role="alert">Non riesco a caricare l&apos;elenco.</p>}
+      {failed && <p role="alert">{t("collect.loadError")}</p>}
       {rows === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : rows.length === 0 ? (
-        <p>Nessun pagamento da incassare.</p>
+        <p>{t("collect.empty")}</p>
       ) : shown.length === 0 ? (
-        <p>Nessun risultato.</p>
+        <p>{t("collect.noResults")}</p>
       ) : (
         <>
-          <p>{shown.length} da incassare</p>
+          <p>{t("collect.count", { n: shown.length })}</p>
           <div className="table-wrap">
             <table>
-              <caption className="sr-only">Iscrizioni da incassare</caption>
+              <caption className="sr-only">{t("collect.caption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Persona</th>
-                  <th scope="col">Causale</th>
-                  <th scope="col">Stato</th>
-                  <th scope="col">Dovuto</th>
-                  <th scope="col">Versato</th>
-                  <th scope="col">Saldo</th>
-                  <th scope="col">Scadenza</th>
-                  <th scope="col">Azione</th>
+                  <th scope="col">{t("people.colPerson")}</th>
+                  <th scope="col">{t("collect.colReference")}</th>
+                  <th scope="col">{t("people.colStatus")}</th>
+                  <th scope="col">{t("people.colDue")}</th>
+                  <th scope="col">{t("people.colPaid")}</th>
+                  <th scope="col">{t("people.colBalance")}</th>
+                  <th scope="col">{t("people.colDeadline")}</th>
+                  <th scope="col">{t("collect.colAction")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -257,7 +256,7 @@ export function AdminCollect() {
                   return (
                     <tr key={row.booking_id}>
                       <th scope="row">
-                        <Link to={`/admin/iscrizioni/${row.booking_id}`}>{name}</Link>
+                        <Link to={adminRegistrationPath(row.booking_id)}>{name}</Link>
                         <br />
                         <small>{row.email}</small>
                       </th>
@@ -272,15 +271,17 @@ export function AdminCollect() {
                       <td>
                         {paid ? (
                           <>
-                            <span>Pagato {formatEuro(paid.amountCents)}</span>{" "}
+                            <span>
+                              {t("collect.paid", { amount: formatEuro(paid.amountCents) })}
+                            </span>{" "}
                             <button
                               type="button"
                               className="secondary"
                               disabled={busy.has(row.booking_id)}
-                              aria-label={`Annulla il pagamento di ${name}`}
+                              aria-label={t("collect.undoAria", { name })}
                               onClick={() => undo(row, paid.paymentId)}
                             >
-                              Annulla
+                              {t("collect.undo")}
                             </button>
                           </>
                         ) : (
@@ -288,12 +289,14 @@ export function AdminCollect() {
                             <button
                               type="button"
                               disabled={busy.has(row.booking_id)}
-                              aria-label={`Segna pagato per ${name}`}
+                              aria-label={t("collect.markAria", { name })}
                               onClick={() => markPaid(row)}
                             >
-                              Segna pagato
+                              {t("collect.mark")}
                             </button>{" "}
-                            <Link to={`/admin/iscrizioni/${row.booking_id}`}>Altro importo</Link>
+                            <Link to={adminRegistrationPath(row.booking_id)}>
+                              {t("collect.otherAmount")}
+                            </Link>
                           </>
                         )}
                         {errors[row.booking_id] && (

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
+import { useT } from "../i18n";
 import type { Detail } from "./AdminRegistrationDetail";
 
 export function AdminEditDetails({
@@ -11,6 +12,7 @@ export function AdminEditDetails({
   participant: Detail["participant"];
   onDone: (detail: Detail, text: string) => void;
 }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -30,40 +32,40 @@ export function AdminEditDetails({
           can_bring: text("can_bring"),
         },
       });
-      onDone(updated, "Dati salvati.");
+      onDone(updated, t("dsub.dataSaved"));
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
     }
   }
 
   return (
     // Keyed on the saved values so the fields show what the server now holds.
     <form onSubmit={submit} aria-labelledby="edit-title" key={JSON.stringify(participant)}>
-      <h2 id="edit-title">Modifica i dati</h2>
+      <h2 id="edit-title">{t("dsub.editData")}</h2>
       <div className="row">
         <label>
-          Nome
+          {t("reg.firstName")}
           <input name="first_name" defaultValue={participant.first_name} required maxLength={100} />
         </label>
         <label>
-          Cognome
+          {t("reg.lastName")}
           <input name="last_name" defaultValue={participant.last_name} required maxLength={100} />
         </label>
       </div>
       <label>
-        Email
+        {t("login.email")}
         <input type="email" name="email" defaultValue={participant.email} required />
       </label>
       <label>
-        Telefono (vuoto = nessuno)
+        {t("dsub.phoneEmpty")}
         <input type="tel" name="phone" defaultValue={participant.phone ?? ""} maxLength={50} />
       </label>
       <label>
-        Invitato da (vuoto = nessuno)
+        {t("dsub.invitedByEmpty")}
         <input name="invited_by" defaultValue={participant.invited_by ?? ""} maxLength={200} />
       </label>
       <label>
-        Cosa porta al camp
+        {t("det.canBring")}
         <textarea
           name="can_bring"
           rows={3}
@@ -72,7 +74,7 @@ export function AdminEditDetails({
           maxLength={2000}
         />
       </label>
-      <button type="submit">Salva i dati</button>
+      <button type="submit">{t("dsub.saveData")}</button>
       {error && (
         <p role="alert" className="notice error">
           {error}

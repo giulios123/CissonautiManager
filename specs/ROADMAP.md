@@ -62,11 +62,23 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 - **Contenuto**: pagina «Da incassare» con le iscrizioni in attesa o con un saldo da versare, ricerca per nome, email e causale, canale scelto una volta, tasto «Segna pagato» che registra il saldo, annullo immediato per 10 secondi, email di conferma differita di 30 secondi (con rete di sicurezza nel job orario), link alla scheda per importi diversi. Una migrazione.
 - **Fatto quando**: dall'elenco un admin cerca la causale di un bonifico, segna il pagamento in un clic, l'iscrizione diventa `confermata` e parte l'email; un clic sbagliato si annulla entro 10 secondi, la prenotazione torna in attesa e l'email non parte.
 
-## MVP 11 · Testi dell'evento e accesso
+## MVP 11 · Lingue e indirizzi
 
-- **Obiettivo**: nome dell'edizione ovunque, testi di email e modulo modificabili dall'admin, accesso più diretto.
-- **Contenuto**: nome dell'edizione in intestazione e oggetti; oggetto, apertura e chiusura delle email e paragrafo del modulo modificabili da «Testi»; dopo il login sempre `/io` con link al pannello; magic link riusabile 10 minuti e senza pagina «Entra». Una migrazione.
-- **Fatto quando**: l'admin cambia un testo e lo trova nella prossima email e nel modulo, un admin entra sulla sua pagina, un link di accesso si apre senza clic.
+- **Obiettivo**: app in italiano e inglese, indirizzi in inglese con alias italiani che reindirizzano.
+- **Contenuto**: rotte in `routes.ts`, i18n con dizionari tipizzati, selettore IT/EN, lingua salvata sul partecipante, errori ed email nella sua lingua, pagine e guida del partecipante tradotte. Una migrazione.
+- **Fatto quando**: `/iscrizione` porta a `/register`, un vecchio magic link funziona, una persona si iscrive in inglese e riceve le email in inglese.
+
+## MVP 12 · Pannello admin in inglese
+
+- **Obiettivo**: il pannello degli organizzatori nelle due lingue.
+- **Contenuto**: viste, scheda e impostazioni tradotte, CSV per lingua, guida organizzatori in inglese con test di parità.
+- **Fatto quando**: un admin usa tutto il pannello in inglese e scarica un CSV con intestazioni inglesi.
+
+## MVP 13 · Email di iscrizione personalizzabile
+
+- **Obiettivo**: testo della conferma modificabile e immagine con nome, evento e date.
+- **Contenuto**: testi per lingua con segnaposto, sfondo caricato dall'admin, card PNG generata con Pillow e inline nella mail HTML, anteprima e invio di prova. Una migrazione.
+- **Fatto quando**: l'admin carica uno sfondo, scrive il testo, vede l'anteprima e una nuova iscrizione riceve la mail con «I'm Nome Cognome and I'll be at ...».
 
 ## Backlog
 
@@ -100,3 +112,8 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Note di rilascio riscritte per gli organizzatori in italiano (oggi sono i testi dei commit, in inglese), emerso nella spec dell'MVP 9.
 - Guida in più lingue, ricerca nel testo e immagini (MVP 9).
 - Importare l'estratto conto (CSV della banca) e abbinare i movimenti ai codici in automatico; ritardo dell'email di conferma anche dalla scheda; ritiro di un'email già partita; sollecito ai non paganti dalla vista «Da incassare» (emersi nella spec dell'MVP 10).
+- Traduzione dei contenuti scritti dall'admin (attività, istruzioni di pagamento, testi legali), emersa nella spec dell'MVP 11.
+- Card dell'email scaricabile dalla pagina personale; altre email modificabili dall'admin (MVP 13).
+- Note di rilascio tradotte in inglese (MVP 12).
+- Voci di cronologia strutturate e tradotte alla lettura, invece di testi italiani salvati (emerso nell'MVP 12).
+- Email modificabili oltre alla conferma di iscrizione (pagamento ricevuto, promemoria, lista d'attesa); card dell'immagine scaricabile dalla pagina personale; font con caratteri non latini per i nomi (emersi nell'MVP 13).

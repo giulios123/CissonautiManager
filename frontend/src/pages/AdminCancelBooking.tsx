@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView } from "../auth";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { useT } from "../i18n";
 import { formatEuro } from "../money";
 import type { Detail } from "./AdminRegistrationDetail";
 
@@ -16,6 +17,7 @@ export function AdminCancelBooking({
   booking: BookingView;
   onDone: (result: AdminCancelResult) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export function AdminCancelBooking({
       setOpen(false);
       onDone(result);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Riprova tra poco.");
+      setError(caught instanceof ApiError ? caught.message : t("common.retryShortly"));
     } finally {
       setWorking(false);
     }
@@ -40,12 +42,12 @@ export function AdminCancelBooking({
   return (
     <>
       <button type="button" className="danger" ref={triggerRef} onClick={() => setOpen(true)}>
-        Disdici a nome della persona
+        {t("dsub.cancelButton")}
       </button>
       {open && (
         <ConfirmDialog
-          title="Disdire l'iscrizione a nome della persona?"
-          confirmLabel="Sì, disdico"
+          title={t("dsub.cancelTitle")}
+          confirmLabel={t("dsub.cancelConfirm")}
           working={working}
           error={error}
           onConfirm={confirm}
@@ -55,14 +57,11 @@ export function AdminCancelBooking({
           }}
           returnFocusTo={triggerRef}
         >
-          <p>I posti si liberano subito e alla persona arriva l&apos;email di conferma.</p>
+          <p>{t("dsub.cancelBody")}</p>
           {booking.paid_cents > 0 ? (
-            <p>
-              Ha già versato {formatEuro(booking.paid_cents)}: la disdetta resta aperta finché non
-              registri il rimborso.
-            </p>
+            <p>{t("dsub.cancelPaid", { amount: formatEuro(booking.paid_cents) })}</p>
           ) : (
-            <p>Non risultano pagamenti, quindi l&apos;iscrizione viene rimossa.</p>
+            <p>{t("dsub.cancelUnpaid")}</p>
           )}
         </ConfirmDialog>
       )}

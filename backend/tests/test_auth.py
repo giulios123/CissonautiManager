@@ -41,7 +41,7 @@ class TestMagicLinkRequest:
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
         assert len(outbox.sent) == 1
         assert outbox.sent[0].to == "ada@example.com"
-        assert "https://camp.example.org/accedi/verifica?token=" in outbox.sent[0].body
+        assert "https://camp.example.org/login/verify?token=" in outbox.sent[0].body
 
     def test_email_lookup_ignores_case_and_spaces(self, client, outbox, make_participant):
         make_participant("ada@example.com")
@@ -59,7 +59,7 @@ class TestVerify:
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
         response = client.post("/api/auth/verify", json={"token": token_from(outbox)})
         assert response.status_code == 200
-        assert response.json() == {"role": ROLE_PARTICIPANT, "redirect": "/io"}
+        assert response.json() == {"role": ROLE_PARTICIPANT, "redirect": "/me"}
         cookie = response.headers["set-cookie"].lower()
         assert "csc_session=" in cookie
         assert "httponly" in cookie
@@ -67,44 +67,30 @@ class TestVerify:
         assert "samesite=lax" in cookie
         assert f"max-age={14 * 24 * 3600}" in cookie
 
-    def test_admin_lands_on_their_own_page(self, client, outbox, make_participant):
+    def test_admin_is_redirected_to_admin_panel(self, client, outbox, make_participant):
         make_participant("boss@example.com", role=ROLE_ADMIN)
         client.post("/api/auth/magic-link", json={"email": "boss@example.com"})
         response = client.post("/api/auth/verify", json={"token": token_from(outbox)})
-        assert response.json() == {"role": ROLE_ADMIN, "redirect": "/io"}
+        assert response.json() == {"role": ROLE_ADMIN, "redirect": "/admin"}
 
-    def test_token_can_be_reused_until_it_expires(self, client, outbox, clock, make_participant):
+    def test_token_is_single_use(self, client, outbox, make_participant):
         make_participant("ada@example.com")
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
         token = token_from(outbox)
         assert client.post("/api/auth/verify", json={"token": token}).status_code == 200
-        clock.advance(minutes=5)
-        assert client.post("/api/auth/verify", json={"token": token}).status_code == 200
+        assert client.post("/api/auth/verify", json={"token": token}).status_code == 400
 
-    def test_first_use_is_recorded_once(self, client, outbox, clock, db, make_participant):
-        from app.models import MagicLinkToken
-
+    def test_token_valid_until_30_minutes(self, client, outbox, clock, make_participant):
         make_participant("ada@example.com")
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
-        token = token_from(outbox)
-        client.post("/api/auth/verify", json={"token": token})
-        first = db.scalar(select(MagicLinkToken)).used_at
-        clock.advance(minutes=2)
-        client.post("/api/auth/verify", json={"token": token})
-        db.expire_all()
-        assert db.scalar(select(MagicLinkToken)).used_at == first
-
-    def test_token_valid_until_10_minutes(self, client, outbox, clock, make_participant):
-        make_participant("ada@example.com")
-        client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
-        clock.advance(minutes=9, seconds=59)
+        clock.advance(minutes=29, seconds=59)
         response = client.post("/api/auth/verify", json={"token": token_from(outbox)})
         assert response.status_code == 200
 
-    def test_token_expires_after_10_minutes(self, client, outbox, clock, make_participant):
+    def test_token_expires_after_30_minutes(self, client, outbox, clock, make_participant):
         make_participant("ada@example.com")
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
-        clock.advance(minutes=10)
+        clock.advance(minutes=30)
         response = client.post("/api/auth/verify", json={"token": token_from(outbox)})
         assert response.status_code == 400
 

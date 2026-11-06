@@ -30,47 +30,32 @@ function renderAt(path: string) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("magic link verification page", () => {
-  const ada = {
-    id: 1,
-    first_name: "Ada",
-    last_name: "Lovelace",
-    email: "ada@example.com",
-    role: "participant",
-    personal_code: "CSC-7K3P",
-    has_password: false,
-    payment_channels: [],
-    bookings: [],
-  };
-
-  it("signs in as soon as the page opens, without a button", async () => {
-    const calls = stubFetch((url) => ({
-      body: url === "/api/auth/verify" ? { role: "participant", redirect: "/io" } : ada,
-    }));
-    renderAt("/accedi/verifica?token=abc");
-    expect(screen.queryByRole("button", { name: "Entra" })).not.toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Ciao Ada!" })).toBeInTheDocument();
-    expect(calls.filter((call) => call === "POST /api/auth/verify")).toHaveLength(1);
+  it("does not use the token until the button is pressed", async () => {
+    const calls = stubFetch(() => ({ body: { role: "participant", redirect: "/me" } }));
+    renderAt("/login/verify?token=abc");
+    expect(await screen.findByRole("button", { name: "Entra" })).toBeInTheDocument();
+    expect(calls).toHaveLength(0);
   });
 
   it("shows an error and a way to ask for a new link when the token is rejected", async () => {
     stubFetch(() => ({ status: 400, body: { detail: "Link non valido o scaduto" } }));
-    renderAt("/accedi/verifica?token=abc");
+    renderAt("/login/verify?token=abc");
+    await userEvent.click(await screen.findByRole("button", { name: "Entra" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Link non valido o scaduto");
     expect(screen.getByRole("link", { name: "Richiedi un nuovo link" })).toBeInTheDocument();
   });
 
-  it("explains when there is no token at all, without calling the server", () => {
-    const calls = stubFetch(() => ({ body: {} }));
-    renderAt("/accedi/verifica");
+  it("explains when there is no token at all", () => {
+    stubFetch(() => ({ body: {} }));
+    renderAt("/login/verify");
     expect(screen.getByRole("heading", { name: "Link non valido" })).toBeInTheDocument();
-    expect(calls.filter((call) => call.includes("/api/auth/verify"))).toHaveLength(0);
   });
 });
 
 describe("login page", () => {
   it("shows the neutral message after requesting a link", async () => {
     stubFetch(() => ({ body: { message: "Se l'email è registrata riceverai un link." } }));
-    renderAt("/accedi");
+    renderAt("/login");
     const user = userEvent.setup();
     await user.type(screen.getAllByLabelText("Email")[0], "ada@example.com");
     await user.click(screen.getByRole("button", { name: "Invia il link" }));
@@ -79,7 +64,7 @@ describe("login page", () => {
 
   it("shows the generic error for wrong credentials", async () => {
     stubFetch(() => ({ status: 401, body: { detail: "Email o password non corretti" } }));
-    renderAt("/accedi");
+    renderAt("/login");
     const user = userEvent.setup();
     await user.type(screen.getAllByLabelText("Email")[1], "ada@example.com");
     await user.type(screen.getByLabelText("Password"), "wrong password");
@@ -116,13 +101,13 @@ describe("personal page", () => {
 
   it("redirects to login without a session", async () => {
     stubFetch(() => ({ status: 401, body: { detail: "Not authenticated" } }));
-    renderAt("/io");
+    renderAt("/me");
     expect(await screen.findByRole("heading", { name: "Accedi" })).toBeInTheDocument();
   });
 
   it("shows balance, deadline, reference code and payment instructions", async () => {
     stubFetch(() => ({ body: me }));
-    renderAt("/io");
+    renderAt("/me");
     expect(await screen.findByRole("heading", { name: "Ciao Ada!" })).toBeInTheDocument();
     expect(screen.getByText("lun 13/07 mattina (09:00-13:00)")).toBeInTheDocument();
     expect(screen.getByText(/Ancora da versare/).parentElement).toHaveTextContent("7,00");

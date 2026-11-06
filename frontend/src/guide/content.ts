@@ -1,3 +1,5 @@
+import type { Locale } from "../i18n/locale";
+import { ROUTES } from "../routes";
 export type GuideSection = { slug: string; title: string; body: string };
 
 /**
@@ -20,52 +22,64 @@ export function parseSections(files: Record<string, string>): GuideSection[] {
     });
 }
 
-const participantFiles = import.meta.glob("./partecipante/*.md", {
+const participantFiles = import.meta.glob("./*/participant/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
 // Only admins open this guide: loaded on demand, so the chunk is not downloaded by participants.
-const adminFiles = import.meta.glob("./admin/*.md", {
+const adminFiles = import.meta.glob("./*/admin/*.md", {
   query: "?raw",
   import: "default",
 }) as Record<string, () => Promise<string>>;
 
-export const participantGuide: GuideSection[] = parseSections(participantFiles);
+/** The files of one language and audience: `./en/participant/*.md`. */
+function inFolder<T>(
+  files: Record<string, T>,
+  locale: Locale,
+  audience: string,
+): Record<string, T> {
+  const prefix = `./${locale}/${audience}/`;
+  return Object.fromEntries(Object.entries(files).filter(([path]) => path.startsWith(prefix)));
+}
 
-export async function loadAdminGuide(): Promise<GuideSection[]> {
+export function participantGuide(locale: Locale): GuideSection[] {
+  return parseSections(inFolder(participantFiles, locale, "participant"));
+}
+
+export async function loadAdminGuide(locale: Locale): Promise<GuideSection[]> {
+  const loaders = inFolder(adminFiles, locale, "admin");
   const entries = await Promise.all(
-    Object.entries(adminFiles).map(async ([path, load]) => [path, await load()] as const),
+    Object.entries(loaders).map(async ([path, load]) => [path, await load()] as const),
   );
   return parseSections(Object.fromEntries(entries));
 }
 
 const ADMIN_PAGES: Record<string, string> = {
-  "/admin": "persone",
-  "/admin/giorni": "giorni-e-slot",
-  "/admin/settimana": "settimana",
-  "/admin/pasti": "pasti",
-  "/admin/attivita": "attivita",
-  "/admin/contributi": "contributi",
+  "/admin": "people",
+  "/admin/days": "days-and-slots",
+  "/admin/week": "week",
+  "/admin/meals": "meals",
+  "/admin/activities": "activities",
+  "/admin/contributions": "contributions",
   "/admin/report": "report",
-  "/admin/da-incassare": "da-incassare",
-  "/admin/da-verificare": "da-verificare",
-  "/admin/amministratori": "amministratori",
-  "/admin/testi": "testi",
-  "/admin/impostazioni": "impostazioni",
+  "/admin/to-collect": "to-collect",
+  "/admin/to-review": "to-review",
+  "/admin/admins": "admins",
+  "/admin/settings": "settings",
 };
 
 /** The guide section that explains an admin page, so the help link opens the right place. */
 export function adminGuideSlug(pathname: string): string | undefined {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  if (/^\/admin\/iscrizioni\/[^/]+$/.test(path)) return "persone";
-  if (/^\/admin\/attivita\/[^/]+$/.test(path)) return "attivita";
+  if (/^\/admin\/registrations\/[^/]+$/.test(path)) return "people";
+  if (/^\/admin\/activities\/[^/]+$/.test(path)) return "activities";
   return ADMIN_PAGES[path];
 }
 
 /** Link to the admin guide, at the section of the current page when there is one. */
 export function adminGuideLink(pathname: string): string {
   const slug = adminGuideSlug(pathname);
-  return `/guida?scheda=organizzatori${slug ? `#${slug}` : ""}`;
+  return `${ROUTES.guide}?tab=organizers${slug ? `#${slug}` : ""}`;
 }

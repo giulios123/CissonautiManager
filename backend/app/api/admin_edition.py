@@ -9,6 +9,7 @@ from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.email import EmailSender
+from app.i18n import t
 from app.models import DOC_HEALTH, Edition, LegalDocument, PaymentChannel, slot_sort_key
 from app.services import edition as edition_service
 from app.services import waitlist as waitlist_service
@@ -49,18 +50,18 @@ class EditionIn(BaseModel):
     @model_validator(mode="after")
     def check_consistency(self) -> Self:
         if (self.start_date is None) != (self.end_date is None):
-            raise ValueError("Indica sia la data di inizio sia quella di fine")
+            raise ValueError(t("edition.both_dates"))
         if self.start_date and self.end_date and self.end_date < self.start_date:
-            raise ValueError("La data di fine non può precedere quella di inizio")
+            raise ValueError(t("edition.end_before_start"))
         if self.start_date and self.end_date and (self.end_date - self.start_date).days > 60:
-            raise ValueError("L'edizione non può durare più di 60 giorni")
+            raise ValueError(t("edition.too_long"))
         ranges = [
             (self.morning_start, self.morning_end),
             (self.afternoon_start, self.afternoon_end),
             (self.evening_start, self.evening_end),
         ]
         if not all(_valid_range(start, end) for start, end in ranges):
-            raise ValueError("L'orario di inizio deve precedere quello di fine")
+            raise ValueError(t("edition.time_order"))
         return self
 
 
@@ -91,8 +92,6 @@ class LegalOut(BaseModel):
 
 class EditionOut(EditionIn):
     id: int
-    # Paragraph above the sign-up form as stored (null means the default).
-    registration_intro: str | None = None
     slots: list[SlotOut]
     payment_channels: list[ChannelOut]
     privacy: LegalOut | None
@@ -121,7 +120,6 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
     return EditionOut(
         **base.model_dump(),
         id=edition.id,
-        registration_intro=edition.registration_intro,
         slots=[SlotOut.model_validate(s) for s in slots],
         payment_channels=[
             ChannelOut.model_validate(c) for c in edition_service.list_channels(db, edition)
@@ -135,7 +133,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
 def _require_edition(db: Session) -> Edition:
     edition = edition_service.get_active_edition(db)
     if edition is None:
-        raise HTTPException(status_code=404, detail="Nessuna edizione configurata")
+        raise HTTPException(status_code=404, detail=t("edition.none"))
     return edition
 
 
@@ -158,7 +156,7 @@ def put_edition(
         days = ", ".join(d.strftime("%d/%m/%Y") for d in exc.days)
         raise HTTPException(
             status_code=409,
-            detail=f"Non puoi togliere giorni con slot già prenotati: {days}",
+            detail=t("edition.days_in_use", days=days),
         ) from exc
     # A larger capacity (or a higher waitlist share) can free seats for people waiting.
     waitlist_service.promote_freed(

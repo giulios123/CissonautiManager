@@ -40,7 +40,7 @@ function stub(me: unknown | null, releases: unknown = RELEASES) {
   return urls;
 }
 
-function renderGuide(path = "/guida") {
+function renderGuide(path = "/guide") {
   render(
     <MemoryRouter initialEntries={[path]}>
       <App />
@@ -70,7 +70,7 @@ describe("Guide", () => {
     expect(screen.queryByRole("heading", { name: "Persone e scheda iscrizione" })).toBeNull();
     expect(screen.getByRole("link", { name: "Torna alla tua iscrizione" })).toHaveAttribute(
       "href",
-      "/io",
+      "/me",
     );
     expect(await screen.findByText("abc1234")).toBeInTheDocument();
     expect(urls).not.toContain("/api/admin/release-notes");
@@ -111,7 +111,7 @@ describe("Guide", () => {
 
   it("says so when there are no release notes yet", async () => {
     stub(adminMe, { releases: [] });
-    renderGuide("/guida?scheda=novita");
+    renderGuide("/guide?tab=news");
     expect(await screen.findByText(/dopo il primo rilascio/)).toBeInTheDocument();
   });
 
@@ -134,7 +134,7 @@ describe("Guide", () => {
     stub(adminMe);
     const scroll = vi.fn();
     Element.prototype.scrollIntoView = scroll;
-    renderGuide("/guida?scheda=organizzatori#giorni-e-slot");
+    renderGuide("/guide?tab=organizers#days-and-slots");
     await screen.findByRole("heading", { name: "Giorni e slot", level: 2 });
     await waitFor(() => expect(scroll).toHaveBeenCalled());
   });
@@ -150,9 +150,9 @@ describe("links to the guide", () => {
           : new Response(JSON.stringify({ days: [], pending: [] }), { status: 200 }),
       ),
     );
-    renderGuide("/admin/giorni");
+    renderGuide("/admin/days");
     const link = await screen.findByRole("link", { name: "Guida" });
-    expect(link).toHaveAttribute("href", "/guida?scheda=organizzatori#giorni-e-slot");
+    expect(link).toHaveAttribute("href", "/guide?tab=organizers#days-and-slots");
   });
 
   it("is reachable from the personal page", async () => {
@@ -164,10 +164,10 @@ describe("links to the guide", () => {
           : new Response(JSON.stringify({ days: [] }), { status: 200 }),
       ),
     );
-    renderGuide("/io");
+    renderGuide("/me");
     expect(await screen.findByRole("link", { name: "Come funziona: la guida" })).toHaveAttribute(
       "href",
-      "/guida",
+      "/guide",
     );
   });
 });

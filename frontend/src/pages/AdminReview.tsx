@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { StatusBadge } from "../StatusBadge";
+import { useT } from "../i18n";
 import { formatEuro } from "../money";
+import { adminRegistrationPath } from "../routes";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
@@ -20,6 +22,7 @@ type Row = {
 };
 
 export function AdminReview() {
+  const t = useT();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -31,40 +34,37 @@ export function AdminReview() {
 
   return (
     <main className="wide">
-      <h1>Pagamenti da verificare</h1>
-      <p>
-        Le iscrizioni che chiedono un&apos;occhiata sui soldi. Escono da qui da sole quando il
-        problema è risolto.
-      </p>
-      {failed && <p role="alert">Non riesco a caricare la vista.</p>}
+      <h1>{t("review.title")}</h1>
+      <p>{t("review.intro")}</p>
+      {failed && <p role="alert">{t("review.loadError")}</p>}
       {rows === null ? (
-        <p aria-busy="true">Caricamento…</p>
+        <p aria-busy="true">{t("common.loading")}</p>
       ) : rows.length === 0 ? (
-        <p>Tutto in ordine: nessun pagamento da verificare.</p>
+        <p>{t("review.empty")}</p>
       ) : (
         <>
-          <p aria-live="polite">{rows.length} da verificare</p>
+          <p aria-live="polite">{t("review.count", { n: rows.length })}</p>
           <p>
             <CsvButton path="/api/admin/views/payments-review" />
           </p>
           <div className="table-wrap">
             <table>
-              <caption>Iscrizioni da verificare</caption>
+              <caption>{t("review.caption")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Persona</th>
-                  <th scope="col">Motivo</th>
-                  <th scope="col">Stato</th>
-                  <th scope="col">Dovuto</th>
-                  <th scope="col">Versato</th>
-                  <th scope="col">Saldo</th>
+                  <th scope="col">{t("people.colPerson")}</th>
+                  <th scope="col">{t("review.colReason")}</th>
+                  <th scope="col">{t("people.colStatus")}</th>
+                  <th scope="col">{t("people.colDue")}</th>
+                  <th scope="col">{t("people.colPaid")}</th>
+                  <th scope="col">{t("people.colBalance")}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.booking_id}>
                     <th scope="row">
-                      <Link to={`/admin/iscrizioni/${row.booking_id}`}>
+                      <Link to={adminRegistrationPath(row.booking_id)}>
                         {row.first_name} {row.last_name}
                       </Link>
                       <br />

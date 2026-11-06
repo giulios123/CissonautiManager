@@ -2,10 +2,11 @@ import { useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView, MealView } from "../auth";
 import { formatDay } from "../booking";
+import { useT } from "../i18n";
 import { formatEuro } from "../money";
 
 const key = (meal: { date: string; kind: string }) => `${meal.date}:${meal.kind}`;
-const KIND_LABELS = { lunch: "Pranzo", dinner: "Cena" } as const;
+const KIND_LABELS = { lunch: "meal.lunch", dinner: "meal.dinner" } as const;
 
 /** New amount: the current one, minus the meals given up, plus the meals added. */
 export function mealsPreview(
@@ -39,6 +40,7 @@ export function MealEditor<T = unknown>({
   path?: string;
   allowPast?: boolean;
 }) {
+  const t = useT();
   const original = new Set((booking.meals ?? []).map(key));
   const [selected, setSelected] = useState<Set<string>>(new Set(original));
   const [error, setError] = useState<string | null>(null);
@@ -72,19 +74,18 @@ export function MealEditor<T = unknown>({
       await onSaved(result);
       setSaved(true);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Qualcosa è andato storto. Riprova.");
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
   }
 
-  if (allowed.length === 0) return <p>Scegli prima almeno uno slot per poter aderire ai pasti.</p>;
+  if (allowed.length === 0) return <p>{t("meal.chooseSlotFirst")}</p>;
 
   return (
-    <form onSubmit={save} aria-label="Scegli pranzi e cene">
+    <form onSubmit={save} aria-label={t("me.chooseMeals")}>
       <p className="legal">
-        Pranzo {formatEuro(lunchCents)}, cena {formatEuro(dinnerCents)}. Il pranzo si sceglie nei
-        giorni in cui ci sei di mattina o di pomeriggio, la cena quando ci sei la sera.
+        {t("meal.prices", { lunch: formatEuro(lunchCents), dinner: formatEuro(dinnerCents) })}
       </p>
       {days.map((day) => (
         <fieldset key={day}>
@@ -100,19 +101,21 @@ export function MealEditor<T = unknown>({
                   onChange={(e) => toggle(meal, e.target.checked)}
                 />
                 <span>
-                  {KIND_LABELS[meal.kind]}
-                  {meal.past && !allowPast ? " · giorno passato" : ""}
+                  {t(KIND_LABELS[meal.kind])}
+                  {meal.past && !allowPast ? ` · ${t("edit.pastDay")}` : ""}
                 </span>
               </label>
             ))}
         </fieldset>
       ))}
       <p aria-live="polite" className="fee">
-        Nuova quota: <strong>{formatEuro(fee)}</strong>
+        {t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
         {delta !== 0 && (
           <>
             {" "}
-            ({formatEuro(Math.abs(delta))} {delta > 0 ? "in più" : "in meno"} di ora)
+            {t(delta > 0 ? "edit.delta.more" : "edit.delta.less", {
+              amount: formatEuro(Math.abs(delta)),
+            })}
           </>
         )}
       </p>
@@ -123,11 +126,11 @@ export function MealEditor<T = unknown>({
       )}
       {saved && (
         <p role="status" className="notice ok">
-          Pasti aggiornati.
+          {t("meal.updated")}
         </p>
       )}
       <button type="submit" disabled={!changed || saving}>
-        Salva i pasti
+        {t("meal.save")}
       </button>
     </form>
   );

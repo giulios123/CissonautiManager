@@ -74,7 +74,7 @@ function mockFetch(responses: Record<string, { status?: number; body: unknown }>
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={["/iscrizione"]}>
+    <MemoryRouter initialEntries={["/register"]}>
       <App />
     </MemoryRouter>,
   );
@@ -89,18 +89,6 @@ describe("Registration page", () => {
     });
     renderPage();
     expect(await screen.findByText(/non sono ancora aperte/)).toBeInTheDocument();
-  });
-
-  it("shows the paragraph written by the organizers above the form", async () => {
-    mockFetch({
-      "/api/public/edition": {
-        body: { ...edition, registration_intro: "Benvenuto!\nScegli i tuoi turni." },
-      },
-    });
-    renderPage();
-    const intro = await screen.findByText(/Benvenuto!/);
-    expect(intro).toHaveTextContent("Benvenuto! Scegli i tuoi turni.");
-    expect(intro).toHaveClass("intro-text");
   });
 
   it("disables full slots and updates the fee preview", async () => {

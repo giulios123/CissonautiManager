@@ -90,16 +90,51 @@ html.in-frame body {
   }
 }
 
+.site-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
 .site-brand {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 1rem;
-  max-width: 72rem;
   min-height: 2.75rem;
-  margin: 0 auto;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0;
   text-decoration: none;
+}
+
+.lang-switch {
+  display: flex;
+  flex: none;
+}
+
+.lang-switch button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.lang-switch button[aria-pressed="true"] {
+  color: var(--color-heading);
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.35em;
 }
 
 .site-brand img {
@@ -123,10 +158,12 @@ html.in-frame body {
   backdrop-filter: none;
 }
 
-.site-header.compact .site-name {
+.site-header.compact .site-bar {
   max-width: 40rem;
-  margin: 0 auto;
-  padding: 0.5rem 1rem 0;
+}
+
+.site-header.compact .site-name {
+  padding: 0.5rem 0 0;
   font-size: 0.875rem;
 }
 
@@ -1253,26 +1290,30 @@ h3 .mono {
   text-transform: none;
 }
 
-.intro-text {
-  white-space: pre-line;
+.regemail .lang-tabs,
+.regemail .placeholders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-.admin-bar {
-  margin: 0 0 1rem;
+.regemail .lang-tabs button[aria-pressed="true"] {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
 }
 
-.auto-block {
-  margin: 0.75rem 0;
-  padding: 0.75rem 1rem;
-  border: 1px dashed var(--color-border-strong);
+.regemail input[type="color"] {
+  min-height: 2.75rem;
+  padding: 0.25rem;
+}
+
+.regemail-preview {
+  display: block;
+  width: 100%;
+  max-width: 36rem;
+  height: auto;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: var(--color-surface);
-}
-
-.auto-block p {
-  margin: 0;
-}
-
-.auto-block .auto-title {
-  font-weight: 700;
 }

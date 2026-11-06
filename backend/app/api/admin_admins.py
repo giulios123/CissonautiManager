@@ -6,18 +6,16 @@ from app.config import Settings
 from app.db import get_db
 from app.deps import get_settings_dep, require_admin
 from app.domain import admins as admin_rules
+from app.i18n import t
 from app.models import Participant
 from app.services import admins as admins_service
 
 router = APIRouter(prefix="/api/admin/admins", tags=["admin"])
 
 REMOVAL_MESSAGES = {
-    admin_rules.SELF: "Non puoi rimuovere te stesso: chiedi a un altro admin.",
-    admin_rules.SEED: (
-        "Questo admin è quello iniziale, definito dalla variabile ADMIN_EMAIL: "
-        "per cambiarlo si modifica la configurazione."
-    ),
-    admin_rules.LAST: "Deve restare almeno un admin.",
+    admin_rules.SELF: "admin.remove_self",
+    admin_rules.SEED: "admin.remove_seed",
+    admin_rules.LAST: "admin.remove_last",
 }
 
 
@@ -51,7 +49,9 @@ def _out(db: Session, person: Participant, actor: Participant, settings: Setting
         email=person.email,
         is_you=person.id == actor.id,
         removable=check.allowed,
-        blocked_reason=REMOVAL_MESSAGES.get(check.reason) if check.reason else None,
+        blocked_reason=(
+            t(REMOVAL_MESSAGES.get(check.reason, "admin.remove_generic")) if check.reason else None
+        ),
     )
 
 
@@ -76,11 +76,11 @@ def add_admin(
             db, actor, body.email, body.first_name, body.last_name
         )
     except admins_service.AlreadyAdmin as exc:
-        raise HTTPException(status_code=409, detail="Questa persona è già admin.") from exc
+        raise HTTPException(status_code=409, detail=t("admin.already")) from exc
     except admins_service.NameRequired as exc:
         raise HTTPException(
             status_code=422,
-            detail="Questa email non è ancora registrata: scrivi anche nome e cognome.",
+            detail=t("admin.need_name"),
         ) from exc
     return AddAdminOut(**_out(db, person, actor, settings).model_dump(), created=created)
 
@@ -95,9 +95,9 @@ def remove_admin(
     try:
         admins_service.remove_admin(db, actor, admin_id, settings.admin_email)
     except admins_service.NotAnAdmin as exc:
-        raise HTTPException(status_code=404, detail="Admin non trovato.") from exc
+        raise HTTPException(status_code=404, detail=t("admin.not_found")) from exc
     except admins_service.RemovalRefused as exc:
         raise HTTPException(
             status_code=409,
-            detail=REMOVAL_MESSAGES.get(exc.reason or "", "Non si può rimuovere questo admin."),
+            detail=t(REMOVAL_MESSAGES.get(exc.reason or "", "admin.remove_generic")),
         ) from exc

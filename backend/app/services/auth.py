@@ -9,10 +9,8 @@ from app.config import Settings
 from app.email import EmailSender
 from app.email.templates import magic_link_email
 from app.models import AuthSession, MagicLinkToken, Participant
-from app.services.email_texts import load_texts
 
-# Reusable until it expires, so mail scanners that open the link first do not burn it.
-MAGIC_LINK_TTL = timedelta(minutes=10)
+MAGIC_LINK_TTL = timedelta(minutes=30)
 SESSION_TTL = timedelta(days=14)
 
 
@@ -34,7 +32,7 @@ def create_magic_link_token(db: Session, participant: Participant, now: datetime
 
 
 def magic_link_url(settings: Settings, raw_token: str) -> str:
-    return f"{settings.app_base_url.rstrip('/')}/accedi/verifica?token={raw_token}"
+    return f"{settings.app_base_url.rstrip('/')}/login/verify?token={raw_token}"
 
 
 def send_magic_link(
@@ -45,30 +43,24 @@ def send_magic_link(
     now: datetime,
 ) -> None:
     raw = create_magic_link_token(db, participant, now)
-    sender.send(
-        magic_link_email(
-            participant, magic_link_url(settings, raw), texts=load_texts(db, "magic_link")
-        )
-    )
+    sender.send(magic_link_email(participant, magic_link_url(settings, raw)))
 
 
 def consume_magic_link(db: Session, raw_token: str, now: datetime) -> Participant | None:
-    """Validate a magic link token. Returns the participant, or None if not valid or expired.
-
-    The link works as many times as needed until it expires; `used_at` keeps the first use.
-    """
+    """Validate and burn a magic link token. Returns the participant, or None if not valid."""
     token_hash = hash_token(raw_token)
     token = db.scalar(select(MagicLinkToken).where(MagicLinkToken.token_hash == token_hash))
-    if token is None or token.expires_at <= now:
+    if token is None or token.used_at is not None or token.expires_at <= now:
         return None
-    if token.used_at is None:
-        # Conditional update: concurrent first uses record a single timestamp.
-        db.execute(
-            update(MagicLinkToken)
-            .where(MagicLinkToken.id == token.id, MagicLinkToken.used_at.is_(None))
-            .values(used_at=now)
-        )
-        db.commit()
+    # Atomic "use once": only one concurrent request can flip used_at from NULL.
+    result = db.execute(
+        update(MagicLinkToken)
+        .where(MagicLinkToken.id == token.id, MagicLinkToken.used_at.is_(None))
+        .values(used_at=now)
+    )
+    db.commit()
+    if result.rowcount != 1:
+        return None
     return db.get(Participant, token.participant_id)
 
 

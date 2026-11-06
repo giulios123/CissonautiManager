@@ -4,6 +4,8 @@ import { api, ApiError } from "../api";
 import { formatDay, formatDeadline } from "../booking";
 import { StatusBadge } from "../StatusBadge";
 import { type ActivityOffer, type BookingView } from "../auth";
+import { useT, type MessageKey } from "../i18n";
+import { adminActivityPath, ROUTES } from "../routes";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
 import { AdminEditDetails } from "./AdminEditDetails";
@@ -43,20 +45,21 @@ export type Detail = {
   activity_offers?: ActivityOffer[];
 };
 
-const DIET_LABELS: Record<string, string> = {
-  omnivore: "onnivoro",
-  vegetarian: "vegetariano",
-  vegan: "vegano",
+const DIET_LABELS: Record<string, MessageKey> = {
+  omnivore: "det.dietOmnivore",
+  vegetarian: "det.dietVegetarian",
+  vegan: "det.dietVegan",
 };
 
 const CHANNELS = [
-  ["revolut", "Revolut"],
-  ["satispay", "Satispay"],
-  ["paypal", "PayPal"],
-  ["iban", "Bonifico (IBAN)"],
-] as const;
+  ["revolut", "channel.revolut"],
+  ["satispay", "channel.satispay"],
+  ["paypal", "channel.paypal"],
+  ["iban", "channel.iban"],
+] as const satisfies readonly (readonly [string, MessageKey])[];
 
 export function AdminRegistrationDetail() {
+  const t = useT();
   const { id } = useParams();
   const navigate = useNavigate();
   const [editingSlots, setEditingSlots] = useState(false);
@@ -73,30 +76,29 @@ export function AdminRegistrationDetail() {
       .catch(() => setFailed(true));
   }, [id]);
 
-  if (failed) return <main role="alert">Iscrizione non trovata.</main>;
-  if (!detail) return <main aria-busy="true">Caricamento…</main>;
+  if (failed) return <main role="alert">{t("det.notFound")}</main>;
+  if (!detail) return <main aria-busy="true">{t("common.loading")}</main>;
 
   const { participant, booking } = detail;
 
   function afterCancel(result: AdminCancelResult) {
     if (result.outcome === "removed" || !result.detail) {
-      navigate("/admin", {
+      navigate(ROUTES.admin, {
         state: {
-          notice: `Iscrizione di ${participant.first_name} ${participant.last_name} disdetta e rimossa.`,
+          notice: t("det.removedNotice", {
+            name: `${participant.first_name} ${participant.last_name}`,
+          }),
         },
       });
       return;
     }
-    showUpdated(
-      result.detail,
-      "Disdetta registrata: i posti sono liberi e la persona è stata avvisata.",
-    );
+    showUpdated(result.detail, t("det.cancelledNotice"));
   }
 
   function reload() {
     api<Detail>(`/api/admin/registrations/${id}`)
       .then(setDetail)
-      .catch(() => setNotice({ ok: false, text: "Non riesco ad aggiornare la scheda." }));
+      .catch(() => setNotice({ ok: false, text: t("det.cannotRefresh") }));
   }
 
   function showUpdated(updated: Detail, text: string) {
@@ -110,7 +112,7 @@ export function AdminRegistrationDetail() {
     const data = new FormData(form);
     const cents = parseEuroToCents(amount);
     if (cents === null || cents === 0) {
-      setNotice({ ok: false, text: "Scrivi un importo valido, ad esempio 12,00." });
+      setNotice({ ok: false, text: t("det.amountInvalid") });
       return;
     }
     try {
@@ -130,18 +132,18 @@ export function AdminRegistrationDetail() {
         ok: true,
         text:
           updated.booking.status === "confermata"
-            ? "Pagamento registrato: l'iscrizione è confermata e la persona riceve un'email."
-            : "Pagamento registrato.",
+            ? t("det.paymentConfirmed")
+            : t("det.paymentRecorded"),
       });
     } catch (error) {
-      setNotice({ ok: false, text: error instanceof ApiError ? error.message : "Riprova." });
+      setNotice({ ok: false, text: error instanceof ApiError ? error.message : t("det.retry") });
     }
   }
 
   return (
     <main>
       <p>
-        <Link to="/admin">← Tutte le iscrizioni</Link>
+        <Link to={ROUTES.admin}>{t("det.backAll")}</Link>
       </p>
       <h1>
         {participant.first_name} {participant.last_name}
@@ -158,17 +160,17 @@ export function AdminRegistrationDetail() {
       )}
 
       <section aria-labelledby="who">
-        <h2 id="who">Dati</h2>
+        <h2 id="who">{t("det.data")}</h2>
         <dl>
-          <dt>Email</dt>
+          <dt>{t("login.email")}</dt>
           <dd>{participant.email}</dd>
-          <dt>Telefono</dt>
+          <dt>{t("people.colPhone")}</dt>
           <dd>{participant.phone ?? "-"}</dd>
-          <dt>Invitato da</dt>
+          <dt>{t("det.invitedBy")}</dt>
           <dd>{participant.invited_by ?? "-"}</dd>
           {participant.id !== undefined && (
             <>
-              <dt>Invitato</dt>
+              <dt>{t("det.invited")}</dt>
               <dd>
                 <PlusOneToggle
                   participantId={participant.id}
@@ -181,24 +183,30 @@ export function AdminRegistrationDetail() {
               </dd>
             </>
           )}
-          <dt>Cosa porta al camp</dt>
+          <dt>{t("det.canBring")}</dt>
           <dd className="legal">{participant.can_bring ?? "-"}</dd>
-          <dt>Causale</dt>
+          <dt>{t("det.reference")}</dt>
           <dd>{participant.personal_code}</dd>
-          <dt>Privacy accettata</dt>
+          <dt>{t("det.privacyAccepted")}</dt>
           <dd>
-            versione {detail.privacy.version}, {formatDeadline(detail.privacy.accepted_at)}
+            {t("det.version", {
+              n: detail.privacy.version,
+              when: formatDeadline(detail.privacy.accepted_at),
+            })}
           </dd>
-          <dt>Scarico accettato</dt>
+          <dt>{t("det.waiverAccepted")}</dt>
           <dd>
-            versione {detail.disclaimer.version}, {formatDeadline(detail.disclaimer.accepted_at)}
+            {t("det.version", {
+              n: detail.disclaimer.version,
+              when: formatDeadline(detail.disclaimer.accepted_at),
+            })}
           </dd>
         </dl>
       </section>
 
       <section aria-labelledby="booking">
         <h2 id="booking">
-          Iscrizione: <StatusBadge status={booking.status} />
+          {t("det.registration")} <StatusBadge status={booking.status} />
         </h2>
         <ul>
           {booking.slots.map((slot) => (
@@ -206,20 +214,20 @@ export function AdminRegistrationDetail() {
           ))}
         </ul>
         <p>
-          Dovuto <strong>{formatEuro(booking.amount_due_cents)}</strong>, versato{" "}
-          <strong>{formatEuro(booking.paid_cents)}</strong>, saldo{" "}
-          <strong>{formatEuro(booking.balance_cents)}</strong>.
+          {t("det.due")} <strong>{formatEuro(booking.amount_due_cents)}</strong>,{" "}
+          {t("det.paidLower")} <strong>{formatEuro(booking.paid_cents)}</strong>,{" "}
+          {t("det.balanceLower")} <strong>{formatEuro(booking.balance_cents)}</strong>.
           {booking.status === "in_attesa_pagamento" && (
-            <> Il posto è bloccato fino al {formatDeadline(booking.hold_expires_at)}.</>
+            <> {t("det.heldUntil", { date: formatDeadline(booking.hold_expires_at) })}</>
           )}
         </p>
         <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
       </section>
 
       <section aria-labelledby="meals-title">
-        <h2 id="meals-title">Pasti ed esigenze alimentari</h2>
+        <h2 id="meals-title">{t("det.mealsTitle")}</h2>
         {(booking.meals ?? []).length === 0 ? (
-          <p>Nessun pasto.</p>
+          <p>{t("det.noMeals")}</p>
         ) : (
           <ul>
             {(booking.meals ?? []).map((meal) => (
@@ -228,11 +236,13 @@ export function AdminRegistrationDetail() {
           </ul>
         )}
         <p>
-          Regime: {booking.diet ? DIET_LABELS[booking.diet] : "non indicato"}.
+          {t("det.diet", {
+            diet: booking.diet ? t(DIET_LABELS[booking.diet]) : t("det.dietNotSpecified"),
+          })}
           <br />
-          Allergie e intolleranze: {booking.allergies ?? "nessuna indicata"}
+          {t("det.allergies", { text: booking.allergies ?? t("det.noneSpecified") })}
           {booking.health_consent_version != null &&
-            ` (consenso versione ${booking.health_consent_version})`}
+            t("det.consentVersion", { n: booking.health_consent_version })}
           .
         </p>
         {booking.editable && (
@@ -242,7 +252,7 @@ export function AdminRegistrationDetail() {
             aria-expanded={editingMeals}
             onClick={() => setEditingMeals((value) => !value)}
           >
-            {editingMeals ? "Chiudi la modifica dei pasti" : "Cambia i pasti"}
+            {editingMeals ? t("det.closeMealsEdit") : t("det.editMeals")}
           </button>
         )}
         {editingMeals && booking.editable && (
@@ -252,20 +262,20 @@ export function AdminRegistrationDetail() {
             dinnerCents={detail.dinner_price_cents ?? 0}
             path={`/api/admin/registrations/${booking.id}/meals`}
             allowPast
-            onSaved={(updated) => showUpdated(updated, "Pasti aggiornati.")}
+            onSaved={(updated) => showUpdated(updated, t("meal.updated"))}
           />
         )}
       </section>
 
       <section aria-labelledby="activities-title">
-        <h2 id="activities-title">Attività</h2>
+        <h2 id="activities-title">{t("me.activities")}</h2>
         {(booking.activities ?? []).length === 0 ? (
-          <p>Nessuna attività.</p>
+          <p>{t("det.noActivities")}</p>
         ) : (
           <ul>
             {(booking.activities ?? []).map((activity) => (
               <li key={activity.id}>
-                <Link to={`/admin/attivita/${activity.id}`}>{activity.label}</Link>
+                <Link to={adminActivityPath(activity.id)}>{activity.label}</Link>
               </li>
             ))}
           </ul>
@@ -277,7 +287,7 @@ export function AdminRegistrationDetail() {
             aria-expanded={editingActivities}
             onClick={() => setEditingActivities((value) => !value)}
           >
-            {editingActivities ? "Chiudi la modifica delle attività" : "Cambia le attività"}
+            {editingActivities ? t("det.closeActivitiesEdit") : t("det.editActivities")}
           </button>
         )}
         {editingActivities && booking.editable && (
@@ -286,14 +296,14 @@ export function AdminRegistrationDetail() {
             offers={detail.activity_offers ?? []}
             path={`/api/admin/registrations/${booking.id}/activities`}
             admin
-            onSaved={(updated) => showUpdated(updated, "Attività aggiornate.")}
+            onSaved={(updated) => showUpdated(updated, t("act.updated"))}
           />
         )}
       </section>
 
       {(booking.editable || booking.can_cancel) && (
         <section aria-labelledby="actions-title">
-          <h2 id="actions-title">Azioni sull&apos;iscrizione</h2>
+          <h2 id="actions-title">{t("det.actionsTitle")}</h2>
           <div className="actions">
             {booking.editable && (
               <button
@@ -302,7 +312,7 @@ export function AdminRegistrationDetail() {
                 aria-expanded={editingSlots}
                 onClick={() => setEditingSlots((value) => !value)}
               >
-                {editingSlots ? "Chiudi la modifica degli slot" : "Cambia gli slot"}
+                {editingSlots ? t("det.closeSlotsEdit") : t("det.editSlots")}
               </button>
             )}
             {booking.can_cancel && (
@@ -330,8 +340,9 @@ export function AdminRegistrationDetail() {
 
       {detail.refund && (
         <p className="notice ok">
-          Rimborsati {formatEuro(detail.refund.amount_cents)}
-          {detail.refund.refunded_on && <> il {formatDay(detail.refund.refunded_on)}</>}
+          {t("det.refunded", { amount: formatEuro(detail.refund.amount_cents) })}
+          {detail.refund.refunded_on &&
+            t("det.refundedOn", { date: formatDay(detail.refund.refunded_on) })}
           {detail.refund.note ? ` (${detail.refund.note})` : ""}.
         </p>
       )}
@@ -343,16 +354,16 @@ export function AdminRegistrationDetail() {
             setDetail(updated);
             setNotice({
               ok: true,
-              text: "Disdetta chiusa. Ricorda di scrivere tu alla persona.",
+              text: t("det.cancellationClosed"),
             });
           }}
         />
       )}
 
       <form onSubmit={submit} aria-labelledby="pay-title">
-        <h2 id="pay-title">Registra un pagamento</h2>
+        <h2 id="pay-title">{t("det.recordPayment")}</h2>
         <label>
-          Importo (€)
+          {t("det.amount")}
           <input
             inputMode="decimal"
             value={amount}
@@ -367,45 +378,45 @@ export function AdminRegistrationDetail() {
               className="secondary"
               onClick={() => setAmount(centsToInput(booking.balance_cents))}
             >
-              Metti il saldo ({formatEuro(booking.balance_cents)})
+              {t("det.useBalance", { amount: formatEuro(booking.balance_cents) })}
             </button>
           </p>
         )}
         <label>
-          Canale
+          {t("det.channel")}
           <select name="channel" defaultValue="iban">
             {CHANNELS.map(([code, label]) => (
               <option key={code} value={code}>
-                {label}
+                {t(label)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Data del pagamento (vuota = oggi)
+          {t("det.paidOn")}
           <input type="date" name="paid_on" />
         </label>
         <label>
-          Nota (facoltativa)
+          {t("det.note")}
           <input name="note" maxLength={1000} />
         </label>
-        <button type="submit">Registra pagamento</button>
+        <button type="submit">{t("det.recordButton")}</button>
       </form>
 
       <AdminEditDetails bookingId={booking.id} participant={participant} onDone={showUpdated} />
 
       {(detail.waitlist ?? []).length > 0 && (
         <section aria-labelledby="waitlist-title">
-          <h2 id="waitlist-title">Lista d&apos;attesa</h2>
+          <h2 id="waitlist-title">{t("wl.title")}</h2>
           <ul>
             {(detail.waitlist ?? []).map((item) => (
               <li key={item.id}>
-                {item.label}: {item.position}° in lista
+                {t("det.waitlistLine", { label: item.label, position: item.position })}
               </li>
             ))}
           </ul>
           <p>
-            Per togliere la persona da una lista usa <Link to="/admin/giorni">Giorni e slot</Link>.
+            {t("det.removeFromListBefore")} <Link to={ROUTES.adminDays}>{t("slots.title")}</Link>.
           </p>
         </section>
       )}

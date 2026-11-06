@@ -2,12 +2,13 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session, object_session
+from sqlalchemy.orm import Session
 
 from app.domain.booking import can_reactivate, has_free_seat, hold_deadline, status_after_void
 from app.domain.fees import is_covered
 from app.email import EmailSender
 from app.email.templates import payment_confirmation_email
+from app.i18n import t
 from app.models import (
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
@@ -22,7 +23,6 @@ from app.models import (
 from app.services import audit
 from app.services import edition as edition_service
 from app.services.amounts import recompute_amount
-from app.services.email_texts import load_texts
 from app.services.seats import (
     activities_for_update,
     expire_overdue,
@@ -33,16 +33,6 @@ from app.services.seats import (
     slots_for_update,
 )
 from app.timefmt import format_activity, format_euro, status_label
-
-EXPIRED_ALREADY_ACTIVE = (
-    "Pagamento registrato, ma la persona ha già un'altra iscrizione attiva: questa prenotazione "
-    "resta scaduta. Decidi come procedere con la persona."
-)
-EXPIRED_NO_ROOM = (
-    "Pagamento registrato, ma la prenotazione è scaduta e almeno uno slot è ormai pieno: "
-    "la prenotazione resta scaduta. Decidi come procedere con la persona."
-)
-
 
 # How long the confirmation email of a quick payment waits, so a mistaken click can be undone.
 CONFIRMATION_EMAIL_DELAY = timedelta(seconds=30)
@@ -65,11 +55,7 @@ def paid_total(booking: Booking) -> int:
 
 
 def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
-    db = object_session(booking)
-    assert db is not None
-    edition = db.get(Edition, booking.edition_id)
-    texts = load_texts(db, "payment_confirmation", edition)
-    sender.send(payment_confirmation_email(booking, paid_cents, texts=texts))
+    sender.send(payment_confirmation_email(booking, paid_cents))
 
 
 REVIVED = "revived"
@@ -163,7 +149,11 @@ def record_payment(
             if dropped:
                 warning = dropped_activities_warning(dropped)
         else:
-            warning = EXPIRED_ALREADY_ACTIVE if outcome == ALREADY_ACTIVE else EXPIRED_NO_ROOM
+            warning = t(
+                "warn.payment_expired_already_active"
+                if outcome == ALREADY_ACTIVE
+                else "warn.payment_expired_no_room"
+            )
 
     confirmed_now = False
     if booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total):
@@ -229,10 +219,7 @@ def send_due_confirmations(db: Session, sender: EmailSender, now: datetime) -> i
 
 def dropped_activities_warning(dropped: list[Activity]) -> str:
     names = ", ".join(format_activity(a.title, a.date, a.period) for a in dropped)
-    return (
-        "Prenotazione riattivata senza queste attività, che nel frattempo sono al completo: "
-        f"{names}."
-    )
+    return t("warn.revived_without_activities", names=names)
 
 
 def _hold_days(db: Session, booking: Booking) -> int:
