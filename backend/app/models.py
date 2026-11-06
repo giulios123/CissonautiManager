@@ -115,7 +115,7 @@ class Participant(Base):
     role: Mapped[str] = mapped_column(Unicode(16), default=ROLE_PARTICIPANT)
     password_hash: Mapped[str | None] = mapped_column(Unicode(255))
     # Language of the emails and messages for this person: "it" or "en".
-    locale: Mapped[str] = mapped_column(String(2), default="it", server_default="it")
+    locale: Mapped[str] = mapped_column(String(2), default="it")
     # An admin confirmed that `invited_by` names who really invited this person (a +1): the
     # waitlist then puts them first (MVP 7). Empty means not verified.
     plus_one_verified_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
