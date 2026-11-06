@@ -109,6 +109,11 @@ describe("personal page", () => {
         slots: [
           { date: "2026-07-13", period: "morning", label: "lun 13/07 mattina (09:00-13:00)" },
         ],
+        schedule: [
+          { date: "2026-07-13", period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+          { date: "2026-07-13", period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+          { date: "2026-07-13", period: "evening", start_time: "19:00:00", end_time: "00:00:00" },
+        ],
         payments: [],
       },
     ],
@@ -124,7 +129,8 @@ describe("personal page", () => {
     stubFetch(() => ({ body: me }));
     renderAt("/me");
     expect(await screen.findByRole("heading", { name: "Ciao Ada!" })).toBeInTheDocument();
-    expect(screen.getByText("lun 13/07 mattina (09:00-13:00)")).toBeInTheDocument();
+    expect(screen.getByText("lun 13 lug")).toBeInTheDocument();
+    expect(screen.getByText("Mattina 09:00–13:00")).toBeInTheDocument();
     expect(screen.getByText(/Ancora da versare/).parentElement).toHaveTextContent("7,00");
     expect(screen.getByText("CSC-7K3P")).toBeInTheDocument();
     expect(screen.getByText("IT00 0000")).toBeInTheDocument();

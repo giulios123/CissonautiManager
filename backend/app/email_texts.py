@@ -15,6 +15,16 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "en": "To view or change your registration: {link}",
     },
     "email.your_slots": {"it": "I tuoi slot:", "en": "Your slots:"},
+    "email.presence.heading.one": {"it": "1 giorno di presenza:", "en": "1 day of attendance:"},
+    "email.presence.heading.other": {
+        "it": "{count} giorni di presenza:",
+        "en": "{count} days of attendance:",
+    },
+    "email.presence.note": {
+        "it": "Giornate complete, salvo fasce indicate.",
+        "en": "Full days, except where periods are listed.",
+    },
+    "email.presence.hours": {"it": "Orari:", "en": "Times:"},
     "email.how_to_pay": {"it": "Come pagare:", "en": "How to pay:"},
     "email.reference": {"it": "Causale: {code}", "en": "Payment reference: {code}"},
     "email.hold_until": {

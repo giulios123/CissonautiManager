@@ -217,9 +217,23 @@ class TestTestMessage:
         assert message.attachments and message.attachments[0].content_type == "image/png"
         assert "https://camp.example.org/login/verify?token=EXAMPLE" in message.body
 
-    def test_without_a_picture_it_is_plain_text(self, admin_client, edition, outbox):
+    def test_without_a_picture_email_has_html_and_text_bodies(self, admin_client, edition, outbox):
         admin_client.post(f"{URL}/test?locale=it")
-        assert outbox.sent[-1].html is None and outbox.sent[-1].attachments == ()
+        assert outbox.sent[-1].html is not None and outbox.sent[-1].attachments == ()
+
+    def test_without_edition_slots_email_still_sends(self, admin_client, edition, outbox, db):
+        from app.models import Slot
+
+        edition.start_date = None
+        edition.end_date = None
+        db.query(Slot).filter_by(edition_id=edition.id).delete()
+        db.commit()
+
+        response = admin_client.post(f"{URL}/test?locale=en")
+
+        assert response.status_code == 200
+        assert "1 day of attendance" not in outbox.sent[-1].body
+        assert "Payment reference:" in outbox.sent[-1].body
 
     def test_needs_an_admin(self, client, edition):
         assert client.post(f"{URL}/test").status_code == 401
@@ -231,7 +245,8 @@ class TestRegistrationEmail:
         message = outbox.sent[0]
         assert message.subject == "Iscrizione al Cissonauti Summer Camp 2026"
         assert message.body.startswith("Ciao Ada,\n\ngrazie per esserti iscritto")
-        assert message.html is None and message.attachments == ()
+        assert message.html is not None and message.attachments == ()
+        assert "font-size:13px" in message.html
 
     def test_custom_text_and_subject_in_each_language(self, admin_client, client, edition, outbox):
         admin_client.put(URL, json=settings_body())
@@ -254,7 +269,9 @@ class TestRegistrationEmail:
         text = outbox.sent[-1].body
         assert text.startswith("Just a hello")
         for expected in (
-            "Your slots:",
+            "1 day of attendance:",
+            "Full days, except where periods are listed.",
+            "Mon 13 Jul",
             "Payment reference: CSC-",
             "How to pay:",
             "/login/verify?token=",
@@ -330,10 +347,12 @@ class TestRegistrationEmail:
         assert client.post("/api/public/registrations", json=body).status_code == 201
         assert outbox.sent[-1].attachments == ()
 
-    def test_removing_the_picture_goes_back_to_plain_text(
+    def test_removing_the_picture_keeps_html_and_text_bodies(
         self, admin_client, client, edition, outbox
     ):
         upload(admin_client)
         admin_client.delete(f"{URL}/image")
         register(client, edition, "en")
-        assert outbox.sent[-1].html is None
+        assert outbox.sent[-1].html is not None
+        assert "cid:registration-card" not in outbox.sent[-1].html
+        assert outbox.sent[-1].attachments == ()

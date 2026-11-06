@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -21,6 +21,13 @@ class SlotView(BaseModel):
     date: date
     period: str
     label: str
+
+
+class ScheduleSlotView(BaseModel):
+    date: date
+    period: str
+    start_time: time
+    end_time: time
 
 
 class MealView(BaseModel):
@@ -59,6 +66,7 @@ class BookingView(BaseModel):
     editable: bool
     can_cancel: bool
     slots: list[SlotView]
+    schedule: list[ScheduleSlotView] = []
     payments: list[PaymentView]
     meals: list[MealView] = []
     activities: list[ActivityView] = []
@@ -76,6 +84,7 @@ class BookingView(BaseModel):
 def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -> BookingView:
     paid = sum(p.amount_cents for p in active_payments(booking))
     slots = sorted(booking.slots, key=slot_sort_key)
+    booked_dates = {slot.date for slot in slots}
     status = effective_status(booking.status, booking.hold_expires_at, now)
     return BookingView(
         id=booking.id,
@@ -96,6 +105,18 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             )
             for s in slots
         ],
+        schedule=[
+            ScheduleSlotView(
+                date=s.date,
+                period=s.period,
+                start_time=s.start_time,
+                end_time=s.end_time,
+            )
+            for s in sorted(slots[0].edition.slots, key=slot_sort_key)
+            if s.date in booked_dates
+        ]
+        if slots
+        else [],
         diet=booking.diet,
         allergies=booking.allergies,
         health_consent_version=booking.health_consent.version if booking.health_consent else None,

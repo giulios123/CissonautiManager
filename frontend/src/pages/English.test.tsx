@@ -48,6 +48,10 @@ const me = {
       editable: true,
       can_cancel: true,
       slots: [{ id: 1, date: "2026-07-13", period: "morning", label: "Mon 13 Jul morning" }],
+      schedule: [
+        { date: "2026-07-13", period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+        { date: "2026-07-13", period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+      ],
       payments: [],
     },
   ],
@@ -101,12 +105,12 @@ describe("the app in English", () => {
     await waitFor(() => expect(document.title).toBe("Registration · Camp 2026"));
   });
 
-  it("counts shifts and days with the right plural", async () => {
+  it("counts attendance days with the right plural", async () => {
     stub(() => ({ body: edition }));
     renderEnglish("/register");
     const user = userEvent.setup();
     await user.click(await screen.findByLabelText(/Morning 09:00-13:00/));
-    expect(screen.getByText("1 shift · 1 day")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /1 day/ })).toBeInTheDocument();
   });
 
   it("sends the language with the registration", async () => {
@@ -199,10 +203,10 @@ describe("message helpers", () => {
   });
 
   it("picks the plural form of each language", () => {
-    expect(translatePlural("it", "reg.shifts", 1)).toBe("1 turno");
-    expect(translatePlural("it", "reg.shifts", 3)).toBe("3 turni");
-    expect(translatePlural("en", "reg.shifts", 1)).toBe("1 shift");
-    expect(translatePlural("en", "reg.shifts", 0)).toBe("0 shifts");
+    expect(translatePlural("it", "presence.days", 1)).toBe("1 giorno");
+    expect(translatePlural("it", "presence.days", 3)).toBe("3 giorni");
+    expect(translatePlural("en", "presence.days", 1)).toBe("1 day");
+    expect(translatePlural("en", "presence.days", 0)).toBe("0 days");
     expect(translatePlural("en", "seats.free", 1)).toBe("1 place left");
   });
 });

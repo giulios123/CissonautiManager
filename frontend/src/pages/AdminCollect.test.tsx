@@ -176,7 +176,7 @@ describe("to collect view", () => {
     fireEvent.change(await screen.findByLabelText("Canale dei pagamenti che segni"), {
       target: { value: "iban" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Segna pagato per Grace Hopper" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Segna pagato per Grace Hopper" }));
     expect(await screen.findByText("Pagato 19,00 €")).toBeInTheDocument();
     expect(posted()).toEqual([
       {

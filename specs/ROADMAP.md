@@ -86,6 +86,12 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 - **Contenuto**: nome dell'edizione in intestazione, titolo delle pagine e oggetti delle email; oggetto e testo iniziale delle altre 8 email (per lingua, con i segnaposto dell'MVP 13) e testo sopra il modulo (per lingua) dalle Impostazioni; dopo il login sempre la pagina personale con il link al pannello; magic link riusabile 10 minuti e senza pagina «Entra». Una migrazione.
 - **Fatto quando**: l'admin cambia un testo e lo trova nella prossima email e nel modulo, un admin entra sulla sua pagina, un link di accesso si apre senza clic.
 
+## MVP 15 · Riepiloghi compatti delle presenze
+
+- **Obiettivo**: rendere leggibili presenze, importi e scadenze durante l'iscrizione, sulla pagina personale e nelle email.
+- **Contenuto**: righe per giorno condivise tra interfaccia ed email; fasce mostrate solo per giornate parziali; legenda unica degli orari; lista d'attesa separata; riepilogo responsive in italiano e inglese.
+- **Fatto quando**: cinque giorni pieni occupano cinque righe; mattina+pomeriggio equivalgono a giornata piena; riepilogo, conferma e email mostrano gli stessi giorni, fasce e orari.
+
 ## Backlog
 
 Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementano.

@@ -243,6 +243,8 @@ class TestTemplateFunctions:
         assert email.subject == "Pagato: {event}"  # placeholders are replaced by the service
         assert email.body.startswith("Grazie Ada!\n\nPagamento registrato: 11,00")
         assert "Ci vediamo presto!" in email.body
+        assert "1 giorno di presenza:" in email.body
+        assert email.html is not None
         standard = payment_confirmation_email(booking, 1100, EmailTexts("Camp"))
         assert standard.subject == "Pagamento ricevuto: sei dentro al Camp!"
         assert standard.body.startswith("Ciao Ada,\n\nabbiamo registrato il tuo pagamento:")

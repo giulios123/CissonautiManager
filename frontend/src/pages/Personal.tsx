@@ -7,6 +7,7 @@ import { useI18n, type MessageKey } from "../i18n";
 import { formatEuro } from "../money";
 import { ROUTES } from "../routes";
 import { StatusBadge } from "../StatusBadge";
+import { PresenceSummary } from "../PresenceSummary";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
 import { ActivityPicker } from "./ActivityPicker";
 import { Contributions } from "./Contributions";
@@ -64,11 +65,6 @@ function BookingCard({
       <h2>
         <StatusBadge status={booking.status} />
       </h2>
-      <ul>
-        {booking.slots.map((slot) => (
-          <li key={slot.label}>{slot.label}</li>
-        ))}
-      </ul>
       <p>
         {t("me.fee")} <strong>{formatEuro(booking.amount_due_cents)}</strong>
         <br />
@@ -86,6 +82,17 @@ function BookingCard({
         )}
         {booking.balance_cents === 0 && t("me.settled")}
       </p>
+      <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
+      {booking.editable && (
+        <button
+          type="button"
+          className="secondary"
+          aria-expanded={editing}
+          onClick={() => setEditing((value) => !value)}
+        >
+          {editing ? t("me.closeEdit") : t("me.editPresences")}
+        </button>
+      )}
       {pending && (
         <>
           <p>
@@ -189,16 +196,6 @@ function BookingCard({
       )}
       {(booking.editable || booking.can_cancel) && (
         <div className="actions">
-          {booking.editable && (
-            <button
-              type="button"
-              className="secondary"
-              aria-expanded={editing}
-              onClick={() => setEditing((value) => !value)}
-            >
-              {editing ? t("me.closeEdit") : t("me.editSlots")}
-            </button>
-          )}
           {booking.can_cancel && <CancelBooking booking={booking} onDone={onCancelled} />}
         </div>
       )}

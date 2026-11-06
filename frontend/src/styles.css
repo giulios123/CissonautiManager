@@ -803,33 +803,9 @@ a + .status {
 }
 
 .summary {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 0.25rem 1rem;
-  margin: 1.5rem -1rem -3rem;
-  padding: 0.75rem 1rem;
-  background: var(--color-paper);
-  border-top: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
-}
-
-.summary-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.summary-head h2 {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
+  min-width: 0;
+  margin: 1.5rem -1rem 0;
+  padding: 0;
 }
 
 .count {
@@ -841,23 +817,34 @@ a + .status {
   border-radius: var(--radius-pill);
 }
 
+.summary-actions {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: var(--color-paper);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.with-summary {
+  padding-bottom: 5rem;
+}
+
 .summary .fee {
   grid-column: 1;
   margin: 0;
-  font-size: 1rem;
-}
-
-.summary button[type="submit"] {
-  grid-row: 1 / span 2;
-  grid-column: 2;
-}
-
-.summary-list,
-.summary-note {
-  display: none;
+  font-size: 1.125rem;
 }
 
 .summary .summary-note {
+  display: none;
   padding: 0;
   color: var(--color-text-muted);
   font-size: 0.875rem;
@@ -872,12 +859,12 @@ a + .status {
     gap: 0 2rem;
     align-items: start;
     grid-template-columns: minmax(0, 1fr) 20rem;
+    padding-bottom: 0;
   }
 
   .summary {
     position: sticky;
     top: 5rem;
-    bottom: auto;
     display: block;
     margin: 0;
     padding: 1.25rem;
@@ -886,31 +873,21 @@ a + .status {
     box-shadow: var(--shadow-md);
   }
 
-  .summary-head {
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
-  }
-
-  .summary-head h2 {
+  .summary-actions {
     position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    clip-path: none;
+    grid-template-columns: 1fr;
+    margin-top: 1rem;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
   }
 
-  .summary-list {
+  .summary .summary-note {
     display: block;
   }
 
-  .summary-note {
-    display: block;
-  }
-
-  .summary .fee {
-    margin: 1rem 0;
-    font-size: 1.0625rem;
+  .summary-actions .count {
+    justify-self: start;
   }
 
   .summary button[type="submit"] {
@@ -918,45 +895,85 @@ a + .status {
   }
 }
 
-.summary-list li {
+.presence-summary {
+  min-width: 0;
+  margin: 1rem 0;
+}
+
+.presence-summary h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.presence-summary h2 span {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.presence-note {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.presence-days {
+  margin: 0;
+}
+
+.presence-days li,
+.waiting-summary li {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-columns: minmax(5.5rem, max-content) minmax(0, 1fr);
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  padding: 0.5rem 0.25rem;
+  padding: 0.4rem 0.25rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-.summary-day {
-  font-weight: 600;
+.presence-days strong {
+  font-weight: 700;
   white-space: nowrap;
 }
 
-.summary-slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
+.presence-periods {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
 }
 
-.summary-pill {
-  padding: 0 0.5rem;
-  color: var(--color-primary);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  background: var(--color-primary-soft);
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  box-shadow: none;
+.presence-hours {
+  margin-top: 0.6rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
 }
 
-.summary-pill:hover:not(:disabled) {
-  background: var(--color-border);
+.presence-hours p {
+  margin: 0.15rem 0;
 }
 
-.summary-pill.waiting {
-  background: var(--color-paper);
-  border: 1px dashed var(--color-border-strong);
+.summary-edit {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-weight: 700;
+}
+
+.waiting-summary h3 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.waiting-summary li span {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 30rem) {
+  .presence-days li,
+  .waiting-summary li {
+    grid-template-columns: minmax(4.75rem, max-content) minmax(0, 1fr);
+    gap: 0.35rem;
+  }
 }
 
 button.icon {
