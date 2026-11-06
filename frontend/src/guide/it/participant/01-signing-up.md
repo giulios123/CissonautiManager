@@ -8,9 +8,9 @@ Se hai già un'iscrizione, puoi usare il link «Accedi» sopra il modulo per apr
 2. **Inserisci i tuoi dati.** Nome, cognome, email, telefono (facoltativo), chi ti ha invitato (facoltativo) e cosa puoi portare al camp.
 3. **Consensi.** Servono l'informativa privacy e lo scarico di responsabilità: puoi leggere entrambi prima di spuntare.
 
-Mentre scegli, il riepilogo (in basso su telefono) ti mostra la quota che stai componendo.
+Mentre scegli, il riepilogo mostra una riga per giorno: nelle giornate complete compare solo la data; le fasce dei giorni parziali sono indicate accanto. La presenza serale è inclusa quando prenoti mattina e pomeriggio. Sul telefono l'elenco scorre con la pagina e la barra in basso mantiene quota e pulsante. Usa «Modifica presenze» per tornare al calendario.
 
-Quando invii, vedi la pagina «Iscrizione ricevuta» con importo, causale, istruzioni di pagamento e scadenza. Ti arriva anche un'email con il link per entrare nella tua pagina e, se gli organizzatori l'hanno prevista, un'immagine con il tuo nome da condividere.
+Quando invii, vedi la pagina «Iscrizione ricevuta» con importo e scadenza in evidenza, seguiti dal riepilogo delle presenze, causale e istruzioni di pagamento. Ti arriva anche un'email con le stesse presenze raggruppate per giorno e il link per entrare nella tua pagina. Se gli organizzatori l'hanno prevista, l'email contiene anche un'immagine con il tuo nome da condividere.
 
 ### Importante
 

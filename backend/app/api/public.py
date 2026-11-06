@@ -9,6 +9,7 @@ from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_valida
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.schemas import ScheduleSlotView
 from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
@@ -125,6 +126,7 @@ class BookingSummary(BaseModel):
     amount_due_cents: int
     hold_expires_at: datetime
     slots: list[BookedSlot]
+    schedule: list[ScheduleSlotView]
     payment_channels: list[ChannelPublic]
 
 
@@ -301,6 +303,16 @@ def create_registration(
                     label=format_slot(s.date, s.period, s.start_time, s.end_time),
                 )
                 for s in sorted(booking.slots, key=slot_sort_key)
+            ],
+            schedule=[
+                ScheduleSlotView(
+                    date=s.date,
+                    period=s.period,
+                    start_time=s.start_time,
+                    end_time=s.end_time,
+                )
+                for s in sorted(edition.slots, key=slot_sort_key)
+                if s.date in {booked.date for booked in booking.slots}
             ],
             payment_channels=_channels(db, edition),
         ),

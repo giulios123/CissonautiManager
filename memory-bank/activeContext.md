@@ -24,7 +24,11 @@ Richiesta del maintainer: nome dell'edizione in header e oggetti email; testo de
 
 Richiesta del maintainer: caricare e ripristinare il logo dell'edizione dalle Impostazioni; aprire la pagina personale cliccando il marchio; trovare «Accedi» dalla pagina d'iscrizione, anche nell'iframe. Spec in `specs/mvp-15-logo-accesso/`. Implementato sul branch `feat/mvp-15-logo-accesso`, in PR #15 (D-048); CI SQLite, SQL Server, frontend e build container verdi. Restano le prove manuali descritte nella checklist della PR.
 
-## Contesto ereditato
+## MVP 15 · Riepiloghi compatti delle presenze
+
+Implementazione completata il 2026-11-06 sul piano concordato con il maintainer, in PR #16. Una riga per giorno; data sola se la presenza è completa (mattina+pomeriggio incluse), fasce piccole nei giorni parziali; legenda unica degli orari; lista d'attesa separata; «Modifica presenze» torna al calendario mantenendo le scelte. Intervento bilingue su modulo, pagina personale e email, senza migrazione. Suite completa backend 991/991 e frontend 354/354; build, lint, Ruff e guida verdi. Da provare dopo il deploy su telefono fisico, iframe reale e client email reali.
+
+## Verifiche pendenti delle release precedenti
 
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
 2. Dopo il merge il deploy applica le migrazioni 0005-0007 all'avvio: il primo avvio a freddo può essere lento (circa 4 minuti con la PR #5).

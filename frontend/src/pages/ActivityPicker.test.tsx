@@ -16,6 +16,7 @@ const booking = {
   editable: true,
   can_cancel: true,
   slots: [],
+  schedule: [],
   payments: [],
 } as BookingView;
 

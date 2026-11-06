@@ -1,6 +1,8 @@
 # Changing your slots
 
-As long as the booking is awaiting payment or confirmed you can change it with “Change your slots”: add or remove slots and see the new fee right away, then save.
+Your personal page shows attendance in one row per day, after the status and balance. Full days show only the date; partial days list their booked periods. Evening attendance is included when you book both morning and afternoon.
+
+As long as the booking is awaiting payment or confirmed you can edit it with “Edit attendance”: add or remove slots and see the new fee right away, then save.
 
 - At least one slot must remain. If you want to withdraw completely, use the cancellation.
 - The hold deadline does not change.

@@ -204,7 +204,27 @@ describe("Registration page", () => {
             status: "in_attesa_pagamento",
             amount_due_cents: 1100,
             hold_expires_at: "2026-07-04T10:00:00Z",
-            slots: [{ label: "lun 13/07 mattina (09:00-13:00)" }],
+            slots: [{ date: "2026-07-13", period: "morning", label: "lun 13/07 mattina" }],
+            schedule: [
+              {
+                date: "2026-07-13",
+                period: "morning",
+                start_time: "09:00:00",
+                end_time: "13:00:00",
+              },
+              {
+                date: "2026-07-13",
+                period: "afternoon",
+                start_time: "14:00:00",
+                end_time: "18:00:00",
+              },
+              {
+                date: "2026-07-13",
+                period: "evening",
+                start_time: "19:00:00",
+                end_time: "00:00:00",
+              },
+            ],
             payment_channels: [{ code: "iban", label: "Bonifico (IBAN)", instructions: "IT00" }],
           },
         },
@@ -343,7 +363,27 @@ describe("waitlist in the registration form", () => {
             status: "in_attesa_pagamento",
             amount_due_cents: 1100,
             hold_expires_at: "2026-07-04T10:00:00Z",
-            slots: [{ label: "lun 13/07 mattina (09:00-13:00)" }],
+            slots: [{ date: "2026-07-13", period: "morning", label: "lun 13/07 mattina" }],
+            schedule: [
+              {
+                date: "2026-07-13",
+                period: "morning",
+                start_time: "09:00:00",
+                end_time: "13:00:00",
+              },
+              {
+                date: "2026-07-13",
+                period: "afternoon",
+                start_time: "14:00:00",
+                end_time: "18:00:00",
+              },
+              {
+                date: "2026-07-13",
+                period: "evening",
+                start_time: "19:00:00",
+                end_time: "00:00:00",
+              },
+            ],
             payment_channels: [],
           },
           waitlist: [{ label: "lun 13/07 pomeriggio (14:00-18:00)", position: 2 }],
@@ -368,17 +408,39 @@ describe("waitlist in the registration form", () => {
     expect(sent.waitlist_slot_ids).toEqual([2]);
   });
 
-  it("groups the chosen slots by day in the summary and lets you remove one", async () => {
+  it("groups the chosen slots by day and links back to the calendar", async () => {
     mockFetch({ "/api/public/edition": { body: edition } });
     renderPage();
     const user = userEvent.setup();
+    const summary = await screen.findByRole("complementary", { name: "Il tuo riepilogo" });
+    expect(
+      within(summary).queryByRole("link", { name: "Modifica presenze" }),
+    ).not.toBeInTheDocument();
     await user.click(await screen.findByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
     await user.click(screen.getByLabelText(/Sera 19:00-00:00/));
-    const summary = screen.getByRole("complementary", { name: "Il tuo riepilogo" });
     expect(within(summary).getAllByRole("listitem")).toHaveLength(1);
-    expect(within(summary).getByText("2 turni · 1 giorno")).toBeInTheDocument();
-    await user.click(within(summary).getByRole("button", { name: /^Togli .* · Mattina$/ }));
-    expect(within(summary).getByText("1 turno · 1 giorno")).toBeInTheDocument();
+    expect(within(summary).getByText("Mattina · Sera")).toBeInTheDocument();
+    expect(within(summary).getByRole("heading", { name: /1 giorno/ })).toBeInTheDocument();
+    const edit = within(summary).getByRole("link", { name: "Modifica presenze" });
+    expect(edit).toHaveAttribute("href", "#when-title");
+    expect(within(summary).queryByRole("button", { name: /Togli/ })).not.toBeInTheDocument();
+    await user.click(edit);
+    expect(screen.getByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/)).toBeChecked();
+    expect(screen.getByLabelText(/Sera 19:00-00:00/)).toBeChecked();
+    expect(screen.getByRole("heading", { name: "Quando vieni" })).toHaveFocus();
+  });
+
+  it("shows only the date for morning and afternoon because the evening is included", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByText(/Quota da versare/);
+    await user.click(screen.getAllByLabelText(/Mattina 09:00-13:00/)[0]);
+    await user.click(screen.getAllByLabelText(/Pomeriggio 14:00-18:00/)[0]);
+    const summary = screen.getByRole("complementary", { name: "Il tuo riepilogo" });
+    expect(within(summary).getByText("lun 13 lug")).toBeInTheDocument();
+    expect(within(summary).queryByText("Mattina · Pomeriggio")).not.toBeInTheDocument();
+    expect(within(summary).getByText(/Giornate complete/)).toBeInTheDocument();
   });
 
   it("keeps a full slot locked when its waitlist is full too", async () => {

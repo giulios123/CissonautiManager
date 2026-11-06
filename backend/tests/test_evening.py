@@ -79,7 +79,8 @@ class TestEveningSlot:
         body = payload([slot_ids[(d(13), "evening")]])
         booking = client.post("/api/public/registrations", json=body).json()["booking"]
         assert booking["slots"][0]["label"] == "lun 13/07 sera (19:00-00:00)"
-        assert "sera (19:00-00:00)" in outbox.sent[0].body
+        assert "lun 13 lug\n  Sera" in outbox.sent[0].body
+        assert "Sera 19:00–00:00" in outbox.sent[0].body
 
 
 class TestEveningHours:

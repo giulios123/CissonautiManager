@@ -15,6 +15,7 @@ from app.email.base import (
 )
 from app.i18n import channel_label, normalize_locale, t
 from app.models import Booking, Participant, PaymentChannel, Slot, slot_sort_key
+from app.presence_summary import format_presence_summary
 from app.timefmt import format_deadline, format_euro, format_slot
 
 CARD_CONTENT_ID = "registration-card"
@@ -86,22 +87,29 @@ def cancellation_email(
 _URL = re.compile(r"https?://[^\s<>\"]+")
 
 
-def _html(text: str, card_alt: str) -> str:
-    """The plain text as a simple HTML email, with the picture on top. All text is escaped."""
-    safe = html.escape(text)
-    safe = _URL.sub(lambda m: f'<a href="{m.group(0)}">{m.group(0)}</a>', safe)
-    picture = (
-        f'<p style="margin:0 0 16px"><img src="cid:{CARD_CONTENT_ID}" '
-        f'alt="{html.escape(card_alt)}" '
-        'style="display:block;width:100%;max-width:600px;height:auto;border-radius:8px"></p>'
-    )
+def _html(text: str, card_alt: str | None = None, emphasized_lines: tuple[str, ...] = ()) -> str:
+    """The plain text as a simple HTML email, with the optional picture on top."""
+    rendered = []
+    for line in text.splitlines():
+        safe = html.escape(line.lstrip() if line.startswith("  ") else line)
+        safe = _URL.sub(lambda m: f'<a href="{m.group(0)}">{m.group(0)}</a>', safe)
+        if line.startswith("  "):
+            rendered.append(f'<div style="font-size:13px;color:#5d6f73">{safe}</div>')
+        elif line:
+            content = f"<strong>{safe}</strong>" if line in emphasized_lines else safe
+            rendered.append(f"<div>{content}</div>")
+        else:
+            rendered.append('<div style="height:12px"></div>')
+    picture = ""
+    if card_alt is not None:
+        picture = (
+            f'<p style="margin:0 0 16px"><img src="cid:{CARD_CONTENT_ID}" '
+            f'alt="{html.escape(card_alt)}" '
+            'style="display:block;width:100%;max-width:600px;height:auto;border-radius:8px"></p>'
+        )
     return (
         '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;'
-        'color:#22363b;max-width:600px">'
-        + picture
-        + "<div>"
-        + safe.replace("\n", "<br>")
-        + "</div></div>"
+        'color:#22363b;max-width:600px">' + picture + "<div>" + "".join(rendered) + "</div></div>"
     )
 
 
@@ -126,9 +134,10 @@ def registration_email(
     body = (
         intro
         + "\n\n"
-        + f"{t('email.your_slots', loc)}\n{_slot_lines(booking.slots, loc)}\n\n"
         + t("email.registration.fee", loc, amount=format_euro(booking.amount_due_cents, loc))
-        + "\n"
+        + "\n\n"
+        + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
+        + "\n\n"
         + t("email.reference", loc, code=participant.personal_code)
         + "\n"
         + t(
@@ -142,15 +151,19 @@ def registration_email(
         + _personal_link(link, loc)
     )
     subject = extras.subject or t("email.registration.subject", loc, event=extras.event_name)
-    if extras.card_png is None:
-        return EmailMessage(to=participant.email, subject=subject, body=body)
     return EmailMessage(
         to=participant.email,
         subject=subject,
         body=body,
-        html=_html(body, extras.card_text),
+        html=_html(
+            body,
+            extras.card_text if extras.card_png is not None else None,
+            (t("email.registration.fee", loc, amount=format_euro(booking.amount_due_cents, loc)),),
+        ),
         attachments=(
-            EmailAttachment("card.png", "image/png", extras.card_png, content_id=CARD_CONTENT_ID),
+            (EmailAttachment("card.png", "image/png", extras.card_png, content_id=CARD_CONTENT_ID),)
+            if extras.card_png is not None
+            else ()
         ),
     )
 
@@ -233,9 +246,21 @@ def payment_confirmation_email(
             + "\n\n"
             + t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))
             + "\n\n"
-            + f"{t('email.your_slots', loc)}\n{_slot_lines(booking.slots, loc)}\n\n"
+            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
+            + "\n\n"
             + t("email.payment.see_you", loc)
             + "\n"
+        ),
+        html=_html(
+            opening
+            + "\n\n"
+            + t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))
+            + "\n\n"
+            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
+            + "\n\n"
+            + t("email.payment.see_you", loc)
+            + "\n",
+            emphasized_lines=(t("email.payment.amount", loc, amount=format_euro(paid_cents, loc)),),
         ),
     )
 
@@ -305,7 +330,6 @@ def waitlist_promoted_email(
             + "\n\n"
             + t("email.promoted.slot", loc, label=label)
             + "\n\n"
-            + f"{t('email.your_slots', loc)}\n{_slot_lines(booking.slots, loc)}\n\n"
             + t("email.promoted.fee", loc, amount=format_euro(booking.amount_due_cents, loc))
             + "\n"
             + t(
@@ -313,11 +337,43 @@ def waitlist_promoted_email(
                 loc,
                 amount=format_euro(max(balance_cents, 0), loc),
             )
-            + "\n"
+            + "\n\n"
+            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
+            + "\n\n"
             + t("email.reference", loc, code=participant.personal_code)
             + "\n"
             + f"{deadline}\n"
             + f"{t('email.how_to_pay', loc)}\n{_payment_lines(channels, loc)}\n\n"
             + access
+        ),
+        html=_html(
+            _opening(texts, participant.first_name, loc, "email.promoted.body")
+            + "\n\n"
+            + t("email.promoted.slot", loc, label=label)
+            + "\n\n"
+            + t("email.promoted.fee", loc, amount=format_euro(booking.amount_due_cents, loc))
+            + "\n"
+            + t(
+                "email.reminder.balance",
+                loc,
+                amount=format_euro(max(balance_cents, 0), loc),
+            )
+            + "\n\n"
+            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
+            + "\n\n"
+            + t("email.reference", loc, code=participant.personal_code)
+            + "\n"
+            + deadline
+            + "\n"
+            + f"{t('email.how_to_pay', loc)}\n{_payment_lines(channels, loc)}\n\n"
+            + access,
+            emphasized_lines=(
+                t("email.promoted.fee", loc, amount=format_euro(booking.amount_due_cents, loc)),
+                t(
+                    "email.reminder.balance",
+                    loc,
+                    amount=format_euro(max(balance_cents, 0), loc),
+                ),
+            ),
         ),
     )
