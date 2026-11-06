@@ -55,10 +55,16 @@ def card_text_for(card: RegistrationCard | None, locale: str) -> str:
 
 
 def registration_extras(
-    db: Session, edition: Edition, participant: Participant, *, draw_card: bool = True
+    db: Session,
+    edition: Edition,
+    participant: Participant,
+    *,
+    draw_card: bool = True,
+    locale: str | None = None,
 ) -> RegistrationExtras:
-    """The customized subject, text and picture for this person, in their language."""
-    locale = normalize_locale(participant.locale)
+    """The customized subject, text and picture for this person, in their language (or in
+    `locale`, when the email goes out in another one than the one saved)."""
+    locale = normalize_locale(locale or participant.locale)
     values = placeholder_values(participant, edition, locale)
     template = get_template(db, edition.id, locale)
     subject = render(template.subject, values).strip() if template and template.subject else None

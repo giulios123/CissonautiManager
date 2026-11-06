@@ -96,8 +96,11 @@ def registration_email(
     link: str,
     waitlisted: list[Slot] | None = None,
     extras: RegistrationExtras | None = None,
+    locale: str | None = None,
 ) -> EmailMessage:
-    loc = normalize_locale(participant.locale)
+    """`locale` overrides the language saved on the person for this one email (the form they
+    just filled in); without it the saved language is used."""
+    loc = normalize_locale(locale or participant.locale)
     extras = extras or RegistrationExtras()
     intro = extras.body or (
         _greeting(participant.first_name, loc).rstrip("\n")
@@ -137,10 +140,10 @@ def registration_email(
 
 
 def waitlist_joined_email(
-    participant: Participant, waitlisted: list[Slot], link: str
+    participant: Participant, waitlisted: list[Slot], link: str, locale: str | None = None
 ) -> EmailMessage:
     """Sent to someone who registered only for full slots: they are on the waitlist."""
-    loc = normalize_locale(participant.locale)
+    loc = normalize_locale(locale or participant.locale)
     return EmailMessage(
         to=participant.email,
         subject=t("email.waitlist_joined.subject", loc, event=EVENT_NAME),
@@ -156,8 +159,10 @@ def waitlist_joined_email(
     )
 
 
-def already_registered_email(participant: Participant, link: str) -> EmailMessage:
-    loc = normalize_locale(participant.locale)
+def already_registered_email(
+    participant: Participant, link: str, locale: str | None = None
+) -> EmailMessage:
+    loc = normalize_locale(locale or participant.locale)
     return EmailMessage(
         to=participant.email,
         subject=t("email.already.subject", loc, event=EVENT_NAME),

@@ -62,8 +62,8 @@ class TestFormats:
 
 
 class TestEmailsInTheLanguageOfThePerson:
-    def _register(self, client, edition, locale):
-        body = payload([edition.slots[0].id], locale=locale)
+    def _register(self, client, edition, locale, email="ada@example.com"):
+        body = payload([edition.slots[0].id], locale=locale, email=email)
         assert client.post("/api/public/registrations", json=body).status_code == 201
 
     def test_registration_in_english(self, client, edition, outbox):
@@ -102,12 +102,45 @@ class TestEmailsInTheLanguageOfThePerson:
         assert message.subject == "Your Cissonauti sign-in link"
         assert "open this link to sign in" in message.body
 
-    def test_registering_again_in_another_language_switches_the_person(
-        self, client, edition, outbox
-    ):
+    def test_the_public_form_never_changes_the_saved_language(self, client, edition, outbox, db):
+        from sqlalchemy import select
+
+        from app.models import Participant
+
+        self._register(client, edition, "it")
+        self._register(client, edition, "en")  # anyone who knows the address can do this
+        assert db.scalar(select(Participant.locale)) == "it"
+
+    def test_the_emails_of_that_request_follow_the_form_language(self, client, edition, outbox):
         self._register(client, edition, "it")
         self._register(client, edition, "en")
         assert outbox.sent[1].subject == "You are already registered for Cissonauti Summer Camp"
+        # The saved language still rules everything else, such as the sign-in link.
+        outbox.sent.clear()
+        client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
+        assert outbox.sent[0].subject == "Il tuo link di accesso ai Cissonauti"
+
+    def test_a_returning_person_with_no_booking_gets_the_form_language_once(
+        self, client, edition, outbox, db, make_participant
+    ):
+        from sqlalchemy import select
+
+        from app.models import Participant
+
+        make_participant("ada@example.com", locale="it")
+        self._register(client, edition, "en")
+        message = outbox.sent[0]
+        assert message.subject == "Registration for Cissonauti Summer Camp"
+        assert message.body.startswith("Hi Ada,")
+        assert db.scalar(select(Participant.locale)) == "it"
+
+    def test_a_new_person_keeps_the_form_language(self, client, edition, db):
+        from sqlalchemy import select
+
+        from app.models import Participant
+
+        self._register(client, edition, "en", email="new@example.com")
+        assert db.scalar(select(Participant.locale)) == "en"
 
     def test_payment_confirmation_in_english(
         self, db, admin_client, make_participant, make_booking, slot_ids, outbox

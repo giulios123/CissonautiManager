@@ -125,13 +125,13 @@ def register(
     expire_overdue(db, now)
 
     existing = get_by_email(db, data.email)
-    if existing is not None:
-        existing.locale = data.locale  # they filled the form in this language
+    # The public form is open to anyone who knows an email address, so it never changes the
+    # language saved on a person: only the emails of this request follow the form's language.
     if existing is not None and (
         _has_active_booking(db, existing, edition, now)
         or waitlist_service.entries_of(db, existing, edition)
     ):
-        _send_link_only(db, sender, settings, existing, now)
+        _send_link_only(db, sender, settings, existing, now, data.locale)
         return RegistrationResult(created=False, booking=None, participant=existing)
 
     # Lock the chosen slots so two concurrent registrations cannot take the last seat together.
@@ -176,14 +176,22 @@ def register(
     link = auth_service.magic_link_url(settings, raw)
     waitlisted = [e.slot for e in entries]
     if booking is not None:
-        extras = email_templates_service.registration_extras(db, edition, participant)
+        extras = email_templates_service.registration_extras(
+            db, edition, participant, locale=data.locale
+        )
         sender.send(
             registration_email(
-                participant, booking, enabled_channels(db, edition), link, waitlisted, extras
+                participant,
+                booking,
+                enabled_channels(db, edition),
+                link,
+                waitlisted,
+                extras,
+                locale=data.locale,
             )
         )
     else:
-        sender.send(waitlist_joined_email(participant, waitlisted, link))
+        sender.send(waitlist_joined_email(participant, waitlisted, link, data.locale))
     return RegistrationResult(
         created=True, booking=booking, participant=participant, waitlist=entries
     )
@@ -219,7 +227,13 @@ def _new_booking(
 
 
 def _send_link_only(
-    db: Session, sender: EmailSender, settings: Settings, participant: Participant, now: datetime
+    db: Session,
+    sender: EmailSender,
+    settings: Settings,
+    participant: Participant,
+    now: datetime,
+    locale: str | None = None,
 ) -> None:
     raw = auth_service.create_magic_link_token(db, participant, now)
-    sender.send(already_registered_email(participant, auth_service.magic_link_url(settings, raw)))
+    link = auth_service.magic_link_url(settings, raw)
+    sender.send(already_registered_email(participant, link, locale))
