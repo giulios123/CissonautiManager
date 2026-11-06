@@ -3,6 +3,7 @@
 Everything that defines the edition, in sections.
 
 - **Edition**: name (it appears in the header, in the browser tab title and in the email subjects), dates, slot capacity, days a place is held, waitlist percentage, base fee and per-day fee, lunch and dinner prices. Save with “Save edition”.
+- **Logo**: upload a PNG, JPEG or WebP up to 5 MB to customize the header. You can replace it or restore the original logo.
 - **Slot times**: start and end of morning, afternoon and evening.
 - **Payment channels**: the instructions participants see for each channel (Revolut, Satispay, PayPal, bank transfer). Save with “Save channels”.
 - **Registration email**: text and picture of the confirmation email, in Italian and English (see the dedicated section).

@@ -1,7 +1,7 @@
 from datetime import date, datetime, time
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.orm import Session
 
@@ -9,10 +9,12 @@ from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.email import EmailSender
+from app.email.card import MAX_UPLOAD_BYTES, InvalidImage, normalize_image
 from app.i18n import t
 from app.models import DOC_HEALTH, Edition, LegalDocument, PaymentChannel, slot_sort_key
 from app.services import edition as edition_service
 from app.services import waitlist as waitlist_service
+from app.services.edition_logo import logo_url
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -98,6 +100,7 @@ class EditionOut(EditionIn):
     disclaimer: LegalOut | None
     # Specific consent for health data (allergies); optional, it does not close registrations.
     health: LegalOut | None = None
+    logo_url: str | None = None
 
 
 class ChannelIn(BaseModel):
@@ -120,6 +123,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
     return EditionOut(
         **base.model_dump(),
         id=edition.id,
+        logo_url=logo_url(edition),
         slots=[SlotOut.model_validate(s) for s in slots],
         payment_channels=[
             ChannelOut.model_validate(c) for c in edition_service.list_channels(db, edition)
@@ -162,6 +166,31 @@ def put_edition(
     waitlist_service.promote_freed(
         db, sender, settings, waitlist_service.slots_with_waiting_people(db, edition), now
     )
+    db.refresh(edition)
+    return _edition_out(db, edition)
+
+
+@router.put("/edition/logo")
+def upload_edition_logo(
+    file: Annotated[UploadFile, File()], db: Session = Depends(get_db)
+) -> EditionOut:
+    edition = _require_edition(db)
+    data = file.file.read(MAX_UPLOAD_BYTES + 1)
+    try:
+        edition.logo_image = normalize_image(data, preserve_alpha=True)
+    except InvalidImage as exc:
+        status = 413 if exc.reason == "too_big" else 422
+        raise HTTPException(status_code=status, detail=t(f"emailtpl.image_{exc.reason}")) from exc
+    db.commit()
+    db.refresh(edition)
+    return _edition_out(db, edition)
+
+
+@router.delete("/edition/logo")
+def delete_edition_logo(db: Session = Depends(get_db)) -> EditionOut:
+    edition = _require_edition(db)
+    edition.logo_image = None
+    db.commit()
     db.refresh(edition)
     return _edition_out(db, edition)
 

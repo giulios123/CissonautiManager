@@ -30,7 +30,7 @@ describe("event name", () => {
     renderAt("/");
     expect(await screen.findByRole("heading", { name: "Camp d'autunno 2026" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Camp d'autunno 2026/ })).toBeInTheDocument();
-    expect(document.title).toBe("Camp d'autunno 2026");
+    await vi.waitFor(() => expect(document.title).toBe("Camp d'autunno 2026"));
   });
 
   it("puts the name after the page in the tab title", async () => {
@@ -53,5 +53,13 @@ describe("event name", () => {
     expect(
       await screen.findByRole("heading", { name: "Cissonauti Summer Camp" }),
     ).toBeInTheDocument();
+  });
+
+  it("sends the header logo to the personal page and anonymous visitors to sign in", async () => {
+    stubEdition("Camp 2027");
+    renderAt("/");
+    await screen.findByRole("heading", { name: "Camp 2027" });
+    screen.getByRole("link", { name: /Camp 2027/ }).click();
+    expect(await screen.findByRole("heading", { name: "Accedi" })).toBeInTheDocument();
   });
 });

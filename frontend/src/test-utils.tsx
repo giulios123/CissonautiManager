@@ -27,7 +27,12 @@ export function stubAdminApi(handler: (call: Call) => Reply | undefined): Call[]
       const call: Call = {
         method: init?.method ?? "GET",
         url,
-        body: init?.body ? JSON.parse(String(init.body)) : undefined,
+        body:
+          typeof init?.body === "string"
+            ? JSON.parse(init.body)
+            : init?.body instanceof FormData
+              ? init.body
+              : undefined,
       };
       calls.push(call);
       if (url === "/api/me") return new Response(JSON.stringify(adminMe), { status: 200 });

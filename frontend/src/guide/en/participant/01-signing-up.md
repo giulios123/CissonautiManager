@@ -2,6 +2,8 @@
 
 You sign up with the public form, without creating an account. It takes two minutes.
 
+If you have already signed up, use the “Sign in” link above the form to open your personal page. When the form is embedded in the event website, sign-in opens in a new tab.
+
 1. **Choose your shifts.** Every day has three slots: morning, afternoon and evening. Tap the tiles you are interested in, even on days that are not consecutive. “Whole day” and the buttons by time of day save you taps.
 2. **Enter your details.** First name, last name, email, phone (optional), who invited you (optional) and what you can bring to the camp.
 3. **Consents.** The privacy notice and the liability waiver are required: you can read both before ticking.

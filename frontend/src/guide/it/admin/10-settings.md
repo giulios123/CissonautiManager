@@ -3,6 +3,7 @@
 Tutto quello che definisce l'edizione, in sezioni.
 
 - **Edizione**: nome (compare nell'intestazione, nel titolo della scheda del browser e negli oggetti delle email), date, capienza degli slot, giorni di blocco, percentuale della lista d'attesa, quota base e per giorno, prezzi di pranzo e cena. Salva con «Salva edizione».
+- **Logo**: carica un PNG, JPEG o WebP fino a 5 MB per personalizzare l'intestazione. Puoi sostituirlo e ripristinare il logo originale.
 - **Orari degli slot**: inizio e fine di mattina, pomeriggio e sera.
 - **Canali di pagamento**: le istruzioni che i partecipanti vedono per ogni canale (Revolut, Satispay, PayPal, bonifico). Salva con «Salva canali».
 - **Email di iscrizione**: testo e immagine della email di conferma, in italiano e in inglese (vedi la sezione dedicata).

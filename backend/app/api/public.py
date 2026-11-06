@@ -1,9 +1,10 @@
 from datetime import date, datetime, time
+from hashlib import sha256
 from itertools import groupby
 from typing import Annotated, Literal, Self
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -19,6 +20,7 @@ from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
+from app.services.edition_logo import logo_url
 from app.services.seats import expire_overdue, free_by_slot
 from app.timefmt import format_slot
 
@@ -60,6 +62,7 @@ class PublicEditionOut(BaseModel):
     name: str | None = None
     # The paragraph above the form in each language (the page can switch language by itself).
     registration_intro: dict[str, str] | None = None
+    logo_url: str | None = None
     start_date: date | None = None
     end_date: date | None = None
     base_fee_cents: int | None = None
@@ -143,13 +146,35 @@ def _channels(db: Session, edition) -> list[ChannelPublic]:
     ]
 
 
+@router.get("/edition/logo")
+def get_edition_logo(
+    version: Annotated[str | None, Query(alias="v", min_length=64, max_length=64)] = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    edition = edition_service.get_active_edition(db)
+    if edition is None or edition.logo_image is None:
+        raise HTTPException(status_code=404, detail=t("edition.logo_none"))
+    etag = sha256(edition.logo_image).hexdigest()
+    if version != etag:
+        raise HTTPException(status_code=404, detail=t("edition.logo_none"))
+    return Response(
+        content=edition.logo_image,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=31536000, immutable", "ETag": f'"{etag}"'},
+    )
+
+
 @router.get("/edition")
 def get_public_edition(
     db: Session = Depends(get_db), now: datetime = Depends(get_now)
 ) -> PublicEditionOut:
     edition = edition_service.get_active_edition(db)
     if not registration_service.is_registration_open(db, edition):
-        return PublicEditionOut(registration_open=False, name=edition.name if edition else None)
+        return PublicEditionOut(
+            registration_open=False,
+            name=edition.name if edition else None,
+            logo_url=logo_url(edition),
+        )
     assert edition is not None
     expire_overdue(db, now)
     db.commit()
@@ -181,6 +206,7 @@ def get_public_edition(
     return PublicEditionOut(
         registration_open=True,
         name=edition.name,
+        logo_url=logo_url(edition),
         registration_intro={
             loc: email_templates_service.form_intro_for(edition, loc) for loc in LOCALES
         },
