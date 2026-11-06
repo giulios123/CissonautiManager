@@ -68,4 +68,5 @@
 
 ## Bug corretti fuori MVP
 
+- 2026-11-06 (review della PR #13, D-046): il downgrade della migrazione 0011 falliva su SQL Server (vincolo di default della colonna `locale`); il modulo pubblico poteva cambiare la lingua salvata di una persona già registrata; i vecchi link alla guida con ancora italiana non portavano alla sezione; cambiando lingua in «Da incassare» si perdeva l'annullo dei pagamenti appena segnati. Corretti, con test (l'ultimo provato rosso senza la correzione). La prova su SQL Server è la CI.
 - 2026-11-04: nel riepilogo e nelle email il pomeriggio compariva prima della mattina (ordinamento per nome del periodo). Corretto ordinando per orario di inizio, con test di regressione.

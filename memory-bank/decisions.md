@@ -332,3 +332,11 @@
 - **Alternative scartate**: sfondo CSS con testo HTML sopra (Outlook e molte app ignorano gli sfondi, e non è un'immagine condivisibile); Azure Blob Storage per lo sfondo (una risorsa in più per un file solo); testo della email completamente libero (si poteva togliere il link di accesso per sbaglio); un testo unico bilingue (le persone riceverebbero tutto in due lingue).
 - **Limiti noti**: alcuni client (Gmail per alcuni account, Outlook) mostrano le immagini inline solo dopo un clic su «mostra immagini»; il testo accanto resta leggibile; i caratteri non latini (cirillico, arabo, CJK) non hanno glifi in Montserrat e comparirebbero come riquadri; la prova non mostra un blocco di pagamento reale ma i canali attivi; l'oggetto personalizzato non ha un limite di lunghezza oltre i 200 caratteri.
 
+
+## D-046 · Dopo la review della PR #13: lingua non modificabile dal modulo pubblico, 0011 senza default, ancore e undo
+
+- **Data**: 2026-11-06
+- **Decisione**: (1) il modulo pubblico di iscrizione non cambia mai la lingua salvata di una persona che esiste già (a differenza di quanto scritto in D-041 e nella spec dell'MVP 11): chiunque conosca un'email potrebbe farlo; le email di quella richiesta partono comunque nella lingua del modulo e la lingua salvata si cambia solo da loggati; (2) la colonna `participant.locale` nasce senza default del database (aggiunta vuota, riempita con `it`, poi resa obbligatoria): su SQL Server un default è un vincolo con nome generato che va tolto prima della colonna e il downgrade falliva; il valore `it` lo dà l'ORM; (3) i vecchi indirizzi della guida portano anche le vecchie ancore (`#giorni-e-slot` → `#days-and-slots`); (4) il cambio di lingua non rimonta «Da incassare», per non perdere i pagamenti appena segnati e i loro 10 secondi di annullo (D-040); le altre pagine admin si rimontano ancora.
+- **Motivo**: review di Copilot sulla PR #13 e controllo «Backend su SQL Server» rosso.
+- **Limiti noti**: sulle altre pagine admin un cambio di lingua perde i campi non salvati (per esempio un importo scritto e non registrato); la 0011 è stata riscritta prima del merge, quindi un database di sviluppo che l'aveva già applicata va riportato a `0010` e riapplicato.
+
