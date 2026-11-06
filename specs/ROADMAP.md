@@ -62,6 +62,12 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 - **Contenuto**: pagina «Da incassare» con le iscrizioni in attesa o con un saldo da versare, ricerca per nome, email e causale, canale scelto una volta, tasto «Segna pagato» che registra il saldo, annullo immediato per 10 secondi, email di conferma differita di 30 secondi (con rete di sicurezza nel job orario), link alla scheda per importi diversi. Una migrazione.
 - **Fatto quando**: dall'elenco un admin cerca la causale di un bonifico, segna il pagamento in un clic, l'iscrizione diventa `confermata` e parte l'email; un clic sbagliato si annulla entro 10 secondi, la prenotazione torna in attesa e l'email non parte.
 
+## MVP 11 · Testi dell'evento e accesso
+
+- **Obiettivo**: nome dell'edizione ovunque, testi di email e modulo modificabili dall'admin, accesso più diretto.
+- **Contenuto**: nome dell'edizione in intestazione e oggetti; oggetto, apertura e chiusura delle email e paragrafo del modulo modificabili da «Testi»; dopo il login sempre `/io` con link al pannello; magic link riusabile 10 minuti e senza pagina «Entra». Una migrazione.
+- **Fatto quando**: l'admin cambia un testo e lo trova nella prossima email e nel modulo, un admin entra sulla sua pagina, un link di accesso si apre senza clic.
+
 ## Backlog
 
 Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementano.

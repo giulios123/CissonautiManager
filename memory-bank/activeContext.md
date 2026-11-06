@@ -12,6 +12,10 @@ Richiesta del maintainer: guida dopo il login filtrata per ruolo, aggiornata a o
 
 Richiesta del maintainer: un modo veloce per l'admin di controllare il conto e segnare le quote come coperte. «Da verificare» resta per le anomalie (con zero versato una iscrizione in attesa non vi compare, per regola). Spec in `specs/mvp-10-incassi/`, confermata. Scelte concordate: pagina nuova «Da incassare»; canale scelto una volta; tasto rapido sul saldo intero con link alla scheda per altri importi; un clic con annullo visibile per 10 secondi; email di conferma differita di 30 secondi (colonne su `payment`, migrazione 0010, rete di sicurezza nel job orario); ricerca per causale; scadute incluse in coda. Spec confermata dal maintainer, completato sul branch `claude/brave-babbage-ttfx6u` (D-040), descrizione PR in `specs/mvp-10-incassi/pr-description.md`. Da fare: provare in produzione l'email dopo 30 secondi.
 
+## MVP 11 · Testi dell'evento e accesso (2026-11-06)
+
+Richiesta del maintainer: nome dell'edizione in header e oggetti email; testi delle email (tutte, oggetto/apertura/chiusura) e paragrafo del modulo modificabili da admin; dopo il login sempre `/io`; magic link riusabile 10 minuti senza pagina «Entra». Spec in `specs/mvp-11-testi-evento/`, piano approvato. In lavorazione sul branch `feat/mvp-11-testi-evento`.
+
 ## Prossimo passo
 
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.
