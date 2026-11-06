@@ -99,7 +99,7 @@ class TestEmailsInTheLanguageOfThePerson:
             headers={"Accept-Language": "it"},
         )
         message = outbox.sent[0]
-        assert message.subject == "Your sign-in link for Cissonauti Summer Camp 2026"
+        assert message.subject == "Your sign-in link for Cissonauti Summer Camp"
         assert "open this link to sign in" in message.body
 
     def test_the_public_form_never_changes_the_saved_language(self, client, edition, outbox, db):
@@ -120,7 +120,7 @@ class TestEmailsInTheLanguageOfThePerson:
         # The saved language still rules everything else, such as the sign-in link.
         outbox.sent.clear()
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
-        assert outbox.sent[0].subject == "Il tuo link di accesso ai Cissonauti"
+        assert outbox.sent[0].subject == "Il tuo link di accesso al Cissonauti Summer Camp 2026"
 
     def test_a_returning_person_with_no_booking_gets_the_form_language_once(
         self, client, edition, outbox, db, make_participant
@@ -175,7 +175,8 @@ class TestEmailsInTheLanguageOfThePerson:
         send_due_reminders(db, outbox, settings, clock())
         message = outbox.sent[-1]
         assert message.subject == "Reminder: your place at Cissonauti Summer Camp 2026"
-        assert "a reminder that your place is held until" in message.body
+        assert "a reminder that your place is being held" in message.body
+        assert "Your place is held until" in message.body
         assert "Still to pay: €11.00" in message.body
         assert "https://camp.example.org/login" in message.body
         clock.advance(hours=35)
