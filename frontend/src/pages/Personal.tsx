@@ -314,8 +314,10 @@ export function Personal() {
         </p>
       )}
       {me.role === "admin" && (
-        <p>
-          <Link to={ROUTES.admin}>{t("me.toAdmin")}</Link>
+        <p className="admin-bar">
+          <Link to={ROUTES.admin} className="button secondary">
+            {t("me.toAdmin")}
+          </Link>
         </p>
       )}
       {me.bookings.length === 0

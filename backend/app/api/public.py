@@ -13,9 +13,10 @@ from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
 from app.domain.booking import is_past_day
 from app.email import EmailSender
-from app.i18n import channel_label, current_locale, t
+from app.i18n import LOCALES, channel_label, current_locale, t
 from app.models import slot_sort_key
 from app.services import edition as edition_service
+from app.services import email_templates as email_templates_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
 from app.services.seats import expire_overdue, free_by_slot
@@ -57,6 +58,8 @@ class ChannelPublic(BaseModel):
 class PublicEditionOut(BaseModel):
     registration_open: bool
     name: str | None = None
+    # The paragraph above the form in each language (the page can switch language by itself).
+    registration_intro: dict[str, str] | None = None
     start_date: date | None = None
     end_date: date | None = None
     base_fee_cents: int | None = None
@@ -178,6 +181,9 @@ def get_public_edition(
     return PublicEditionOut(
         registration_open=True,
         name=edition.name,
+        registration_intro={
+            loc: email_templates_service.form_intro_for(edition, loc) for loc in LOCALES
+        },
         start_date=edition.start_date,
         end_date=edition.end_date,
         base_fee_cents=edition.base_fee_cents,

@@ -34,6 +34,7 @@ from app.models import (
 )
 from app.services import audit
 from app.services import edition as edition_service
+from app.services import email_templates as email_templates_service
 from app.services.amounts import recompute_amount
 from app.services.payments import paid_total, send_confirmation
 from app.services.registration import InvalidSlots, SlotsFull
@@ -250,6 +251,7 @@ def request_cancellation(
     # Read before a possible delete: the email goes out after the commit.
     to, first_name = booking.participant.email, booking.participant.first_name
     locale = booking.participant.locale
+    texts = email_templates_service.texts_for_booking(db, booking, "cancellation")
     # Cancelling means not coming: the person's waitlist entries go too.
     left_waitlist = close_entries_for(db, booking.participant_id, None, CLOSE_CANCELLED, now)
 
@@ -288,6 +290,7 @@ def request_cancellation(
             removed=outcome == "removed",
             left_waitlist=left_waitlist > 0,
             locale=locale,
+            texts=texts,
         )
     )
     return outcome

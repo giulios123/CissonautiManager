@@ -24,6 +24,27 @@ DEFAULT_BODY = {
     "en": "Hi {first_name},\n\nthank you for signing up for {event}!",
 }
 
+# The other emails the organizers can edit. Each one has a subject and an opening text (the
+# greeting and first sentence); the data of the message always follows and is not editable.
+# Maps the kind to the keys of its default subject and opening in `app/email_texts.py`.
+OTHER_EMAIL_KINDS: dict[str, tuple[str, str]] = {
+    "waitlist_joined": ("email.waitlist_joined.subject", "email.waitlist_joined.body"),
+    "already_registered": ("email.already.subject", "email.already.body"),
+    "magic_link": ("email.magic.subject", "email.magic.body"),
+    "payment_confirmation": ("email.payment.subject", "email.payment.body"),
+    "reminder_mid": ("email.reminder.subject_mid", "email.reminder.intro_mid"),
+    "reminder_final": ("email.reminder.subject_final", "email.reminder.intro_final"),
+    "waitlist_promoted": ("email.promoted.subject", "email.promoted.body"),
+    "cancellation": ("email.cancellation.subject", "email.cancellation.body"),
+}
+
+# The paragraph above the sign-up form, until the organizers write their own.
+DEFAULT_FORM_INTRO = {
+    "it": "Scegli i momenti in cui vuoi venire. Puoi scegliere più giorni e più fasce orarie.",
+    "en": "Choose when you want to come. You can pick several days and several time slots.",
+}
+FORM_INTRO_MAX = 2000
+
 CARD_POSITIONS = ("top", "center", "bottom")
 DEFAULT_CARD_COLOR = "#ffffff"
 DEFAULT_CARD_POSITION = "bottom"

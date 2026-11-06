@@ -96,6 +96,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_admins_api.router)
     app.include_router(admin_edition_api.router)
     app.include_router(admin_email_api.router)
+    app.include_router(admin_email_api.texts_router)
     app.include_router(admin_registrations_api.router)
     app.include_router(admin_views_api.router)
     app.include_router(admin_participants_api.router)

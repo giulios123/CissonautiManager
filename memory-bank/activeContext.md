@@ -16,6 +16,10 @@ Richiesta del maintainer: un modo veloce per l'admin di controllare il conto e s
 
 Richiesta del maintainer: interfaccia in italiano e inglese, indirizzi in inglese (gli italiani funzionano solo se scritti a mano e reindirizzano), testo della mail di conferma modificabile e immagine di sfondo con «I'm nome cognome and I'll be at evento from data to data». Scelte: PNG generato dal server; lingua da browser e selettore, salvata sul partecipante; email nella sua lingua; guida in due lingue. Spec in `specs/mvp-11-lingue/`, `mvp-12-admin-inglese/`, `mvp-13-email-iscrizione/`. Regola nuova in `AGENTS.md`: ogni funzione futura è bilingue. Piano approvato. **MVP 11 completato** sul branch `claude/relaxed-dijkstra-9z2e5o` (D-041, D-042, D-043; descrizione PR in `specs/mvp-11-lingue/pr-description.md`). **MVP 12 completato** (D-044, descrizione PR in `specs/mvp-12-admin-inglese/pr-description.md`). **MVP 13 completato** (D-045, descrizione PR in `specs/mvp-13-email-iscrizione/pr-description.md`). Gli MVP 11-13 sono finiti: restano il passaggio su `main` e le prove manuali in produzione (checklist nelle tre `pr-description.md`).
 
+## MVP 14 · Testi dell'evento e accesso diretto (2026-11-06)
+
+Richiesta del maintainer: nome dell'edizione in header e oggetti email; testo delle email e del modulo modificabili da admin; dopo il login sempre la pagina personale; magic link riusabile 10 minuti senza pagina «Entra». Spec in `specs/mvp-14-testi-evento/`. Nata come «MVP 11» sul branch `feat/mvp-11-testi-evento` (PR #14), poi riallineata a `main` dopo l'unione degli MVP 11-13 (lingue, admin in inglese, email di iscrizione): i testi delle altre email usano l'editor per lingua dell'MVP 13 (D-047). Completato, descrizione PR in `specs/mvp-14-testi-evento/pr-description.md`. Da fare: provare in produzione email personalizzate e link da 10 minuti.
+
 ## Prossimo passo
 
 1. CI della PR, in particolare SQL Server con le migrazioni 0005-0007 da zero.

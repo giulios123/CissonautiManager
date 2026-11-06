@@ -1,6 +1,6 @@
 # Accedere alla tua pagina
 
-Non c'è nessuna password da ricordare: dalla pagina «Accedi» scrivi la tua email, premi «Invia il link» e ti arriva un link che apre la tua pagina. Il link vale 30 minuti e si usa una volta sola.
+Non c'è nessuna password da ricordare: dalla pagina «Accedi» scrivi la tua email, premi «Invia il link» e ti arriva un link che apre la tua pagina. Il link vale 10 minuti: aprilo e sei dentro, senza altri passaggi. Se lo riapri entro quei 10 minuti entri di nuovo.
 
 Dopo l'accesso resti dentro per 14 giorni su quel dispositivo. Quando finisci puoi premere «Esci».
 
@@ -10,4 +10,4 @@ Dalla tua pagina, in fondo, puoi impostare una password (è facoltativa). Poi da
 
 ### Il link non funziona
 
-«Link non valido» vuol dire che è scaduto o che l'hai già usato. Premi «Richiedi un nuovo link» e ripeti. Se l'email non arriva, controlla la posta indesiderata.
+«Link non valido» vuol dire che sono passati più di 10 minuti. Premi «Richiedi un nuovo link» e ripeti. Se l'email non arriva, controlla la posta indesiderata.

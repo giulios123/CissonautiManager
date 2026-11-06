@@ -38,6 +38,7 @@ export function AdminLayout() {
           <NavLink to="/admin/to-review">{t("adm.navToReview")}</NavLink>
           <NavLink to="/admin/admins">{t("adm.navAdmins")}</NavLink>
           <NavLink to="/admin/settings">{t("adm.navSettings")}</NavLink>
+          <Link to={ROUTES.me}>{t("adm.navMine")}</Link>
           <Link to={adminGuideLink(pathname)}>{t("adm.navGuide")}</Link>
           <button type="button" className="link" onClick={logout}>
             {t("me.logout")}

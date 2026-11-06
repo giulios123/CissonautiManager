@@ -317,7 +317,9 @@ class TestReactivate:
         self.expire(db, booking, clock)
         data = self.reactivate(admin_client, booking).json()
         assert data["booking"]["status"] == STATUS_CONFIRMED
-        assert [m.subject for m in outbox.sent] == ["Pagamento ricevuto: sei dentro!"]
+        assert [m.subject for m in outbox.sent] == [
+            "Pagamento ricevuto: sei dentro al Cissonauti Summer Camp 2026!"
+        ]
 
     def test_admins_only(self, client, outbox, make_participant, booking):
         assert self.reactivate(client, booking).status_code == 401

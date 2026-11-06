@@ -80,6 +80,12 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 - **Contenuto**: testi per lingua con segnaposto, sfondo caricato dall'admin, card PNG generata con Pillow e inline nella mail HTML, anteprima e invio di prova. Una migrazione.
 - **Fatto quando**: l'admin carica uno sfondo, scrive il testo, vede l'anteprima e una nuova iscrizione riceve la mail con «I'm Nome Cognome and I'll be at ...».
 
+## MVP 14 · Testi dell'evento e accesso diretto
+
+- **Obiettivo**: nome dell'edizione ovunque, testi delle email e del modulo modificabili, accesso più diretto.
+- **Contenuto**: nome dell'edizione in intestazione, titolo delle pagine e oggetti delle email; oggetto e testo iniziale delle altre 8 email (per lingua, con i segnaposto dell'MVP 13) e testo sopra il modulo (per lingua) dalle Impostazioni; dopo il login sempre la pagina personale con il link al pannello; magic link riusabile 10 minuti e senza pagina «Entra». Una migrazione.
+- **Fatto quando**: l'admin cambia un testo e lo trova nella prossima email e nel modulo, un admin entra sulla sua pagina, un link di accesso si apre senza clic.
+
 ## Backlog
 
 Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementano.

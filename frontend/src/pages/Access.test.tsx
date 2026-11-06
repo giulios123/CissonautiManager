@@ -30,25 +30,40 @@ function renderAt(path: string) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("magic link verification page", () => {
-  it("does not use the token until the button is pressed", async () => {
-    const calls = stubFetch(() => ({ body: { role: "participant", redirect: "/me" } }));
+  const ada = {
+    id: 1,
+    first_name: "Ada",
+    last_name: "Lovelace",
+    email: "ada@example.com",
+    role: "participant",
+    personal_code: "CSC-7K3P",
+    has_password: false,
+    payment_channels: [],
+    bookings: [],
+  };
+
+  it("signs in as soon as the page opens, without a button", async () => {
+    const calls = stubFetch((url) => ({
+      body: url === "/api/auth/verify" ? { role: "participant", redirect: "/me" } : ada,
+    }));
     renderAt("/login/verify?token=abc");
-    expect(await screen.findByRole("button", { name: "Entra" })).toBeInTheDocument();
-    expect(calls).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Entra" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Ciao Ada!" })).toBeInTheDocument();
+    expect(calls.filter((call) => call === "POST /api/auth/verify")).toHaveLength(1);
   });
 
   it("shows an error and a way to ask for a new link when the token is rejected", async () => {
     stubFetch(() => ({ status: 400, body: { detail: "Link non valido o scaduto" } }));
     renderAt("/login/verify?token=abc");
-    await userEvent.click(await screen.findByRole("button", { name: "Entra" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Link non valido o scaduto");
     expect(screen.getByRole("link", { name: "Richiedi un nuovo link" })).toBeInTheDocument();
   });
 
-  it("explains when there is no token at all", () => {
-    stubFetch(() => ({ body: {} }));
+  it("explains when there is no token at all, without calling the server", () => {
+    const calls = stubFetch(() => ({ body: {} }));
     renderAt("/login/verify");
     expect(screen.getByRole("heading", { name: "Link non valido" })).toBeInTheDocument();
+    expect(calls.filter((call) => call.includes("/api/auth/verify"))).toHaveLength(0);
   });
 });
 

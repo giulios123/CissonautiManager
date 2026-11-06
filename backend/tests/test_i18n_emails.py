@@ -69,10 +69,10 @@ class TestEmailsInTheLanguageOfThePerson:
     def test_registration_in_english(self, client, edition, outbox):
         self._register(client, edition, "en")
         message = outbox.sent[0]
-        assert message.subject == "Registration for Cissonauti Summer Camp"
+        assert message.subject == "Registration for Cissonauti Summer Camp 2026"
         assert message.body.startswith("Hi Ada,")
         for expected in (
-            "thank you for signing up for Cissonauti Summer Camp!",
+            "thank you for signing up for Cissonauti Summer Camp 2026!",
             "Your slots:",
             "Amount to pay: €",
             "Payment reference: CSC-",
@@ -85,7 +85,7 @@ class TestEmailsInTheLanguageOfThePerson:
     def test_registration_in_italian_is_unchanged(self, client, edition, outbox):
         self._register(client, edition, "it")
         message = outbox.sent[0]
-        assert message.subject == "Iscrizione al Cissonauti Summer Camp"
+        assert message.subject == "Iscrizione al Cissonauti Summer Camp 2026"
         assert message.body.startswith("Ciao Ada,")
         assert "Quota da versare: " in message.body and "Causale: CSC-" in message.body
 
@@ -99,7 +99,7 @@ class TestEmailsInTheLanguageOfThePerson:
             headers={"Accept-Language": "it"},
         )
         message = outbox.sent[0]
-        assert message.subject == "Your Cissonauti sign-in link"
+        assert message.subject == "Your sign-in link for Cissonauti Summer Camp"
         assert "open this link to sign in" in message.body
 
     def test_the_public_form_never_changes_the_saved_language(self, client, edition, outbox, db):
@@ -114,11 +114,13 @@ class TestEmailsInTheLanguageOfThePerson:
     def test_the_emails_of_that_request_follow_the_form_language(self, client, edition, outbox):
         self._register(client, edition, "it")
         self._register(client, edition, "en")
-        assert outbox.sent[1].subject == "You are already registered for Cissonauti Summer Camp"
+        assert (
+            outbox.sent[1].subject == "You are already registered for Cissonauti Summer Camp 2026"
+        )
         # The saved language still rules everything else, such as the sign-in link.
         outbox.sent.clear()
         client.post("/api/auth/magic-link", json={"email": "ada@example.com"})
-        assert outbox.sent[0].subject == "Il tuo link di accesso ai Cissonauti"
+        assert outbox.sent[0].subject == "Il tuo link di accesso al Cissonauti Summer Camp 2026"
 
     def test_a_returning_person_with_no_booking_gets_the_form_language_once(
         self, client, edition, outbox, db, make_participant
@@ -130,7 +132,7 @@ class TestEmailsInTheLanguageOfThePerson:
         make_participant("ada@example.com", locale="it")
         self._register(client, edition, "en")
         message = outbox.sent[0]
-        assert message.subject == "Registration for Cissonauti Summer Camp"
+        assert message.subject == "Registration for Cissonauti Summer Camp 2026"
         assert message.body.startswith("Hi Ada,")
         assert db.scalar(select(Participant.locale)) == "it"
 
@@ -156,8 +158,8 @@ class TestEmailsInTheLanguageOfThePerson:
         )
         assert response.status_code == 201
         message = outbox.sent[-1]
-        assert message.subject == "Payment received: you're in!"
-        assert "your registration for Cissonauti Summer Camp is confirmed" in message.body
+        assert message.subject == "Payment received: you're in for Cissonauti Summer Camp 2026!"
+        assert "your registration for Cissonauti Summer Camp 2026 is confirmed" in message.body
         assert "Mon 13 Jul morning" in message.body and "€11.00" in message.body
 
     def test_reminders_in_english(
@@ -172,8 +174,9 @@ class TestEmailsInTheLanguageOfThePerson:
         clock.advance(hours=36)
         send_due_reminders(db, outbox, settings, clock())
         message = outbox.sent[-1]
-        assert message.subject == "Reminder: your place at Cissonauti Summer Camp"
-        assert "a reminder that your place is held until" in message.body
+        assert message.subject == "Reminder: your place at Cissonauti Summer Camp 2026"
+        assert "a reminder that your place is being held" in message.body
+        assert "Your place is held until" in message.body
         assert "Still to pay: €11.00" in message.body
         assert "https://camp.example.org/login" in message.body
         clock.advance(hours=35)
@@ -190,7 +193,7 @@ class TestEmailsInTheLanguageOfThePerson:
         login(client, outbox)
         assert client.post("/api/me/booking/cancel").status_code == 200
         message = outbox.sent[-1]
-        assert message.subject == "Cancellation for Cissonauti Summer Camp"
+        assert message.subject == "Cancellation for Cissonauti Summer Camp 2026"
         assert "we have recorded your cancellation" in message.body
         assert "nothing else to do" in message.body
 

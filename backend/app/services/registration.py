@@ -191,7 +191,10 @@ def register(
             )
         )
     else:
-        sender.send(waitlist_joined_email(participant, waitlisted, link, data.locale))
+        texts = email_templates_service.texts_for(
+            db, edition, participant, "waitlist_joined", data.locale
+        )
+        sender.send(waitlist_joined_email(participant, waitlisted, link, data.locale, texts))
     return RegistrationResult(
         created=True, booking=booking, participant=participant, waitlist=entries
     )
@@ -236,4 +239,7 @@ def _send_link_only(
 ) -> None:
     raw = auth_service.create_magic_link_token(db, participant, now)
     link = auth_service.magic_link_url(settings, raw)
-    sender.send(already_registered_email(participant, link, locale))
+    texts = email_templates_service.texts_for(
+        db, edition_service.get_active_edition(db), participant, "already_registered", locale
+    )
+    sender.send(already_registered_email(participant, link, locale, texts))

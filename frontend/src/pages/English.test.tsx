@@ -98,7 +98,7 @@ describe("the app in English", () => {
     expect(screen.getByText("Your place is held for 3 days")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign up" })).toBeInTheDocument();
     expect(calls[0].language).toBe("en");
-    expect(document.title).toBe("Registration · Cissonauti Summer Camp");
+    expect(document.title).toBe("Registration · Camp 2026");
   });
 
   it("counts shifts and days with the right plural", async () => {
