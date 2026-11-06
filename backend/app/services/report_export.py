@@ -6,7 +6,7 @@ data and appear only as a number, never with names.
 
 from app.csv_export import Amount, Cell
 from app.domain.report import EditionReport, Split
-from app.i18n import channel_label, tr
+from app.i18n import channel_label, t, tr
 from app.services.edition import PAYMENT_CHANNELS
 from app.timefmt import format_activity, meal_label, period_label, status_label
 
@@ -99,6 +99,13 @@ def report_rows(report: EditionReport) -> list[Row]:
         rows.append(_split(section, title, activity.joined))
         rows.append(
             _plain(section, f"{tr('Prezzo')}: {activity.title}", Amount(activity.price_cents))
+        )
+        rows.append(
+            _plain(
+                section,
+                f"{tr('Incasso')}: {activity.title}",
+                t(f"collection.{activity.payment_mode}"),
+            )
         )
         capacity = tr("senza limite") if activity.capacity is None else activity.capacity
         rows.append(_plain(section, f"{tr('Capienza')}: {activity.title}", capacity))

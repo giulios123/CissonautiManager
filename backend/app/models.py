@@ -88,6 +88,9 @@ class Edition(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")
+    meal_settings: Mapped[list["MealSetting"]] = relationship(
+        back_populates="edition", lazy="selectin"
+    )
 
 
 class Slot(Base):
@@ -170,6 +173,7 @@ class Booking(Base):
     disclaimer_accepted_at: Mapped[datetime] = mapped_column(UtcDateTime)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
+    edition: Mapped[Edition] = relationship()
     participant: Mapped[Participant] = relationship(foreign_keys=[participant_id])
     health_consent: Mapped["LegalDocument | None"] = relationship(
         foreign_keys=[health_consent_document_id]
@@ -204,6 +208,21 @@ class BookingMeal(Base):
     kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
 
 
+class MealSetting(Base):
+    """An exception to the edition's standard meal prices and collection."""
+
+    __tablename__ = "meal_setting"
+
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"), primary_key=True)
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
+    payment_mode: Mapped[str] = mapped_column(Unicode(16), default="organizer")
+    price_cents: Mapped[int | None] = mapped_column(Integer)
+    payment_instructions: Mapped[str | None] = mapped_column(UnicodeText)
+
+    edition: Mapped[Edition] = relationship(back_populates="meal_settings")
+
+
 class Activity(Base):
     """Something organised during the camp, on a day and in one part of it (morning, afternoon,
     evening). Only people present in that part of the day can join."""
@@ -216,8 +235,12 @@ class Activity(Base):
     description: Mapped[str | None] = mapped_column(UnicodeText)
     date: Mapped[date] = mapped_column(Date)
     period: Mapped[str] = mapped_column(Unicode(12))
-    # Free text such as "10:30-12", shown as is.
+    # Generated display label; legacy free text stays until structured times are selected.
     time_label: Mapped[str | None] = mapped_column(Unicode(50))
+    starts_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    ends_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    payment_mode: Mapped[str] = mapped_column(Unicode(16), default="organizer")
+    payment_instructions: Mapped[str | None] = mapped_column(UnicodeText)
     # 0 means free.
     price_cents: Mapped[int] = mapped_column(Integer, default=0)
     # None means no limit.

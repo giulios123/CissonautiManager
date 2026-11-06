@@ -12,7 +12,8 @@ from app.domain.booking import (
 )
 from app.domain.fees import balance_cents
 from app.domain.meals import allowed_meals, meal_sort_key, periods_by_day
-from app.models import Booking, active_payments, slot_sort_key
+from app.models import Booking, Edition, active_payments, slot_sort_key
+from app.services.amounts import activity_terms, meal_terms
 from app.timefmt import format_activity, format_meal, format_slot
 
 
@@ -23,7 +24,14 @@ class SlotView(BaseModel):
     label: str
 
 
-class MealView(BaseModel):
+class CollectionTerms(BaseModel):
+    price_cents: int
+    payment_mode: str
+    payment_instructions: str | None
+    collectable_cents: int
+
+
+class MealView(CollectionTerms):
     date: date
     kind: str
     label: str
@@ -31,11 +39,11 @@ class MealView(BaseModel):
     past: bool = False
 
 
-class ActivityView(BaseModel):
+class ActivityView(CollectionTerms):
     id: int
     title: str
     label: str
-    price_cents: int
+    time_label: str | None = None
 
 
 class PaymentView(BaseModel):
@@ -74,6 +82,7 @@ class BookingView(BaseModel):
 
 
 def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -> BookingView:
+    edition = booking.edition
     paid = sum(p.amount_cents for p in active_payments(booking))
     slots = sorted(booking.slots, key=slot_sort_key)
     status = effective_status(booking.status, booking.hold_expires_at, now)
@@ -104,13 +113,14 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
                 id=a.id,
                 title=a.title,
                 label=format_activity(a.title, a.date, a.period),
-                price_cents=a.price_cents,
+                time_label=a.time_label,
+                **activity_terms(a),
             )
             for a in booking.activities
         ],
-        meals=_meal_views(((m.date, m.kind) for m in booking.meals), now),
+        meals=_meal_views(((m.date, m.kind) for m in booking.meals), now, edition),
         allowed_meals=_meal_views(
-            allowed_meals(periods_by_day((s.date, s.period) for s in booking.slots)), now
+            allowed_meals(periods_by_day((s.date, s.period) for s in booking.slots)), now, edition
         ),
         # Admins see voided payments too (struck through); participants only the ones that count.
         payments=[
@@ -128,21 +138,28 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
     )
 
 
-def _meal_views(meals: Iterable[tuple[date, str]], now: datetime) -> list[MealView]:
+def _meal_views(
+    meals: Iterable[tuple[date, str]], now: datetime, edition: Edition
+) -> list[MealView]:
     return [
-        MealView(date=day, kind=kind, label=format_meal(day, kind), past=is_past_day(day, now))
+        MealView(
+            date=day,
+            kind=kind,
+            label=format_meal(day, kind),
+            past=is_past_day(day, now),
+            **meal_terms(edition, day, kind),
+        )
         for day, kind in sorted(meals, key=meal_sort_key)
     ]
 
 
-class ActivityOffer(BaseModel):
+class ActivityOffer(CollectionTerms):
     id: int
     title: str
     description: str | None
     date: date
     period: str
     time_label: str | None
-    price_cents: int
     capacity: int | None
     free: int | None
     joined: bool
@@ -161,7 +178,7 @@ def activity_offers(db: Session, booking: Booking, now: datetime) -> list[Activi
             date=a.date,
             period=a.period,
             time_label=a.time_label,
-            price_cents=a.price_cents,
+            **activity_terms(a),
             capacity=a.capacity,
             free=free,
             joined=joined,

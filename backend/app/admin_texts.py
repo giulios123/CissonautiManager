@@ -4,6 +4,10 @@ Italian label; `ADMIN_MESSAGES` are keyed messages merged into the catalog of ap
 """
 
 LABELS_EN: dict[str, str] = {
+    "Incasso": "Collection",
+    "Istruzioni di pagamento": "Payment instructions",
+    "Organizzatori": "Organizers",
+    "Erogatore": "Provider",
     # --- CSV file names
     "persone": "people",
     "giorni-slot": "days-slots",

@@ -13,8 +13,17 @@ from app.models import (
     Booking,
     BookingActivity,
     BookingSlot,
+    Edition,
     Slot,
 )
+
+
+def lock_edition(db: Session, edition_id: int | None = None) -> None:
+    """Serialize pricing edits with booking writes. Always take this before booking/seat locks."""
+    query = select(Edition.id).order_by(Edition.id)
+    if edition_id is not None:
+        query = query.where(Edition.id == edition_id)
+    db.execute(query.with_for_update().with_hint(Edition, "WITH (UPDLOCK, HOLDLOCK)", "mssql"))
 
 
 def slots_for_update(slot_ids: Iterable[int], edition_id: int | None = None):

@@ -89,6 +89,18 @@ afterEach(() => {
 });
 
 describe("Registration page", () => {
+  it("requires a nonblank phone number", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    const phone = await screen.findByLabelText("Telefono");
+    expect(phone).toBeRequired();
+    expect(phone).toBeInvalid();
+    await userEvent.type(phone, "   ");
+    expect(phone).toBeInvalid();
+    await userEvent.clear(phone);
+    await userEvent.type(phone, "+39 333 1234567");
+    expect(phone).toBeValid();
+  });
   it("tells people when registrations are closed", async () => {
     mockFetch({
       "/api/public/edition": { body: { registration_open: false, name: null, days: [] } },
@@ -184,6 +196,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText("Nome"), "Ada");
     await user.type(screen.getByLabelText("Cognome"), "Lovelace");
     await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
@@ -217,6 +230,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText("Nome"), "Ada");
     await user.type(screen.getByLabelText("Cognome"), "Lovelace");
     await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
@@ -249,6 +263,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText("Nome"), "Ada");
     await user.type(screen.getByLabelText("Cognome"), "Lovelace");
     await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
@@ -273,6 +288,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText("Nome"), "Ada");
     await user.type(screen.getByLabelText("Cognome"), "Lovelace");
     await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
@@ -294,6 +310,7 @@ describe("waitlist in the registration form", () => {
     await user.type(screen.getByLabelText("Nome"), "Ada");
     await user.type(screen.getByLabelText("Cognome"), "Lovelace");
     await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));

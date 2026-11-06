@@ -2,7 +2,8 @@
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -40,6 +41,7 @@ from app.services import audit
 from app.services.amounts import recompute_amount
 from app.services.booking_changes import ChangeResult, NotEditable
 from app.services.payments import paid_total, send_confirmation
+from app.services.pricing import reprice
 from app.services.seats import (
     activities_for_update,
     expire_overdue,
@@ -71,6 +73,46 @@ class ActivityData:
     time_label: str | None
     price_cents: int
     capacity: int | None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    payment_mode: str = "organizer"
+    payment_instructions: str | None = None
+
+
+def activity_times(
+    edition: Edition, day: date, period: str, start: time | None, end: time | None
+) -> dict:
+    if start is None or end is None:
+        raise ActivityRefused("invalid_time")
+    slot = next((s for s in edition.slots if (s.date, s.period) == (day, period)), None)
+
+    def minute(t: time) -> int:
+        return t.hour * 60 + t.minute
+
+    start_minute, end_minute = minute(start), minute(end) or 1440
+    if (
+        slot is None
+        or start.tzinfo is not None
+        or end.tzinfo is not None
+        or start.second
+        or end.second
+        or start.microsecond
+        or end.microsecond
+        or not minute(slot.start_time)
+        <= start_minute
+        < end_minute
+        <= (minute(slot.end_time) or 1440)
+    ):
+        raise ActivityRefused("invalid_time")
+    zone = ZoneInfo("Europe/Rome")
+    ends = datetime.combine(day, end, zone) + (
+        timedelta(days=1) if end_minute == 1440 else timedelta()
+    )
+    return dict(
+        starts_at=datetime.combine(day, start, zone).astimezone(UTC),
+        ends_at=ends.astimezone(UTC),
+        time_label=f"{start:%H:%M}-{end:%H:%M}",
+    )
 
 
 def activity_sort_key(activity: Activity) -> tuple[date, int, str, int]:
@@ -151,12 +193,13 @@ def update(
     activity: Activity,
     data: ActivityData,
     now: datetime,
+    sender: EmailSender | None = None,
 ) -> Activity:
     _check_inside(edition, data.date)
     db.scalar(activities_for_update([activity.id], edition.id))
     check = check_activity_edit(
         joined=linked_count(db, activity.id),
-        price_changed=data.price_cents != activity.price_cents,
+        price_changed=False,
         when_changed=(data.date, data.period) != (activity.date, activity.period),
         new_capacity=None,
     )
@@ -167,12 +210,28 @@ def update(
             assert result.reason is not None
             raise ActivityRefused(result.reason)
     before = _describe(activity)
+    previous_time = activity.time_label
+    financial_change = (activity.price_cents, activity.payment_mode) != (
+        data.price_cents,
+        data.payment_mode,
+    )
     for key, value in vars(data).items():
         setattr(activity, key, value)
+    db.flush()
+    confirmed = (
+        reprice(db, edition, admin, now, activity_id=activity.id) if financial_change else []
+    )
     audit.log(
-        db, admin, "activity_updated", f"Attività modificata: {before} → {_describe(activity)}"
+        db,
+        admin,
+        "activity_updated",
+        f"Attività modificata: {before} → {_describe(activity)}. "
+        f"Orario: {previous_time or 'non indicato'} → {activity.time_label or 'non indicato'}",
     )
     db.commit()
+    if sender is not None:
+        for booking in confirmed:
+            send_confirmation(sender, booking, paid_total(booking))
     return activity
 
 
@@ -189,7 +248,12 @@ def delete(db: Session, admin: Participant, activity: Activity) -> None:
 def _describe(activity: Activity) -> str:
     price = "gratuita" if activity.price_cents == 0 else format_euro(activity.price_cents)
     seats = "senza limite" if activity.capacity is None else f"{activity.capacity} posti"
-    return f"{format_activity(activity.title, activity.date, activity.period)}, {price}, {seats}"
+    description = (
+        f"{format_activity(activity.title, activity.date, activity.period)}, {price}, {seats}"
+    )
+    if activity.payment_mode == "provider":
+        description += f", pagamento diretto: {activity.payment_instructions}"
+    return description
 
 
 class InvalidActivities(Exception):

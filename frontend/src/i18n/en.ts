@@ -2,6 +2,21 @@ import type { MessageKey } from "./it";
 
 /** English texts: every key of `it.ts` must be here (the compiler checks it). */
 export const en: Record<MessageKey, string> = {
+  "collection.who": "Who collects payment",
+  "collection.organizer": "Organizers (included in the camp fee)",
+  "collection.provider": "Payment directly to the provider",
+  "collection.instructions": "Payment instructions and recipient",
+  "collection.direct": "Pay {cost} directly to the provider, excluded from the camp fee.",
+  "collection.repriceWarning":
+    "Saving a cost or recipient change recalculates participants' balances. Recorded payments are retained; any overpayment appears as credit.",
+  "collection.configure": "Configure payment",
+  "collection.save": "Save payment",
+  "collection.saved": "Payment updated and balances recalculated.",
+  "time.start": "Start",
+  "time.end": "End",
+  "time.hour": "{label}: hours",
+  "time.minute": "{label}: minutes",
+  "time.previous": "Previous time: {time}. Select a start and end to update it.",
   "common.loading": "Loading…",
   "common.somethingWrong": "Something went wrong. Please try again.",
   "lang.label": "Language",
@@ -77,7 +92,7 @@ export const en: Record<MessageKey, string> = {
   "reg.detailsLegend": "Your details",
   "reg.firstName": "First name",
   "reg.lastName": "Last name",
-  "reg.phone": "Phone (optional)",
+  "reg.phone": "Phone",
   "reg.invitedBy": "Who invited you? (optional)",
   "reg.canBring": "What can you bring to the camp?",
   "reg.consentsLegend": "Consents",
@@ -186,7 +201,7 @@ export const en: Record<MessageKey, string> = {
   "meal.dinner": "Dinner",
   "meal.chooseSlotFirst": "Choose at least one slot first to be able to join meals.",
   "meal.prices":
-    "Lunch {lunch}, dinner {dinner}. You can pick lunch on days when you're here in the morning or afternoon, dinner when you're here in the evening.",
+    "Standard organizer prices: lunch {lunch}, dinner {dinner}. Meals paid directly show their own cost. You can pick lunch on days when you're here in the morning or afternoon, dinner when you're here in the evening.",
   "meal.updated": "Meals updated.",
   "meal.save": "Save meals",
   "diet.notSpecified": "Not specified",
@@ -400,7 +415,7 @@ export const en: Record<MessageKey, string> = {
   "aact.timeLabel": "Approximate time (optional)",
   "aact.price": "Price (€, 0 if free)",
   "aact.capacity": "Places (empty if unlimited)",
-  "aact.locked": "People have already signed up: price, day and time slot can't be changed.",
+  "aact.locked": "People have already signed up: day and time slot can't be changed.",
   "aact.saveChanges": "Save changes",
   "aact.create": "Create the activity",
   "aact.deleted": "Activity “{title}” deleted.",

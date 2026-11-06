@@ -52,7 +52,10 @@ describe("activities admin page", () => {
       description: null,
       date: "2026-07-13",
       period: "evening",
-      time_label: null,
+      start_time: "19:00",
+      end_time: "00:00",
+      payment_mode: "organizer",
+      payment_instructions: null,
       price_cents: 500,
       capacity: null,
     });

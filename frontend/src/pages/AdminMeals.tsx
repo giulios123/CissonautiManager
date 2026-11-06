@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import { formatDay } from "../booking";
 import { useT, type MessageKey } from "../i18n";
 import { tNow } from "../i18n/messages";
 import { adminRegistrationPath } from "../routes";
 import { CsvButton } from "./CsvButton";
+import { CollectionDetails, CollectionFields, type CollectionTerms } from "../collection";
+import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 
 type MealPerson = {
   booking_id: number;
@@ -14,7 +16,7 @@ type MealPerson = {
   diet: string | null;
   allergies: string | null;
 };
-type Meal = {
+type Meal = CollectionTerms & {
   kind: "lunch" | "dinner";
   count: number;
   diets: Record<string, number>;
@@ -43,11 +45,16 @@ export function AdminMeals() {
   const [days, setDays] = useState<MealDay[] | null>(null);
   const [failed, setFailed] = useState(false);
 
+  const load = useCallback(
+    () =>
+      api<{ days: MealDay[] }>("/api/admin/views/meals")
+        .then((data) => setDays(data.days))
+        .catch(() => setFailed(true)),
+    [],
+  );
   useEffect(() => {
-    api<{ days: MealDay[] }>("/api/admin/views/meals")
-      .then((data) => setDays(data.days))
-      .catch(() => setFailed(true));
-  }, []);
+    void load();
+  }, [load]);
 
   return (
     <main className="wide">
@@ -74,6 +81,7 @@ export function AdminMeals() {
                     <th scope="col">{t("meals.colDiets")}</th>
                     <th scope="col">{t("meals.colWho")}</th>
                     <th scope="col">{t("meals.colAllergies")}</th>
+                    <th scope="col">{t("collection.who")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -112,6 +120,16 @@ export function AdminMeals() {
                             </ul>
                           )}
                         </td>
+                        <td>
+                          {meal.price_cents !== undefined && formatEuro(meal.price_cents)}
+                          <CollectionDetails terms={meal} />
+                          <MealPaymentEditor
+                            key={`${day.date}:${meal.kind}:${meal.payment_mode}:${meal.price_cents}`}
+                            day={day.date}
+                            meal={meal}
+                            onSaved={load}
+                          />
+                        </td>
                       </tr>
                     );
                   })}
@@ -122,5 +140,75 @@ export function AdminMeals() {
         </>
       )}
     </main>
+  );
+}
+
+function MealPaymentEditor({
+  day,
+  meal,
+  onSaved,
+}: {
+  day: string;
+  meal: Meal;
+  onSaved: () => Promise<void>;
+}) {
+  const t = useT();
+  const [mode, setMode] = useState<"organizer" | "provider">(meal.payment_mode ?? "organizer");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const price = mode === "provider" ? parseEuroToCents(String(data.get("price"))) : null;
+    if (mode === "provider" && price === null) {
+      setError(t("aact.priceInvalid"));
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await api(`/api/admin/meals/${day}/${meal.kind}`, {
+        method: "PUT",
+        json: {
+          payment_mode: mode,
+          price_cents: price,
+          payment_instructions:
+            mode === "provider" ? String(data.get("payment_instructions")).trim() : null,
+        },
+      });
+      setSaved(true);
+      await onSaved();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <details>
+      <summary>{t("collection.configure")}</summary>
+      <form onSubmit={save} aria-label={`${formatDay(day)} ${t(KIND[meal.kind])}`}>
+        <CollectionFields mode={mode} onChange={setMode} instructions={meal.payment_instructions} />
+        {mode === "provider" && (
+          <label>
+            {t("aact.price")}
+            <input
+              name="price"
+              required
+              inputMode="decimal"
+              defaultValue={centsToInput(meal.price_cents ?? 0)}
+            />
+          </label>
+        )}
+        {meal.count > 0 && <p>{t("collection.repriceWarning")}</p>}
+        {error && <p role="alert">{error}</p>}
+        {saved && <p role="status">{t("collection.saved")}</p>}
+        <button disabled={saving} type="submit">
+          {t("collection.save")}
+        </button>
+      </form>
+    </details>
   );
 }

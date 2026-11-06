@@ -1,18 +1,21 @@
-from datetime import date, datetime
-from typing import Annotated, Literal
+from datetime import date, datetime, time
+from typing import Annotated, Literal, Self
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 from sqlalchemy.orm import Session
 
 from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
-from app.deps import get_now, require_admin
+from app.deps import get_email_sender, get_now, require_admin
+from app.email import EmailSender
 from app.i18n import t
 from app.models import Activity, Edition, Participant
 from app.services import activities as activity_service
 from app.services import edition as edition_service
+from app.services.amounts import activity_terms
 from app.timefmt import period_label, status_label
 
 router = APIRouter(
@@ -27,6 +30,7 @@ REFUSALS = {
     "fixed_with_people": "activity.fixed_with_people",
     "capacity_below_people": "activity.capacity_below_people",
     "has_people": "activity.has_people",
+    "invalid_time": "activity.invalid_time",
 }
 
 
@@ -35,9 +39,20 @@ class ActivityIn(BaseModel):
     description: Annotated[Text, Field(max_length=5000)] | None = None
     date: date
     period: Literal["morning", "afternoon", "evening"]
-    time_label: Annotated[Text, Field(max_length=50)] | None = None
+    start_time: time | None = None
+    end_time: time | None = None
+    payment_mode: Literal["organizer", "provider"] = "organizer"
+    payment_instructions: Annotated[Text, Field(max_length=5000)] | None = None
     price_cents: int = Field(default=0, ge=0, le=1_000_000)
     capacity: int | None = Field(default=None, ge=1, le=10000)
+
+    @model_validator(mode="after")
+    def check_terms(self) -> Self:
+        if self.payment_mode == "provider" and (
+            "price_cents" not in self.model_fields_set or not self.payment_instructions
+        ):
+            raise ValueError(t("collection.terms_required"))
+        return self
 
 
 class ActivityOut(BaseModel):
@@ -47,6 +62,11 @@ class ActivityOut(BaseModel):
     date: date
     period: str
     time_label: str | None
+    start_time: str | None = None
+    end_time: str | None = None
+    payment_mode: str
+    payment_instructions: str | None
+    collectable_cents: int
     price_cents: int
     capacity: int | None
     joined: int
@@ -81,7 +101,13 @@ def _out(activity: Activity, free: int | None, joined: int) -> ActivityOut:
         date=activity.date,
         period=activity.period,
         time_label=activity.time_label,
-        price_cents=activity.price_cents,
+        start_time=activity.starts_at.astimezone(ZoneInfo("Europe/Rome")).strftime("%H:%M")
+        if activity.starts_at
+        else None,
+        end_time=activity.ends_at.astimezone(ZoneInfo("Europe/Rome")).strftime("%H:%M")
+        if activity.ends_at
+        else None,
+        **activity_terms(activity),
         capacity=activity.capacity,
         joined=joined,
         free=free,
@@ -112,6 +138,8 @@ CSV_HEADER = [
     "Email",
     "Telefono",
     "Stato",
+    "Incasso",
+    "Istruzioni di pagamento",
 ]
 
 
@@ -127,16 +155,38 @@ def _csv_rows(activity: Activity, people: list[ActivityPerson]):
             person.email,
             person.phone,
             status_label(person.status),
+            t(f"collection.{activity.payment_mode}"),
+            activity.payment_instructions,
         ]
 
 
-def _data(body: ActivityIn) -> activity_service.ActivityData:
+def _data(
+    body: ActivityIn, edition: Edition, existing: Activity | None = None
+) -> activity_service.ActivityData:
+    if existing is not None and body.start_time is None and body.end_time is None:
+        if existing.starts_at is not None and existing.ends_at is not None:
+            zone = ZoneInfo("Europe/Rome")
+            times = activity_service.activity_times(
+                edition,
+                body.date,
+                body.period,
+                existing.starts_at.astimezone(zone).time(),
+                existing.ends_at.astimezone(zone).time(),
+            )
+        else:
+            times = dict(starts_at=None, ends_at=None, time_label=existing.time_label)
+    else:
+        times = activity_service.activity_times(
+            edition, body.date, body.period, body.start_time, body.end_time
+        )
     return activity_service.ActivityData(
         title=body.title,
         description=body.description or None,
         date=body.date,
         period=body.period,
-        time_label=body.time_label or None,
+        **times,
+        payment_mode=body.payment_mode,
+        payment_instructions=body.payment_instructions if body.payment_mode == "provider" else None,
         price_cents=body.price_cents,
         capacity=body.capacity,
     )
@@ -169,7 +219,14 @@ def create_activity(
     db: Session = Depends(get_db),
 ) -> ActivityOut:
     try:
-        activity = activity_service.create(db, admin, _edition(db), _data(body))
+        edition = _edition(db)
+        if (
+            not edition.start_date
+            or not edition.end_date
+            or not edition.start_date <= body.date <= edition.end_date
+        ):
+            raise activity_service.ActivityRefused("outside_edition")
+        activity = activity_service.create(db, admin, edition, _data(body, edition))
     except activity_service.ActivityRefused as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=t(REFUSALS[exc.reason])) from exc
@@ -199,10 +256,14 @@ def update_activity(
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
     now: datetime = Depends(get_now),
+    sender: EmailSender = Depends(get_email_sender),
 ) -> ActivityOut:
     activity = _get(db, activity_id)
     try:
-        activity_service.update(db, admin, _edition(db), activity, _data(body), now)
+        edition = _edition(db)
+        activity_service.update(
+            db, admin, edition, activity, _data(body, edition, activity), now, sender
+        )
     except activity_service.ActivityRefused as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail=t(REFUSALS[exc.reason])) from exc

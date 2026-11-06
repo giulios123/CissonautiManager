@@ -99,6 +99,16 @@ def t(key: str, locale: str | None = None, **params: object) -> str:
 
 # key -> {language: text}. `{name}` are placeholders filled by `t(key, name=...)`.
 MESSAGES: dict[str, dict[str, str]] = {
+    "collection.terms_required": {
+        "it": "Per il pagamento diretto indica costo e istruzioni con il destinatario.",
+        "en": "For direct payment, provide the cost and instructions including the recipient.",
+    },
+    "collection.organizer": {"it": "Organizzatori", "en": "Organizers"},
+    "collection.provider": {"it": "Erogatore", "en": "Provider"},
+    "activity.invalid_time": {
+        "it": "Scegli inizio e fine nella fascia; la fine deve seguire l'inizio.",
+        "en": "Choose start and end within the time slot; the end must follow the start.",
+    },
     # --- edition and settings
     "edition.not_configured_first": {
         "it": "Configura prima l'edizione",
@@ -132,8 +142,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "The day must fall within the edition dates",
     },
     "activity.fixed_with_people": {
-        "it": "Con persone già iscritte non si cambiano prezzo, giorno e fascia",
-        "en": "With people already signed up, price, day and time slot can't be changed",
+        "it": "Con persone già iscritte non si cambiano giorno e fascia",
+        "en": "With people already signed up, day and time slot can't be changed",
     },
     "activity.capacity_below_people": {
         "it": "La capienza non può scendere sotto il numero di iscritti",

@@ -13,7 +13,8 @@ HIKE = {
     "description": "Sul monte",
     "date": "2026-07-14",
     "period": "morning",
-    "time_label": "9:30-12",
+    "start_time": "09:30",
+    "end_time": "12:00",
     "price_cents": 1500,
     "capacity": 2,
 }
@@ -60,19 +61,30 @@ def test_free_activity_without_limit(admin_client, edition):
 
 
 def test_without_people_everything_can_change(admin_client, hike):
-    changed = dict(HIKE, price_cents=2000, date="2026-07-15", period="afternoon", capacity=1)
+    changed = dict(
+        HIKE,
+        price_cents=2000,
+        date="2026-07-15",
+        period="afternoon",
+        start_time="14:30",
+        end_time="16:00",
+        capacity=1,
+    )
     response = admin_client.patch(f"/api/admin/activities/{hike['id']}", json=changed)
     assert response.status_code == 200
     assert response.json()["price_cents"] == 2000
 
 
-def test_with_people_price_day_and_part_of_day_are_fixed(
+def test_with_people_day_and_part_of_day_are_fixed(
     admin_client, hike, db, make_participant, make_booking
 ):
     booking = make_booking(make_participant("ada@example.com"), [slot(db, 14)])
     join(db, booking, hike["id"])
     url = f"/api/admin/activities/{hike['id']}"
-    for change in ({"price_cents": 2000}, {"date": "2026-07-15"}, {"period": "afternoon"}):
+    for change in (
+        {"date": "2026-07-15"},
+        {"period": "afternoon", "start_time": "14:00", "end_time": "16:00"},
+    ):
         response = admin_client.patch(url, json=dict(HIKE, **change))
         assert response.status_code == 409
         assert "Con persone già iscritte" in response.json()["detail"]
@@ -138,6 +150,8 @@ def test_detail_and_csv_list_the_people(
             "ada@example.com",
             "+39 333",
             "In attesa di pagamento",
+            "Organizzatori",
+            "",
         ]
     ]
     all_rows = parse(admin_client.get("/api/admin/activities?format=csv"))[1:]

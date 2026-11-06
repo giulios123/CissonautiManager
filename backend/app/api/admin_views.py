@@ -9,6 +9,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.api.schemas import CollectionTerms
 from app.csv_export import Amount, Cell, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_now, require_admin
@@ -16,9 +17,11 @@ from app.domain.meals import diet_counts, meal_counts_by_day
 from app.domain.presence import presence_by_slot, week_summary
 from app.i18n import tr
 from app.models import MEAL_DINNER, MEAL_LUNCH
+from app.services import edition as edition_service
 from app.services import report_export
 from app.services import views as views_service
 from app.services import waitlist as waitlist_service
+from app.services.amounts import meal_terms
 from app.timefmt import meal_label, period_label, status_label
 
 router = APIRouter(prefix="/api/admin/views", tags=["admin"], dependencies=[Depends(require_admin)])
@@ -189,7 +192,7 @@ class MealPerson(BaseModel):
     allergies: str | None
 
 
-class MealOut(BaseModel):
+class MealOut(CollectionTerms):
     kind: str
     count: int
     diets: dict[str, int]
@@ -216,6 +219,7 @@ def meals_view(
 ) -> MealsViewOut | Response:
     """Who eats when, with diets and allergies. Contains health data: admins only."""
     data = views_service.load_meals(db, now)
+    edition = edition_service.get_active_edition(db)
     if fmt == "csv":
         header = [
             "Giorno",
@@ -225,6 +229,9 @@ def meals_view(
             "Email",
             "Regime",
             "Allergie e intolleranze",
+            "Prezzo",
+            "Incasso",
+            "Istruzioni di pagamento",
         ]
         rows = [
             [
@@ -235,6 +242,13 @@ def meals_view(
                 r.email,
                 tr(DIET_LABELS.get(r.diet or "", "Non indicato")),
                 r.allergies,
+                Amount(meal_terms(edition, r.day, r.kind)["price_cents"]),
+                tr(
+                    "Erogatore"
+                    if meal_terms(edition, r.day, r.kind)["payment_mode"] == "provider"
+                    else "Organizzatori"
+                ),
+                meal_terms(edition, r.day, r.kind)["payment_instructions"],
             ]
             for r in data.rows
         ]
@@ -246,6 +260,7 @@ def meals_view(
             people = [r for r in data.rows if r.day == day and r.kind == kind]
             meals.append(
                 MealOut(
+                    **meal_terms(edition, day, kind),
                     kind=kind,
                     count=len(people),
                     diets=diet_counts(r.diet for r in people),

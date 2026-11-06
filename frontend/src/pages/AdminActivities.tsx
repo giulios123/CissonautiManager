@@ -8,23 +8,39 @@ import { ConfirmDialog } from "../ConfirmDialog";
 import { useT } from "../i18n";
 import { adminActivityPath } from "../routes";
 import { CsvButton } from "./CsvButton";
+import { CollectionDetails, CollectionFields } from "../collection";
+import { TimeSelect } from "../TimeSelect";
 
 type Notice = { ok: boolean; text: string } | null;
 const PERIODS = ["morning", "afternoon", "evening"] as const;
+const DEFAULT_HOURS: Record<string, string> = {
+  morning_start: "09:00",
+  morning_end: "13:00",
+  afternoon_start: "14:00",
+  afternoon_end: "18:00",
+  evening_start: "19:00",
+  evening_end: "00:00",
+};
 
 function ActivityForm({
   days,
   initial,
   onSaved,
   onCancel,
+  hours,
 }: {
   days: string[];
   initial: Activity | null;
   onSaved: (text: string) => Promise<void>;
   onCancel?: () => void;
+  hours: Record<string, string>;
 }) {
   const t = useT();
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"organizer" | "provider">(initial?.payment_mode ?? "organizer");
+  const [period, setPeriod] = useState(initial?.period ?? "morning");
+  const [start, setStart] = useState(initial ? (initial.start_time ?? "") : hours.morning_start);
+  const [end, setEnd] = useState(initial ? (initial.end_time ?? "") : hours.morning_end);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,7 +58,10 @@ function ActivityForm({
       description: text("description") || null,
       date: text("date"),
       period: text("period"),
-      time_label: text("time_label") || null,
+      start_time: start || null,
+      end_time: end || null,
+      payment_mode: mode,
+      payment_instructions: mode === "provider" ? text("payment_instructions") : null,
       price_cents: price,
       capacity: text("capacity") ? Number(text("capacity")) : null,
     };
@@ -51,7 +70,13 @@ function ActivityForm({
         method: initial ? "PATCH" : "POST",
         json: body,
       });
-      if (!initial) form.reset();
+      if (!initial) {
+        form.reset();
+        setMode("organizer");
+        setPeriod("morning");
+        setStart(hours.morning_start);
+        setEnd(hours.morning_end);
+      }
       await onSaved(initial ? t("aact.updated") : t("aact.created"));
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t("common.somethingWrong"));
@@ -83,7 +108,16 @@ function ActivityForm({
         </label>
         <label>
           {t("aact.period")}
-          <select name="period" defaultValue={initial?.period ?? "morning"}>
+          <select
+            name="period"
+            value={period}
+            onChange={(e) => {
+              const p = e.target.value as typeof period;
+              setPeriod(p);
+              setStart(hours[`${p}_start`]);
+              setEnd(hours[`${p}_end`]);
+            }}
+          >
             {PERIODS.map((period) => (
               <option key={period} value={period}>
                 {periodLabel(period)}
@@ -93,10 +127,24 @@ function ActivityForm({
         </label>
       </div>
       <div className="row">
-        <label>
-          {t("aact.timeLabel")}
-          <input name="time_label" maxLength={50} defaultValue={initial?.time_label ?? ""} />
-        </label>
+        <TimeSelect
+          label={t("time.start")}
+          value={start}
+          onChange={setStart}
+          required={!initial || !!start || !!end}
+        />
+        <TimeSelect
+          label={t("time.end")}
+          value={end}
+          onChange={setEnd}
+          required={!initial || !!start || !!end}
+          end
+        />
+      </div>
+      {initial?.time_label && !initial.start_time && (
+        <p>{t("time.previous", { time: initial.time_label })}</p>
+      )}
+      <div className="row">
         <label>
           {t("aact.price")}
           <input
@@ -110,7 +158,13 @@ function ActivityForm({
           <input name="capacity" type="number" min={1} defaultValue={initial?.capacity ?? ""} />
         </label>
       </div>
+      <CollectionFields
+        mode={mode}
+        onChange={setMode}
+        instructions={initial?.payment_instructions}
+      />
       {initial && initial.joined > 0 && <p className="legal">{t("aact.locked")}</p>}
+      {initial && initial.joined > 0 && <p className="legal">{t("collection.repriceWarning")}</p>}
       {error && (
         <p role="alert" className="notice error">
           {error}
@@ -179,6 +233,7 @@ export function AdminActivities() {
   const [failed, setFailed] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
+  const [hours, setHours] = useState(DEFAULT_HOURS);
 
   const load = useCallback(
     () =>
@@ -190,8 +245,20 @@ export function AdminActivities() {
 
   useEffect(() => {
     void load();
-    api<{ start_date: string | null; end_date: string | null }>("/api/admin/edition")
-      .then((edition) => setDays(editionDays(edition.start_date, edition.end_date)))
+    api<{ start_date: string | null; end_date: string | null } & Record<string, string | null>>(
+      "/api/admin/edition",
+    )
+      .then((edition) => {
+        setDays(editionDays(edition.start_date, edition.end_date));
+        setHours(
+          Object.fromEntries(
+            Object.entries(DEFAULT_HOURS).map(([key, fallback]) => [
+              key,
+              edition[key]?.slice(0, 5) ?? fallback,
+            ]),
+          ),
+        );
+      })
       .catch(() => setDays([]));
   }, [load]);
 
@@ -242,7 +309,10 @@ export function AdminActivities() {
                       {formatDay(activity.date)}, {periodLabel(activity.period).toLowerCase()}
                       {activity.time_label && ` (${activity.time_label})`}
                     </td>
-                    <td>{priceLabel(activity.price_cents)}</td>
+                    <td>
+                      {priceLabel(activity.price_cents)}
+                      <CollectionDetails terms={activity} />
+                    </td>
                     <td>{seatsLabel(activity)}</td>
                     <td>
                       <div className="actions">
@@ -273,6 +343,8 @@ export function AdminActivities() {
         <p>{t("aact.setDatesFirst")}</p>
       ) : (
         <ActivityForm
+          key={editing?.id ?? "new"}
+          hours={hours}
           days={days}
           initial={editing}
           onSaved={saved}

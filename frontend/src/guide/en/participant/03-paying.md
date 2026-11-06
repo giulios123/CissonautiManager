@@ -14,3 +14,5 @@ You have a few days to pay, shown on the page. Halfway through and 24 hours befo
 ### If you change something
 
 Changing slots, meals or activities recalculates the amount. If you have already paid, you see the difference to pay or a credit. A confirmed booking stays confirmed.
+
+The camp fee and balance cover payments collected by the organizers. Activities or meals paid directly to a provider show their cost and instructions separately; these costs do not increase the camp balance. The app does not track whether you have paid the provider.

@@ -117,6 +117,7 @@ describe("the app in English", () => {
     await user.type(screen.getByLabelText("First name"), "Ada");
     await user.type(screen.getByLabelText("Last name"), "Lovelace");
     await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Phone"), "+39 333 1234567");
     await user.type(screen.getByLabelText("What can you bring to the camp?"), "A talk");
     await user.click(screen.getByLabelText("I have read and accept the privacy notice"));
     await user.click(screen.getByLabelText("I have read and accept the liability waiver"));

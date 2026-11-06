@@ -8,3 +8,5 @@ The summary of the numbers: registrations, attendance, meals, activities, contri
 - It can be **printed** (the menu and buttons disappear, about 4 A4 pages) and **downloaded as CSV**.
 
 The numbers match the other views: if something doesn't add up, first check that the registrations are up to date.
+
+Sign-ups paid directly to a provider count toward attendance but are excluded from organizers’ expected revenue and amounts due. The activity report identifies who collects payment; payment details appear in the meal and activity views and CSV exports.

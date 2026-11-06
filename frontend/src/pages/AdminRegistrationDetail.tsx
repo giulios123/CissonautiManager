@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
+import { CollectionDetails } from "../collection";
 import { formatDay, formatDeadline } from "../booking";
 import { StatusBadge } from "../StatusBadge";
 import { type ActivityOffer, type BookingView } from "../auth";
@@ -231,7 +232,10 @@ export function AdminRegistrationDetail() {
         ) : (
           <ul>
             {(booking.meals ?? []).map((meal) => (
-              <li key={`${meal.date}:${meal.kind}`}>{meal.label}</li>
+              <li key={`${meal.date}:${meal.kind}`}>
+                {meal.label}
+                <CollectionDetails terms={meal} />
+              </li>
             ))}
           </ul>
         )}
@@ -276,6 +280,8 @@ export function AdminRegistrationDetail() {
             {(booking.activities ?? []).map((activity) => (
               <li key={activity.id}>
                 <Link to={adminActivityPath(activity.id)}>{activity.label}</Link>
+                {activity.time_label && ` (${activity.time_label})`}
+                <CollectionDetails terms={activity} />
               </li>
             ))}
           </ul>

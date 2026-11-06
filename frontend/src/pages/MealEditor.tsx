@@ -4,6 +4,7 @@ import type { BookingView, MealView } from "../auth";
 import { formatDay } from "../booking";
 import { useT } from "../i18n";
 import { formatEuro } from "../money";
+import { collectableCents, CollectionDetails } from "../collection";
 
 const key = (meal: { date: string; kind: string }) => `${meal.date}:${meal.kind}`;
 const KIND_LABELS = { lunch: "meal.lunch", dinner: "meal.dinner" } as const;
@@ -15,12 +16,17 @@ export function mealsPreview(
   lunchCents: number,
   dinnerCents: number,
 ): number {
-  const price = (kind: string) => (kind === "lunch" ? lunchCents : dinnerCents);
+  const price = (meal: MealView) =>
+    meal.price_cents !== undefined
+      ? collectableCents(meal)
+      : meal.kind === "lunch"
+        ? lunchCents
+        : dinnerCents;
   const current = booking.meals ?? [];
-  const before = current.reduce((sum, meal) => sum + price(meal.kind), 0);
+  const before = current.reduce((sum, meal) => sum + price(meal), 0);
   const after = (booking.allowed_meals ?? [])
     .filter((meal) => selected.has(key(meal)))
-    .reduce((sum, meal) => sum + price(meal.kind), 0);
+    .reduce((sum, meal) => sum + price(meal), 0);
   return booking.amount_due_cents - before + after;
 }
 
@@ -102,6 +108,8 @@ export function MealEditor<T = unknown>({
                 />
                 <span>
                   {t(KIND_LABELS[meal.kind])}
+                  {meal.price_cents !== undefined && ` · ${formatEuro(meal.price_cents)}`}
+                  <CollectionDetails terms={meal} />
                   {meal.past && !allowPast ? ` · ${t("edit.pastDay")}` : ""}
                 </span>
               </label>

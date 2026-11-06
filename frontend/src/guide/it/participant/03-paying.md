@@ -14,3 +14,5 @@ Hai qualche giorno per pagare, indicato nella pagina. A metà del tempo e 24 ore
 ### Se cambi qualcosa
 
 Cambiando slot, pasti o attività l'importo si ricalcola. Se hai già pagato, vedi la differenza da versare oppure un credito. La prenotazione confermata resta confermata.
+
+La quota e il saldo riguardano gli importi da versare agli organizzatori. Per attività o pasti con pagamento diretto, costo e istruzioni dell’erogatore sono mostrati separatamente: quei costi non aumentano il saldo. L’app non registra se hai pagato l’erogatore.

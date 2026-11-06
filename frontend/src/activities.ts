@@ -1,13 +1,16 @@
 import { tNow } from "./i18n/messages";
 import { formatEuro } from "./money";
+import type { CollectionTerms } from "./collection";
 
-export type Activity = {
+export type Activity = CollectionTerms & {
   id: number;
   title: string;
   description: string | null;
   date: string;
   period: "morning" | "afternoon" | "evening";
   time_label: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
   price_cents: number;
   capacity: number | null;
   joined: number;
