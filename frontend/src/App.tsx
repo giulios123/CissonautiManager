@@ -14,18 +14,21 @@ import { AdminReview } from "./pages/AdminReview";
 import { AdminSlots } from "./pages/AdminSlots";
 import { AdminWeek } from "./pages/AdminWeek";
 import { AdminSettings } from "./pages/AdminSettings";
+import { AdminTexts } from "./pages/AdminTexts";
 import { Guide } from "./pages/Guide";
 import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
 import { Verify } from "./pages/Verify";
+import { EventNameProvider, useEventName } from "./eventName";
 import { usePageTitle } from "./pageTitle";
 import { SiteHeader } from "./SiteHeader";
 
 function Home() {
+  const eventName = useEventName();
   return (
     <main>
-      <h1>Cissonauti Summer Camp</h1>
+      <h1>{eventName}</h1>
       <p>
         <Link to="/iscrizione">Iscriviti al camp</Link>
       </p>
@@ -45,6 +48,14 @@ function NotFound() {
 }
 
 export function App() {
+  return (
+    <EventNameProvider>
+      <AppRoutes />
+    </EventNameProvider>
+  );
+}
+
+function AppRoutes() {
   usePageTitle();
   return (
     <>
@@ -76,6 +87,7 @@ export function App() {
           <Route path="da-incassare" element={<AdminCollect />} />
           <Route path="da-verificare" element={<AdminReview />} />
           <Route path="amministratori" element={<AdminAdmins />} />
+          <Route path="testi" element={<AdminTexts />} />
           <Route path="impostazioni" element={<AdminSettings />} />
         </Route>
         <Route path="*" element={<NotFound />} />

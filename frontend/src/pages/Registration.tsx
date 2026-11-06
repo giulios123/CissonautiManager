@@ -11,6 +11,7 @@ import {
   type Day,
 } from "../booking";
 import type { PickerDay } from "../daySelection";
+import { EVENT_NAME } from "../eventName";
 import { formatEuro } from "../money";
 import { DayPicker } from "./DayPicker";
 
@@ -19,6 +20,7 @@ type Legal = { version: number; body: string };
 type PublicEdition = {
   registration_open: boolean;
   name: string | null;
+  registration_intro: string | null;
   base_fee_cents: number | null;
   per_day_fee_cents: number | null;
   hold_days: number | null;
@@ -88,7 +90,7 @@ export function Registration() {
   if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
     return (
       <main>
-        <h1>{edition.name ?? "Cissonauti Summer Camp"}</h1>
+        <h1>{edition.name ?? EVENT_NAME}</h1>
         <p>Le iscrizioni non sono ancora aperte. Torna a trovarci presto!</p>
       </main>
     );
@@ -197,8 +199,9 @@ export function Registration() {
   return (
     <main className="wide">
       <h1>{edition.name}</h1>
-      <p className="lead">
-        Scegli i momenti in cui vuoi venire. Puoi scegliere più giorni e più fasce orarie.
+      <p className="lead intro-text">
+        {edition.registration_intro ??
+          "Scegli i momenti in cui vuoi venire. Puoi scegliere più giorni e più fasce orarie."}
       </p>
       {first && last && (
         <p className="meta">

@@ -34,7 +34,9 @@ export function AdminLayout() {
           <NavLink to="/admin/da-incassare">Da incassare</NavLink>
           <NavLink to="/admin/da-verificare">Da verificare</NavLink>
           <NavLink to="/admin/amministratori">Admin</NavLink>
+          <NavLink to="/admin/testi">Testi</NavLink>
           <NavLink to="/admin/impostazioni">Impostazioni</NavLink>
+          <Link to="/io">La mia pagina</Link>
           <Link to={adminGuideLink(pathname)}>Guida</Link>
           <button type="button" className="link" onClick={logout}>
             Esci

@@ -36,7 +36,8 @@ describe("titleFor", () => {
       "/admin/da-verificare": 1,
       "/admin/amministratori": 1,
       "/admin/impostazioni": 1,
+      "/admin/testi": 1,
     });
-    expect(new Set(paths.map(titleFor)).size).toBe(paths.length);
+    expect(new Set(paths.map((path) => titleFor(path))).size).toBe(paths.length);
   });
 });

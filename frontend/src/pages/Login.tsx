@@ -46,7 +46,7 @@ export function Login() {
       <h1>Accedi</h1>
       <form onSubmit={requestLink} aria-labelledby="link-title">
         <h2 id="link-title">Ricevi un link via email</h2>
-        <p>Niente password: ti mandiamo un link che vale 30 minuti.</p>
+        <p>Niente password: ti mandiamo un link che vale 10 minuti.</p>
         <label>
           Email
           <input type="email" name="email" autoComplete="email" required />

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import logoUrl from "./assets/logo-cissone.png";
+import { useEventName } from "./eventName";
 import { isInFrame } from "./frame";
-
-export const EVENT_NAME = "Cissonauti Summer Camp";
 
 type Props = {
   /** Inside the event site's iframe: name only, no logo, so the site header is not repeated. */
@@ -12,11 +11,12 @@ type Props = {
 
 export function SiteHeader({ compact = isInFrame() }: Props) {
   const [logoFailed, setLogoFailed] = useState(false);
+  const eventName = useEventName();
 
   if (compact) {
     return (
       <header className="site-header compact">
-        <p className="site-name">{EVENT_NAME}</p>
+        <p className="site-name">{eventName}</p>
       </header>
     );
   }
@@ -33,7 +33,7 @@ export function SiteHeader({ compact = isInFrame() }: Props) {
             onError={() => setLogoFailed(true)}
           />
         )}
-        <span className="site-name">{EVENT_NAME}</span>
+        <span className="site-name">{eventName}</span>
       </Link>
     </header>
   );

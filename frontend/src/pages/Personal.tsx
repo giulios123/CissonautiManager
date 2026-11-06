@@ -308,8 +308,10 @@ export function Personal() {
         </p>
       )}
       {me.role === "admin" && (
-        <p>
-          <Link to="/admin">Vai al pannello organizzatori</Link>
+        <p className="admin-bar">
+          <Link to="/admin" className="button secondary">
+            Vai al pannello organizzatori
+          </Link>
         </p>
       )}
       {me.bookings.length === 0

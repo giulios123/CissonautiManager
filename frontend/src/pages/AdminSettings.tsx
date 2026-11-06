@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
+import { useRefreshEventName } from "../eventName";
 import { centsToInput, parseEuroToCents } from "../money";
 
 type Channel = { code: string; label: string; instructions: string; enabled: boolean };
@@ -54,6 +55,7 @@ function EditionSection({
   onSaved: (edition: Edition) => void;
 }) {
   const [notice, setNotice] = useState<Notice>(null);
+  const refreshEventName = useRefreshEventName();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,6 +92,7 @@ function EditionSection({
         },
       });
       onSaved(saved);
+      refreshEventName();
       setNotice({ kind: "ok", text: `Salvato. Slot dell'edizione: ${saved.slots.length}.` });
     } catch (error) {
       setNotice({ kind: "error", text: errorText(error) });

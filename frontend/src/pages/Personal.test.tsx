@@ -259,6 +259,28 @@ describe("cancelling", () => {
   });
 });
 
+describe("organizer on their own page", () => {
+  const route =
+    (role: "admin" | "participant") =>
+    (url: string): Reply =>
+      url === "/api/me" ? { body: { ...me([]), role } } : { status: 404, body: {} };
+
+  it("sees their page with a visible way to the panel", async () => {
+    openAt(route("admin"));
+    expect(await screen.findByRole("heading", { name: "Ciao Ada!" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Vai al pannello organizzatori" })).toHaveAttribute(
+      "href",
+      "/admin",
+    );
+  });
+
+  it("does not show the panel link to participants", async () => {
+    openAt(route("participant"));
+    await screen.findByRole("heading", { name: "Ciao Ada!" });
+    expect(screen.queryByRole("link", { name: /pannello/ })).not.toBeInTheDocument();
+  });
+});
+
 describe("balance and instructions", () => {
   const route =
     (bookings: BookingView[]) =>
