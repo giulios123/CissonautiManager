@@ -289,3 +289,13 @@
 - **Motivo**: richiesta del maintainer: controllare il conto e segnare le quote in fila, con rimedio a un clic sbagliato. L'app scala a zero, quindi un timer solo in memoria può perdere l'email.
 - **Alternative scartate**: solo timer in memoria (email perse a ogni riavvio); coda o job ogni minuto (infrastruttura in più); ritardare l'email anche dalla scheda (scelta del maintainer: solo dalla vista); conferma con dialogo a ogni riga (più lento per chi controlla il conto).
 - **Limiti noti**: se il timer si perde l'email arriva al passaggio orario successivo; un errore di consegna non si ritenta; con due admin sulla stessa riga il tasto registra l'importo mostrato.
+
+
+## D-041 · Testi dell'evento modificabili, nome dell'edizione ovunque, accesso diretto
+
+- **Data**: 2026-11-06
+- **Decisione**: (1) il nome nell'intestazione, nel titolo delle pagine e negli oggetti delle email è `edition.name` (contesto React `EventNameProvider`; «Cissonauti Summer Camp» solo come ripiego); (2) ogni email = oggetto + apertura + blocco automatico + chiusura: l'admin modifica oggetto, apertura e chiusura di tutte e 9 le email (tabella `email_text`, una riga per edizione e tipo, campo null = predefinito), il blocco con i dati della prenotazione non è modificabile; segnaposto `{nome}` e `{evento}` sostituiti in una sola passata, senza `format`; (3) il paragrafo sopra il modulo è `edition.registration_intro` con un endpoint dedicato (`PUT /api/admin/registration-intro`), non dentro `EditionIn`, così salvare le Impostazioni non lo cancella; (4) dopo il login (password o link) si va sempre a `/io`, gli admin hanno il pulsante verso il pannello e «La mia pagina» nel menu admin; (5) il magic link vale 10 minuti ed è riusabile in quel tempo (`used_at` registra solo il primo uso), la pagina di verifica entra da sola, con una guardia contro la doppia chiamata di StrictMode.
+- **Motivo**: richieste del maintainer; il riuso del link dentro i 10 minuti toglie il clic «Entra» senza che gli scanner di posta lo brucino.
+- **Alternative scartate**: link monouso con la pagina «Entra» (un clic in più); link monouso che entra da solo (lo scanner lo brucia); colonne dei testi sull'edizione (9 email × 3 campi); anteprima dell'email completa (Backlog).
+- **Limiti noti**: un'email inoltrata dà accesso per 10 minuti; i testi cambiano solo le email future; l'oggetto predefinito del pagamento ricevuto è «Pagamento ricevuto: sei dentro a {evento}!».
+

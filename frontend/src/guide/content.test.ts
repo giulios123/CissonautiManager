@@ -68,6 +68,7 @@ describe("admin guide", () => {
       "/admin/da-incassare",
       "/admin/da-verificare",
       "/admin/amministratori",
+      "/admin/testi",
       "/admin/impostazioni",
     ];
     for (const page of pages) expect(slugs).toContain(adminGuideSlug(page));

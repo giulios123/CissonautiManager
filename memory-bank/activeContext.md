@@ -14,7 +14,7 @@ Richiesta del maintainer: un modo veloce per l'admin di controllare il conto e s
 
 ## MVP 11 · Testi dell'evento e accesso (2026-11-06)
 
-Richiesta del maintainer: nome dell'edizione in header e oggetti email; testi delle email (tutte, oggetto/apertura/chiusura) e paragrafo del modulo modificabili da admin; dopo il login sempre `/io`; magic link riusabile 10 minuti senza pagina «Entra». Spec in `specs/mvp-11-testi-evento/`, piano approvato. In lavorazione sul branch `feat/mvp-11-testi-evento`.
+Richiesta del maintainer: nome dell'edizione in header e oggetti email; testi delle email (tutte, oggetto/apertura/chiusura) e paragrafo del modulo modificabili da admin; dopo il login sempre `/io`; magic link riusabile 10 minuti senza pagina «Entra». Spec in `specs/mvp-11-testi-evento/`, piano approvato. Completato sul branch `feat/mvp-11-testi-evento` (D-041), descrizione PR in `specs/mvp-11-testi-evento/pr-description.md`. Da fare: provare in produzione email personalizzate e link da 10 minuti.
 
 ## Prossimo passo
 

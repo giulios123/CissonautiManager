@@ -15,6 +15,7 @@
 | 8 | Stile del sito | fatto e provato in locale (task 1-7) |
 | 9 | Guida in app e note di rilascio | fatto e provato in locale (task 1-10) |
 | 10 | Incassi (Da incassare) | fatto e provato in locale (task 1-10) |
+| 11 | Testi dell'evento e accesso | fatto e provato in locale (task 1-10) |
 
 ## Verifiche manuali
 
@@ -53,6 +54,9 @@
 
 - **MVP 10**, provato in locale con Chromium a 390 px (iPhone 13, DB nuovo da migrazioni 0001-0010, tre iscrizioni in attesa): ricerca per causale (`g8ax` lascia una riga), canale Bonifico, «Segna pagato» registra 19,00 € e la riga mostra «Pagato · Annulla»; esce dall'elenco dopo 10,4 secondi; annullo di un'altra riga che la riporta da incassare; l'email di conferma è partita solo per il pagamento non annullato; nessun errore in console, nessuno scorrimento laterale della pagina (la tabella scorre dentro il suo riquadro).
 - **Non verificato (MVP 10)**: CI su SQL Server con la migrazione 0010 e l'UPDATE condizionale; il timer da 30 secondi su Azure con l'app che scala a zero (la rete di sicurezza è nel job orario); email vera nella casella; due admin sulla stessa riga. **Da verificare a mano**: dopo il deploy segna un pagamento vero, aspetta 30 secondi e controlla l'email; annulla entro 10 secondi e controlla che non arrivi.
+
+- **MVP 11**, test automatici: backend 831 verdi più i nuovi (testi, link da 10 minuti riusabile, redirect a `/io`), frontend 259 verdi, lint e `tsc` puliti, migrazione 0011 su e giù da zero.
+- **Non verificato (MVP 11)**: CI su SQL Server con la migrazione 0011; email vere con i testi personalizzati; embed in Google Sites con il nome dell'edizione. **Da verificare a mano**: rinominare l'edizione e controllare intestazione, scheda del browser e oggetto delle email; cambiare il testo di un'email e iscriversi; entrare da admin e trovarsi sulla propria pagina; aprire il link di accesso senza clic e riaprirlo entro 10 minuti.
 
 ## Bug corretti fuori MVP
 
