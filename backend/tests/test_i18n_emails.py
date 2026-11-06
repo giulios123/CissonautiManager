@@ -74,7 +74,11 @@ class TestFormats:
 
 class TestEmailsInTheLanguageOfThePerson:
     def _register(self, client, edition, locale, email="ada@example.com"):
-        body = payload([edition.slots[0].id], locale=locale, email=email)
+        afternoon = min(
+            (slot for slot in edition.slots if slot.period == "afternoon"),
+            key=lambda slot: slot.date,
+        )
+        body = payload([afternoon.id], locale=locale, email=email)
         assert client.post("/api/public/registrations", json=body).status_code == 201
 
     def test_registration_in_english(self, client, edition, outbox):
