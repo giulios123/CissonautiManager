@@ -221,6 +221,20 @@ class TestTestMessage:
         admin_client.post(f"{URL}/test?locale=it")
         assert outbox.sent[-1].html is not None and outbox.sent[-1].attachments == ()
 
+    def test_without_edition_slots_email_still_sends(self, admin_client, edition, outbox, db):
+        from app.models import Slot
+
+        edition.start_date = None
+        edition.end_date = None
+        db.query(Slot).filter_by(edition_id=edition.id).delete()
+        db.commit()
+
+        response = admin_client.post(f"{URL}/test?locale=en")
+
+        assert response.status_code == 200
+        assert "1 day of attendance" not in outbox.sent[-1].body
+        assert "Payment reference:" in outbox.sent[-1].body
+
     def test_needs_an_admin(self, client, edition):
         assert client.post(f"{URL}/test").status_code == 401
 

@@ -4,7 +4,7 @@ Presenze e orari erano ripetuti per ogni fascia nel modulo, nella pagina persona
 
 ## Verifiche per gli organizzatori
 
-- [x] Test automatici: backend 991 test; frontend 354 test; build, lint, Ruff e controllo guide passati. Dopo le rifiniture finali sono passati anche i test mirati per riepilogo, API e email.
+- [x] Test automatici: backend 1000 test; frontend 363 test; build, lint, Ruff e controllo guide passati. Dopo le rifiniture finali sono passati anche i test mirati per riepilogo, API e email.
 - [x] Verifica locale in Chromium: desktop, layout mobile al 200%, barra con quota e invio, focus visibile e policy iframe coperta dai test.
 - [ ] Da telefono, selezionare più giorni e verificare il riepilogo e il link «Modifica presenze».
 - [ ] Includere mattina e pomeriggio: la data appare come giornata completa. Provare anche solo una fascia.

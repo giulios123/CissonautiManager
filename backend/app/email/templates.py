@@ -49,6 +49,13 @@ def _slot_lines(slots: list[Slot], loc: str) -> str:
     )
 
 
+def _presence_block(booking: Booking, loc: str) -> str:
+    """Format booked attendance when present; test bookings may have no slots."""
+    if not booking.slots:
+        return ""
+    return format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc) + "\n\n"
+
+
 def _waitlist_section(waitlisted: list[Slot], loc: str) -> str:
     if not waitlisted:
         return ""
@@ -136,8 +143,7 @@ def registration_email(
         + "\n\n"
         + t("email.registration.fee", loc, amount=format_euro(booking.amount_due_cents, loc))
         + "\n\n"
-        + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
-        + "\n\n"
+        + _presence_block(booking, loc)
         + t("email.reference", loc, code=participant.personal_code)
         + "\n"
         + t(
@@ -246,8 +252,7 @@ def payment_confirmation_email(
             + "\n\n"
             + t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))
             + "\n\n"
-            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
-            + "\n\n"
+            + _presence_block(booking, loc)
             + t("email.payment.see_you", loc)
             + "\n"
         ),
@@ -256,8 +261,7 @@ def payment_confirmation_email(
             + "\n\n"
             + t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))
             + "\n\n"
-            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
-            + "\n\n"
+            + _presence_block(booking, loc)
             + t("email.payment.see_you", loc)
             + "\n",
             emphasized_lines=(t("email.payment.amount", loc, amount=format_euro(paid_cents, loc)),),
@@ -338,8 +342,7 @@ def waitlist_promoted_email(
                 amount=format_euro(max(balance_cents, 0), loc),
             )
             + "\n\n"
-            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
-            + "\n\n"
+            + _presence_block(booking, loc)
             + t("email.reference", loc, code=participant.personal_code)
             + "\n"
             + f"{deadline}\n"
@@ -359,8 +362,7 @@ def waitlist_promoted_email(
                 amount=format_euro(max(balance_cents, 0), loc),
             )
             + "\n\n"
-            + format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc)
-            + "\n\n"
+            + _presence_block(booking, loc)
             + t("email.reference", loc, code=participant.personal_code)
             + "\n"
             + deadline

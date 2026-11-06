@@ -335,7 +335,7 @@ export function Registration() {
               onClick={(event) => {
                 event.preventDefault();
                 const calendarHeading = document.getElementById("when-title");
-                calendarHeading?.scrollIntoView?.({ block: "start" });
+                calendarHeading?.scrollIntoView?.({ block: "center" });
                 calendarHeading?.focus({ preventScroll: true });
               }}
             >

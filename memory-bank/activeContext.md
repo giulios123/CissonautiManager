@@ -26,7 +26,7 @@ Richiesta del maintainer: caricare e ripristinare il logo dell'edizione dalle Im
 
 ## MVP 15 · Riepiloghi compatti delle presenze
 
-Implementazione completata il 2026-11-06 sul piano concordato con il maintainer, in PR #16. Una riga per giorno; data sola se la presenza è completa (mattina+pomeriggio incluse), fasce piccole nei giorni parziali; legenda unica degli orari; lista d'attesa separata; «Modifica presenze» torna al calendario mantenendo le scelte. Intervento bilingue su modulo, pagina personale e email, senza migrazione. Suite completa backend 991/991 e frontend 354/354; build, lint, Ruff e guida verdi. Da provare dopo il deploy su telefono fisico, iframe reale e client email reali.
+Implementazione completata il 2026-11-06 sul piano concordato con il maintainer, in PR #16. Una riga per giorno; data sola se la presenza è completa (mattina+pomeriggio incluse), fasce piccole nei giorni parziali; legenda unica degli orari; lista d'attesa separata; «Modifica presenze» torna al calendario mantenendo le scelte. Intervento bilingue su modulo, pagina personale e email, senza migrazione. Suite completa backend 1000/1000 e frontend 363/363; build, lint, Ruff e guida verdi. Da provare dopo il deploy su telefono fisico, iframe reale e client email reali.
 
 ## Verifiche pendenti delle release precedenti
 

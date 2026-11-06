@@ -424,7 +424,11 @@ describe("waitlist in the registration form", () => {
     const edit = within(summary).getByRole("link", { name: "Modifica presenze" });
     expect(edit).toHaveAttribute("href", "#when-title");
     expect(within(summary).queryByRole("button", { name: /Togli/ })).not.toBeInTheDocument();
+    const calendarHeading = screen.getByRole("heading", { name: "Quando vieni" });
+    const scrollIntoView = vi.fn();
+    calendarHeading.scrollIntoView = scrollIntoView;
     await user.click(edit);
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
     expect(screen.getByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/)).toBeChecked();
     expect(screen.getByLabelText(/Sera 19:00-00:00/)).toBeChecked();
     expect(screen.getByRole("heading", { name: "Quando vieni" })).toHaveFocus();
