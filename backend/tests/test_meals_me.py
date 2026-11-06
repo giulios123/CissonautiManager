@@ -73,7 +73,9 @@ def test_pending_booking_covered_by_payments_becomes_confirmed(member, db, booki
     outbox.sent.clear()
     body = put(member).json()
     assert body["status"] == STATUS_CONFIRMED
-    assert [m.subject for m in outbox.sent] == ["Pagamento ricevuto: sei dentro!"]
+    assert [m.subject for m in outbox.sent] == [
+        "Pagamento ricevuto: sei dentro al Cissonauti Summer Camp 2026!"
+    ]
 
 
 def test_confirmed_booking_stays_confirmed_with_a_balance(member, db, booking):

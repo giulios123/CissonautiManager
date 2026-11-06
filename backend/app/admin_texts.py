@@ -181,6 +181,10 @@ ADMIN_MESSAGES: dict[str, dict[str, str]] = {
         "it": "Segnaposto sconosciuto: {names}. Puoi usare solo: {allowed}.",
         "en": "Unknown placeholder: {names}. You can only use: {allowed}.",
     },
+    "emailtpl.unknown_email": {
+        "it": "Email sconosciuta.",
+        "en": "Unknown email.",
+    },
     "emailtpl.invalid_color": {
         "it": "Il colore deve essere scritto come #rrggbb, ad esempio #ffffff.",
         "en": "The color must be written as #rrggbb, for example #ffffff.",

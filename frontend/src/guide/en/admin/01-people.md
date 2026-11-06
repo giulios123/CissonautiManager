@@ -4,6 +4,8 @@ This is the starting page of the panel: one row per person, with code, status, d
 
 Tapping a person opens their **registration page**.
 
+When you sign in (with the link or the password) you land on your own personal page, like any registered person, with the “Go to the organizers' panel” button at the top. From the panel, “My page” takes you back there.
+
 ### What you see
 
 Details and consents, slots, meals with dietary needs (allergies included, which only you can see), activities, waitlist and the **history** of the changes you made by hand (who, when, what).

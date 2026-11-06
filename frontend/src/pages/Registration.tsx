@@ -13,6 +13,7 @@ import {
 import type { PickerDay } from "../daySelection";
 import { useI18n } from "../i18n";
 import { tNow } from "../i18n/messages";
+import { EVENT_NAME } from "../eventName";
 import { formatEuro } from "../money";
 import { ROUTES } from "../routes";
 import { DayPicker } from "./DayPicker";
@@ -22,6 +23,7 @@ type Legal = { version: number; body: string };
 type PublicEdition = {
   registration_open: boolean;
   name: string | null;
+  registration_intro?: Record<string, string> | null;
   base_fee_cents: number | null;
   per_day_fee_cents: number | null;
   hold_days: number | null;
@@ -91,7 +93,7 @@ export function Registration() {
   if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
     return (
       <main>
-        <h1>{edition.name ?? "Cissonauti Summer Camp"}</h1>
+        <h1>{edition.name ?? EVENT_NAME}</h1>
         <p>{t("reg.notOpen")}</p>
       </main>
     );
@@ -201,7 +203,7 @@ export function Registration() {
   return (
     <main className="wide">
       <h1>{edition.name}</h1>
-      <p className="lead">{t("reg.lead")}</p>
+      <p className="lead intro-text">{edition.registration_intro?.[locale] ?? t("reg.lead")}</p>
       {first && last && (
         <p className="meta">
           <span className="chip static">

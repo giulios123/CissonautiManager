@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "./api";
 import logoUrl from "./assets/logo-cissone.png";
+import { useEventName } from "./eventName";
 import { isInFrame } from "./frame";
 import { LOCALES, useI18n, type Locale } from "./i18n";
-
-export const EVENT_NAME = "Cissonauti Summer Camp";
 
 type Props = {
   /** Inside the event site's iframe: name only, no logo, so the site header is not repeated. */
@@ -44,12 +43,13 @@ function LanguageSwitch() {
 export function SiteHeader({ compact = isInFrame() }: Props) {
   const { t } = useI18n();
   const [logoFailed, setLogoFailed] = useState(false);
+  const eventName = useEventName();
 
   if (compact) {
     return (
       <header className="site-header compact">
         <div className="site-bar">
-          <p className="site-name">{EVENT_NAME}</p>
+          <p className="site-name">{eventName}</p>
           <LanguageSwitch />
         </div>
       </header>
@@ -69,7 +69,7 @@ export function SiteHeader({ compact = isInFrame() }: Props) {
               onError={() => setLogoFailed(true)}
             />
           )}
-          <span className="site-name">{EVENT_NAME}</span>
+          <span className="site-name">{eventName}</span>
         </Link>
         <LanguageSwitch />
       </div>

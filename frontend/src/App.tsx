@@ -19,6 +19,7 @@ import { Login } from "./pages/Login";
 import { Personal } from "./pages/Personal";
 import { Registration } from "./pages/Registration";
 import { Verify } from "./pages/Verify";
+import { EventNameProvider, useEventName } from "./eventName";
 import { useT } from "./i18n";
 import { usePageTitle } from "./pageTitle";
 import { canonicalGuideHash, canonicalPath, canonicalSearch, ROUTES } from "./routes";
@@ -26,9 +27,10 @@ import { SiteHeader } from "./SiteHeader";
 
 function Home() {
   const t = useT();
+  const eventName = useEventName();
   return (
     <main>
-      <h1>Cissonauti Summer Camp</h1>
+      <h1>{eventName}</h1>
       <p>
         <Link to={ROUTES.register}>{t("home.register")}</Link>
       </p>
@@ -57,6 +59,14 @@ function NotFound() {
 }
 
 export function App() {
+  return (
+    <EventNameProvider>
+      <AppRoutes />
+    </EventNameProvider>
+  );
+}
+
+function AppRoutes() {
   usePageTitle();
   return (
     <>

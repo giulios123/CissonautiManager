@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.domain.booking import can_reactivate, has_free_seat, hold_deadline, status_after_void
 from app.domain.fees import is_covered
@@ -22,6 +22,7 @@ from app.models import (
 )
 from app.services import audit
 from app.services import edition as edition_service
+from app.services import email_templates as email_templates_service
 from app.services.amounts import recompute_amount
 from app.services.seats import (
     activities_for_update,
@@ -55,7 +56,10 @@ def paid_total(booking: Booking) -> int:
 
 
 def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
-    sender.send(payment_confirmation_email(booking, paid_cents))
+    db = object_session(booking)
+    assert db is not None
+    texts = email_templates_service.texts_for_booking(db, booking, "payment_confirmation")
+    sender.send(payment_confirmation_email(booking, paid_cents, texts))
 
 
 REVIVED = "revived"

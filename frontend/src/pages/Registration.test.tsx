@@ -91,6 +91,27 @@ describe("Registration page", () => {
     expect(await screen.findByText(/non sono ancora aperte/)).toBeInTheDocument();
   });
 
+  it("shows the paragraph written by the organizers, in the language of the page", async () => {
+    mockFetch({
+      "/api/public/edition": {
+        body: {
+          ...edition,
+          registration_intro: { it: "Benvenuto!\nScegli i tuoi turni.", en: "Welcome!" },
+        },
+      },
+    });
+    renderPage();
+    const intro = await screen.findByText(/Benvenuto!/);
+    expect(intro).toHaveTextContent("Benvenuto! Scegli i tuoi turni.");
+    expect(intro).toHaveClass("intro-text");
+  });
+
+  it("falls back to the standard paragraph when the server sends none", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    expect(await screen.findByText(/Scegli i momenti in cui vuoi venire/)).toBeInTheDocument();
+  });
+
   it("disables full slots and updates the fee preview", async () => {
     mockFetch({ "/api/public/edition": { body: edition } });
     renderPage();

@@ -189,7 +189,9 @@ def test_pending_booking_already_covered_by_the_new_amount_is_confirmed(
     pay(db, booking, 1100)
     view = put(member, [slot_ids[(d(13), MORNING)]]).json()
     assert view["status"] == STATUS_CONFIRMED
-    assert [m.subject for m in outbox.sent] == ["Pagamento ricevuto: sei dentro!"]
+    assert [m.subject for m in outbox.sent] == [
+        "Pagamento ricevuto: sei dentro al Cissonauti Summer Camp 2026!"
+    ]
 
 
 @pytest.mark.parametrize("status", [STATUS_EXPIRED, STATUS_CANCEL_REQUESTED, STATUS_REFUNDED])

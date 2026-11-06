@@ -12,23 +12,27 @@ from app.domain.email_template import (
     DEFAULT_CARD_COLOR,
     DEFAULT_CARD_POSITION,
     DEFAULT_CARD_TEXT,
+    DEFAULT_FORM_INTRO,
     DEFAULT_SUBJECT,
+    OTHER_EMAIL_KINDS,
     render,
 )
-from app.email.base import RegistrationExtras
+from app.email.base import DEFAULT_EVENT_NAME, EmailTexts, RegistrationExtras
 from app.email.card import render_card
-from app.i18n import LOCALES, normalize_locale
+from app.i18n import LOCALES, normalize_locale, t
 from app.models import Edition, EmailTemplate, Participant, RegistrationCard
 from app.timefmt import format_long_date
 
 KIND_REGISTRATION = "registration"
 
 
-def get_template(db: Session, edition_id: int, locale: str) -> EmailTemplate | None:
+def get_template(
+    db: Session, edition_id: int, locale: str, kind: str = KIND_REGISTRATION
+) -> EmailTemplate | None:
     return db.scalar(
         select(EmailTemplate).where(
             EmailTemplate.edition_id == edition_id,
-            EmailTemplate.kind == KIND_REGISTRATION,
+            EmailTemplate.kind == kind,
             EmailTemplate.locale == locale,
         )
     )
@@ -80,7 +84,111 @@ def registration_extras(
             card.text_color or DEFAULT_CARD_COLOR,
             card.text_position or DEFAULT_CARD_POSITION,
         )
-    return RegistrationExtras(subject=subject or None, body=body, card_png=png, card_text=text)
+    return RegistrationExtras(
+        event_name=edition.name or DEFAULT_EVENT_NAME,
+        subject=subject or None,
+        body=body,
+        card_png=png,
+        card_text=text,
+    )
+
+
+def texts_for(
+    db: Session,
+    edition: Edition | None,
+    participant: Participant,
+    kind: str,
+    locale: str | None = None,
+) -> EmailTexts:
+    """The event name and what the organizers wrote for one of the other emails, in the language
+    of the person (or in `locale`). Without an edition, the standard wording."""
+    if edition is None:
+        return EmailTexts()
+    loc = normalize_locale(locale or participant.locale)
+    values = placeholder_values(participant, edition, loc)
+    template = get_template(db, edition.id, loc, kind)
+    subject = render(template.subject, values).strip() if template else ""
+    body = render(template.body, values).strip() if template else ""
+    return EmailTexts(
+        event_name=edition.name or DEFAULT_EVENT_NAME, subject=subject or None, body=body or None
+    )
+
+
+def texts_for_booking(db: Session, booking, kind: str) -> EmailTexts:
+    """`texts_for` for the person and edition of a booking."""
+    return texts_for(db, db.get(Edition, booking.edition_id), booking.participant, kind)
+
+
+# --- the other emails and the paragraph of the form: what the admin page reads and writes -----
+
+
+def default_email(kind: str, locale: str) -> dict[str, str]:
+    """The standard subject and opening of one of the other emails, placeholders unreplaced."""
+    subject_key, body_key = OTHER_EMAIL_KINDS[kind]
+    return {
+        "subject": t(subject_key, locale, event="{event}"),
+        "body": t("email.greeting", locale, first_name="{first_name}")
+        + "\n\n"
+        + t(body_key, locale, event="{event}"),
+    }
+
+
+def emails_view(db: Session, edition: Edition) -> dict:
+    emails = {}
+    for kind in OTHER_EMAIL_KINDS:
+        templates = {}
+        for locale in LOCALES:
+            row = get_template(db, edition.id, locale, kind)
+            templates[locale] = {
+                "subject": row.subject if row else "",
+                "body": row.body if row else "",
+            }
+        emails[kind] = {
+            "templates": templates,
+            "defaults": {locale: default_email(kind, locale) for locale in LOCALES},
+        }
+    return {
+        "emails": emails,
+        "form_intro": {
+            "it": edition.registration_intro_it or "",
+            "en": edition.registration_intro_en or "",
+            "defaults": dict(DEFAULT_FORM_INTRO),
+        },
+    }
+
+
+def save_email(
+    db: Session,
+    edition: Edition,
+    admin: Participant,
+    kind: str,
+    templates: dict[str, dict[str, str]],
+    now: datetime | None = None,
+) -> None:
+    now = now or utcnow()
+    for locale in LOCALES:
+        data = templates.get(locale, {})
+        row = get_template(db, edition.id, locale, kind)
+        if row is None:
+            row = EmailTemplate(edition_id=edition.id, kind=kind, locale=locale)
+            db.add(row)
+        row.subject = data.get("subject", "").strip()
+        row.body = data.get("body", "").strip()
+        row.updated_at = now
+        row.updated_by_id = admin.id
+    db.commit()
+
+
+def save_form_intro(db: Session, edition: Edition, it: str, en: str) -> None:
+    edition.registration_intro_it = it.strip() or None
+    edition.registration_intro_en = en.strip() or None
+    db.commit()
+
+
+def form_intro_for(edition: Edition, locale: str) -> str:
+    """The paragraph above the sign-up form in a language: the organizers' or the standard one."""
+    custom = edition.registration_intro_en if locale == "en" else edition.registration_intro_it
+    return (custom or "").strip() or DEFAULT_FORM_INTRO[locale]
 
 
 # --- what the admin page reads and writes -----------------------------------------------------

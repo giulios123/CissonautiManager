@@ -28,7 +28,7 @@ export const it = {
   "common.retryShortly": "Riprova tra poco.",
   "login.title": "Accedi",
   "login.linkTitle": "Ricevi un link via email",
-  "login.linkIntro": "Niente password: ti mandiamo un link che vale 30 minuti.",
+  "login.linkIntro": "Niente password: ti mandiamo un link che vale 10 minuti.",
   "login.email": "Email",
   "login.sendLink": "Invia il link",
   "login.passwordTitle": "Oppure entra con la password",
@@ -37,11 +37,10 @@ export const it = {
   "login.notRegistered": "Non sei ancora iscritto?",
   "verify.invalidTitle": "Link non valido",
   "verify.requestNew": "Richiedi un nuovo link",
-  "verify.title": "Entra nella tua pagina",
-  "verify.enter": "Entra",
+  "verify.title": "Accesso in corso…",
   "title.register": "Iscrizione",
   "title.login": "Accedi",
-  "title.verify": "Entra nella tua pagina",
+  "title.verify": "Accesso",
   "title.me": "La tua iscrizione",
   "title.guide": "Guida",
   "title.people": "Persone",
@@ -704,6 +703,42 @@ export const it = {
   "emt.saved": "Email salvata.",
   "emt.sendTest": "Inviami una prova",
   "emt.testHint": "La prova usa il testo salvato, nella lingua della scheda scelta.",
+  "adm.navMine": "La mia pagina",
+  "emx.loadError": "Non riesco a caricare i testi delle email.",
+  "emx.formTitle": "Testo sopra il modulo di iscrizione",
+  "emx.formIntro":
+    "Il paragrafo sotto il titolo della pagina di iscrizione, nella lingua scelta. Il riquadro con i giorni di blocco e i tre passi resta automatico.",
+  "emx.formText": "Testo sopra il modulo (vuoto = testo standard)",
+  "emx.formSave": "Salva il testo",
+  "emx.formSaved": "Testo salvato.",
+  "emx.title": "Altre email",
+  "emx.intro":
+    "Oggetto e testo iniziale di ogni altra email, per lingua. Dopo il testo iniziale seguono sempre i dati della prenotazione, che non si modificano. Segnaposto disponibili: {names}.",
+  "emx.automatic": "Parte automatica (non modificabile)",
+  "emx.save": "Salva",
+  "emx.saved": "Email salvata.",
+  "emx.perEmail": "Email «{label}»",
+  "emx.kind.waitlist_joined": "Lista d'attesa",
+  "emx.auto.waitlist_joined": "Gli slot in lista d'attesa e il link personale.",
+  "emx.kind.already_registered": "Già iscritto",
+  "emx.auto.already_registered": "Il link personale con la sua durata.",
+  "emx.kind.magic_link": "Link di accesso",
+  "emx.auto.magic_link": "Il link di accesso con la sua durata.",
+  "emx.kind.payment_confirmation": "Pagamento ricevuto",
+  "emx.auto.payment_confirmation":
+    "L'importo registrato, gli slot della prenotazione e il saluto finale.",
+  "emx.kind.reminder_mid": "Promemoria di pagamento",
+  "emx.auto.reminder_mid":
+    "La scadenza del blocco, quanto resta da versare, la causale, le istruzioni di pagamento, il link alla pagina personale e l'avviso «se hai già pagato».",
+  "emx.kind.reminder_final": "Ultimo promemoria (24 ore prima)",
+  "emx.auto.reminder_final":
+    "La scadenza del blocco, quanto resta da versare, la causale, le istruzioni di pagamento, il link alla pagina personale e l'avviso «se hai già pagato».",
+  "emx.kind.waitlist_promoted": "Posto liberato",
+  "emx.auto.waitlist_promoted":
+    "Lo slot assegnato, gli slot, la quota, quanto resta da versare, la causale, la scadenza, le istruzioni di pagamento e il link.",
+  "emx.kind.cancellation": "Disdetta",
+  "emx.auto.cancellation":
+    "Cosa succede ai pagamenti (rimborso o niente da fare) e l'uscita dalle liste d'attesa.",
 } as const;
 
 export type MessageKey = keyof typeof it;

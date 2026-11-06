@@ -18,6 +18,7 @@
 | 11 | Lingue e indirizzi | fatto e provato in locale (task 1-8) |
 | 12 | Pannello admin in inglese | fatto e provato in locale (task 1-5) |
 | 13 | Email di iscrizione personalizzabile | fatto e provato in locale (task 1-8) |
+| 14 | Testi dell'evento e accesso diretto | fatto e provato in locale (task 1-9) |
 
 ## Verifiche manuali
 
@@ -65,6 +66,9 @@
 
 - **MVP 13**, provato in locale con Chromium a 390 px (DB nuovo da migrazioni 0001-0012, console): dalle Impostazioni caricato uno sfondo JPEG (ricodificato in PNG, anteprima 1600×900), oggetto e testo in inglese con segnaposto, salvataggio, anteprima con «Ada Lovelace» e «I'm Ada Lovelace and I'll be at Cissonauti Summer Camp 2027 from 10 July 2027 to 16 July 2027»; «Send me a test» recapitata all'admin; iscrizione di una persona in inglese: oggetto «Welcome Grace, see you at Cissonauti Summer Camp 2027!», testo scritto dall'admin seguito dal blocco fisso (slot, quota, causale, scadenza, istruzioni con «Bank transfer (IBAN)», link `/login/verify`), parte HTML e allegato inline; nessun errore in console. Le immagini generate sono state guardate a occhio.
 - **Non verificato (MVP 13)**: la email vera in Gmail, Outlook e Apple Mail (immagine inline con `contentId` di Azure Communication Services: i test controllano il payload, non il recapito); come appare nello spam; CI su SQL Server con la migrazione 0012 (`varbinary(max)`); un file molto grande caricato su Azure (limite di richiesta del proxy). **Da verificare a mano**: dopo il deploy, carica uno sfondo vero, premi «Inviami una prova» e guarda la email nei client che usate di più.
+
+- **MVP 14**, test automatici: backend e frontend verdi (testi delle altre email per lingua e loro effetto nelle email, testo sopra il modulo, link da 10 minuti riusabile, redirect a `/me`, nome edizione in header e titoli, barra admin sulla pagina personale), lint e `tsc` puliti, migrazione 0013 su e giù da zero. Prova in browser con DB nuovo (login admin che atterra su «Ciao …!», rinomina dell'edizione che cambia intestazione e titolo, testi salvati e email in console con testo nuovo e dati intatti, link aperto senza clic e riaperto).
+- **Non verificato (MVP 14)**: CI su SQL Server con la migrazione 0013; email vere con i testi personalizzati; embed in Google Sites con il nome dell'edizione. **Da verificare a mano**: rinominare l'edizione e controllare intestazione, scheda del browser e oggetto delle email; cambiare il testo di un'email in italiano e in inglese e iscriversi nelle due lingue; entrare da admin e trovarsi sulla propria pagina; aprire il link di accesso senza clic e riaprirlo entro 10 minuti.
 
 ## Bug corretti fuori MVP
 

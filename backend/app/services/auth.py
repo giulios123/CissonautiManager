@@ -9,8 +9,11 @@ from app.config import Settings
 from app.email import EmailSender
 from app.email.templates import magic_link_email
 from app.models import AuthSession, MagicLinkToken, Participant
+from app.services import edition as edition_service
+from app.services import email_templates as email_templates_service
 
-MAGIC_LINK_TTL = timedelta(minutes=30)
+# Reusable until it expires, so mail scanners that open the link first do not burn it.
+MAGIC_LINK_TTL = timedelta(minutes=10)
 SESSION_TTL = timedelta(days=14)
 
 
@@ -43,24 +46,29 @@ def send_magic_link(
     now: datetime,
 ) -> None:
     raw = create_magic_link_token(db, participant, now)
-    sender.send(magic_link_email(participant, magic_link_url(settings, raw)))
+    texts = email_templates_service.texts_for(
+        db, edition_service.get_active_edition(db), participant, "magic_link"
+    )
+    sender.send(magic_link_email(participant, magic_link_url(settings, raw), texts))
 
 
 def consume_magic_link(db: Session, raw_token: str, now: datetime) -> Participant | None:
-    """Validate and burn a magic link token. Returns the participant, or None if not valid."""
+    """Validate a magic link token. Returns the participant, or None if not valid or expired.
+
+    The link works as many times as needed until it expires; `used_at` keeps the first use.
+    """
     token_hash = hash_token(raw_token)
     token = db.scalar(select(MagicLinkToken).where(MagicLinkToken.token_hash == token_hash))
-    if token is None or token.used_at is not None or token.expires_at <= now:
+    if token is None or token.expires_at <= now:
         return None
-    # Atomic "use once": only one concurrent request can flip used_at from NULL.
-    result = db.execute(
-        update(MagicLinkToken)
-        .where(MagicLinkToken.id == token.id, MagicLinkToken.used_at.is_(None))
-        .values(used_at=now)
-    )
-    db.commit()
-    if result.rowcount != 1:
-        return None
+    if token.used_at is None:
+        # Conditional update: concurrent first uses record a single timestamp.
+        db.execute(
+            update(MagicLinkToken)
+            .where(MagicLinkToken.id == token.id, MagicLinkToken.used_at.is_(None))
+            .values(used_at=now)
+        )
+        db.commit()
     return db.get(Participant, token.participant_id)
 
 

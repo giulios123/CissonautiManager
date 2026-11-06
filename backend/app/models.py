@@ -80,6 +80,9 @@ class Edition(Base):
     # Flat prices per meal. Placeholders until the final amounts are known.
     lunch_price_cents: Mapped[int] = mapped_column(Integer, default=800)
     dinner_price_cents: Mapped[int] = mapped_column(Integer, default=1200)
+    # Paragraph above the sign-up form, per language. Empty means the default text.
+    registration_intro_it: Mapped[str | None] = mapped_column(UnicodeText)
+    registration_intro_en: Mapped[str | None] = mapped_column(UnicodeText)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")

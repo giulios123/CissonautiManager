@@ -7,13 +7,16 @@ in `app/email_texts.py`; this module only assembles it.
 import html
 import re
 
-from app.email.base import EmailAttachment, EmailMessage, RegistrationExtras
+from app.email.base import (
+    EmailAttachment,
+    EmailMessage,
+    EmailTexts,
+    RegistrationExtras,
+)
 from app.i18n import channel_label, normalize_locale, t
 from app.models import Booking, Participant, PaymentChannel, Slot, slot_sort_key
 from app.timefmt import format_deadline, format_euro, format_slot
 
-# The brand name does not change with the language.
-EVENT_NAME = "Cissonauti Summer Camp"
 CARD_CONTENT_ID = "registration-card"
 
 
@@ -27,6 +30,15 @@ def _personal_link(link: str, loc: str) -> str:
 
 def _manage_link(link: str, loc: str) -> str:
     return t("email.manage_link", loc, link=link) + "\n"
+
+
+def _opening(texts: EmailTexts, first_name: str, loc: str, key: str) -> str:
+    """The greeting and first sentence: what the organizers wrote, or the standard wording."""
+    return texts.body or (_greeting(first_name, loc) + t(key, loc)).rstrip("\n")
+
+
+def _subject(texts: EmailTexts, key: str, loc: str) -> str:
+    return texts.subject or t(key, loc, event=texts.event_name)
 
 
 def _slot_lines(slots: list[Slot], loc: str) -> str:
@@ -50,19 +62,23 @@ def _payment_lines(channels: list[PaymentChannel], loc: str) -> str:
 
 
 def cancellation_email(
-    to: str, first_name: str, removed: bool, left_waitlist: bool = False, locale: str = "it"
+    to: str,
+    first_name: str,
+    removed: bool,
+    left_waitlist: bool = False,
+    locale: str = "it",
+    texts: EmailTexts | None = None,
 ) -> EmailMessage:
     """Confirmation of a cancellation. `removed` means no payment was ever registered."""
     loc = normalize_locale(locale)
+    texts = texts or EmailTexts()
     details = t("email.cancellation.removed" if removed else "email.cancellation.paid", loc)
     left = ("\n" + t("email.cancellation.left_waitlist", loc) + "\n") if left_waitlist else ""
     return EmailMessage(
         to=to,
-        subject=t("email.cancellation.subject", loc, event=EVENT_NAME),
+        subject=_subject(texts, "email.cancellation.subject", loc),
         body=(
-            _greeting(first_name, loc)
-            + t("email.cancellation.body", loc)
-            + f"\n\n{details}\n{left}"
+            _opening(texts, first_name, loc, "email.cancellation.body") + f"\n\n{details}\n{left}"
         ),
     )
 
@@ -105,7 +121,7 @@ def registration_email(
     intro = extras.body or (
         _greeting(participant.first_name, loc).rstrip("\n")
         + "\n\n"
-        + t("email.registration.thanks", loc, event=EVENT_NAME)
+        + t("email.registration.thanks", loc, event=extras.event_name)
     )
     body = (
         intro
@@ -125,7 +141,7 @@ def registration_email(
         + f"{t('email.how_to_pay', loc)}\n{_payment_lines(channels, loc)}\n\n"
         + _personal_link(link, loc)
     )
-    subject = extras.subject or t("email.registration.subject", loc, event=EVENT_NAME)
+    subject = extras.subject or t("email.registration.subject", loc, event=extras.event_name)
     if extras.card_png is None:
         return EmailMessage(to=participant.email, subject=subject, body=body)
     return EmailMessage(
@@ -140,16 +156,20 @@ def registration_email(
 
 
 def waitlist_joined_email(
-    participant: Participant, waitlisted: list[Slot], link: str, locale: str | None = None
+    participant: Participant,
+    waitlisted: list[Slot],
+    link: str,
+    locale: str | None = None,
+    texts: EmailTexts | None = None,
 ) -> EmailMessage:
     """Sent to someone who registered only for full slots: they are on the waitlist."""
     loc = normalize_locale(locale or participant.locale)
+    texts = texts or EmailTexts()
     return EmailMessage(
         to=participant.email,
-        subject=t("email.waitlist_joined.subject", loc, event=EVENT_NAME),
+        subject=_subject(texts, "email.waitlist_joined.subject", loc),
         body=(
-            _greeting(participant.first_name, loc)
-            + t("email.waitlist_joined.body", loc)
+            _opening(texts, participant.first_name, loc, "email.waitlist_joined.body")
             + "\n\n"
             + _waitlist_section(waitlisted, loc)
             + t("email.waitlist_joined.nothing_to_pay", loc)
@@ -160,41 +180,58 @@ def waitlist_joined_email(
 
 
 def already_registered_email(
-    participant: Participant, link: str, locale: str | None = None
+    participant: Participant,
+    link: str,
+    locale: str | None = None,
+    texts: EmailTexts | None = None,
 ) -> EmailMessage:
     loc = normalize_locale(locale or participant.locale)
+    texts = texts or EmailTexts()
     return EmailMessage(
         to=participant.email,
-        subject=t("email.already.subject", loc, event=EVENT_NAME),
+        subject=_subject(texts, "email.already.subject", loc),
         body=(
-            _greeting(participant.first_name, loc) + t("email.already.body", loc, link=link) + "\n"
+            _opening(texts, participant.first_name, loc, "email.already.body")
+            + "\n\n"
+            + t("email.already.link", loc, link=link)
+            + "\n"
         ),
     )
 
 
-def magic_link_email(participant: Participant, link: str) -> EmailMessage:
+def magic_link_email(
+    participant: Participant, link: str, texts: EmailTexts | None = None
+) -> EmailMessage:
     loc = normalize_locale(participant.locale)
+    texts = texts or EmailTexts()
     return EmailMessage(
         to=participant.email,
-        subject=t("email.magic.subject", loc),
-        body=_greeting(participant.first_name, loc) + t("email.magic.body", loc, link=link),
+        subject=_subject(texts, "email.magic.subject", loc),
+        body=(
+            _opening(texts, participant.first_name, loc, "email.magic.body")
+            + "\n\n"
+            + t("email.magic.link", loc, link=link)
+        ),
     )
 
 
-def payment_confirmation_email(booking: Booking, paid_cents: int) -> EmailMessage:
+def payment_confirmation_email(
+    booking: Booking, paid_cents: int, texts: EmailTexts | None = None
+) -> EmailMessage:
     participant = booking.participant
     loc = normalize_locale(participant.locale)
+    texts = texts or EmailTexts()
+    opening = texts.body or (
+        _greeting(participant.first_name, loc)
+        + t("email.payment.body", loc, event=texts.event_name)
+    ).rstrip("\n")
     return EmailMessage(
         to=participant.email,
-        subject=t("email.payment.subject", loc),
+        subject=_subject(texts, "email.payment.subject", loc),
         body=(
-            _greeting(participant.first_name, loc)
-            + t(
-                "email.payment.body",
-                loc,
-                amount=format_euro(paid_cents, loc),
-                event=EVENT_NAME,
-            )
+            opening
+            + "\n\n"
+            + t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))
             + "\n\n"
             + f"{t('email.your_slots', loc)}\n{_slot_lines(booking.slots, loc)}\n\n"
             + t("email.payment.see_you", loc)
@@ -209,20 +246,21 @@ def reminder_email(
     channels: list[PaymentChannel],
     balance_cents: int,
     login_url: str,
+    texts: EmailTexts | None = None,
 ) -> EmailMessage:
     """Payment reminder. `kind` is "mid" (half of the hold) or "final" (24 hours before)."""
     participant = booking.participant
     loc = normalize_locale(participant.locale)
+    texts = texts or EmailTexts()
     deadline = format_deadline(booking.hold_expires_at, loc)
     which = "final" if kind == "final" else "mid"
     return EmailMessage(
         to=participant.email,
-        subject=t(f"email.reminder.subject_{which}", loc, event=EVENT_NAME),
+        subject=_subject(texts, f"email.reminder.subject_{which}", loc),
         body=(
-            _greeting(participant.first_name, loc)
-            + t(f"email.reminder.intro_{which}", loc, deadline=deadline)
-            + " "
-            + t("email.reminder.release", loc)
+            _opening(texts, participant.first_name, loc, f"email.reminder.intro_{which}")
+            + "\n\n"
+            + t("email.hold_until", loc, deadline=deadline)
             + "\n\n"
             + t("email.reminder.balance", loc, amount=format_euro(balance_cents, loc))
             + "\n"
@@ -244,10 +282,12 @@ def waitlist_promoted_email(
     channels: list[PaymentChannel],
     balance_cents: int,
     link: str,
+    texts: EmailTexts | None = None,
 ) -> EmailMessage:
     """A seat freed up and went to this person. `kind` is the promotion kind (see the domain)."""
     participant = booking.participant
     loc = normalize_locale(participant.locale)
+    texts = texts or EmailTexts()
     label = format_slot(slot.date, slot.period, slot.start_time, slot.end_time, loc)
     if kind == "add_to_confirmed":
         deadline = t("email.promoted.stays_confirmed", loc) + "\n"
@@ -259,10 +299,11 @@ def waitlist_promoted_email(
     access = _personal_link(link, loc) if kind == "new_booking" else _manage_link(link, loc)
     return EmailMessage(
         to=participant.email,
-        subject=t("email.promoted.subject", loc, event=EVENT_NAME),
+        subject=_subject(texts, "email.promoted.subject", loc),
         body=(
-            _greeting(participant.first_name, loc)
-            + t("email.promoted.body", loc, label=label)
+            _opening(texts, participant.first_name, loc, "email.promoted.body")
+            + "\n\n"
+            + t("email.promoted.slot", loc, label=label)
             + "\n\n"
             + f"{t('email.your_slots', loc)}\n{_slot_lines(booking.slots, loc)}\n\n"
             + t("email.promoted.fee", loc, amount=format_euro(booking.amount_due_cents, loc))

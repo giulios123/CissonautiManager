@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useI18n } from "./i18n";
 import { translate, type MessageKey } from "./i18n/messages";
 import { getLocale, type Locale } from "./i18n/locale";
-import { EVENT_NAME } from "./SiteHeader";
+import { EVENT_NAME, useEventName } from "./eventName";
 
 const TITLES: Record<string, MessageKey> = {
   "/register": "title.register",
@@ -25,19 +25,24 @@ const TITLES: Record<string, MessageKey> = {
 };
 
 /** The title of the page at a path, so that tabs, history and screen readers tell pages apart. */
-export function titleFor(pathname: string, locale: Locale = getLocale()): string {
+export function titleFor(
+  pathname: string,
+  locale: Locale = getLocale(),
+  eventName: string = EVENT_NAME,
+): string {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  if (path === "/") return EVENT_NAME;
+  if (path === "/") return eventName;
   let key = TITLES[path];
   if (!key && /^\/admin\/registrations\/[^/]+$/.test(path)) key = "title.registrationDetail";
   if (!key && /^\/admin\/activities\/[^/]+$/.test(path)) key = "title.activities";
-  return `${translate(locale, key ?? "notFound.title")} · ${EVENT_NAME}`;
+  return `${translate(locale, key ?? "notFound.title")} · ${eventName}`;
 }
 
 export function usePageTitle(): void {
   const { pathname } = useLocation();
   const { locale } = useI18n();
+  const eventName = useEventName();
   useEffect(() => {
-    document.title = titleFor(pathname, locale);
-  }, [pathname, locale]);
+    document.title = titleFor(pathname, locale, eventName);
+  }, [pathname, locale, eventName]);
 }

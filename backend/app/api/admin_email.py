@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import Settings
@@ -17,6 +18,8 @@ from app.domain.email_template import (
     CARD_POSITIONS,
     DEFAULT_CARD_COLOR,
     DEFAULT_CARD_POSITION,
+    FORM_INTRO_MAX,
+    OTHER_EMAIL_KINDS,
     PLACEHOLDERS,
     is_valid_color,
     render,
@@ -34,6 +37,11 @@ from app.services.registration import enabled_channels
 
 router = APIRouter(
     prefix="/api/admin/email/registration", tags=["admin"], dependencies=[Depends(require_admin)]
+)
+
+# The other emails and the paragraph of the sign-up form, edited from the same settings page.
+texts_router = APIRouter(
+    prefix="/api/admin/email", tags=["admin"], dependencies=[Depends(require_admin)]
 )
 
 Language = Literal["it", "en"]
@@ -77,8 +85,11 @@ class CardIn(BaseModel):
         return value
 
 
-class SettingsIn(BaseModel):
+class SettingsTemplatesIn(BaseModel):
     templates: dict[Language, TemplateIn]
+
+
+class SettingsIn(SettingsTemplatesIn):
     card: CardIn
 
 
@@ -200,3 +211,44 @@ def send_test(
     )
     sender.send(message)
     return {"message": t("emailtpl.test_sent", email=admin.email)}
+
+
+class FormIntroIn(BaseModel):
+    it: Annotated[str, Field(max_length=FORM_INTRO_MAX)] = ""
+    en: Annotated[str, Field(max_length=FORM_INTRO_MAX)] = ""
+
+
+@texts_router.get("/texts")
+def get_texts(db: Session = Depends(get_db)) -> dict:
+    return service.emails_view(db, _require_edition(db))
+
+
+@texts_router.put("/texts/{kind}")
+def put_email_text(
+    kind: str,
+    body: SettingsTemplatesIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict:
+    if kind not in OTHER_EMAIL_KINDS:
+        raise HTTPException(status_code=404, detail=t("emailtpl.unknown_email"))
+    edition = _require_edition(db)
+    templates = {locale: template.model_dump() for locale, template in body.templates.items()}
+    # Two first saves of the same email (a double click, two admins) can both try to insert the
+    # rows: the loser hits the unique constraint, so it retries and updates the winner's rows.
+    for attempt in (1, 2):
+        try:
+            service.save_email(db, edition, admin, kind, templates)
+            break
+        except IntegrityError:
+            db.rollback()
+            if attempt == 2:
+                raise
+    return service.emails_view(db, edition)
+
+
+@texts_router.put("/form-intro")
+def put_form_intro(body: FormIntroIn, db: Session = Depends(get_db)) -> dict:
+    edition = _require_edition(db)
+    service.save_form_intro(db, edition, body.it, body.en)
+    return service.emails_view(db, edition)

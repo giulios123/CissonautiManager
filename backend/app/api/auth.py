@@ -14,7 +14,7 @@ from app.deps import (
 )
 from app.email import EmailSender
 from app.i18n import t
-from app.models import ROLE_ADMIN, Participant
+from app.models import Participant
 from app.services import auth as auth_service
 from app.services.participants import get_by_email
 from app.services.passwords import verify_password
@@ -53,8 +53,8 @@ def set_session_cookie(response: Response, settings: Settings, raw_session: str)
 
 
 def login_result(participant: Participant) -> LoginResult:
-    is_admin = participant.role == ROLE_ADMIN
-    return LoginResult(role=participant.role, redirect="/admin" if is_admin else "/me")
+    # Everyone lands on their own page; admins find the link to the panel at the top.
+    return LoginResult(role=participant.role, redirect="/me")
 
 
 @router.post("/magic-link")

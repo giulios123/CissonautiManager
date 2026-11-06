@@ -24,6 +24,7 @@ from app.email import EmailSender, build_email_sender
 from app.email.templates import reminder_email
 from app.models import STATUS_PENDING, Booking, Edition, PaymentChannel
 from app.services import edition as edition_service
+from app.services import email_templates as email_templates_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
 from app.services.payments import paid_total, send_due_confirmations
@@ -101,6 +102,9 @@ def send_due_reminders(
                 channels[booking.edition_id],
                 booking.amount_due_cents - paid,
                 login_url,
+                email_templates_service.texts_for_booking(
+                    db, booking, "reminder_final" if kind == "final" else "reminder_mid"
+                ),
             )
         )
         if kind == "final":

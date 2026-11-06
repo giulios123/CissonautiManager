@@ -7,8 +7,8 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "en": "- We'll write to you with the instructions as soon as possible.",
     },
     "email.personal_link": {
-        "it": "Il tuo link personale (vale 30 minuti, si usa una volta sola):\n{link}",
-        "en": "Your personal link (valid for 30 minutes, single use):\n{link}",
+        "it": "Il tuo link personale (vale 10 minuti):\n{link}",
+        "en": "Your personal link (valid for 10 minutes):\n{link}",
     },
     "email.manage_link": {
         "it": "Per vedere o modificare la tua iscrizione: {link}",
@@ -97,45 +97,38 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "en": "You are already registered for {event}",
     },
     "email.already.body": {
-        "it": (
-            "risulti già iscritto: non abbiamo creato una nuova iscrizione.\n"
-            "Per vedere la tua pagina personale apri questo link "
-            "(vale 30 minuti, si usa una volta sola):\n{link}"
-        ),
-        "en": (
-            "you are already registered: we have not created a new registration.\n"
-            "To see your personal page open this link "
-            "(valid for 30 minutes, single use):\n{link}"
-        ),
+        "it": "risulti già iscritto: non abbiamo creato una nuova iscrizione.",
+        "en": "you are already registered: we have not created a new registration.",
+    },
+    "email.already.link": {
+        "it": "Per vedere la tua pagina personale apri questo link (vale 10 minuti):\n{link}",
+        "en": "To see your personal page open this link (valid for 10 minutes):\n{link}",
     },
     # --- magic link
     "email.magic.subject": {
-        "it": "Il tuo link di accesso ai Cissonauti",
-        "en": "Your Cissonauti sign-in link",
+        "it": "Il tuo link di accesso al {event}",
+        "en": "Your sign-in link for {event}",
     },
     "email.magic.body": {
-        "it": (
-            "apri questo link per entrare: {link}\n\n"
-            "Il link vale 30 minuti e si può usare una sola volta."
-        ),
-        "en": (
-            "open this link to sign in: {link}\n\n"
-            "The link is valid for 30 minutes and can be used only once."
-        ),
+        "it": "apri questo link per entrare.",
+        "en": "open this link to sign in.",
+    },
+    "email.magic.link": {
+        "it": "{link}\n\nIl link vale 10 minuti e si può riaprire in quel tempo.",
+        "en": "{link}\n\nThe link is valid for 10 minutes and can be reopened in that time.",
     },
     # --- payment received
     "email.payment.subject": {
-        "it": "Pagamento ricevuto: sei dentro!",
-        "en": "Payment received: you're in!",
+        "it": "Pagamento ricevuto: sei dentro al {event}!",
+        "en": "Payment received: you're in for {event}!",
     },
     "email.payment.body": {
-        "it": (
-            "abbiamo registrato il tuo pagamento ({amount}): "
-            "la tua iscrizione al {event} è confermata."
-        ),
-        "en": (
-            "we have recorded your payment ({amount}): your registration for {event} is confirmed."
-        ),
+        "it": "abbiamo registrato il tuo pagamento: la tua iscrizione al {event} è confermata.",
+        "en": "we have recorded your payment: your registration for {event} is confirmed.",
+    },
+    "email.payment.amount": {
+        "it": "Pagamento registrato: {amount}",
+        "en": "Payment recorded: {amount}",
     },
     "email.payment.see_you": {"it": "Ci vediamo presto!", "en": "See you soon!"},
     # --- reminders
@@ -148,16 +141,12 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "en": "Reminder: your place at {event}",
     },
     "email.reminder.intro_final": {
-        "it": "mancano meno di 24 ore: il tuo posto è bloccato fino al {deadline}.",
-        "en": "less than 24 hours left: your place is held until {deadline}.",
+        "it": "mancano meno di 24 ore alla scadenza del blocco del tuo posto.",
+        "en": "less than 24 hours left before your place is released.",
     },
     "email.reminder.intro_mid": {
-        "it": "ti ricordiamo che il tuo posto è bloccato fino al {deadline}.",
-        "en": "a reminder that your place is held until {deadline}.",
-    },
-    "email.reminder.release": {
-        "it": "Senza pagamento entro quella data il posto si libera.",
-        "en": "Without payment by then the place will be released.",
+        "it": "ti ricordiamo che il tuo posto è bloccato.",
+        "en": "a reminder that your place is being held.",
     },
     "email.reminder.balance": {
         "it": "Ancora da versare: {amount}",
@@ -179,8 +168,12 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "en": "A place has opened up at {event}",
     },
     "email.promoted.body": {
-        "it": "si è liberato un posto ed è tuo: {label}.",
-        "en": "a place has opened up and it's yours: {label}.",
+        "it": "si è liberato un posto ed è tuo.",
+        "en": "a place has opened up and it's yours.",
+    },
+    "email.promoted.slot": {
+        "it": "Slot assegnato: {label}",
+        "en": "Slot assigned: {label}",
     },
     "email.promoted.fee": {"it": "Quota: {amount}", "en": "Fee: {amount}"},
     "email.promoted.stays_confirmed": {

@@ -4,6 +4,8 @@
 
 Toccando una persona si apre la **scheda iscrizione**.
 
+Quando entrate (con il link o con la password) arrivate alla vostra pagina personale, come ogni iscritto, con in alto il pulsante «Vai al pannello organizzatori». Dal pannello, «La mia pagina» vi riporta lì.
+
 ### Cosa si vede
 
 Dati e consensi, slot, pasti con esigenze alimentari (allergie comprese, che solo voi vedete), attività, lista d'attesa e la **cronologia** delle modifiche fatte a mano da voi (chi, quando, cosa).

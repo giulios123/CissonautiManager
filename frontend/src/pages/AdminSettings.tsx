@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
+import { useRefreshEventName } from "../eventName";
 import { useT } from "../i18n";
 import { hasMessage, tNow } from "../i18n/messages";
+import { AdminEmailTexts } from "./AdminEmailTexts";
 import { AdminRegistrationEmail } from "./AdminRegistrationEmail";
 import { centsToInput, parseEuroToCents } from "../money";
 
@@ -64,6 +66,7 @@ function EditionSection({
 }) {
   const t = useT();
   const [notice, setNotice] = useState<Notice>(null);
+  const refreshEventName = useRefreshEventName();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,6 +103,7 @@ function EditionSection({
         },
       });
       onSaved(saved);
+      refreshEventName();
       setNotice({ kind: "ok", text: t("set.saved", { n: saved.slots.length }) });
     } catch (error) {
       setNotice({ kind: "error", text: errorText(error) });
@@ -386,6 +390,7 @@ export function AdminSettings() {
         <>
           <ChannelsSection edition={edition} />
           <AdminRegistrationEmail />
+          <AdminEmailTexts />
           <section aria-labelledby="legal-title">
             <h2 id="legal-title">{t("set.legalTitle")}</h2>
             <p>{t("set.legalIntro")}</p>

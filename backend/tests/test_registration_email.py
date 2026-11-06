@@ -229,7 +229,7 @@ class TestRegistrationEmail:
     def test_default_email_is_unchanged_until_the_admin_writes(self, client, edition, outbox):
         register(client, edition, "it")
         message = outbox.sent[0]
-        assert message.subject == "Iscrizione al Cissonauti Summer Camp"
+        assert message.subject == "Iscrizione al Cissonauti Summer Camp 2026"
         assert message.body.startswith("Ciao Ada,\n\ngrazie per esserti iscritto")
         assert message.html is None and message.attachments == ()
 
@@ -268,7 +268,7 @@ class TestRegistrationEmail:
         body["templates"]["en"] = {"subject": "", "body": ""}
         admin_client.put(URL, json=body)
         register(client, edition, "en")
-        assert outbox.sent[-1].subject == "Registration for Cissonauti Summer Camp"
+        assert outbox.sent[-1].subject == "Registration for Cissonauti Summer Camp 2026"
         assert outbox.sent[-1].body.startswith("Hi Ada,")
 
     def test_the_picture_carries_the_name_and_the_dates(
