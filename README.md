@@ -1,12 +1,19 @@
 # Cissonauti Booking
 
-Gestione delle iscrizioni al **Cissonauti Summer Camp**, una settimana di coworking informale in un salone comunale tra amici e amici di amici.
+Gestione delle iscrizioni al **Cissone Summer Camp**, una settimana di coworking informale in un salone comunale tra amici e amici di amici.
 
 L'app serve a sapere quante persone ci sono ogni giorno nello spazio, ai pasti e alle attività, a ridurre le rinunce legando il posto al pagamento e a dare agli organizzatori una vista completa e modificabile.
 
 ## Stato
 
-MVP 1 completato salvo la verifica dentro Google Sites: iscrizione pubblica, accesso con magic link o password, impostazioni dell'edizione, elenco iscrizioni e registrazione dei pagamenti, deploy su Azure. MVP 2 (pagina personale) implementato: il partecipante cambia i suoi slot, vede il saldo e disdice da solo, le email partono davvero e due promemoria di pagamento escono da un job orario. MVP 3 (pannello admin) implementato: viste per persona, giorno e slot, settimana e pagamenti da verificare con export CSV, gestione degli admin, rimborsi, modifica manuale delle iscrizioni e annullamento dei pagamenti, con cronologia. MVP 4 (lista d'attesa) implementato: chi trova uno slot pieno si mette in lista dal modulo o dalla pagina personale e riceve il posto, con un'email, appena si libera. MVP 5 (pranzi e cene) implementato: dalla pagina personale si scelgono pranzi e cene con l'importo aggiornato, si indicano regime e allergie (con consenso specifico) e gli organizzatori hanno la vista per pasto con CSV. MVP 6 (attività e contributi) implementato: gli organizzatori creano attività gratuite o a pagamento con capienza, i partecipanti aderiscono a quelle dei momenti in cui ci sono e propongono talk, temi e competenze. MVP 7 (inviti e report) implementato: gli organizzatori confermano chi è un +1, che passa avanti nelle liste d'attesa, e a fine edizione hanno il report di riepilogo con presenze, pasti, attività e incassi, da guardare, stampare o scaricare in CSV. MVP 8 (stile del sito) implementato: l'app riprende colori, font e logo del sito dell'evento, anche dentro l'iframe di Google Sites. MVP 9 (guida in app) implementato: dopo il login c'è la pagina «Guida», filtrata per ruolo (i partecipanti vedono la loro, gli organizzatori anche quella del pannello e le novità di ogni rilascio, generate dai commit al deploy). MVP 11-13 implementati: l'app è in italiano e inglese (indirizzi in inglese, quelli italiani reindirizzano), il pannello admin e la guida sono bilingui, e la email di iscrizione ha testo modificabile e un'immagine con il nome della persona. Lo stato aggiornato è in [`memory-bank/progress.md`](memory-bank/progress.md), la roadmap in [`specs/ROADMAP.md`](specs/ROADMAP.md).
+Le funzionalità sono organizzate in MVP:
+
+- **MVP 1–3 · Iscrizioni e amministrazione:** iscrizione pubblica, accesso con magic link o password, pagina personale, gestione delle iscrizioni e dei pagamenti, promemoria, viste admin con export CSV, rimborsi e cronologia. Il deploy è su Azure.
+- **MVP 4–6 · Liste d'attesa, pasti e attività:** promozione automatica dalla lista d'attesa; scelta di pranzi, cene e attività dalla pagina personale; gestione di esigenze alimentari, capienze e contributi.
+- **MVP 7–9 · Inviti, report e guida:** gestione dei +1 e report dell'edizione; stile coerente con il sito, anche nell'iframe di Google Sites; guida in app per ruolo e note di rilascio.
+- **MVP 10–13 · Incassi, lingue ed email:** pagina per registrare gli incassi; app, pannello admin e guida in italiano e inglese; email di iscrizione personalizzabile con immagine e nome del partecipante.
+
+Per lo stato aggiornato e le verifiche ancora aperte, consulta [`memory-bank/progress.md`](memory-bank/progress.md); la roadmap è in [`specs/ROADMAP.md`](specs/ROADMAP.md).
 
 ## Come è organizzato il repo
 
