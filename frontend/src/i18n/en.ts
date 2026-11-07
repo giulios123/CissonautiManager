@@ -96,6 +96,7 @@ export const en: Record<MessageKey, string> = {
   "reg.invitedBy": "Who invited you? (optional)",
   "reg.canBring": "What can you bring to the camp?",
   "reg.consentsLegend": "Consents",
+  "reg.optionalConsentUnavailable": "This optional consent is unavailable right now.",
   "reg.readPrivacy": "Read the privacy notice",
   "reg.acceptPrivacy": "I have read and accept the privacy notice",
   "reg.readDisclaimer": "Read the liability waiver",
@@ -219,6 +220,8 @@ export const en: Record<MessageKey, string> = {
   "consent.version": "version {version}",
   "consent.showAdmin": "Show consent history",
   "consent.hideAdmin": "Hide consent history",
+  "legal.originalLanguageFallback":
+    "This notice is not available in the selected language; the original text is shown.",
   "edit.slotsLoadError": "I can't load the days. Please try again shortly.",
   "edit.chooseOne": "Choose at least one slot. To withdraw, cancel the registration.",
   "edit.pastDay": "day already over",

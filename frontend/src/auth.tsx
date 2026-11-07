@@ -4,6 +4,7 @@ import { api } from "./api";
 import { useT } from "./i18n";
 import { ROUTES } from "./routes";
 import type { CollectionTerms } from "./collection";
+import type { LegalDocumentText } from "./legalText";
 
 export type MealView = CollectionTerms & {
   date: string;
@@ -71,7 +72,7 @@ export type Me = {
   waitlist?: WaitlistItem[];
   lunch_price_cents?: number | null;
   dinner_price_cents?: number | null;
-  health_consent?: { version: number; body: string } | null;
+  health_consent?: (LegalDocumentText & { version: number }) | null;
   activities?: ActivityOffer[];
   contributions?: Contribution[];
   can_bring?: string | null;

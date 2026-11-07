@@ -94,6 +94,7 @@ export const it = {
   "reg.invitedBy": "Chi ti ha invitato? (facoltativo)",
   "reg.canBring": "Cosa puoi portare al camp?",
   "reg.consentsLegend": "Consensi",
+  "reg.optionalConsentUnavailable": "Questo consenso facoltativo non è disponibile al momento.",
   "reg.readPrivacy": "Leggi l'informativa privacy",
   "reg.acceptPrivacy": "Ho letto e accetto l'informativa privacy",
   "reg.readDisclaimer": "Leggi lo scarico di responsabilità",
@@ -219,6 +220,8 @@ export const it = {
   "consent.version": "versione {version}",
   "consent.showAdmin": "Mostra storico consensi",
   "consent.hideAdmin": "Nascondi storico consensi",
+  "legal.originalLanguageFallback":
+    "Questa informativa non è disponibile nella lingua scelta; viene mostrato il testo originale.",
   "edit.slotsLoadError": "Non riesco a caricare i giorni. Riprova tra poco.",
   "edit.chooseOne": "Scegli almeno uno slot. Per rinunciare usa la disdetta.",
   "edit.pastDay": "giorno passato",

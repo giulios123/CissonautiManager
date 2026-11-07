@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView, Me } from "../auth";
-import { useT, type MessageKey } from "../i18n";
+import { useI18n, type MessageKey } from "../i18n";
+import { legalTextForLocale } from "../legalText";
 
 const DIETS: readonly (readonly [string, MessageKey])[] = [
   ["", "diet.notSpecified"],
@@ -20,10 +21,11 @@ export function DietaryForm({
   me: Me;
   onSaved: () => Promise<void> | void;
 }) {
-  const t = useT();
+  const { t, locale } = useI18n();
   const [diet, setDiet] = useState(booking.diet ?? "");
   const [allergies, setAllergies] = useState(booking.allergies ?? "");
   const consentText = me.health_consent;
+  const consentCopy = consentText ? legalTextForLocale(consentText, locale) : null;
   const hadConsent = booking.health_consent_version != null;
   // A consent given to an older text does not count for the current one: it must be renewed.
   const textChanged = hadConsent && booking.health_consent_version !== consentText?.version;
@@ -89,7 +91,10 @@ export function DietaryForm({
           </label>
           <details>
             <summary>{t("diet.readConsent")}</summary>
-            <p className="legal">{consentText.body}</p>
+            <p className="legal">{consentCopy?.text}</p>
+            {consentCopy?.usesOriginal && (
+              <p className="legal notice">{t("legal.originalLanguageFallback")}</p>
+            )}
           </details>
           <label className="check">
             <input

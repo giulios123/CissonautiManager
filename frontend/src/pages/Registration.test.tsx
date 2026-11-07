@@ -60,6 +60,32 @@ const edition = {
   disclaimer: { version: 1, body: "Scarico" },
 };
 
+const bilingualEdition = {
+  ...edition,
+  privacy: {
+    version: 2,
+    body: "Informativa privacy",
+    body_it: "Informativa privacy IT",
+    body_en: "Privacy notice EN",
+  },
+  disclaimer: {
+    version: 3,
+    body: "Scarico IT",
+    body_it: "Scarico IT",
+    body_en: "Liability waiver EN",
+  },
+  attendance_consent: {
+    id: 41,
+    version: 4,
+    texts: { it: "Testo presenza IT", en: "Attendance notice EN" },
+  },
+  media_consent: {
+    id: 42,
+    version: 5,
+    texts: { it: "Testo immagini IT", en: "Media notice EN" },
+  },
+};
+
 function mockFetch(responses: Record<string, { status?: number; body: unknown }>) {
   const calls: { url: string; body?: unknown }[] = [];
   vi.stubGlobal(
@@ -89,6 +115,19 @@ afterEach(() => {
 });
 
 describe("Registration page", () => {
+  it("explains when optional consent texts have not been published", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    await screen.findByText(/Quota da versare/);
+    for (const name of ["Visibilità della presenza nell'area riservata", "Foto e video"]) {
+      const consent = screen.getByRole("group", { name });
+      expect(within(consent).getByRole("status")).toHaveTextContent(
+        "Questo consenso facoltativo non è disponibile al momento.",
+      );
+      expect(within(consent).queryByRole("radio")).not.toBeInTheDocument();
+    }
+  });
+
   it("requires a nonblank phone number", async () => {
     mockFetch({ "/api/public/edition": { body: edition } });
     renderPage();
@@ -283,6 +322,58 @@ describe("Registration page", () => {
     expect(sent.slot_ids).toEqual([1]);
     expect(sent.privacy_version).toBe(1);
     expect(sent.email).toBe("ada@example.com");
+  });
+
+  it("localizes legal notices and submits independent optional consent choices", async () => {
+    const calls = mockFetch({
+      "/api/public/edition": { body: bilingualEdition },
+      "/api/public/registrations": {
+        status: 201,
+        body: { result: "already_registered", message: "Già iscritto" },
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByText(/Quota da versare/);
+
+    const attendanceIt = screen.getByRole("group", {
+      name: "Visibilità della presenza nell'area riservata",
+    });
+    const mediaIt = screen.getByRole("group", { name: "Foto e video" });
+    expect(within(attendanceIt).getByLabelText("Sì, acconsento")).not.toBeChecked();
+    expect(within(mediaIt).getByLabelText("No, non acconsento")).not.toBeChecked();
+    await user.click(within(attendanceIt).getByLabelText("Sì, acconsento"));
+    await user.click(screen.getByRole("button", { name: "Inglese" }));
+
+    const attendanceEn = screen.getByRole("group", {
+      name: "Show my attendance in the members-only area",
+    });
+    const mediaEn = screen.getByRole("group", { name: "Photos and video" });
+    expect(within(attendanceEn).getByLabelText("Yes, I consent")).toBeChecked();
+    expect(screen.getByText("Attendance notice EN")).toBeInTheDocument();
+    await user.click(screen.getByText("Read the privacy notice"));
+    expect(screen.getByText("Privacy notice EN")).toBeInTheDocument();
+    await user.click(within(mediaEn).getByLabelText("No, I do not consent"));
+
+    await user.click(await screen.findByRole("button", { name: "All morning" }));
+    await user.type(screen.getByLabelText("First name"), "Ada");
+    await user.type(screen.getByLabelText("Last name"), "Lovelace");
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Phone"), "+39 333 1234567");
+    await user.type(screen.getByLabelText("What can you bring to the camp?"), "A talk");
+    await user.click(screen.getByLabelText("I have read and accept the privacy notice"));
+    await user.click(screen.getByLabelText("I have read and accept the liability waiver"));
+    await user.click(screen.getByRole("button", { name: "Sign up" }));
+
+    const sent = calls.find((call) => call.url === "/api/public/registrations")?.body as Record<
+      string,
+      unknown
+    >;
+    expect(sent.optional_consents).toEqual({
+      attendance: { granted: true, document_id: 41, version: 4 },
+      media: { granted: false, document_id: 42, version: 5 },
+    });
+    expect(sent.consent_locale).toBe("en");
   });
 
   it("does not repeat a known account's payment reference in the anonymous response", async () => {

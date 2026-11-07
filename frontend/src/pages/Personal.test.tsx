@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
 import { App } from "../App";
 import type { BookingView, Me } from "../auth";
+import { I18nProvider, type Locale } from "../i18n";
 
 type Reply = { status?: number; body: unknown };
 
@@ -88,12 +89,14 @@ function me(bookings: BookingView[]): Me {
   };
 }
 
-function openAt(handler: (url: string, init?: RequestInit) => Reply) {
+function openAt(handler: (url: string, init?: RequestInit) => Reply, locale: Locale = "it") {
   const calls = stubFetch(handler);
   render(
-    <MemoryRouter initialEntries={["/me"]}>
-      <App />
-    </MemoryRouter>,
+    <I18nProvider locale={locale}>
+      <MemoryRouter initialEntries={["/me"]}>
+        <App />
+      </MemoryRouter>
+    </I18nProvider>,
   );
   return calls;
 }
@@ -541,6 +544,45 @@ describe("dietary needs", () => {
     const form = within(await screen.findByRole("form", { name: "Esigenze alimentari" }));
     expect(form.queryByLabelText("Allergie e intolleranze")).not.toBeInTheDocument();
     expect(form.getByText(/scrivi a chi organizza/)).toBeInTheDocument();
+  });
+
+  it("shows the health notice in the interface language", async () => {
+    const consent = {
+      version: 2,
+      body: "Italian original notice",
+      body_it: "Avviso salute italiano",
+      body_en: "English health notice",
+      is_legacy: false,
+    };
+    openAt((url) => {
+      if (url === "/api/me") return { body: { ...me([booking()]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    }, "en");
+    const form = within(await screen.findByRole("form", { name: "Dietary needs" }));
+    await userEvent.click(form.getByText("Read the consent for health data"));
+    expect(form.getByText("English health notice")).toBeInTheDocument();
+    expect(form.queryByText("Avviso salute italiano")).not.toBeInTheDocument();
+    expect(form.queryByText(/original text is shown/)).not.toBeInTheDocument();
+  });
+
+  it("marks the original health notice when the selected translation is missing", async () => {
+    const consent = {
+      version: 2,
+      body: "Italian original notice",
+      body_it: "Italian original notice",
+      body_en: null,
+      is_legacy: true,
+    };
+    openAt((url) => {
+      if (url === "/api/me") return { body: { ...me([booking()]), health_consent: consent } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    }, "en");
+    const form = within(await screen.findByRole("form", { name: "Dietary needs" }));
+    await userEvent.click(form.getByText("Read the consent for health data"));
+    expect(form.getByText("Italian original notice")).toBeInTheDocument();
+    expect(form.getByText(/original text is shown/)).toBeInTheDocument();
   });
 });
 
