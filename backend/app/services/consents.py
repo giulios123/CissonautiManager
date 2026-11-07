@@ -9,10 +9,13 @@ from app.domain import consents as consent_domain
 from app.domain.consents import ConsentState
 from app.models import (
     OPTIONAL_CONSENT_KINDS,
+    Booking,
     ConsentEvent,
     Edition,
     LegalDocument,
     Participant,
+    Slot,
+    WaitlistEntry,
 )
 from app.services import edition as edition_service
 
@@ -56,6 +59,75 @@ def get_states(db: Session, edition: Edition, participant: Participant) -> list[
     )
 
 
+def has_edition_association(db: Session, edition: Edition, participant: Participant) -> bool:
+    """A booking, waitlist entry, or consent proof links the person to the edition."""
+    queries = (
+        select(Booking.id).where(
+            Booking.edition_id == edition.id, Booking.participant_id == participant.id
+        ),
+        select(WaitlistEntry.id)
+        .join(WaitlistEntry.slot)
+        .where(
+            WaitlistEntry.participant_id == participant.id,
+            Slot.edition_id == edition.id,
+        ),
+        select(ConsentEvent.id).where(
+            ConsentEvent.edition_id == edition.id, ConsentEvent.participant_id == participant.id
+        ),
+    )
+    return any(db.scalar(query.limit(1)) is not None for query in queries)
+
+
+def _document_snapshot(document: LegalDocument | None) -> dict | None:
+    if document is None:
+        return None
+    return {
+        "id": document.id,
+        "version": document.version,
+        "body": document.body,
+        "body_it": document.body_it,
+        "body_en": document.body_en,
+        "is_legacy": document.body_it is None or document.body_en is None,
+    }
+
+
+def collection_snapshot(db: Session, edition: Edition, participant: Participant) -> dict:
+    """Serialize personal status plus append-only evidence for both optional purposes."""
+    events = _events_for(db, edition, participant)
+    current_documents = _current_documents(db, edition)
+    states = consent_domain.build_states(events, current_documents)
+    by_kind: dict[str, list[ConsentEvent]] = {kind: [] for kind in OPTIONAL_CONSENT_KINDS}
+    for event in events:
+        if event.kind in by_kind:
+            by_kind[event.kind].append(event)
+    return {
+        "edition_id": edition.id,
+        "associated": has_edition_association(db, edition, participant),
+        "consents": [
+            {
+                "kind": state.kind,
+                "action": state.action,
+                "event_id": state.event_id,
+                "authorized_for_current_document": state.is_authorized_for_current_document,
+                "needs_renewal": state.needs_renewal,
+                "current_document": _document_snapshot(state.current_document),
+                "events": [
+                    {
+                        "id": event.id,
+                        "action": event.action,
+                        "locale": event.locale,
+                        "recorded_at": event.recorded_at,
+                        "source": event.source,
+                        "document": _document_snapshot(event.document),
+                    }
+                    for event in by_kind[state.kind]
+                ],
+            }
+            for state in states
+        ],
+    }
+
+
 def _latest_event(
     db: Session, edition: Edition, participant: Participant, kind: str
 ) -> ConsentEvent | None:
@@ -78,8 +150,8 @@ def record_choice(
     *,
     kind: str,
     granted: bool,
-    document_id: int,
-    version: int,
+    document_id: int | None,
+    version: int | None,
     locale: str,
     expected_event_id: int | None,
     source: str,
@@ -95,8 +167,33 @@ def record_choice(
     if locale not in ("it", "en") or source not in ("public_registration", "self_service"):
         raise ConsentDocumentUnavailable()
 
+    event = _latest_event(db, edition, participant, kind)
+    actual_event_id = event.id if event is not None else None
+
+    # Revoking an existing grant must remain possible after a new, incomplete legal
+    # document is published. The event points back to the grant's document.
+    if not granted and event is not None and event.action == "granted":
+        if actual_event_id != expected_event_id:
+            raise ConsentConflict()
+        created = ConsentEvent(
+            edition_id=edition.id,
+            participant_id=participant.id,
+            kind=kind,
+            action="withdrawn",
+            document_id=event.document_id,
+            locale=locale,
+            recorded_at=now,
+            source=source,
+        )
+        db.add(created)
+        db.flush()
+        return created
+
+    if event is not None and event.action == "withdrawn" and not granted:
+        return None
+
     current = _current_documents(db, edition)[kind]
-    submitted = db.get(LegalDocument, document_id)
+    submitted = db.get(LegalDocument, document_id) if document_id is not None else None
     if (
         submitted is None
         or submitted.edition_id != edition.id
@@ -109,16 +206,14 @@ def record_choice(
         raise ConsentDocumentUnavailable()
     if current is None or not (current.body_it and current.body_en):
         raise ConsentDocumentUnavailable()
-    if submitted.version != version:
+    if version is None or submitted.version != version:
         raise ConsentDocumentUnavailable()
     if (current.id, current.version) != (submitted.id, submitted.version):
         raise ConsentConflict()
 
-    event = _latest_event(db, edition, participant, kind)
     unchanged = consent_domain.choice_is_unchanged(
         event, granted=granted, current_document_id=current.id
     )
-    actual_event_id = event.id if event is not None else None
     if actual_event_id != expected_event_id and not unchanged:
         raise ConsentConflict()
     if unchanged:

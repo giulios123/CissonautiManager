@@ -360,6 +360,22 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Per ora non si possono indicare allergie: scrivi a chi organizza",
         "en": "Allergies can't be entered for now: write to the organizers",
     },
+    "consent.association_not_found": {
+        "it": "Non risulti associato all'edizione attiva",
+        "en": "You are not associated with the active edition",
+    },
+    "consent.kind_not_found": {
+        "it": "Finalità di consenso non trovata",
+        "en": "Consent purpose not found",
+    },
+    "consent.changed": {
+        "it": "La scelta o il testo sono cambiati. Ricarica e controlla di nuovo.",
+        "en": "The choice or text has changed. Reload and review it again.",
+    },
+    "consent.text_unavailable": {
+        "it": "Il testo completo in italiano e inglese non è disponibile.",
+        "en": "The complete text in Italian and English is unavailable.",
+    },
     "contribution.title_required": {
         "it": "Scrivi un titolo per il tuo contributo",
         "en": "Write a title for your contribution",

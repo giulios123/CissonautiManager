@@ -8,7 +8,7 @@ When you sign in (with the link or the password) you land on your own personal p
 
 ### What you see
 
-Details and consents, attendance in one row per day (with times and partial periods), meals with dietary needs (allergies included, which only you can see), activities, waitlist and the **history** of the changes you made by hand (who, when, what).
+Details and consents, attendance in one row per day (with times and partial periods), meals with dietary needs (allergies included), activities, waitlist and the **history** of the changes you made by hand (who, when, what).
 
 ### Recording a payment
 
@@ -24,3 +24,7 @@ Under “Record a payment” you enter amount, channel, date and a note. When th
 - **Mark as refunded**: for a cancellation with payments. The amount cannot exceed what was paid. The app does not make the refund and does not write to the person: you do that outside the system.
 
 Remember that to give someone a meal or an activity you first need the right slots.
+
+# Optional consents
+
+On a person's details page, you can read the history of optional consents. This is read-only: an organizer cannot grant or withdraw a choice on someone's behalf. The history is also available for people who only appear on waitlists.
