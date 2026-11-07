@@ -29,6 +29,50 @@ const edition = {
   disclaimer: null,
 };
 
+const confirmationPreview = {
+  current_policy: "legacy_total",
+  proposed_policy: "registration_fee",
+  ready: true,
+  already_active: false,
+  preview_token: "a".repeat(64),
+  eligible_count: 2,
+  excluded_expired_count: 1,
+  excluded_closed_count: 3,
+  waitlist_only_count: 4,
+  new_confirmation_count: 1,
+  blockers: [],
+  rows: [
+    {
+      booking_id: 17,
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      status_before: "in_attesa_pagamento",
+      status_after: "confermata",
+      registration_fee_cents: 1200,
+      amount_due_cents: 2500,
+      paid_cents: 1200,
+      balance_before_cents: 300,
+      balance_after_cents: 1300,
+      confirmation_balance_after_cents: 0,
+      sends_confirmation: true,
+    },
+    {
+      booking_id: 18,
+      name: "Grace Hopper",
+      email: "grace@example.com",
+      status_before: "confermata",
+      status_after: "confermata",
+      registration_fee_cents: 1200,
+      amount_due_cents: 2200,
+      paid_cents: 2500,
+      balance_before_cents: -300,
+      balance_after_cents: -300,
+      confirmation_balance_after_cents: 0,
+      sends_confirmation: false,
+    },
+  ],
+};
+
 describe("settings", () => {
   it("uploads a logo, updates its preview, and restores the original", async () => {
     let logoUrl: string | null = null;
@@ -145,5 +189,95 @@ describe("settings", () => {
         body_en: "Attendance EN",
       });
     });
+  });
+
+  it("previews the legacy transition and lets the admin cancel without applying it", async () => {
+    const calls = stubAdminApi((call) => {
+      if (call.url === "/api/admin/edition") return { body: edition };
+      if (call.url === "/api/admin/edition/confirmation-policy/preview")
+        return { body: confirmationPreview };
+      return undefined;
+    });
+    renderAt("/admin/impostazioni");
+
+    expect(await screen.findByText("da verificare con l'anteprima")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Calcola l'anteprima" }));
+
+    expect(await screen.findByText("la conferma richiede il totale dovuto")).toBeInTheDocument();
+    expect(screen.getByText("Email di conferma previste: 1")).toBeInTheDocument();
+    expect(screen.getByText("In attesa di pagamento")).toBeInTheDocument();
+    expect(screen.getAllByText("Confermata")).toHaveLength(3);
+    expect(screen.getAllByText("credito di 3,00 €")).toHaveLength(2);
+    expect(screen.getByText("Saldo/credito dopo")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Annulla anteprima" }));
+    expect(
+      screen.queryByRole("table", { name: "Ricalcolo proposto per ogni iscrizione attiva" }),
+    ).not.toBeInTheDocument();
+    expect(calls.some((call) => call.url.endsWith("/activate"))).toBe(false);
+  });
+
+  it("applies a valid preview once and reports the transition", async () => {
+    const calls = stubAdminApi((call) => {
+      if (call.url === "/api/admin/edition") return { body: edition };
+      if (call.url === "/api/admin/edition/confirmation-policy/preview")
+        return { body: confirmationPreview };
+      if (call.url === "/api/admin/edition/confirmation-policy/activate")
+        return {
+          body: {
+            already_applied: false,
+            activated_at: "2026-11-07T10:00:00Z",
+            updated_bookings: 2,
+            new_confirmations: 1,
+            transferred_notices: 1,
+          },
+        };
+      return undefined;
+    });
+    renderAt("/admin/settings");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Calcola l'anteprima" }));
+    const apply = await screen.findByRole("button", { name: "Applica la nuova regola" });
+    await userEvent.dblClick(apply);
+
+    await screen.findByText(/Regola attivata: 2 iscrizioni aggiornate/);
+    const activationCalls = calls.filter(
+      (call) => call.url === "/api/admin/edition/confirmation-policy/activate",
+    );
+    expect(activationCalls).toHaveLength(1);
+    expect(activationCalls[0].body).toEqual({ preview_token: "a".repeat(64) });
+    expect(
+      screen.getByText("La nuova regola è già attiva per questa edizione."),
+    ).toBeInTheDocument();
+  });
+
+  it("discards a stale preview and requires a fresh one", async () => {
+    let previews = 0;
+    const calls = stubAdminApi((call) => {
+      if (call.url === "/api/admin/edition") return { body: edition };
+      if (call.url === "/api/admin/edition/confirmation-policy/preview") {
+        previews += 1;
+        return { body: confirmationPreview };
+      }
+      if (call.url === "/api/admin/edition/confirmation-policy/activate")
+        return {
+          status: 409,
+          body: { detail: "I dati sono cambiati. Ricarica l'anteprima prima di applicare." },
+        };
+      return undefined;
+    });
+    renderAt("/admin/impostazioni");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Calcola l'anteprima" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Applica la nuova regola" }));
+
+    expect(
+      await screen.findByText("I dati sono cambiati. Ricarica l'anteprima prima di applicare."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Calcola l'anteprima" }));
+    await screen.findByRole("table");
+    expect(previews).toBe(2);
+    expect(calls.filter((call) => call.url.endsWith("/activate"))).toHaveLength(1);
   });
 });

@@ -18,6 +18,18 @@ PREVIEW = "/api/admin/edition/confirmation-policy/preview"
 ACTIVATE = "/api/admin/edition/confirmation-policy/activate"
 
 
+def test_preview_and_activation_are_admin_only(client, make_participant, outbox):
+    assert client.get(PREVIEW).status_code == 401
+    assert client.post(ACTIVATE, json={"preview_token": "0" * 64}).status_code == 401
+
+    make_participant("ada@example.com")
+    from tests.test_auth import login
+
+    login(client, outbox)
+    assert client.get(PREVIEW).status_code == 403
+    assert client.post(ACTIVATE, json={"preview_token": "0" * 64}).status_code == 403
+
+
 def slot_on(db, day):
     from app.models import Slot
 
