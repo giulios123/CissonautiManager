@@ -427,7 +427,6 @@ def _notify(
         promotion.kind == "add_to_pending"
         and booking.status == STATUS_CONFIRMED
         and edition.confirmation_policy == POLICY_REGISTRATION_FEE
-        and booking.confirmation_notice_due_at is not None
     ):
         send_due_confirmations(db, sender, now, settings)
         return

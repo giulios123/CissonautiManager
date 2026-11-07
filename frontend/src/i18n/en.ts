@@ -679,7 +679,7 @@ export const en: Record<MessageKey, string> = {
   "set.policyEmails": "Confirmation emails expected: {n}",
   "set.policyEmailReview": "Customized email texts to review",
   "set.policyEmailReviewIntro":
-    "These email texts have been customized. Review them after activation to make sure they still describe the new rule; they will not be rewritten automatically.",
+    "The app sends new confirmation emails as soon as the rule is applied. Review these customized texts before applying it. If you change any text, calculate a fresh preview before you apply the rule.",
   "set.policyEmailRegistration": "Registration email",
   "set.policyEmailPayment": "Payment confirmation",
   "set.policyEmailBooking": "Confirmation without a new payment",

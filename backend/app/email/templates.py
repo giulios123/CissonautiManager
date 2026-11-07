@@ -386,8 +386,13 @@ def _confirmation_policy_lines(
     *,
     include_extras_later: bool,
 ) -> list[str]:
+    fee_key = (
+        "email.booking_confirmation.fee"
+        if _confirmation_fee_covered(booking, paid_cents)
+        else "email.booking_confirmation.fee_uncovered"
+    )
     fee_line = t(
-        "email.booking_confirmation.fee",
+        fee_key,
         loc,
         amount=format_euro(booking.registration_fee_cents or 0, loc),
     )
@@ -418,6 +423,10 @@ def _confirmation_policy_lines(
     return [fee_line, total_line, balance_line]
 
 
+def _confirmation_fee_covered(booking: Booking, paid_cents: int) -> bool:
+    return paid_cents >= (booking.registration_fee_cents or 0)
+
+
 def booking_confirmation_email(
     booking: Booking,
     paid_cents: int,
@@ -428,10 +437,14 @@ def booking_confirmation_email(
     participant = booking.participant
     loc = normalize_locale(participant.locale)
     texts = texts or EmailTexts()
-    opening = texts.body or (
-        _greeting(participant.first_name, loc)
-        + t("email.booking_confirmation.body", loc, event=texts.event_name)
-    ).rstrip("\n")
+    confirmation_text = (
+        t("email.booking_confirmation.body", loc, event=texts.event_name)
+        if _confirmation_fee_covered(booking, paid_cents)
+        else t("email.promoted.stays_confirmed", loc)
+    )
+    opening = texts.body or (_greeting(participant.first_name, loc) + confirmation_text).rstrip(
+        "\n"
+    )
     financial_lines = _confirmation_policy_lines(
         booking,
         paid_cents,
@@ -541,7 +554,12 @@ def waitlist_promoted_email(
         )
         opening = _opening(texts, participant.first_name, loc, "email.promoted.body")
         if confirmed:
-            opening += "\n\n" + t("email.booking_confirmation.body", loc, event=texts.event_name)
+            confirmation_text = (
+                t("email.booking_confirmation.body", loc, event=texts.event_name)
+                if _confirmation_fee_covered(booking, paid_cents)
+                else t("email.promoted.stays_confirmed", loc)
+            )
+            opening += "\n\n" + confirmation_text
             deadline = t("email.promoted.stays_confirmed", loc)
         else:
             deadline = t(

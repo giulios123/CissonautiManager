@@ -221,6 +221,27 @@ class TestTestMessage:
         admin_client.post(f"{URL}/test?locale=it")
         assert outbox.sent[-1].html is not None and outbox.sent[-1].attachments == ()
 
+    def test_fee_policy_test_message_uses_the_active_edition_booking_state(
+        self, admin_client, edition, db, outbox
+    ):
+        from app.domain.confirmation import POLICY_REGISTRATION_FEE
+
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        edition.base_fee_cents = 0
+        edition.per_day_fee_cents = 0
+        db.commit()
+
+        response = admin_client.post(f"{URL}/test?locale=it")
+
+        assert response.status_code == 200
+        body = outbox.sent[-1].body
+        assert "è confermata." in body
+        assert "Quota di partecipazione: 0,00 €" in body
+        assert "Come pagare:" not in body
+        assert "Causale:" not in body
+        assert "bloccato fino al" not in body
+        assert "Pagamento registrato" not in body
+
     def test_without_edition_slots_email_still_sends(self, admin_client, edition, outbox, db):
         from app.models import Slot
 

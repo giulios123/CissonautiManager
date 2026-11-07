@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.models import (
     CLOSE_BOOKED,
     CLOSE_PROMOTED,
@@ -139,6 +140,87 @@ def test_confirmed_booking_stays_confirmed_with_the_difference_to_pay(
     [email] = outbox.sent
     assert "resta confermata" in email.body
     assert "Ancora da versare: 1,00 €" in email.body
+
+
+def test_confirmed_waitlist_booking_does_not_claim_an_increased_fee_is_covered(
+    db, edition, full_monday, make_participant, make_booking, add_entry, promote, clock, outbox
+):
+    edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    target, fillers = full_monday
+    ada = make_participant("ada@example.com")
+    booking = make_booking(ada, [slot(db, 14)], status=STATUS_CONFIRMED, amount_due_cents=1100)
+    booking.registration_fee_cents = 1100
+    db.add(
+        Payment(
+            booking_id=booking.id,
+            amount_cents=1100,
+            channel="iban",
+            paid_on=d(1),
+            recorded_by_id=ada.id,
+        )
+    )
+    db.commit()
+    add_entry(target, ada, clock())
+    free_one(db, fillers)
+    outbox.sent.clear()
+
+    [promotion] = promote(target)
+
+    db.refresh(booking)
+    assert promotion.kind == "add_to_confirmed"
+    assert booking.status == STATUS_CONFIRMED
+    assert booking.registration_fee_cents == 1200
+    [email] = outbox.sent
+    assert "resta confermata" in email.body
+    assert "Quota di partecipazione: 12,00 €" in email.body
+    assert "Quota di partecipazione coperta" not in email.body
+
+
+def test_two_promotions_that_confirm_pending_bookings_send_one_notice_each(
+    db,
+    edition,
+    full_monday,
+    make_participant,
+    make_booking,
+    add_entry,
+    promote,
+    clock,
+    outbox,
+):
+    edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    target, _ = full_monday
+    target.capacity = 12
+    bookings = []
+    for email in ("ada@example.com", "bea@example.com"):
+        person = make_participant(email)
+        booking = make_booking(
+            person,
+            [slot(db, 14)],
+            status=STATUS_PENDING,
+            amount_due_cents=1100,
+        )
+        booking.registration_fee_cents = 1100
+        db.flush()
+        db.add(
+            Payment(
+                booking_id=booking.id,
+                amount_cents=1200,
+                channel="iban",
+                paid_on=d(1),
+                recorded_by_id=person.id,
+            )
+        )
+        add_entry(target, person, clock())
+        bookings.append(booking)
+    db.commit()
+    outbox.sent.clear()
+
+    promotions = promote(target)
+
+    assert len(promotions) == 2
+    assert [booking.status for booking in bookings] == [STATUS_CONFIRMED, STATUS_CONFIRMED]
+    assert len(outbox.sent) == 2
+    assert all("Si è liberato un posto" not in email.body for email in outbox.sent)
 
 
 def test_someone_only_on_the_list_gets_a_new_booking_with_the_texts_of_the_entry(

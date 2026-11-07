@@ -195,6 +195,10 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "it": "Quota di partecipazione coperta: {amount}",
         "en": "Registration fee covered: {amount}",
     },
+    "email.booking_confirmation.fee_uncovered": {
+        "it": "Quota di partecipazione: {amount}",
+        "en": "Registration fee: {amount}",
+    },
     "email.booking_confirmation.balance": {
         "it": "Resta da saldare all'organizzazione: {amount}",
         "en": "Still due to the organisers: {amount}",

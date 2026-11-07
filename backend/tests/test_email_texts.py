@@ -276,6 +276,21 @@ class TestTemplateFunctions:
         assert "Resta da saldare all'organizzazione: 4,00 €" in email.body
         assert "Pranzi, cene e attività possono essere pagati dopo." in email.body
 
+    def test_payment_email_does_not_claim_the_fee_is_covered_after_a_price_increase(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.status = STATUS_CONFIRMED
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 1600
+
+        email = payment_confirmation_email(booking, 400, total_paid_cents=900)
+
+        assert "Quota di partecipazione: 12,00 €" in email.body
+        assert "Quota di partecipazione coperta" not in email.body
+        assert "Pagamento registrato: 4,00 €" in email.body
+
     def test_booking_confirmation_does_not_claim_a_new_payment(
         self, make_participant, make_booking, db, edition
     ):

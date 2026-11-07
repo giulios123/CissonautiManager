@@ -678,7 +678,7 @@ export const it = {
   "set.policyEmails": "Email di conferma previste: {n}",
   "set.policyEmailReview": "Testi email personalizzati da controllare",
   "set.policyEmailReviewIntro":
-    "Hai modificato questi testi email. Rileggili dopo l'attivazione per verificare che descrivano ancora la nuova regola; non verranno riscritti automaticamente.",
+    "L'app invia subito le nuove email di conferma quando applichi la regola. Rileggi questi testi personalizzati prima di applicarla. Se modifichi un testo, calcola una nuova anteprima prima di procedere.",
   "set.policyEmailRegistration": "Email di iscrizione",
   "set.policyEmailPayment": "Conferma pagamento",
   "set.policyEmailBooking": "Conferma senza nuovo pagamento",

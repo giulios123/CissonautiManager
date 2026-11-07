@@ -207,6 +207,7 @@ describe("settings", () => {
     expect(await screen.findByText("la conferma richiede il totale dovuto")).toBeInTheDocument();
     expect(screen.getByText("Email di conferma previste: 1")).toBeInTheDocument();
     expect(screen.getByText("Testi email personalizzati da controllare")).toBeInTheDocument();
+    expect(screen.getByText(/prima di applicarla/)).toHaveTextContent(/nuova anteprima/);
     expect(screen.getByText("Conferma pagamento (Italiano)")).toBeInTheDocument();
     expect(screen.getByText("In attesa di pagamento")).toBeInTheDocument();
     expect(screen.getAllByText("Confermata")).toHaveLength(3);

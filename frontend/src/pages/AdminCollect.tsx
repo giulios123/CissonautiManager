@@ -145,7 +145,8 @@ export function AdminCollect() {
     const amountCents =
       row.confirmation_policy === "registration_fee" &&
       (row.status === "in_attesa_pagamento" || row.status === "scaduta") &&
-      row.confirmation_balance_cents != null
+      row.confirmation_balance_cents != null &&
+      row.confirmation_balance_cents > 0
         ? row.confirmation_balance_cents
         : row.balance_cents;
     setBusyFor(row.booking_id, true);

@@ -216,6 +216,30 @@ describe("to collect view", () => {
     expect(await screen.findByText("Pagato 7,00 €")).toBeInTheDocument();
   });
 
+  it("uses the full outstanding balance when an expired fee remainder is zero", async () => {
+    listing = [
+      {
+        ...row(7, "Ada", "Lovelace", "CSC-GGSU", 500),
+        status: "scaduta",
+        confirmation_policy: "registration_fee",
+        registration_fee_cents: 1100,
+        confirmation_balance_cents: 0,
+        paid_cents: 1100,
+        balance_cents: 500,
+      },
+    ];
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Segna pagato per Ada Lovelace" }));
+
+    await waitFor(() => expect(posted()).toHaveLength(1));
+    expect(posted()[0].body).toEqual({
+      amount_cents: 500,
+      channel: "revolut",
+      defer_confirmation_email: true,
+    });
+  });
+
   it("shows the warning of the server, such as an expired booking without room", async () => {
     vi.stubGlobal(
       "fetch",

@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.domain.email_template import (
     CARD_POSITIONS,
     DEFAULT_CARD_COLOR,
@@ -29,7 +30,7 @@ from app.email import EmailSender
 from app.email.card import MAX_UPLOAD_BYTES, InvalidImage, normalize_image, render_card
 from app.email.templates import registration_email
 from app.i18n import normalize_locale, t
-from app.models import Edition, Participant, slot_sort_key
+from app.models import STATUS_CONFIRMED, STATUS_PENDING, Edition, Participant, slot_sort_key
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services import email_templates as service
@@ -195,9 +196,17 @@ def send_test(
     person = _sample(edition, admin.first_name, admin.last_name, loc)
     person.email = admin.email
     slots = sorted(edition.slots, key=slot_sort_key)[:2]
+    registration_fee_cents = edition.base_fee_cents + edition.per_day_fee_cents * len(
+        {slot.date for slot in slots}
+    )
+    fee_policy = edition.confirmation_policy == POLICY_REGISTRATION_FEE
     booking = SimpleNamespace(
+        edition=edition,
         slots=slots,
-        amount_due_cents=edition.base_fee_cents + edition.per_day_fee_cents,
+        amount_due_cents=registration_fee_cents,
+        registration_fee_cents=registration_fee_cents if fee_policy else None,
+        status=(STATUS_CONFIRMED if fee_policy and registration_fee_cents == 0 else STATUS_PENDING),
+        payments=[],
         hold_expires_at=now + timedelta(days=edition.hold_days),
     )
     extras = service.registration_extras(db, edition, person)

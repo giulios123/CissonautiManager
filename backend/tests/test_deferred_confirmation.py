@@ -216,5 +216,7 @@ def test_confirmation_cycle_without_payment_sends_no_receipt(db, booking, outbox
 
     [message] = outbox.sent
     assert message.subject.startswith("La tua iscrizione")
-    assert "quota necessaria è coperta" in message.body
+    assert "resta confermata" in message.body
+    assert "Quota di partecipazione: 5,00 €" in message.body
+    assert "quota necessaria è coperta" not in message.body
     assert "Pagamento registrato" not in message.body
