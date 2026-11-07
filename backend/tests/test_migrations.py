@@ -83,6 +83,44 @@ def test_migration_0015_preserves_legacy_activity_time_and_price(
     engine.dispose()
 
 
+def test_migration_0016_preserves_legacy_legal_text_and_starts_with_no_consent_events(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0015")
+    engine = make_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO edition (name, morning_start, morning_end, afternoon_start,"
+                " afternoon_end, evening_start, evening_end, default_capacity, hold_days,"
+                " base_fee_cents, per_day_fee_cents, is_active, waitlist_percent,"
+                " lunch_price_cents, dinner_price_cents) VALUES ('Camp', '09:00', '13:00',"
+                " '14:00', '18:00', '19:00', '00:00', 25, 3, 1000, 100, 1, 20, 800, 1200)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO legal_document (edition_id, kind, version, body, published_at)"
+                " VALUES (1, 'privacy', 1, 'Testo originale', '2026-07-01 09:00:00')"
+            )
+        )
+    command.upgrade(alembic_config, "0016")
+    with engine.connect() as connection:
+        document = connection.execute(
+            text("SELECT body, body_it, body_en FROM legal_document WHERE kind = 'privacy'")
+        ).one()
+        events = connection.execute(text("SELECT COUNT(*) FROM consent_event")).scalar_one()
+    command.downgrade(alembic_config, "0015")
+    with engine.connect() as connection:
+        columns = {column["name"] for column in inspect(connection).get_columns("legal_document")}
+        tables = set(inspect(connection).get_table_names())
+    engine.dispose()
+    assert tuple(document) == ("Testo originale", None, None)
+    assert events == 0
+    assert "body_it" not in columns and "body_en" not in columns
+    assert "consent_event" not in tables
+
+
 def test_migration_0003_fills_hold_started_at_from_created_at(
     alembic_config, database_url, empty_database
 ):
