@@ -95,6 +95,12 @@ class PublicEditionOut(BaseModel):
     media_consent: OptionalConsentPublic | None = None
 
 
+class OptionalConsentIn(BaseModel):
+    granted: bool
+    document_id: int
+    version: int
+
+
 class RegistrationIn(BaseModel):
     first_name: Name
     last_name: Name
@@ -115,6 +121,10 @@ class RegistrationIn(BaseModel):
     accept_disclaimer: bool
     privacy_version: int
     disclaimer_version: int
+    optional_consents: dict[Literal["attendance", "media"], OptionalConsentIn] = Field(
+        default_factory=dict, max_length=2
+    )
+    consent_locale: Literal["it", "en"] | None = None
 
     @model_validator(mode="after")
     def check_acceptances(self) -> Self:
@@ -141,7 +151,7 @@ class WaitlistedSlot(BaseModel):
 
 
 class BookingSummary(BaseModel):
-    personal_code: str
+    personal_code: str | None
     status: str
     amount_due_cents: int
     hold_expires_at: datetime
@@ -308,6 +318,12 @@ def create_registration(
             status_code=409,
             detail=t("register.legal_outdated"),
         ) from exc
+    except registration_service.OptionalConsentTextsChanged as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("register.legal_outdated")) from exc
+    except registration_service.InvalidOptionalConsent as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=t("register.optional_consent_invalid")) from exc
     except registration_service.InvalidSlots as exc:
         raise HTTPException(status_code=422, detail=t("slots.invalid")) from exc
     except registration_service.SlotsFull as exc:
@@ -347,8 +363,12 @@ def create_registration(
     if result.booking is None:
         return RegistrationOut(
             result="waitlisted",
-            message=t("register.waitlisted"),
-            personal_code=result.participant.personal_code,
+            message=(
+                t("register.known_account_check_email")
+                if not result.new_participant
+                else t("register.waitlisted")
+            ),
+            personal_code=result.participant.personal_code if result.new_participant else None,
             waitlist=waitlist,
         )
     booking = result.booking
@@ -356,8 +376,9 @@ def create_registration(
     assert edition is not None
     return RegistrationOut(
         result="created",
+        message=(t("register.known_account_check_email") if not result.new_participant else None),
         booking=BookingSummary(
-            personal_code=result.participant.personal_code,
+            personal_code=result.participant.personal_code if result.new_participant else None,
             status=booking.status,
             amount_due_cents=booking.amount_due_cents,
             hold_expires_at=booking.hold_expires_at,
@@ -381,6 +402,6 @@ def create_registration(
             ],
             payment_channels=_channels(db, edition),
         ),
-        personal_code=result.participant.personal_code,
+        personal_code=result.participant.personal_code if result.new_participant else None,
         waitlist=waitlist,
     )

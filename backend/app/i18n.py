@@ -438,6 +438,14 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Sei in lista d'attesa. Ti abbiamo inviato un link per entrare.",
         "en": "You are on the waitlist. We've sent you a link to sign in.",
     },
+    "register.known_account_check_email": {
+        "it": "Per la causale e i dettagli, controlla l'email che ti abbiamo inviato.",
+        "en": "Check the email we sent you for the payment reference and details.",
+    },
+    "register.optional_consent_invalid": {
+        "it": "Una scelta facoltativa non corrisponde a un testo disponibile. Ricarica la pagina.",
+        "en": "An optional choice does not match an available text. Reload the page.",
+    },
     "auth.link_sent": {
         "it": "Se l'email è registrata riceverai un link per entrare.",
         "en": "If the email is registered you'll receive a link to sign in.",

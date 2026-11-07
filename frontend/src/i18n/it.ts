@@ -127,6 +127,8 @@ export const it = {
   "reg.howToPay": "Come pagare",
   "reg.amount": "Quota:",
   "reg.reference": "Causale:",
+  "reg.checkEmailForReference":
+    "Per la causale e i dettagli, controlla l'email che ti abbiamo inviato.",
   "reg.holdUntilBefore": "Il posto è bloccato fino al",
   "reg.holdUntilAfter": "Se non paghi entro quella data si libera.",
   "reg.paymentSoon": "Le istruzioni di pagamento arriveranno presto.",

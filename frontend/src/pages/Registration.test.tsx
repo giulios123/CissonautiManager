@@ -285,6 +285,45 @@ describe("Registration page", () => {
     expect(sent.email).toBe("ada@example.com");
   });
 
+  it("does not repeat a known account's payment reference in the anonymous response", async () => {
+    mockFetch({
+      "/api/public/edition": { body: edition },
+      "/api/public/registrations": {
+        status: 201,
+        body: {
+          result: "created",
+          message: "Per la causale e i dettagli, controlla l'email che ti abbiamo inviato.",
+          booking: {
+            personal_code: null,
+            status: "in_attesa_pagamento",
+            amount_due_cents: 1100,
+            hold_expires_at: "2026-07-04T10:00:00Z",
+            slots: [{ date: "2026-07-13", period: "morning", label: "lun 13/07 mattina" }],
+            schedule: [],
+            payment_channels: [],
+          },
+        },
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByText(/Quota da versare/);
+    await user.click(screen.getByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
+    await user.type(screen.getByLabelText("Nome"), "Ada");
+    await user.type(screen.getByLabelText("Cognome"), "Lovelace");
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
+    await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
+    await user.click(screen.getByLabelText(/informativa privacy$/));
+    await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await user.click(screen.getByRole("button", { name: "Iscriviti" }));
+
+    expect(
+      await screen.findByText(/Per la causale e i dettagli, controlla l'email/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/CSC-/)).not.toBeInTheDocument();
+  });
+
   it("shows the sign-in link when the email is already registered", async () => {
     mockFetch({
       "/api/public/edition": { body: edition },

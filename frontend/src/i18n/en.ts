@@ -128,6 +128,8 @@ export const en: Record<MessageKey, string> = {
   "reg.howToPay": "How to pay",
   "reg.amount": "Fee:",
   "reg.reference": "Payment reference:",
+  "reg.checkEmailForReference":
+    "Check the email we sent you for the payment reference and details.",
   "reg.holdUntilBefore": "Your place is held until",
   "reg.holdUntilAfter": "If you don't pay by then it will be released.",
   "reg.paymentSoon": "Payment instructions will arrive soon.",

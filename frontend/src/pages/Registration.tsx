@@ -38,7 +38,7 @@ type PublicEdition = {
   media_consent: OptionalConsentText | null;
 };
 type Summary = {
-  personal_code: string;
+  personal_code: string | null;
   amount_due_cents: number;
   hold_expires_at: string;
   slots: { date: string; period: string; label: string }[];
@@ -47,8 +47,8 @@ type Summary = {
 };
 type Waitlisted = { label: string; position: number };
 type Outcome =
-  | { kind: "created"; booking: Summary; waitlist: Waitlisted[] }
-  | { kind: "waitlisted"; personalCode: string; waitlist: Waitlisted[] }
+  | { kind: "created"; booking: Summary; waitlist: Waitlisted[]; message?: string }
+  | { kind: "waitlisted"; personalCode: string | null; waitlist: Waitlisted[]; message?: string }
   | { kind: "already"; message: string };
 
 /** Label of a full slot: whether its waitlist can still be joined. */
@@ -128,9 +128,21 @@ export function Registration() {
     );
   }
   if (outcome?.kind === "created")
-    return <Confirmation booking={outcome.booking} waitlist={outcome.waitlist} />;
+    return (
+      <Confirmation
+        booking={outcome.booking}
+        waitlist={outcome.waitlist}
+        message={outcome.message}
+      />
+    );
   if (outcome?.kind === "waitlisted")
-    return <WaitlistConfirmation personalCode={outcome.personalCode} waitlist={outcome.waitlist} />;
+    return (
+      <WaitlistConfirmation
+        personalCode={outcome.personalCode}
+        waitlist={outcome.waitlist}
+        message={outcome.message}
+      />
+    );
 
   if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
     return (
@@ -227,12 +239,18 @@ export function Registration() {
         },
       });
       if (result.result === "created" && result.booking) {
-        setOutcome({ kind: "created", booking: result.booking, waitlist: result.waitlist ?? [] });
+        setOutcome({
+          kind: "created",
+          booking: result.booking,
+          waitlist: result.waitlist ?? [],
+          message: result.message,
+        });
       } else if (result.result === "waitlisted") {
         setOutcome({
           kind: "waitlisted",
-          personalCode: result.personal_code ?? "",
+          personalCode: result.personal_code ?? null,
           waitlist: result.waitlist ?? [],
+          message: result.message,
         });
       } else {
         setOutcome({ kind: "already", message: result.message ?? t("reg.alreadyFallback") });
@@ -451,9 +469,11 @@ function WaitlistSummary({ waitlist }: { waitlist: Waitlisted[] }) {
 function WaitlistConfirmation({
   personalCode,
   waitlist,
+  message,
 }: {
-  personalCode: string;
+  personalCode: string | null;
   waitlist: Waitlisted[];
+  message?: string;
 }) {
   const { t } = useI18n();
   return (
@@ -461,9 +481,13 @@ function WaitlistConfirmation({
       <h1>{t("reg.waitConfTitle")}</h1>
       <p role="status">{t("reg.waitConfBody")}</p>
       <WaitlistSummary waitlist={waitlist} />
-      <p>
-        {t("reg.waitConfNothingToPay")} <strong>{personalCode}</strong>.
-      </p>
+      {personalCode ? (
+        <p>
+          {t("reg.waitConfNothingToPay")} <strong>{personalCode}</strong>.
+        </p>
+      ) : (
+        <p>{message ?? t("reg.checkEmailForReference")}</p>
+      )}
       <p>
         <RegistrationAccessLink>{t("reg.goToPersonal")}</RegistrationAccessLink>
       </p>
@@ -471,7 +495,15 @@ function WaitlistConfirmation({
   );
 }
 
-function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitlisted[] }) {
+function Confirmation({
+  booking,
+  waitlist,
+  message,
+}: {
+  booking: Summary;
+  waitlist: Waitlisted[];
+  message?: string;
+}) {
   const { t } = useI18n();
   return (
     <main>
@@ -489,9 +521,13 @@ function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitl
       <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
       <WaitlistSummary waitlist={waitlist} />
       <h2>{t("reg.howToPay")}</h2>
-      <p>
-        {t("reg.reference")} <strong>{booking.personal_code}</strong>
-      </p>
+      {booking.personal_code ? (
+        <p>
+          {t("reg.reference")} <strong>{booking.personal_code}</strong>
+        </p>
+      ) : (
+        <p>{message ?? t("reg.checkEmailForReference")}</p>
+      )}
       {booking.payment_channels.length > 0 ? (
         <ul>
           {booking.payment_channels.map((channel) => (
