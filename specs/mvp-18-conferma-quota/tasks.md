@@ -4,7 +4,7 @@
 
 Sequenza, dipendenze e condizioni di attivazione nel [piano operativo comune 17–18](../piano-mvp-17-18.md); questa rimane la checklist canonica del 18.
 
-- [ ] **T18-1 · Calcolo e invarianti.** Funzione unica quota+totale, copertura, residuo operativo e credito; test base/giorni distinti/sera, zero, extra/provider e nessuna modifica dei pagamenti.
+- [x] **T18-1 · Calcolo e invarianti.** Funzione unica quota+totale, soglia di conferma, residuo operativo e credito; 46 test mirati passati su quota base/giorni distinti, extra e provider, insieme ai percorsi di prezzo esistenti.
 - [ ] **T18-2 · Modello/migrazione 0017.** Politica edizione, quota salvata e metadati del ciclo notifica; migrazione neutra da zero/legacy, vincoli e metadata nei due database, nessuna attivazione o email da Alembic.
 - [ ] **T18-3 · Percorsi di conferma.** Aggiornare registrazione, pagamenti, annulli, riattivazione e promozione; test soglia esatta/parziale, scadenza, capienza/duplicati, zero e confermate stabili.
 - [ ] **T18-4 · Ricalcoli e report.** Salvare quota/totale insieme nei cambi slot/pasti/attività/prezzi; test prezzi correnti al ricalcolo, pagamenti/crediti e report/CSV riconciliati senza provider.
