@@ -123,6 +123,8 @@ az deployment group what-if --resource-group cissonauti-rg \
 
 Dopo il deploy `GET <url>/api/health` deve rispondere 200. L'indirizzo è nell'output `url`.
 
+Il dominio pubblico è `https://app.cissonesummercamp.it`. `main.bicep` lo associa al certificato gestito già presente nell'ambiente Container Apps e usa lo stesso indirizzo per i link delle email e dei promemoria. Se ricrei il certificato, aggiorna il parametro `appCertificateName` nel Bicep. L'output `azureUrl` conserva anche l'indirizzo tecnico di Container Apps.
+
 ## Da sapere
 
 - **Email**: con `EMAIL_PROVIDER=acs` (default) le email partono dall'indirizzo `DoNotReply@<id>.azurecomm.net`, visibile nell'output `emailSender` del deploy. Il dominio gestito ha limiti di invio bassi (alcune decine di messaggi al minuto) e può finire nella posta indesiderata: se succede, la strada è un dominio proprio da collegare al servizio email. Per tornare ai log basta `EMAIL_PROVIDER=console` (parametro `emailProvider`).

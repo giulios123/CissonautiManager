@@ -28,6 +28,12 @@ param secretKey string
 @description('Email of the first admin, created at startup.')
 param adminEmail string
 
+@description('Public HTTPS hostname for the app.')
+param appCustomDomain string = 'app.cissonesummercamp.it'
+
+@description('Name of the existing managed certificate in the Container Apps environment.')
+param appCertificateName string = 'app.cissonesummercamp.it-cissonau-261107161259'
+
 @description('Optional: lets the first admin log in with a password right away.')
 @secure()
 param adminPassword string = ''
@@ -46,6 +52,7 @@ var unique = uniqueString(resourceGroup().id)
 var sqlServerName = '${appName}-sql-${unique}'
 var sqlRegion = empty(sqlLocation) ? location : sqlLocation
 var databaseName = 'cissonauti'
+var appBaseUrl = 'https://${appCustomDomain}'
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: '${appName}-logs'
@@ -68,6 +75,11 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
       }
     }
   }
+}
+
+resource appCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' existing = {
+  parent: environment
+  name: appCertificateName
 }
 
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
@@ -153,7 +165,7 @@ var registrySecrets = empty(ghcrToken) ? [] : [{ name: 'ghcr-token', value: ghcr
 // Settings shared by the app and the reminders job.
 var commonEnv = [
   { name: 'APP_ENV', value: 'production' }
-  { name: 'APP_BASE_URL', value: 'https://${appName}.${environment.properties.defaultDomain}' }
+  { name: 'APP_BASE_URL', value: appBaseUrl }
   { name: 'EMAIL_PROVIDER', value: emailProvider }
   { name: 'EMAIL_FROM', value: emailSender }
   { name: 'ACS_CONNECTION_STRING', secretRef: 'acs-connection-string' }
@@ -181,6 +193,13 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8000
         transport: 'auto'
         allowInsecure: false
+        customDomains: [
+          {
+            name: appCustomDomain
+            bindingType: 'SniEnabled'
+            certificateId: appCertificate.id
+          }
+        ]
       }
       secrets: concat(baseSecrets, adminSecrets, registrySecrets)
       registries: registries
@@ -276,7 +295,8 @@ resource reminderJob 'Microsoft.App/jobs@2024-03-01' = {
   ]
 }
 
-output url string = 'https://${app.properties.configuration.ingress.fqdn}'
+output url string = appBaseUrl
+output azureUrl string = 'https://${app.properties.configuration.ingress.fqdn}'
 output sqlServer string = sqlServer.properties.fullyQualifiedDomainName
 output emailSender string = emailSender
 output reminderJob string = reminderJob.name
