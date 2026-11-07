@@ -1,6 +1,6 @@
 # Piano operativo · MVP 17 e 18
 
-**Stato:** pianificazione richiesta dal maintainer il 7 novembre 2026. Nessuna implementazione, migrazione applicata o operazione di produzione eseguita preparando il piano. Le decisioni di prodotto restano quelle confermate; il piano ordina il lavoro delle due spec senza ampliarne il perimetro.
+**Stato:** implementazione richiesta dal maintainer il 7 novembre 2026. MVP17 T17-1–6 è implementato e committato sul proprio branch; MVP18 è in corso su `feat/mvp-18-conferma-quota` (T18-1–3). Il maintainer conferma superate tutte le prove SQL. Le decisioni di prodotto restano quelle confermate; il piano ordina il lavoro delle due spec senza ampliarne il perimetro.
 
 Riferimenti canonici: [requisiti 17](mvp-17-consensi-riservatezza/requirements.md), [design 17](mvp-17-consensi-riservatezza/design.md), [8 task 17](mvp-17-consensi-riservatezza/tasks.md); [requisiti 18](mvp-18-conferma-quota/requirements.md), [design 18](mvp-18-conferma-quota/design.md), [10 task 18](mvp-18-conferma-quota/tasks.md). Le checklist rimangono in quei file: nessun secondo elenco di task da spuntare qui.
 
@@ -34,7 +34,7 @@ flowchart TD
   Legal[Testi definitivi IT/EN validati e pubblicati] --> ConsentReady
 ```
 
-La dipendenza 17→18 riguarda la base del codice e la catena di migrazioni 0015→0016→0017, non un legame tra consenso facoltativo e possibilità di pagare. Prima di iniziare il 18 verificare B0 sul risultato del 17. La preparazione congiunta delle spec e del piano non equivale al completamento del 17.
+La dipendenza 17→18 riguarda la base del codice e la catena di migrazioni 0015→0016→0017, non un legame tra consenso facoltativo e possibilità di pagare. La preparazione congiunta delle spec e del piano non equivale alla chiusura delle verifiche manuali del 17, ancora aperte.
 
 La chiusura tecnica del 17 e la prontezza delle informative in produzione vanno registrate separatamente. La validazione dei testi può proseguire mentre si sviluppa il 18; senza testi facoltativi completi la funzione non raccoglie un sì, senza bloccare gli altri flussi secondo la spec 17. Le verifiche tecniche ancora fallite o non eseguite non sono invece risolte dal solo fatto che esista una checklist.
 
@@ -45,7 +45,7 @@ La chiusura tecnica del 17 e la prontezza delle informative in produzione vanno 
 | 17 | `feat/mvp-17-consensi-riservatezza` | Base aggiornata del 16; PR dedicata con migrazione, guida e checklist del 17. |
 | 18 | `feat/mvp-18-conferma-quota` | Base aggiornata che include il 17, dopo la sua chiusura tecnica; PR dedicata del 18. |
 
-Durante lo sviluppo seguire i commit Conventional Commits e i controlli richiesti da `AGENTS.md`; preservare le modifiche del maintainer. Questo piano non crea branch, commit o PR. Non duplicare la migrazione 0016 su un ramo parallelo; verificare gli identificativi effettivi prima di generare le revisioni.
+Durante lo sviluppo seguire i commit Conventional Commits e i controlli richiesti da `AGENTS.md`; preservare le modifiche del maintainer. La migrazione 0016 appartiene al ramo 17 e non va duplicata; 0017 la estende sul ramo 18.
 
 ## Verifiche decisive del 17
 

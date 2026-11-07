@@ -13,7 +13,6 @@ from app.domain.booking import (
     has_free_seat,
     is_past_day,
 )
-from app.domain.fees import is_covered
 from app.domain.meals import meal_sort_key, meals_to_drop, periods_by_day
 from app.email import EmailSender
 from app.email.templates import cancellation_email
@@ -35,7 +34,7 @@ from app.models import (
 from app.services import audit
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
-from app.services.amounts import recompute_amount
+from app.services.amounts import confirmation_covered, recompute_amount
 from app.services.payments import paid_total, send_confirmation
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
@@ -178,7 +177,9 @@ def change_slots(
 
     # Fewer days can bring the amount down to what was already paid: the booking is then done.
     total = paid_total(booking)
-    confirmed_now = booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total)
+    confirmed_now = booking.status == STATUS_PENDING and confirmation_covered(
+        edition, booking, total
+    )
     if confirmed_now:
         booking.status = STATUS_CONFIRMED
     db.commit()

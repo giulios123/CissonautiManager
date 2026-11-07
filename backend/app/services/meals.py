@@ -6,7 +6,6 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session
 
 from app.domain.booking import can_edit_slots, effective_status, is_past_day
-from app.domain.fees import is_covered
 from app.domain.meals import (
     Meal,
     allowed_meals,
@@ -17,7 +16,7 @@ from app.domain.meals import (
 from app.email import EmailSender
 from app.models import STATUS_CONFIRMED, STATUS_PENDING, Booking, BookingMeal, Edition, Participant
 from app.services import audit
-from app.services.amounts import recompute_amount
+from app.services.amounts import confirmation_covered, recompute_amount
 from app.services.booking_changes import ChangeResult, NotEditable
 from app.services.payments import paid_total, send_confirmation
 from app.services.seats import expire_overdue, lock_booking
@@ -90,7 +89,9 @@ def change_meals(
             booking.id,
         )
     total = paid_total(booking)
-    confirmed_now = booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total)
+    confirmed_now = booking.status == STATUS_PENDING and confirmation_covered(
+        edition, booking, total
+    )
     if confirmed_now:
         booking.status = STATUS_CONFIRMED
     db.commit()

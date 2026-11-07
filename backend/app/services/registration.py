@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.domain.booking import effective_status, has_free_seat, hold_deadline
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.email import EmailSender
 from app.email.templates import (
     already_registered_email,
@@ -273,6 +274,11 @@ def _new_booking(
     )
     booking.slots = slots
     recompute_amount(edition, booking)
+    if (
+        edition.confirmation_policy == POLICY_REGISTRATION_FEE
+        and booking.registration_fee_cents == 0
+    ):
+        booking.status = STATUS_CONFIRMED
     db.add(booking)
     db.flush()
     return booking

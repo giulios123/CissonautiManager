@@ -5,7 +5,6 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session, object_session
 
 from app.domain.booking import can_reactivate, has_free_seat, hold_deadline, status_after_void
-from app.domain.fees import is_covered
 from app.email import EmailSender
 from app.email.templates import payment_confirmation_email
 from app.i18n import t
@@ -23,7 +22,7 @@ from app.models import (
 from app.services import audit
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
-from app.services.amounts import recompute_amount
+from app.services.amounts import confirmation_covered, confirmation_due, recompute_amount
 from app.services.seats import (
     activities_for_update,
     expire_overdue,
@@ -162,7 +161,7 @@ def record_payment(
             )
 
     confirmed_now = False
-    if booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total):
+    if booking.status == STATUS_PENDING and confirmation_covered(booking.edition, booking, total):
         booking.status = STATUS_CONFIRMED
         confirmed_now = True
 
@@ -267,7 +266,9 @@ def void_payment(
     payment.voided_at = now
     payment.voided_by_id = admin.id
     payment.void_reason = reason
-    new_status = status_after_void(old_status, booking.amount_due_cents, paid_total(booking))
+    new_status = status_after_void(
+        old_status, confirmation_due(booking.edition, booking), paid_total(booking)
+    )
     if new_status != old_status:
         booking.status = new_status
         booking.hold_started_at = now

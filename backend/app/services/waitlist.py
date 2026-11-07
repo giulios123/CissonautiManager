@@ -16,7 +16,7 @@ from app.domain.booking import (
     is_past_day,
     occupies_seats,
 )
-from app.domain.fees import is_covered
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.domain.reminders import reminders_to_keep_after_extension
 from app.domain.waitlist import (
     JoinRefusal,
@@ -47,7 +47,7 @@ from app.services import audit
 from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
-from app.services.amounts import recompute_amount
+from app.services.amounts import confirmation_covered, recompute_amount
 from app.services.payments import paid_total
 from app.services.seats import expire_overdue, free_by_slot, lock_edition, slots_for_update
 from app.timefmt import format_slot
@@ -376,6 +376,11 @@ def _new_booking(
     )
     booking.slots = [slot]
     recompute_amount(edition, booking)
+    if (
+        edition.confirmation_policy == POLICY_REGISTRATION_FEE
+        and booking.registration_fee_cents == 0
+    ):
+        booking.status = STATUS_CONFIRMED
     db.add(booking)
     return booking
 
@@ -402,7 +407,7 @@ def _add_slot(booking: Booking, edition: Edition, slot: Slot, kind: str, now: da
             )
         )
         booking.hold_expires_at = new_expiry
-    if is_covered(booking.amount_due_cents, paid_total(booking)):
+    if confirmation_covered(edition, booking, paid_total(booking)):
         booking.status = STATUS_CONFIRMED
 
 

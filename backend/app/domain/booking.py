@@ -75,8 +75,12 @@ def can_extend_hold(status: str) -> bool:
     return status == STATUS_PENDING
 
 
-def status_after_void(status: str, due_cents: int, paid_cents: int) -> str:
+def status_after_void(status: str, due_cents: int | None, paid_cents: int) -> str:
     """A confirmed booking whose payments no longer cover the amount goes back to waiting."""
-    if status == STATUS_CONFIRMED and not is_covered(due_cents, paid_cents):
+    if (
+        due_cents is not None
+        and status == STATUS_CONFIRMED
+        and not is_covered(due_cents, paid_cents)
+    ):
         return STATUS_PENDING
     return status
