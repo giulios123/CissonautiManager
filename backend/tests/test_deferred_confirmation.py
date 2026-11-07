@@ -125,12 +125,33 @@ def test_fee_policy_payment_confirms_at_the_fee_without_claiming_full_payment(
     [message] = outbox.sent
     assert message.subject.startswith("Pagamento ricevuto")
     assert "Pagamento registrato: 5,00 €" in message.body
-    assert "11,00 €" not in message.body
+    assert "Totale dovuto all'organizzazione: 11,00 €" in message.body
+    assert "Resta da saldare all'organizzazione: 6,00 €" in message.body
+    assert "Pagamento registrato: 11,00 €" not in message.body
     db.refresh(booking)
     payment = db.scalars(select(Payment)).one()
     assert payment.confirmation_email_due_at is None
     assert (booking.confirmation_cycle, booking.confirmation_claimed_cycle) == (1, 1)
     assert booking.confirmation_notice_due_at is None
+
+
+def test_fee_policy_receipt_separates_latest_payment_from_total_balance(
+    admin_client, booking, outbox, db
+):
+    booking.edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    booking.registration_fee_cents = 500
+    db.commit()
+
+    first = pay(admin_client, booking, amount_cents=300)
+    assert first.json()["booking"]["status"] == STATUS_PENDING
+    assert outbox.sent == []
+
+    second = pay(admin_client, booking, amount_cents=200)
+    assert second.json()["booking"]["status"] == STATUS_CONFIRMED
+    [message] = outbox.sent
+    assert "Pagamento registrato: 2,00 €" in message.body
+    assert "Totale dovuto all'organizzazione: 11,00 €" in message.body
+    assert "Resta da saldare all'organizzazione: 6,00 €" in message.body
 
 
 def test_fee_policy_deferred_payment_uses_the_confirmation_cycle(

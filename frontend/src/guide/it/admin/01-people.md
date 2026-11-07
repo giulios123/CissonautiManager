@@ -1,6 +1,6 @@
 # Persone e scheda iscrizione
 
-È la pagina di partenza del pannello: una riga per persona, con codice, stato, giorni, sere, versato, dovuto, saldo e scadenza. Con il campo di ricerca trovi qualcuno per nome, email o codice, con il filtro scegli lo stato, con «Scarica CSV» esporti l'elenco (si apre in Excel). I CSV escono nella lingua dell'app in quel momento (intestazioni e stati), con lo stesso formato di sempre.
+È la pagina di partenza del pannello: una riga per persona, con codice, stato, giorni, sere, versato, dovuto, saldo e scadenza. Con la nuova regola la tabella aggiunge quota e residuo per confermare; la scheda mostra anche saldo totale o credito. Con il campo di ricerca trovi qualcuno per nome, email o codice, con il filtro scegli lo stato, con «Scarica CSV» esporti l'elenco (si apre in Excel). I CSV escono nella lingua dell'app in quel momento (intestazioni e stati), con lo stesso formato di sempre.
 
 Toccando una persona si apre la **scheda iscrizione**.
 
@@ -12,7 +12,7 @@ Dati e consensi, presenze in una riga per giorno (con orari e fasce parziali), p
 
 ### Registrare un pagamento
 
-Da «Registra un pagamento» inserisci importo, canale, data e una nota. Quando i pagamenti coprono il dovuto la prenotazione passa a «Confermata» e la persona riceve l'email. Un pagamento sbagliato non si cancella: lo annulli scrivendo il motivo. Resta in elenco, barrato, e non conta più nel saldo. Se la prenotazione era confermata e non è più coperta, torna in attesa con un nuovo blocco.
+Da «Registra un pagamento» inserisci importo, canale, data e una nota. Con la nuova regola, se la persona è in attesa, la quota rapida propone il residuo per confermare; il posto si conferma quando i versamenti coprono base più giorni scelti. I pagamenti restano registrati interi e gli extra restano nel saldo. Un pagamento sbagliato non si cancella: lo annulli scrivendo il motivo. Resta in elenco, barrato, e non conta più nel saldo. Se l'annullo lascia scoperta la quota, la prenotazione torna in attesa con un nuovo blocco.
 
 ### Azioni sull'iscrizione
 

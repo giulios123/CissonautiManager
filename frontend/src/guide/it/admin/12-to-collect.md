@@ -6,7 +6,7 @@ La pagina per controllare il conto e segnare i pagamenti in fila, senza aprire o
 
 1. In alto scegli il **canale** con cui sono arrivati i pagamenti che stai per segnare (Revolut, Satispay, PayPal, bonifico). La scelta vale per tutta la pagina e il browser se la ricorda.
 2. Guarda il movimento sul conto e scrivi la **causale** (per esempio CSC-GGSU), il nome o l'email nel campo di ricerca: l'elenco si restringe.
-3. Premi **Segna pagato** sulla riga giusta. Si registra un pagamento pari al saldo, con la data di oggi e il canale scelto.
+3. Premi **Segna pagato** sulla riga giusta. Si registra un pagamento con la data di oggi e il canale scelto. Con la nuova regola, per le iscrizioni in attesa o scadute l'importo rapido è il residuo per confermare; per le confermate con extra resta il saldo complessivo.
 
 ## Se sbagli riga
 

@@ -1,6 +1,6 @@
 # Piano operativo · MVP 17 e 18
 
-**Stato:** implementazione richiesta dal maintainer il 7 novembre 2026. MVP17 T17-1–6 è implementato e committato sul proprio branch; MVP18 è in corso su `feat/mvp-18-conferma-quota` (T18-1–3). Il maintainer conferma superate tutte le prove SQL. Le decisioni di prodotto restano quelle confermate; il piano ordina il lavoro delle due spec senza ampliarne il perimetro.
+**Stato:** implementazione richiesta dal maintainer il 7 novembre 2026. MVP17 T17-1–6 è implementato; T17-7/8 e le relative prove manuali restano aperti. MVP18 T18-1–10 è implementato su `feat/mvp-18-conferma-quota`; il maintainer conferma superate tutte le prove SQL. Restano i collaudi manuali indicati nelle due spec. Nessun deploy né attivazione reale della politica sono stati eseguiti. Le decisioni di prodotto restano quelle confermate; il piano ordina il lavoro delle due spec senza ampliarne il perimetro.
 
 Riferimenti canonici: [requisiti 17](mvp-17-consensi-riservatezza/requirements.md), [design 17](mvp-17-consensi-riservatezza/design.md), [8 task 17](mvp-17-consensi-riservatezza/tasks.md); [requisiti 18](mvp-18-conferma-quota/requirements.md), [design 18](mvp-18-conferma-quota/design.md), [10 task 18](mvp-18-conferma-quota/tasks.md). Le checklist rimangono in quei file: nessun secondo elenco di task da spuntare qui.
 

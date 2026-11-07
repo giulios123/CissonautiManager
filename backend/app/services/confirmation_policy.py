@@ -18,6 +18,7 @@ from app.models import (
     STATUS_PENDING,
     Booking,
     Edition,
+    EmailTemplate,
     Participant,
     Slot,
     WaitlistEntry,
@@ -28,6 +29,15 @@ from app.services.amounts import calculate_amounts
 from app.services.payments import paid_total, queue_confirmation_notice
 from app.services.seats import lock_edition
 from app.timefmt import format_euro
+
+EMAIL_TEMPLATES_TO_REVIEW = (
+    "registration",
+    "payment_confirmation",
+    "booking_confirmation",
+    "reminder_mid",
+    "reminder_final",
+    "waitlist_promoted",
+)
 
 
 class PreviewOutOfDate(Exception):
@@ -256,10 +266,36 @@ def _build_preview(db: Session, edition: Edition, bookings: list[Booking], now: 
     )
     participants_with_bookings = {booking.participant_id for booking in bookings}
     only_waitlisted = len(waitlist_participants - participants_with_bookings)
+    email_templates = list(
+        db.scalars(
+            select(EmailTemplate)
+            .where(
+                EmailTemplate.edition_id == edition.id,
+                EmailTemplate.kind.in_(EMAIL_TEMPLATES_TO_REVIEW),
+            )
+            .order_by(EmailTemplate.kind, EmailTemplate.locale)
+            .with_for_update()
+            .with_hint(EmailTemplate, "WITH (UPDLOCK, HOLDLOCK)", "mssql")
+        )
+    )
+    custom_email_templates = [
+        template
+        for template in email_templates
+        if (template.subject or "").strip() or (template.body or "").strip()
+    ]
     payload = {
         "edition": _edition_fingerprint(edition),
         "bookings": fingerprint_bookings,
         "only_waitlisted": only_waitlisted,
+        "email_templates": [
+            {
+                "kind": template.kind,
+                "locale": template.locale,
+                "subject": template.subject,
+                "body": template.body,
+            }
+            for template in email_templates
+        ],
     }
     token = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -276,6 +312,10 @@ def _build_preview(db: Session, edition: Edition, bookings: list[Booking], now: 
         "excluded_closed_count": closed,
         "waitlist_only_count": only_waitlisted,
         "new_confirmation_count": sum(row["sends_confirmation"] for row in rows),
+        "email_templates_to_review": [
+            {"kind": template.kind, "locale": template.locale}
+            for template in custom_email_templates
+        ],
         "blockers": blockers,
         "rows": public_rows,
         "_rows": rows,

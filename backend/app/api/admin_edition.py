@@ -162,6 +162,11 @@ class ConfirmationPolicyBlocker(BaseModel):
     reason: str
 
 
+class ConfirmationPolicyEmailReview(BaseModel):
+    kind: str
+    locale: Literal["it", "en"]
+
+
 class ConfirmationPolicyPreviewOut(BaseModel):
     current_policy: str
     proposed_policy: str
@@ -173,6 +178,7 @@ class ConfirmationPolicyPreviewOut(BaseModel):
     excluded_closed_count: int
     waitlist_only_count: int
     new_confirmation_count: int
+    email_templates_to_review: list[ConfirmationPolicyEmailReview]
     blockers: list[ConfirmationPolicyBlocker]
     rows: list[ConfirmationPolicyRow]
 

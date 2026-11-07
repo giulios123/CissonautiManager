@@ -7,6 +7,7 @@ in `app/email_texts.py`; this module only assembles it.
 import html
 import re
 
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.email.base import (
     EmailAttachment,
     EmailMessage,
@@ -14,7 +15,15 @@ from app.email.base import (
     RegistrationExtras,
 )
 from app.i18n import channel_label, normalize_locale, t
-from app.models import Booking, Participant, PaymentChannel, Slot, slot_sort_key
+from app.models import (
+    STATUS_CONFIRMED,
+    Booking,
+    Participant,
+    PaymentChannel,
+    Slot,
+    active_payments,
+    slot_sort_key,
+)
 from app.presence_summary import format_presence_summary
 from app.timefmt import format_deadline, format_euro, format_slot
 
@@ -31,6 +40,11 @@ def _personal_link(link: str, loc: str) -> str:
 
 def _manage_link(link: str, loc: str) -> str:
     return t("email.manage_link", loc, link=link) + "\n"
+
+
+def _uses_confirmation_fee_policy(booking: Booking) -> bool:
+    edition = getattr(booking, "edition", None)
+    return getattr(edition, "confirmation_policy", None) == POLICY_REGISTRATION_FEE
 
 
 def _opening(texts: EmailTexts, first_name: str, loc: str, key: str) -> str:
@@ -138,6 +152,96 @@ def registration_email(
         + "\n\n"
         + t("email.registration.thanks", loc, event=extras.event_name)
     )
+    if _uses_confirmation_fee_policy(booking):
+        paid_cents = sum(payment.amount_cents for payment in active_payments(booking))
+        fee_cents = booking.registration_fee_cents or 0
+        confirmed = booking.status == STATUS_CONFIRMED
+        if confirmed:
+            opening = extras.body or (
+                _greeting(participant.first_name, loc).rstrip("\n")
+                + "\n\n"
+                + t("email.registration.confirmed", loc, event=extras.event_name)
+            )
+        else:
+            opening = intro
+        fee_line = t("email.registration.fee_split", loc, amount=format_euro(fee_cents, loc))
+        total_line = t(
+            "email.registration.total",
+            loc,
+            amount=format_euro(booking.amount_due_cents, loc),
+        )
+        financial_lines = [fee_line, total_line]
+        if confirmed:
+            balance_cents = booking.amount_due_cents - paid_cents
+            if balance_cents > 0:
+                financial_lines.append(
+                    t(
+                        "email.registration.balance",
+                        loc,
+                        amount=format_euro(balance_cents, loc),
+                    )
+                )
+                financial_lines.append(t("email.registration.extras_later", loc))
+            elif balance_cents < 0:
+                financial_lines.append(
+                    t(
+                        "email.registration.credit",
+                        loc,
+                        amount=format_euro(-balance_cents, loc),
+                    )
+                )
+            else:
+                financial_lines.append(t("email.registration.no_balance", loc))
+        else:
+            financial_lines.append(
+                t(
+                    "email.registration.confirmation_due",
+                    loc,
+                    amount=format_euro(max(0, fee_cents - paid_cents), loc),
+                )
+            )
+            financial_lines.append(t("email.registration.extras_later", loc))
+        body = (
+            opening
+            + "\n\n"
+            + "\n".join(financial_lines)
+            + "\n\n"
+            + _presence_block(booking, loc)
+            + _waitlist_section(waitlisted or [], loc)
+        )
+        if not confirmed:
+            body += (
+                t("email.reference", loc, code=participant.personal_code)
+                + "\n"
+                + t(
+                    "email.registration.hold_until",
+                    loc,
+                    deadline=format_deadline(booking.hold_expires_at, loc),
+                )
+                + "\n\n"
+                + f"{t('email.how_to_pay', loc)}\n{_payment_lines(channels, loc)}\n\n"
+            )
+        body += _personal_link(link, loc)
+        subject = extras.subject or t("email.registration.subject", loc, event=extras.event_name)
+        return EmailMessage(
+            to=participant.email,
+            subject=subject,
+            body=body,
+            html=_html(
+                body,
+                extras.card_text if extras.card_png is not None else None,
+                tuple(financial_lines),
+            ),
+            attachments=(
+                (
+                    EmailAttachment(
+                        "card.png", "image/png", extras.card_png, content_id=CARD_CONTENT_ID
+                    ),
+                )
+                if extras.card_png is not None
+                else ()
+            ),
+        )
     body = (
         intro
         + "\n\n"
@@ -235,7 +339,11 @@ def magic_link_email(
 
 
 def payment_confirmation_email(
-    booking: Booking, paid_cents: int, texts: EmailTexts | None = None
+    booking: Booking,
+    paid_cents: int,
+    texts: EmailTexts | None = None,
+    *,
+    total_paid_cents: int | None = None,
 ) -> EmailMessage:
     participant = booking.participant
     loc = normalize_locale(participant.locale)
@@ -244,29 +352,70 @@ def payment_confirmation_email(
         _greeting(participant.first_name, loc)
         + t("email.payment.body", loc, event=texts.event_name)
     ).rstrip("\n")
+    financial_lines = [t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))]
+    if _uses_confirmation_fee_policy(booking):
+        financial_lines.extend(
+            _confirmation_policy_lines(
+                booking,
+                paid_cents if total_paid_cents is None else total_paid_cents,
+                loc,
+                include_extras_later=True,
+            )
+        )
+    body = (
+        opening
+        + "\n\n"
+        + "\n".join(financial_lines)
+        + "\n\n"
+        + _presence_block(booking, loc)
+        + t("email.payment.see_you", loc)
+        + "\n"
+    )
     return EmailMessage(
         to=participant.email,
         subject=_subject(texts, "email.payment.subject", loc),
-        body=(
-            opening
-            + "\n\n"
-            + t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))
-            + "\n\n"
-            + _presence_block(booking, loc)
-            + t("email.payment.see_you", loc)
-            + "\n"
-        ),
-        html=_html(
-            opening
-            + "\n\n"
-            + t("email.payment.amount", loc, amount=format_euro(paid_cents, loc))
-            + "\n\n"
-            + _presence_block(booking, loc)
-            + t("email.payment.see_you", loc)
-            + "\n",
-            emphasized_lines=(t("email.payment.amount", loc, amount=format_euro(paid_cents, loc)),),
-        ),
+        body=body,
+        html=_html(body, emphasized_lines=tuple(financial_lines)),
     )
+
+
+def _confirmation_policy_lines(
+    booking: Booking,
+    paid_cents: int,
+    loc: str,
+    *,
+    include_extras_later: bool,
+) -> list[str]:
+    fee_line = t(
+        "email.booking_confirmation.fee",
+        loc,
+        amount=format_euro(booking.registration_fee_cents or 0, loc),
+    )
+    total_line = t(
+        "email.booking_confirmation.total",
+        loc,
+        amount=format_euro(booking.amount_due_cents, loc),
+    )
+    balance_cents = booking.amount_due_cents - paid_cents
+    if balance_cents > 0:
+        balance_line = t(
+            "email.booking_confirmation.balance",
+            loc,
+            amount=format_euro(balance_cents, loc),
+        )
+        lines = [fee_line, total_line, balance_line]
+        if include_extras_later:
+            lines.append(t("email.booking_confirmation.extras_later", loc))
+        return lines
+    if balance_cents < 0:
+        balance_line = t(
+            "email.booking_confirmation.credit",
+            loc,
+            amount=format_euro(-balance_cents, loc),
+        )
+    else:
+        balance_line = t("email.booking_confirmation.no_balance", loc)
+    return [fee_line, total_line, balance_line]
 
 
 def booking_confirmation_email(
@@ -283,32 +432,16 @@ def booking_confirmation_email(
         _greeting(participant.first_name, loc)
         + t("email.booking_confirmation.body", loc, event=texts.event_name)
     ).rstrip("\n")
-    fee_line = t(
-        "email.booking_confirmation.fee",
+    financial_lines = _confirmation_policy_lines(
+        booking,
+        paid_cents,
         loc,
-        amount=format_euro(booking.registration_fee_cents or 0, loc),
+        include_extras_later=True,
     )
-    balance_cents = booking.amount_due_cents - paid_cents
-    if balance_cents > 0:
-        balance_line = t(
-            "email.booking_confirmation.balance",
-            loc,
-            amount=format_euro(balance_cents, loc),
-        )
-    elif balance_cents < 0:
-        balance_line = t(
-            "email.booking_confirmation.credit",
-            loc,
-            amount=format_euro(-balance_cents, loc),
-        )
-    else:
-        balance_line = t("email.booking_confirmation.no_balance", loc)
     body = (
         opening
         + "\n\n"
-        + fee_line
-        + "\n"
-        + balance_line
+        + "\n".join(financial_lines)
         + "\n\n"
         + _presence_block(booking, loc)
         + t("email.booking_confirmation.access", loc, link=login_url)
@@ -318,7 +451,7 @@ def booking_confirmation_email(
         to=participant.email,
         subject=_subject(texts, "email.booking_confirmation.subject", loc),
         body=body,
-        html=_html(body, emphasized_lines=(fee_line, balance_line)),
+        html=_html(body, emphasized_lines=tuple(financial_lines)),
     )
 
 
@@ -336,15 +469,18 @@ def reminder_email(
     texts = texts or EmailTexts()
     deadline = format_deadline(booking.hold_expires_at, loc)
     which = "final" if kind == "final" else "mid"
+    fee_policy = _uses_confirmation_fee_policy(booking)
+    hold_key = "email.registration.hold_until" if fee_policy else "email.hold_until"
+    balance_key = "email.reminder.confirmation_balance" if fee_policy else "email.reminder.balance"
     return EmailMessage(
         to=participant.email,
         subject=_subject(texts, f"email.reminder.subject_{which}", loc),
         body=(
             _opening(texts, participant.first_name, loc, f"email.reminder.intro_{which}")
             + "\n\n"
-            + t("email.hold_until", loc, deadline=deadline)
+            + t(hold_key, loc, deadline=deadline)
             + "\n\n"
-            + t("email.reminder.balance", loc, amount=format_euro(balance_cents, loc))
+            + t(balance_key, loc, amount=format_euro(balance_cents, loc))
             + "\n"
             + t("email.reference", loc, code=participant.personal_code)
             + "\n\n"
@@ -371,6 +507,72 @@ def waitlist_promoted_email(
     loc = normalize_locale(participant.locale)
     texts = texts or EmailTexts()
     label = format_slot(slot.date, slot.period, slot.start_time, slot.end_time, loc)
+    if _uses_confirmation_fee_policy(booking):
+        confirmed = booking.status == STATUS_CONFIRMED
+        paid_cents = booking.amount_due_cents - balance_cents
+        financial_lines = (
+            _confirmation_policy_lines(
+                booking,
+                paid_cents,
+                loc,
+                include_extras_later=True,
+            )
+            if confirmed
+            else [
+                t(
+                    "email.registration.fee_split",
+                    loc,
+                    amount=format_euro(booking.registration_fee_cents or 0, loc),
+                ),
+                t(
+                    "email.registration.total",
+                    loc,
+                    amount=format_euro(booking.amount_due_cents, loc),
+                ),
+                t(
+                    "email.reminder.confirmation_balance",
+                    loc,
+                    amount=format_euro(
+                        max(0, (booking.registration_fee_cents or 0) - paid_cents), loc
+                    ),
+                ),
+                t("email.registration.extras_later", loc),
+            ]
+        )
+        opening = _opening(texts, participant.first_name, loc, "email.promoted.body")
+        if confirmed:
+            opening += "\n\n" + t("email.booking_confirmation.body", loc, event=texts.event_name)
+            deadline = t("email.promoted.stays_confirmed", loc)
+        else:
+            deadline = t(
+                "email.registration.hold_until",
+                loc,
+                deadline=format_deadline(booking.hold_expires_at, loc),
+            )
+        body = (
+            opening
+            + "\n\n"
+            + t("email.promoted.slot", loc, label=label)
+            + "\n\n"
+            + "\n".join(financial_lines)
+            + "\n\n"
+            + _presence_block(booking, loc)
+        )
+        if not confirmed:
+            body += (
+                t("email.reference", loc, code=participant.personal_code)
+                + "\n"
+                + deadline
+                + "\n\n"
+                + f"{t('email.how_to_pay', loc)}\n{_payment_lines(channels, loc)}\n\n"
+            )
+        body += _personal_link(link, loc) if kind == "new_booking" else _manage_link(link, loc)
+        return EmailMessage(
+            to=participant.email,
+            subject=_subject(texts, "email.promoted.subject", loc),
+            body=body,
+            html=_html(body, emphasized_lines=tuple(financial_lines)),
+        )
     if kind == "add_to_confirmed":
         deadline = t("email.promoted.stays_confirmed", loc) + "\n"
     else:

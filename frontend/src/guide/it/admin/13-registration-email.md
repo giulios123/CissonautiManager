@@ -6,7 +6,7 @@ La email che parte quando qualcuno si iscrive si personalizza da **Impostazioni*
 
 - **Oggetto** e **testo iniziale** sono facoltativi: se li lasci vuoti, la email usa il testo standard (lo vedi grigio dentro il campo).
 - Nel testo puoi usare i **segnaposto**, che diventano i dati della persona: nome, cognome, evento, data di inizio e data di fine. I pulsanti sotto il testo li inseriscono dove hai il cursore.
-- Dopo il tuo testo la email continua sempre con slot, quota, causale, scadenza del blocco, istruzioni di pagamento e link personale. Questa parte non si modifica, così nessuno resta senza le istruzioni.
+- Dopo il tuo testo la email continua sempre con importi e link personale. Con la regola legacy mostra la quota come oggi; con la nuova regola distingue quota di partecipazione, totale e residuo per confermare. Se la quota è zero, l'iscrizione risulta già confermata e non vengono mostrate causale, istruzioni di pagamento o scadenza. Questa parte non si modifica, così le informazioni operative restano coerenti.
 - Un segnaposto sbagliato (per esempio `{nome}`) viene rifiutato al salvataggio, con l'elenco di quelli validi.
 
 ### Immagine

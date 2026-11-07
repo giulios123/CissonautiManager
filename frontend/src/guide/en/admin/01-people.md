@@ -1,6 +1,6 @@
 # People and the registration page
 
-This is the starting page of the panel: one row per person, with code, status, days, evenings, paid, due, balance and deadline. With the search field you find someone by name, email or code, with the filter you choose the status, and with “Download CSV” you export the list (it opens in Excel). CSV files come out in the language the app is in at that moment (headers and statuses), with the same format as always.
+This is the starting page of the panel: one row per person, with code, status, days, evenings, paid, due, balance and deadline. With the new rule, the table also shows the registration fee and amount remaining to confirm; the registration page shows the overall balance or credit. With the search field you find someone by name, email or code, with the filter you choose the status, and with “Download CSV” you export the list (it opens in Excel). CSV files come out in the language the app is in at that moment (headers and statuses), with the same format as always.
 
 Tapping a person opens their **registration page**.
 
@@ -12,7 +12,7 @@ Details and consents, attendance in one row per day (with times and partial peri
 
 ### Recording a payment
 
-Under “Record a payment” you enter amount, channel, date and a note. When the payments cover what is due, the booking becomes “Confirmed” and the person gets the email. A wrong payment is not deleted: you void it by writing the reason. It stays in the list, struck through, and no longer counts in the balance. If the booking was confirmed and is no longer covered, it goes back to awaiting payment with a new hold.
+Under “Record a payment” you enter amount, channel, date and a note. Under the new rule, a pending booking offers the amount remaining to confirm; the place is confirmed when payments cover the base fee plus selected days. Payments stay recorded in full and extras remain in the balance. A wrong payment is not deleted: you void it by writing the reason. It stays in the list, struck through, and no longer counts in the balance. If a void leaves the fee uncovered, the booking goes back to awaiting payment with a new hold.
 
 ### Actions on the registration
 

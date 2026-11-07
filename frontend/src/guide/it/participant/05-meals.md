@@ -1,6 +1,6 @@
 # Pranzi e cene
 
-I pasti non si scelgono all'iscrizione: si aggiungono dopo, dalla tua pagina, con «Scegli pranzi e cene». Ogni pasto ha un costo indicato: si aggiunge alla quota quando viene incassato dagli organizzatori.
+I pasti non si scelgono all'iscrizione: si aggiungono dopo, dalla tua pagina, con «Scegli pranzi e cene». Ogni pasto ha un costo indicato: si aggiunge al totale dovuto agli organizzatori quando lo incassano. Se è attiva la nuova regola di conferma, i pasti non aumentano la quota necessaria per confermare e possono essere pagati dopo.
 
 - **Pranzo**: puoi sceglierlo nei giorni in cui sei presente di mattina o di pomeriggio.
 - **Cena**: la puoi scegliere nei giorni in cui sei presente di sera. Se hai prenotato mattina e pomeriggio dello stesso giorno, la sera conta come presenza.

@@ -1,6 +1,12 @@
 # Progress
 
-## MVP 17 · Consensi facoltativi — PR in preparazione
+## MVP 18 · Conferma con la sola quota — implementato sul branch
+
+Branch `feat/mvp-18-conferma-quota`; task T18-1–10 completati. L'edizione resta sulla regola legacy finché un admin non applica una nuova anteprima; con la nuova regola la prenotazione si conferma alla copertura della quota base+giorni, mantenendo separati saldo totale, extra e costi del fornitore. L'attivazione include anteprima/applicazione atomiche, cicli email, UI admin, guide e testi IT/EN.
+
+Validazione: suite completa backend 1083 test, suite frontend 394 test; TypeScript, lint, build, Ruff e formattazione passati. Il maintainer ha confermato superate tutte le prove SQL. I test automatizzati usano dati sintetici; le procedure manuali in `specs/mvp-18-conferma-quota/test-manuali.md` e quelle visive del 17 restano aperte. Nessun deploy, email reale o attivazione sui dati dell'edizione esistente è stato eseguito. Descrizione per la revisione: [`specs/mvp-18-conferma-quota/pr-description.md`](../specs/mvp-18-conferma-quota/pr-description.md).
+
+## MVP 17 · Consensi facoltativi — implementato, collaudo aperto
 
 Branch `feat/mvp-17-consensi-riservatezza`. T17-1–6 implementati: schema, regole, pubblicazione IT/EN, registrazione/lista atomica, gestione autenticata e lettura admin. Gli account esistenti non modificano le scelte anonimamente e il codice personale non appare nella risposta. Test mirati T17-3: 104 backend/25 frontend; T17-4: 62 backend/21 frontend; T17-5: 50 backend; T17-6: 2 test dedicati e 19 frontend. Il maintainer conferma superate tutte le prove SQL. Restano CI della PR e prove manuali telefono/desktop/iframe; informative definitive IT/EN da validare prima della produzione. Descrizione PR in `specs/mvp-17-consensi-riservatezza/pr-description.md`.
 
@@ -39,8 +45,8 @@ Preparato il [piano comune](../specs/piano-mvp-17-18.md) con sequenza, dipendenz
 | 14 | Testi dell'evento e accesso diretto | fatto e provato in locale (task 1-9) |
 | 15 | Logo dell'edizione e accesso dalla registrazione (PR #15); riepiloghi compatti delle presenze (PR #16) | Logo: CI verde, restano prove manuali. Riepiloghi: test e verifiche locali passati, restano verifiche reali post-deploy |
 | 16 | Orari, telefono e pagamenti diretti | implementato sul branch `feat/mvp-16-pagamenti-diretti`; tutte le prove SQL confermate superate dal maintainer il 2026-11-07, resta la prova visiva |
-| 17 | Consensi separati e riservatezza | T17-1–6 implementati su `feat/mvp-17-consensi-riservatezza`; SQL confermato superato dal maintainer; restano CI e prove manuali |
-| 18 | Conferma con la sola quota | spec esecutiva pronta per revisione (B1), 10 task; preparazione congiunta richiesta, non implementato |
+| 17 | Consensi separati e riservatezza | T17-1–6 implementati; T17-7/8 e prove manuali ancora aperti; testi legali definitivi da validare prima della produzione |
+| 18 | Conferma con la sola quota | T18-1–10 implementati su `feat/mvp-18-conferma-quota`; backend 1083, frontend 394 e controlli statici/build verdi; prove SQL confermate dal maintainer; restano collaudi manuali, nessun deploy/attivazione reale |
 
 ## Verifiche manuali
 

@@ -9,6 +9,7 @@ Everything that defines the edition, in sections.
 - **Registration email**: text and picture of the confirmation email, in Italian and English (see the dedicated section).
 - **Text above the form and other emails**: the words of the sign-up form and of the other emails, per language (see the dedicated section).
 - **Legal texts**: privacy notice, liability waiver and consent for allergies and intolerances. Every change with “Publish new version” creates a new version: people who already signed up keep the one they accepted.
+- **Confirmation rule**: calculate a preview to see fees, totals, proposed statuses, balances or credits, and expected emails. If you customized email texts, the preview lists them for review; it does not change them. Current prices may change balances, but recorded payments are untouched. Only “Apply the new rule” performs the transition; expired and closed bookings are excluded. If data changes, refresh the preview before applying it.
 
 It is better to fix the prices before opening registrations: once people have signed up, for example, the price of an activity can no longer be changed.
 

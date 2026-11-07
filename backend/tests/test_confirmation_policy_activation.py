@@ -9,6 +9,7 @@ from app.models import (
     STATUS_PENDING,
     AuditLog,
     BookingMeal,
+    EmailTemplate,
     Payment,
 )
 from app.services.payments import send_due_confirmations
@@ -81,6 +82,7 @@ def test_preview_shows_repricing_without_writing_or_expiring_bookings(
     assert data["ready"] is True and data["current_policy"] == POLICY_LEGACY_TOTAL
     assert len(data["preview_token"]) == 64
     assert data["eligible_count"] == 1
+    assert data["email_templates_to_review"] == []
     assert (data["excluded_expired_count"], data["excluded_closed_count"]) == (1, 1)
     assert data["new_confirmation_count"] == 1
     [row] = data["rows"]
@@ -103,6 +105,31 @@ def test_preview_shows_repricing_without_writing_or_expiring_bookings(
         None,
     )
     assert (expired.status, closed.status) == (STATUS_PENDING, STATUS_CANCEL_REQUESTED)
+
+
+def test_custom_email_templates_are_reported_and_invalidate_a_stale_preview(
+    admin_client, db, edition
+):
+    template = EmailTemplate(
+        edition_id=edition.id,
+        kind="payment_confirmation",
+        locale="it",
+        subject="Pagamento ricevuto",
+        body="Il posto è confermato.",
+    )
+    db.add(template)
+    db.commit()
+
+    preview = admin_client.get(PREVIEW).json()
+    assert preview["email_templates_to_review"] == [
+        {"kind": "payment_confirmation", "locale": "it"}
+    ]
+    template.body = "Il posto è confermato secondo la quota."
+    db.commit()
+
+    response = admin_client.post(ACTIVATE, json={"preview_token": preview["preview_token"]})
+
+    assert response.status_code == 409
 
 
 def test_apply_is_atomic_preserves_payments_and_is_idempotent(

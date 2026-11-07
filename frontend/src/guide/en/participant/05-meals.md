@@ -1,6 +1,6 @@
 # Lunches and dinners
 
-Meals are not chosen when you sign up: you add them later, from your page, with “Choose lunches and dinners”. Each meal shows its cost; it is added to the camp fee when the organizers collect payment.
+Meals are not chosen when you sign up: you add them later, from your page, with “Choose lunches and dinners”. Each meal shows its cost; it is added to the total due to the organizers when they collect payment. If the new confirmation rule is active, meals do not increase the fee needed to confirm and can be paid later.
 
 - **Lunch**: you can choose it on days when you are here in the morning or in the afternoon.
 - **Dinner**: you can choose it on days when you are here in the evening. If you booked morning and afternoon of the same day, the evening counts as presence.

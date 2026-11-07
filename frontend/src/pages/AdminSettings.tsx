@@ -74,6 +74,7 @@ type ConfirmationPolicyPreview = {
   excluded_closed_count: number;
   waitlist_only_count: number;
   new_confirmation_count: number;
+  email_templates_to_review: ConfirmationPolicyEmailReview[];
   blockers: { booking_id: number; name: string; reason: string }[];
   rows: ConfirmationPolicyRow[];
 };
@@ -84,6 +85,17 @@ type ConfirmationPolicyActivation = {
   updated_bookings: number;
   new_confirmations: number;
   transferred_notices: number;
+};
+
+type ConfirmationPolicyEmailReview = {
+  kind:
+    | "registration"
+    | "payment_confirmation"
+    | "booking_confirmation"
+    | "reminder_mid"
+    | "reminder_final"
+    | "waitlist_promoted";
+  locale: "it" | "en";
 };
 
 const hhmm = (value: string) => value.slice(0, 5);
@@ -226,6 +238,32 @@ function ConfirmationPolicySection() {
                 <li>{t("set.policyWaitlistOnly", { n: preview.waitlist_only_count })}</li>
                 <li>{t("set.policyEmails", { n: preview.new_confirmation_count })}</li>
               </ul>
+              {preview.email_templates_to_review.length > 0 && (
+                <div className="notice">
+                  <p>
+                    <strong>{t("set.policyEmailReview")}</strong>
+                  </p>
+                  <p>{t("set.policyEmailReviewIntro")}</p>
+                  <ul>
+                    {preview.email_templates_to_review.map((email) => {
+                      const labels = {
+                        registration: "set.policyEmailRegistration",
+                        payment_confirmation: "set.policyEmailPayment",
+                        booking_confirmation: "set.policyEmailBooking",
+                        reminder_mid: "set.policyEmailReminder",
+                        reminder_final: "set.policyEmailReminder",
+                        waitlist_promoted: "set.policyEmailWaitlist",
+                      } as const;
+                      return (
+                        <li key={`${email.kind}-${email.locale}`}>
+                          {t(labels[email.kind])} (
+                          {t(email.locale === "it" ? "lang.it" : "lang.en")})
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
               {preview.blockers.length > 0 && (
                 <div className="notice error" role="alert">
                   <p>{t("set.policyBlockers")}</p>

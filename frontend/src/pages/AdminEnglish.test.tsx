@@ -151,6 +151,7 @@ describe("the admin panel in English", () => {
             excluded_closed_count: 0,
             waitlist_only_count: 0,
             new_confirmation_count: 0,
+            email_templates_to_review: [],
             blockers: [],
             rows: [],
           },

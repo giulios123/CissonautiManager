@@ -40,6 +40,7 @@ const confirmationPreview = {
   excluded_closed_count: 3,
   waitlist_only_count: 4,
   new_confirmation_count: 1,
+  email_templates_to_review: [{ kind: "payment_confirmation", locale: "it" }],
   blockers: [],
   rows: [
     {
@@ -205,6 +206,8 @@ describe("settings", () => {
 
     expect(await screen.findByText("la conferma richiede il totale dovuto")).toBeInTheDocument();
     expect(screen.getByText("Email di conferma previste: 1")).toBeInTheDocument();
+    expect(screen.getByText("Testi email personalizzati da controllare")).toBeInTheDocument();
+    expect(screen.getByText("Conferma pagamento (Italiano)")).toBeInTheDocument();
     expect(screen.getByText("In attesa di pagamento")).toBeInTheDocument();
     expect(screen.getAllByText("Confermata")).toHaveLength(3);
     expect(screen.getAllByText("credito di 3,00 €")).toHaveLength(2);

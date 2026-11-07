@@ -8,12 +8,12 @@ In **Settings**, below “Registration email”, you find the rest of the texts 
 
 ### The other emails
 
-For each one (waitlist, already registered, sign-in link, payment received, the two reminders, place opened up, cancellation) open its card and edit:
+For each one (waitlist, already registered, sign-in link, payment received, confirmation without a new payment, the two reminders, place opened up, cancellation) open its card and edit:
 
 - **Subject**.
 - **Opening text**: the greeting and the first sentence.
 
-After the opening text the booking data always follows (slots, fee, payment reference, deadline, payment instructions, link, and the closing courtesy lines): the card lists this **automatic part**, which cannot be edited.
+After the opening text the booking data always follows (slots, fee, total, balance, payment reference, deadline, payment instructions, link, and the closing courtesy lines): the card lists this **automatic part**, which cannot be edited. The confirmation without a new payment does not claim that a payment was received.
 
 ### Placeholders
 

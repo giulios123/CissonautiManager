@@ -57,11 +57,24 @@ def paid_total(booking: Booking) -> int:
     return sum(p.amount_cents for p in active_payments(booking))
 
 
-def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
+def send_confirmation(
+    sender: EmailSender,
+    booking: Booking,
+    paid_cents: int,
+    *,
+    total_paid_cents: int | None = None,
+) -> None:
     db = object_session(booking)
     assert db is not None
     texts = email_templates_service.texts_for_booking(db, booking, "payment_confirmation")
-    sender.send(payment_confirmation_email(booking, paid_cents, texts))
+    sender.send(
+        payment_confirmation_email(
+            booking,
+            paid_cents,
+            texts,
+            total_paid_cents=total_paid_cents,
+        )
+    )
 
 
 def queue_confirmation_notice(
@@ -386,7 +399,12 @@ def send_due_confirmations(
         db.refresh(booking)
         paid = paid_total(booking)
         if source_payment is not None:
-            send_confirmation(sender, booking, paid)
+            send_confirmation(
+                sender,
+                booking,
+                source_payment.amount_cents,
+                total_paid_cents=paid,
+            )
         else:
             texts = email_templates_service.texts_for_booking(db, booking, "booking_confirmation")
             sender.send(booking_confirmation_email(booking, paid, login_url, texts))
