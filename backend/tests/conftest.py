@@ -149,9 +149,11 @@ DEFAULT_EDITION_VALUES = dict(
 def edition(db):
     """Active edition 13-17 July 2026 with default settings and published legal texts."""
     created = edition_service.save_edition(db, dict(DEFAULT_EDITION_VALUES))
-    edition_service.publish_legal_document(db, created, "privacy", "Informativa privacy v1")
     edition_service.publish_legal_document(
-        db, created, "disclaimer", "Scarico di responsabilità v1"
+        db, created, "privacy", "Informativa privacy v1", "Privacy notice v1"
+    )
+    edition_service.publish_legal_document(
+        db, created, "disclaimer", "Scarico di responsabilità v1", "Liability waiver v1"
     )
     return created
 

@@ -2,6 +2,8 @@
 
 > **Fonte di verità.** Se una spec contraddice questo file, vince questo file finché non viene aggiornato con il consenso del maintainer. Le modifiche si propongono nella sezione "Modifiche a domain.md" della spec.
 
+> **Revisione del 7 novembre 2026:** decisioni iniziali D-050–D-075 e risposte prevalenti D-076–D-104 sono in [decisions.md](decisions.md); le [spec aggiornate](../specs/revisione-2026-11-07/README.md) indicano dove cambieranno queste regole. Le sezioni sotto descrivono ancora il comportamento operativo precedente; nessuna regola applicativa viene dichiarata già cambiata dalla sola pianificazione.
+
 ## Edizione, giorni e slot
 
 - Un'edizione ha date configurabili dall'admin (non ancora definite).

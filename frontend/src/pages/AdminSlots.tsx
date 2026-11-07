@@ -7,6 +7,7 @@ import { adminRegistrationPath } from "../routes";
 import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
 import { PlusOneToggle } from "./PlusOneToggle";
+import { AdminConsentHistory } from "../consents";
 
 type Person = {
   booking_id: number;
@@ -179,6 +180,9 @@ export function AdminSlots() {
                                       />
                                     </span>
                                   )}
+                                {person.participant_id !== undefined && (
+                                  <AdminConsentHistory participantId={person.participant_id} />
+                                )}
                                 <button
                                   type="button"
                                   className="secondary"

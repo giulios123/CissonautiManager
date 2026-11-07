@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from app.i18n import channel_label, t
 from app.models import DOC_HEALTH, Booking, Contribution, Edition, Participant, WaitlistEntry
 from app.services import activities as activity_service
 from app.services import booking_changes
+from app.services import consents as consent_service
 from app.services import contributions as contributions_service
 from app.services import edition as edition_service
 from app.services import health as health_service
@@ -75,6 +76,48 @@ class LocaleIn(BaseModel):
 
 class PasswordIn(BaseModel):
     password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=MAX_PASSWORD_LENGTH)
+
+
+class ConsentDocumentView(BaseModel):
+    id: int
+    version: int
+    body: str
+    body_it: str | None
+    body_en: str | None
+    is_legacy: bool
+
+
+class ConsentEventView(BaseModel):
+    id: int
+    action: str
+    locale: str
+    recorded_at: datetime
+    source: str
+    document: ConsentDocumentView
+
+
+class OptionalConsentView(BaseModel):
+    kind: str
+    action: str
+    event_id: int | None
+    authorized_for_current_document: bool
+    needs_renewal: bool
+    current_document: ConsentDocumentView | None
+    events: list[ConsentEventView]
+
+
+class ConsentCollectionView(BaseModel):
+    edition_id: int | None
+    associated: bool
+    consents: list[OptionalConsentView]
+
+
+class ConsentUpdateIn(BaseModel):
+    granted: bool
+    document_id: int | None = None
+    version: int | None = None
+    locale: Literal["it", "en"]
+    expected_event_id: int | None
 
 
 @router.put("/me/locale", status_code=204)
@@ -136,6 +179,59 @@ def get_me(
     )
 
 
+@router.get("/me/consents", response_model=ConsentCollectionView)
+def get_my_consents(
+    response: Response,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> ConsentCollectionView:
+    response.headers["Cache-Control"] = "private, no-store"
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return ConsentCollectionView(edition_id=None, associated=False, consents=[])
+    snapshot = consent_service.collection_snapshot(db, edition, user)
+    return ConsentCollectionView.model_validate(snapshot)
+
+
+@router.put("/me/consents/{kind}", response_model=ConsentCollectionView)
+def update_my_consent(
+    kind: str,
+    body: ConsentUpdateIn,
+    response: Response,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> ConsentCollectionView:
+    response.headers["Cache-Control"] = "private, no-store"
+    edition = edition_service.get_active_edition(db)
+    if edition is None or not consent_service.has_edition_association(db, edition, user):
+        raise HTTPException(status_code=404, detail=t("consent.association_not_found"))
+    try:
+        consent_service.record_choice(
+            db,
+            edition,
+            user,
+            kind=kind,
+            granted=body.granted,
+            document_id=body.document_id,
+            version=body.version,
+            locale=body.locale,
+            expected_event_id=body.expected_event_id,
+            source="self_service",
+            now=now,
+        )
+    except consent_service.InvalidConsentKind as exc:
+        raise HTTPException(status_code=404, detail=t("consent.kind_not_found")) from exc
+    except consent_service.ConsentConflict as exc:
+        raise HTTPException(status_code=409, detail=t("consent.changed")) from exc
+    except consent_service.ConsentDocumentUnavailable as exc:
+        raise HTTPException(status_code=422, detail=t("consent.text_unavailable")) from exc
+    db.commit()
+    return ConsentCollectionView.model_validate(
+        consent_service.collection_snapshot(db, edition, user)
+    )
+
+
 def _offers(db: Session, user: Participant, now: datetime) -> list[ActivityOffer]:
     booking = booking_changes.get_current_booking(db, user)
     return [] if booking is None else activity_offers(db, booking, now)
@@ -161,7 +257,18 @@ def _health_consent(db: Session, edition: Edition | None) -> LegalPublic | None:
     if edition is None:
         return None
     document = edition_service.latest_legal_document(db, edition, DOC_HEALTH)
-    return LegalPublic(version=document.version, body=document.body) if document else None
+    return (
+        LegalPublic(
+            id=document.id,
+            version=document.version,
+            body=document.body,
+            body_it=document.body_it,
+            body_en=document.body_en,
+            is_legacy=document.body_it is None or document.body_en is None,
+        )
+        if document
+        else None
+    )
 
 
 def _waitlist_view(db: Session, entry: WaitlistEntry) -> WaitlistView:

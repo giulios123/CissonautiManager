@@ -9,7 +9,15 @@ import { centsToInput, parseEuroToCents } from "../money";
 import { AdminEditionLogo } from "./AdminEditionLogo";
 
 type Channel = { code: string; label: string; instructions: string; enabled: boolean };
-type Legal = { kind: string; version: number; body: string } | null;
+type Legal = {
+  id: number;
+  kind: string;
+  version: number;
+  body: string;
+  body_it: string | null;
+  body_en: string | null;
+  is_legacy: boolean;
+} | null;
 type Edition = {
   id: number;
   name: string;
@@ -34,6 +42,8 @@ type Edition = {
   privacy: Legal;
   disclaimer: Legal;
   health?: Legal;
+  attendance?: Legal;
+  media?: Legal;
 };
 
 type Notice = { kind: "ok" | "error"; text: string } | null;
@@ -328,13 +338,15 @@ function LegalSection({
   title,
   current,
 }: {
-  kind: "privacy" | "disclaimer" | "health";
+  kind: "privacy" | "disclaimer" | "health" | "attendance" | "media";
   title: string;
   current: Legal;
 }) {
   const t = useT();
-  const [body, setBody] = useState(current?.body ?? "");
+  const [bodyIt, setBodyIt] = useState(current?.body_it ?? "");
+  const [bodyEn, setBodyEn] = useState(current?.body_en ?? "");
   const [version, setVersion] = useState(current?.version ?? 0);
+  const [legacy, setLegacy] = useState(current?.is_legacy ?? false);
   const [notice, setNotice] = useState<Notice>(null);
 
   async function submit(event: FormEvent) {
@@ -342,9 +354,10 @@ function LegalSection({
     try {
       const saved = await api<{ version: number }>("/api/admin/legal-documents", {
         method: "POST",
-        json: { kind, body },
+        json: { kind, body_it: bodyIt.trim(), body_en: bodyEn.trim() },
       });
       setVersion(saved.version);
+      setLegacy(false);
       setNotice({ kind: "ok", text: t("set.published", { n: saved.version }) });
     } catch (error) {
       setNotice({ kind: "error", text: errorText(error) });
@@ -355,9 +368,19 @@ function LegalSection({
     <form onSubmit={submit} aria-labelledby={`${kind}-title`}>
       <h3 id={`${kind}-title`}>{title}</h3>
       <p>{version ? t("set.currentVersion", { n: version }) : t("set.noText")}</p>
+      {legacy && current && (
+        <div className="notice">
+          <p>{t("set.legacyOriginal")}</p>
+          <blockquote>{current.body}</blockquote>
+        </div>
+      )}
       <label>
-        {t("set.text")}
-        <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} required />
+        {t("set.textIt")}
+        <textarea rows={8} value={bodyIt} onChange={(e) => setBodyIt(e.target.value)} required />
+      </label>
+      <label>
+        {t("set.textEn")}
+        <textarea rows={8} value={bodyEn} onChange={(e) => setBodyEn(e.target.value)} required />
       </label>
       <button type="submit">{t("set.publish")}</button>
       <NoticeLine notice={notice} />
@@ -412,6 +435,16 @@ export function AdminSettings() {
               kind="health"
               title={t("set.healthTitle")}
               current={edition.health ?? null}
+            />
+            <LegalSection
+              kind="attendance"
+              title={t("set.attendanceTitle")}
+              current={edition.attendance ?? null}
+            />
+            <LegalSection
+              kind="media"
+              title={t("set.mediaTitle")}
+              current={edition.media ?? null}
             />
           </section>
         </>

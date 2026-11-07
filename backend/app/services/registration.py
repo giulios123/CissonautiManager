@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import TypedDict
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -24,6 +25,7 @@ from app.models import (
     WaitlistEntry,
 )
 from app.services import auth as auth_service
+from app.services import consents as consent_service
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services import waitlist as waitlist_service
@@ -44,10 +46,24 @@ class LegalTextsChanged(Exception):
     pass
 
 
+class OptionalConsentTextsChanged(Exception):
+    pass
+
+
+class InvalidOptionalConsent(Exception):
+    pass
+
+
 class SlotsFull(Exception):
     def __init__(self, slots: list[Slot]) -> None:
         self.slots = slots
         super().__init__("Some slots are full")
+
+
+class OptionalConsentChoice(TypedDict):
+    granted: bool
+    document_id: int
+    version: int
 
 
 @dataclass
@@ -65,6 +81,8 @@ class RegistrationData:
     waitlist_slot_ids: list[int] = field(default_factory=list)
     # Language of the person: "it" or "en".
     locale: str = "it"
+    optional_consents: dict[str, OptionalConsentChoice] = field(default_factory=dict)
+    consent_locale: str | None = None
 
 
 @dataclass
@@ -73,6 +91,7 @@ class RegistrationResult:
     booking: Booking | None
     participant: Participant
     waitlist: list[WaitlistEntry] = field(default_factory=list)
+    new_participant: bool = False
 
 
 def is_registration_open(db: Session, edition: Edition | None) -> bool:
@@ -144,6 +163,7 @@ def register(
         raise SlotsFull(full)
 
     participant = existing
+    new_participant = participant is None
     if participant is None:
         participant = Participant(
             first_name=data.first_name,
@@ -170,6 +190,29 @@ def register(
         ]
     except waitlist_service.EntryNotFound as exc:
         raise InvalidSlots() from exc
+    if new_participant:
+        for kind, choice in data.optional_consents.items():
+            try:
+                consent_service.record_choice(
+                    db,
+                    edition,
+                    participant,
+                    kind=kind,
+                    granted=choice["granted"],
+                    document_id=choice["document_id"],
+                    version=choice["version"],
+                    locale=data.consent_locale or data.locale,
+                    expected_event_id=None,
+                    source="public_registration",
+                    now=now,
+                )
+            except consent_service.ConsentConflict as exc:
+                raise OptionalConsentTextsChanged() from exc
+            except (
+                consent_service.ConsentDocumentUnavailable,
+                consent_service.InvalidConsentKind,
+            ) as exc:
+                raise InvalidOptionalConsent() from exc
     if existing is not None and not existing.phone:
         existing.phone = data.phone or None
     db.commit()
@@ -198,7 +241,11 @@ def register(
         )
         sender.send(waitlist_joined_email(participant, waitlisted, link, data.locale, texts))
     return RegistrationResult(
-        created=True, booking=booking, participant=participant, waitlist=entries
+        created=True,
+        booking=booking,
+        participant=participant,
+        waitlist=entries,
+        new_participant=new_participant,
     )
 
 

@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, vi } from "vitest";
 import { renderAt, stubAdminApi } from "../test-utils";
@@ -107,5 +107,43 @@ describe("settings", () => {
     expect(
       await screen.findByRole("heading", { name: /Consenso per allergie e intolleranze/ }),
     ).toBeInTheDocument();
+  });
+
+  it("publishes optional consent text in Italian and English as one version", async () => {
+    const calls = stubAdminApi((call) => {
+      if (call.url === "/api/admin/edition") return { body: edition };
+      if (call.url === "/api/admin/legal-documents")
+        return {
+          body: {
+            id: 5,
+            kind: "attendance",
+            version: 1,
+            body: "Presenza IT",
+            body_it: "Presenza IT",
+            body_en: "Attendance EN",
+            is_legacy: false,
+          },
+        };
+      return undefined;
+    });
+    renderAt("/admin/impostazioni");
+    const heading = await screen.findByRole("heading", {
+      name: "Visibilità della presenza nell'area riservata",
+    });
+    const form = heading.closest("form");
+    expect(form).not.toBeNull();
+    const section = within(form as HTMLFormElement);
+    await userEvent.type(section.getByLabelText("Testo italiano"), "Presenza IT");
+    await userEvent.type(section.getByLabelText("Testo inglese"), "Attendance EN");
+    await userEvent.click(section.getByRole("button", { name: "Pubblica nuova versione" }));
+
+    await waitFor(() => {
+      const request = calls.find((call) => call.url === "/api/admin/legal-documents");
+      expect(request?.body).toEqual({
+        kind: "attendance",
+        body_it: "Presenza IT",
+        body_en: "Attendance EN",
+      });
+    });
   });
 });

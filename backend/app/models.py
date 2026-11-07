@@ -4,6 +4,7 @@ from sqlalchemy import (
     Boolean,
     Date,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     String,
@@ -34,6 +35,9 @@ DOC_PRIVACY = "privacy"
 DOC_DISCLAIMER = "disclaimer"
 # Specific consent to the processing of health data (allergies and intolerances).
 DOC_HEALTH = "health"
+DOC_ATTENDANCE = "attendance"
+DOC_MEDIA = "media"
+OPTIONAL_CONSENT_KINDS = (DOC_ATTENDANCE, DOC_MEDIA)
 
 MEAL_LUNCH = "lunch"
 MEAL_DINNER = "dinner"
@@ -140,7 +144,39 @@ class LegalDocument(Base):
     kind: Mapped[str] = mapped_column(Unicode(16))
     version: Mapped[int] = mapped_column(Integer)
     body: Mapped[str] = mapped_column(UnicodeText)
+    # New versions carry both translations. Legacy versions retain only their original body.
+    body_it: Mapped[str | None] = mapped_column(UnicodeText)
+    body_en: Mapped[str | None] = mapped_column(UnicodeText)
     published_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class ConsentEvent(Base):
+    """Append-only optional consent evidence, independent from a booking's lifetime."""
+
+    __tablename__ = "consent_event"
+    __table_args__ = (
+        Index(
+            "ix_consent_event_edition_participant_kind_id",
+            "edition_id",
+            "participant_id",
+            "kind",
+            "id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
+    participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    kind: Mapped[str] = mapped_column(Unicode(16))
+    action: Mapped[str] = mapped_column(Unicode(12))
+    document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
+    locale: Mapped[str] = mapped_column(String(2))
+    recorded_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    source: Mapped[str] = mapped_column(Unicode(20))
+
+    edition: Mapped[Edition] = relationship()
+    participant: Mapped[Participant] = relationship()
+    document: Mapped[LegalDocument] = relationship()
 
 
 class Booking(Base):

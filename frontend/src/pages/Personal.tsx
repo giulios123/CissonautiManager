@@ -9,6 +9,7 @@ import { ROUTES } from "../routes";
 import { StatusBadge } from "../StatusBadge";
 import { CollectionDetails } from "../collection";
 import { PresenceSummary } from "../PresenceSummary";
+import { ConsentPanel } from "../consents";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
 import { ActivityPicker } from "./ActivityPicker";
 import { Contributions } from "./Contributions";
@@ -342,6 +343,7 @@ export function Personal() {
           ))}
       {me.bookings.some((b) => b.editable) && <Contributions me={me} editable reload={reload} />}
       <Waitlist me={me} reload={reload} />
+      <ConsentPanel />
       <PasswordForm hasPassword={me.has_password} />
       <p>
         <Link to={ROUTES.guide}>{t("me.guide")}</Link>

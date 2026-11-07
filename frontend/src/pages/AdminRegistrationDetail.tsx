@@ -19,6 +19,7 @@ import { ActivityPicker } from "./ActivityPicker";
 import { MealEditor } from "./MealEditor";
 import { PlusOneToggle } from "./PlusOneToggle";
 import { PresenceSummary } from "../PresenceSummary";
+import { AdminConsentHistory } from "../consents";
 
 export type Detail = {
   participant: {
@@ -205,6 +206,12 @@ export function AdminRegistrationDetail() {
           </dd>
         </dl>
       </section>
+      {participant.id !== undefined && (
+        <section aria-labelledby="optional-consents-admin">
+          <h2 id="optional-consents-admin">{t("consent.title")}</h2>
+          <AdminConsentHistory participantId={participant.id} />
+        </section>
+      )}
 
       <section aria-labelledby="booking">
         <h2 id="booking">

@@ -18,10 +18,13 @@ import { EVENT_NAME } from "../eventName";
 import { formatEuro } from "../money";
 import { PresenceSummary } from "../PresenceSummary";
 import { ROUTES } from "../routes";
+import { legalTextForLocale, type LegalDocumentText } from "../legalText";
 import { DayPicker } from "./DayPicker";
 
 type Channel = { code: string; label: string; instructions: string };
-type Legal = { version: number; body: string };
+type Legal = LegalDocumentText & { version: number };
+type OptionalConsentText = { id: number; version: number; texts: Record<"it" | "en", string> };
+type OptionalConsentKind = "attendance" | "media";
 type PublicEdition = {
   registration_open: boolean;
   name: string | null;
@@ -33,9 +36,11 @@ type PublicEdition = {
   payment_channels: Channel[];
   privacy: Legal | null;
   disclaimer: Legal | null;
+  attendance_consent: OptionalConsentText | null;
+  media_consent: OptionalConsentText | null;
 };
 type Summary = {
-  personal_code: string;
+  personal_code: string | null;
   amount_due_cents: number;
   hold_expires_at: string;
   slots: { date: string; period: string; label: string }[];
@@ -44,8 +49,8 @@ type Summary = {
 };
 type Waitlisted = { label: string; position: number };
 type Outcome =
-  | { kind: "created"; booking: Summary; waitlist: Waitlisted[] }
-  | { kind: "waitlisted"; personalCode: string; waitlist: Waitlisted[] }
+  | { kind: "created"; booking: Summary; waitlist: Waitlisted[]; message?: string }
+  | { kind: "waitlisted"; personalCode: string | null; waitlist: Waitlisted[]; message?: string }
   | { kind: "already"; message: string };
 
 /** Label of a full slot: whether its waitlist can still be joined. */
@@ -62,6 +67,9 @@ export function Registration() {
   const [edition, setEdition] = useState<PublicEdition | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [optionalChoices, setOptionalChoices] = useState<
+    Record<OptionalConsentKind, boolean | null>
+  >({ attendance: null, media: null });
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -125,9 +133,21 @@ export function Registration() {
     );
   }
   if (outcome?.kind === "created")
-    return <Confirmation booking={outcome.booking} waitlist={outcome.waitlist} />;
+    return (
+      <Confirmation
+        booking={outcome.booking}
+        waitlist={outcome.waitlist}
+        message={outcome.message}
+      />
+    );
   if (outcome?.kind === "waitlisted")
-    return <WaitlistConfirmation personalCode={outcome.personalCode} waitlist={outcome.waitlist} />;
+    return (
+      <WaitlistConfirmation
+        personalCode={outcome.personalCode}
+        waitlist={outcome.waitlist}
+        message={outcome.message}
+      />
+    );
 
   if (!edition.registration_open || !edition.privacy || !edition.disclaimer) {
     return (
@@ -139,7 +159,11 @@ export function Registration() {
     );
   }
 
-  const { privacy, disclaimer } = edition;
+  const currentEdition = edition;
+  const privacy = currentEdition.privacy!;
+  const disclaimer = currentEdition.disclaimer!;
+  const privacyCopy = legalTextForLocale(privacy, locale);
+  const disclaimerCopy = legalTextForLocale(disclaimer, locale);
   const fullIds = new Set(
     edition.days.flatMap((day) => day.slots.filter((slot) => isFull(slot)).map((slot) => slot.id)),
   );
@@ -197,6 +221,20 @@ export function Registration() {
     }
     const data = new FormData(event.currentTarget);
     const text = (name: string) => String(data.get(name) ?? "");
+    const optionalConsents: Partial<
+      Record<OptionalConsentKind, { granted: boolean; document_id: number; version: number }>
+    > = {};
+    for (const kind of ["attendance", "media"] as const) {
+      const choice = optionalChoices[kind];
+      const document = currentEdition[`${kind}_consent`];
+      if (choice !== null && document) {
+        optionalConsents[kind] = {
+          granted: choice,
+          document_id: document.id,
+          version: document.version,
+        };
+      }
+    }
     setSending(true);
     try {
       const result = await api<{
@@ -221,15 +259,23 @@ export function Registration() {
           accept_disclaimer: data.get("accept_disclaimer") === "on",
           privacy_version: privacy.version,
           disclaimer_version: disclaimer.version,
+          optional_consents: optionalConsents,
+          consent_locale: locale,
         },
       });
       if (result.result === "created" && result.booking) {
-        setOutcome({ kind: "created", booking: result.booking, waitlist: result.waitlist ?? [] });
+        setOutcome({
+          kind: "created",
+          booking: result.booking,
+          waitlist: result.waitlist ?? [],
+          message: result.message,
+        });
       } else if (result.result === "waitlisted") {
         setOutcome({
           kind: "waitlisted",
-          personalCode: result.personal_code ?? "",
+          personalCode: result.personal_code ?? null,
           waitlist: result.waitlist ?? [],
+          message: result.message,
         });
       } else {
         setOutcome({ kind: "already", message: result.message ?? t("reg.alreadyFallback") });
@@ -244,6 +290,48 @@ export function Registration() {
       setSending(false);
     }
   }
+
+  const renderOptionalConsent = (
+    kind: OptionalConsentKind,
+    document: OptionalConsentText | null,
+  ) => {
+    const choice = optionalChoices[kind];
+    const setChoice = (granted: boolean) =>
+      setOptionalChoices((current) => ({ ...current, [kind]: granted }));
+    return (
+      <fieldset key={kind}>
+        <legend>{t(kind === "attendance" ? "consent.attendance" : "consent.media")}</legend>
+        {document ? (
+          <>
+            <details>
+              <summary>{t("consent.readCurrent", { version: document.version })}</summary>
+              <p className="legal">{document.texts[locale]}</p>
+            </details>
+            <label className="check">
+              <input
+                type="radio"
+                name={`optional_consent_${kind}`}
+                checked={choice === true}
+                onChange={() => setChoice(true)}
+              />
+              {t("consent.yes")}
+            </label>
+            <label className="check">
+              <input
+                type="radio"
+                name={`optional_consent_${kind}`}
+                checked={choice === false}
+                onChange={() => setChoice(false)}
+              />
+              {t("consent.no")}
+            </label>
+          </>
+        ) : (
+          <p role="status">{t("reg.optionalConsentUnavailable")}</p>
+        )}
+      </fieldset>
+    );
+  };
 
   return (
     <main className="wide">
@@ -340,7 +428,10 @@ export function Registration() {
             <legend>{t("reg.consentsLegend")}</legend>
             <details>
               <summary>{t("reg.readPrivacy")}</summary>
-              <p className="legal">{privacy.body}</p>
+              <p className="legal">{privacyCopy.text}</p>
+              {privacyCopy.usesOriginal && (
+                <p className="legal notice">{t("legal.originalLanguageFallback")}</p>
+              )}
             </details>
             <label className="check">
               <input type="checkbox" name="accept_privacy" required />
@@ -348,12 +439,21 @@ export function Registration() {
             </label>
             <details>
               <summary>{t("reg.readDisclaimer")}</summary>
-              <p className="legal">{disclaimer.body}</p>
+              <p className="legal">{disclaimerCopy.text}</p>
+              {disclaimerCopy.usesOriginal && (
+                <p className="legal notice">{t("legal.originalLanguageFallback")}</p>
+              )}
             </details>
             <label className="check">
               <input type="checkbox" name="accept_disclaimer" required />
               {t("reg.acceptDisclaimer")}
             </label>
+            <fieldset>
+              <legend>{t("consent.title")}</legend>
+              <p>{t("consent.intro")}</p>
+              {renderOptionalConsent("attendance", edition.attendance_consent)}
+              {renderOptionalConsent("media", edition.media_consent)}
+            </fieldset>
           </fieldset>
 
           {error && (
@@ -448,9 +548,11 @@ function WaitlistSummary({ waitlist }: { waitlist: Waitlisted[] }) {
 function WaitlistConfirmation({
   personalCode,
   waitlist,
+  message,
 }: {
-  personalCode: string;
+  personalCode: string | null;
   waitlist: Waitlisted[];
+  message?: string;
 }) {
   const { t } = useI18n();
   return (
@@ -458,9 +560,13 @@ function WaitlistConfirmation({
       <h1>{t("reg.waitConfTitle")}</h1>
       <p role="status">{t("reg.waitConfBody")}</p>
       <WaitlistSummary waitlist={waitlist} />
-      <p>
-        {t("reg.waitConfNothingToPay")} <strong>{personalCode}</strong>.
-      </p>
+      {personalCode ? (
+        <p>
+          {t("reg.waitConfNothingToPay")} <strong>{personalCode}</strong>.
+        </p>
+      ) : (
+        <p>{message ?? t("reg.checkEmailForReference")}</p>
+      )}
       <p>
         <RegistrationAccessLink>{t("reg.goToPersonal")}</RegistrationAccessLink>
       </p>
@@ -468,7 +574,15 @@ function WaitlistConfirmation({
   );
 }
 
-function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitlisted[] }) {
+function Confirmation({
+  booking,
+  waitlist,
+  message,
+}: {
+  booking: Summary;
+  waitlist: Waitlisted[];
+  message?: string;
+}) {
   const { t } = useI18n();
   return (
     <main>
@@ -486,9 +600,13 @@ function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitl
       <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
       <WaitlistSummary waitlist={waitlist} />
       <h2>{t("reg.howToPay")}</h2>
-      <p>
-        {t("reg.reference")} <strong>{booking.personal_code}</strong>
-      </p>
+      {booking.personal_code ? (
+        <p>
+          {t("reg.reference")} <strong>{booking.personal_code}</strong>
+        </p>
+      ) : (
+        <p>{message ?? t("reg.checkEmailForReference")}</p>
+      )}
       {booking.payment_channels.length > 0 ? (
         <ul>
           {booking.payment_channels.map((channel) => (

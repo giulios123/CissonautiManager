@@ -99,6 +99,10 @@ def t(key: str, locale: str | None = None, **params: object) -> str:
 
 # key -> {language: text}. `{name}` are placeholders filled by `t(key, name=...)`.
 MESSAGES: dict[str, dict[str, str]] = {
+    "legal.bilingual_required": {
+        "it": "Inserisci il testo completo sia in italiano sia in inglese.",
+        "en": "Enter the complete text in both Italian and English.",
+    },
     "collection.terms_required": {
         "it": "Per il pagamento diretto indica costo e istruzioni con il destinatario.",
         "en": "For direct payment, provide the cost and instructions including the recipient.",
@@ -356,6 +360,22 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Per ora non si possono indicare allergie: scrivi a chi organizza",
         "en": "Allergies can't be entered for now: write to the organizers",
     },
+    "consent.association_not_found": {
+        "it": "Non risulti associato all'edizione attiva",
+        "en": "You are not associated with the active edition",
+    },
+    "consent.kind_not_found": {
+        "it": "Finalità di consenso non trovata",
+        "en": "Consent purpose not found",
+    },
+    "consent.changed": {
+        "it": "La scelta o il testo sono cambiati. Ricarica e controlla di nuovo.",
+        "en": "The choice or text has changed. Reload and review it again.",
+    },
+    "consent.text_unavailable": {
+        "it": "Il testo completo in italiano e inglese non è disponibile.",
+        "en": "The complete text in Italian and English is unavailable.",
+    },
     "contribution.title_required": {
         "it": "Scrivi un titolo per il tuo contributo",
         "en": "Write a title for your contribution",
@@ -433,6 +453,14 @@ MESSAGES: dict[str, dict[str, str]] = {
     "register.waitlisted": {
         "it": "Sei in lista d'attesa. Ti abbiamo inviato un link per entrare.",
         "en": "You are on the waitlist. We've sent you a link to sign in.",
+    },
+    "register.known_account_check_email": {
+        "it": "Per la causale e i dettagli, controlla l'email che ti abbiamo inviato.",
+        "en": "Check the email we sent you for the payment reference and details.",
+    },
+    "register.optional_consent_invalid": {
+        "it": "Una scelta facoltativa non corrisponde a un testo disponibile. Ricarica la pagina.",
+        "en": "An optional choice does not match an available text. Reload the page.",
     },
     "auth.link_sent": {
         "it": "Se l'email è registrata riceverai un link per entrare.",

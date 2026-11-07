@@ -366,10 +366,105 @@
 - **Concorrenza**: le scritture HTTP acquisiscono il lock dell’edizione prima dei lock preesistenti; anche ogni promozione del job lo acquisisce prima di scadenze e slot, ricaricando l’edizione dopo il lock. Il volume dell’evento consente questa serializzazione semplice, con hint SQL Server UPDLOCK/HOLDLOCK.
 - **Alternative scartate**: prezzo zero per simulare il pagamento esterno (nasconde il costo reale); bloccare i cambi con iscritti (il maintainer richiede il ricalcolo); migrare automaticamente testi orari ambigui (rischio di inventare orari).
 
-## D-050 · Override temporaneo di minimatch per GHSA-g3hv-75wg-m249
+## Collaudo del 7 novembre 2026 · Decisioni di prodotto
+
+**Data comune:** 2026-11-07. **Fonte e motivo:** nuova versione di `prompt-nuovi-requisiti-cisonauti.md` fornita dal maintainer dopo il collaudo con l'organizzatrice. Le decisioni sotto sono requisiti da specificare, non funzioni già implementate; approvazione delle spec e dei singoli MVP ancora attesa. Questa tabella è il registro unico delle nuove decisioni nella Memory Bank; gli altri file vi rimandano. Le alternative non chiuse sono nel [registro delle domande](../specs/revisione-2026-11-07/domande-aperte.md), non sono considerate scartate.
+
+| ID | Fonte | Decisione | Motivo / alternativa esclusa o limite |
+|---|---|---|---|
+| D-050 | Fase e vincoli generali | Preparare solo Memory Bank, spec, MVP, domande e valutazioni, preservando iscritti e pagamenti esistenti, accessi autenticati, versionamento privacy, IT/EN e logo escluso dalla MIT. | Nessun codice applicativo o implementazione prima dell'approvazione; domini, always-on, revisione magic link admin, calendario automatico e wall fisico fuori ambito. |
+| D-051 | A1–A2 | Raccogliere con checkbox due consensi facoltativi distinti, presenza sul sito (nome, cognome, job title, LinkedIn) e foto/video, separati dalla privacy generale e dalle altre finalità esistenti. | Escluso un consenso unico o implicitamente concesso; portata della pubblicazione da chiarire Q-A1/A8/A9. |
+| D-052 | A3 | Non offrire elenchi pubblici degli iscritti e mantenere l'invitante come testo libero verificato dall'admin. | Escluse anche tendine nominali; aggiorna il Backlog sulla relazione invitante, Q-A2 per l'esistenza dell'email. |
+| D-053 | A4 | Richiedere telefono, Telegram, LinkedIn, provenienza, job title e company, aspettative e precedente partecipazione nei nuovi invii, mantenendo il flusso giorni/slot/pasti. | Telefono già presente in MVP 16 da riusare, non reimplementare. Formati e casi senza profili da chiarire. |
+| D-054 | A4 / compatibilità | Gestire i campi mancanti degli iscritti precedenti senza invalidarne iscrizioni o pagamenti. | Esclusi valori fittizi e obbligatorietà retroattiva che blocchi dati validi; modalità di completamento Q-A3. |
+| D-055 | A5 | Richiedere una nuova accettazione quando cambia la privacy attraverso il versionamento esistente. | Il solo salvataggio di un nuovo testo non vale come accettazione; operazioni consentite da definire. |
+| D-056 | A6 | Rendere ogni cancellazione consultabile nello storico amministrativo e verificarla soltanto con la procedura manuale del maintainer. | Supera la perdita di traccia accettata in D-018 ed estende il perimetro storico di D-022/D-025, senza modificare ora il codice. |
+| D-057 | B1 | Confermare il posto quando è coperta la quota di registrazione, lasciando gli extra dovuti senza bloccare la conferma. | Sostituisce come obiettivo il criterio sul totale di D-017/D-021/D-049; formula esatta e transizione Q-B1/B2. |
+| D-058 | B2 | Mostrare l'importo necessario a confermare e dichiarare che pranzi, cene e attività possono essere pagati dopo. | Importo dalle impostazioni/calcolo server, non un testo o valore fisso. |
+| D-059 | B3 | Registrare importi diversi dal totale attraverso una modale rapida nella lista Da incassare. | Estende MVP 10, senza obbligare ad aprire la scheda completa né duplicare il registro pagamenti. |
+| D-060 | B4 | Rendere configurabili voci e quantità di pasti comprese nella quota, con default di un solo pasto, primo pranzo oppure prima cena nel calendario del partecipante. | Gli altri pasti restano dovuti ai prezzi impostati; niente default implicito di un pranzo più una cena. |
+| D-061 | B5 | Mantenere due modalità, incasso dell'organizzazione e pagamento in loco al fornitore, sostituendo le diciture ambigue sull'inclusione e sul destinatario. | Riusa organizer/provider di D-049; modalità d'incasso e composizione della quota sono concetti distinti. |
+| D-062 | C1 | Mostrare informazioni complete e titolo leggibile di ogni attività anche nei riepiloghi. | Un numero/identificativo da solo non descrive l'attività. |
+| D-063 | C2 | Contare non paganti, esterni paganti ed esterni non paganti nella logistica di pasti/attività senza sommarli a quote e importi dell'organizzazione. | Semantica di esterno pagante, presenza e capienze da chiarire prima della spec esecutiva. |
+| D-064 | C3 | Separare le note interne delle attività dai contenuti visibili ai partecipanti e renderle disponibili solo agli admin. | Esclusa la semplice omissione visiva di un campo ancora presente nelle risposte partecipante. |
+| D-065 | C4 | Aprire una scheda attività precompilata da un contributo, lasciando all'organizzazione data e collocazione. | Nessun calendario o salvataggio automatico; cardinalità del collegamento da chiarire. |
+| D-066 | C5 | Definire i benefit nelle impostazioni e registrarne la consegna per persona in una pagina dedicata. | Catalogo e consegne distinti, ambito edizione da considerare con F. |
+| D-067 | D1 | Aprire il dettaglio dei conteggi settimanali in una modale admin tramite i numeri cliccabili. | Conteggio e dettaglio devono spiegare la stessa metrica. |
+| D-068 | D2 | Portare prima il giorno corrente e i futuri, spostando i trascorsi in fondo, con rilascio lontano dalle demo. | Politica di aggiornamento e ordine finale da definire; non accorpare a una demo. |
+| D-069 | D3 | Valutare prima un mockup del calendario admin con box mattina/pomeriggio/sera. | Nessuna implementazione della vista calendario in questa fase. |
+| D-070 | D4 | Rinviare tratto.email preparando soltanto una bozza di MVP per comunicazioni a gruppi per stato. | Nessun dettaglio d'integrazione, configurazione o invio reale ora; D5 è verifica di ciò che esiste, non un nuovo sistema. |
+| D-071 | E1 | Mantenere la barra importo/iscrizione sempre in alto durante lo scorrimento, rendendola più visibile. | Conferma la correzione del 7 novembre e supera il vecchio riferimento alla barra inferiore di D-038. |
+| D-072 | E2 | Far scorrere con la pagina il recap a destra del riepilogo giorni, con fondo bianco e striscia più evidente. | Escluso un secondo pannello fisso; il resto del design system non è ridisegnato. |
+| D-073 | E3 | Offrire una modale separata delle proposte altrui agli autenticati, con nome solo se coperto da consenso presenza A2, e aggiungere competenze cercate. | La visibilità del testo senza consenso resta Q-E1; non si concede accesso alle API admin. |
+| D-074 | A7 | Preparare soltanto bozza e proposta grafica della mappa regionale aggregata delle provenienze, senza dati personali. | Soglie/base di pubblicazione da concordare, nessuna mappa implementata ora. |
+| D-075 | F | Valutare alternative per nuova edizione e storico, inclusi account, consensi, conservazione e impatto A–E, senza spec esecutiva. | La raccomandazione dello stesso database non è ancora una scelta approvata; nessun reset o deploy autorizzato. |
+
+Spec e confronto con le regole esistenti: [revisione del collaudo](../specs/revisione-2026-11-07/README.md). D-014/D-016 rimangono il riferimento per il sistema di promemoria già esistente; [D5](../specs/revisione-2026-11-07/d-admin-comunicazioni/promemoria-esistenti.md) ne documenta il riscontro senza dichiarare verificata la produzione.
+
+## Risposte del maintainer · 7 novembre 2026
+
+**Data comune:** 2026-11-07. **Fonte/motivo:** risposte dirette del maintainer alla revisione, compresa la successiva conferma «Incasso separato dell'organizzazione» per gli esterni. Queste precisazioni prevalgono sui punti ancora ambigui e sulle alternative proposte in D-050–D-075; la sezione precedente rimane come storia, non come richiesta di nuova conferma. Nessun codice applicativo è stato implementato con questo aggiornamento.
+
+| ID | Fonte | Decisione confermata | Precisazione / alternativa superata |
+|---|---|---|---|
+| D-076 | A1/A2 | Limitare la presenza alle viste autenticate e mantenere la risposta attuale per email già iscritta. | Nessuna vetrina pubblica; D-005 resta valida, risposta neutra precedentemente proposta scartata. |
+| D-077 | A3 | Rendere persistente e non bloccante il completamento dei campi obbligatori, accettando una dichiarazione di assenza per Telegram/LinkedIn. | «Non possiedo» o equivalente è una risposta, non un campo mancante; non bloccare pagamenti o iscrizioni legacy. |
+| D-078 | A4 | Raccogliere la città da elenco e derivarne il contesto geografico per la mappa regionale. | Elenco, provenienza estera e significato operativo della città restano da definire. |
+| D-079 | A5 | Usare una soglia minima di cinque persone per gli aggregati pubblicabili della mappa. | La soglia è decisa; insieme, soppressione e protezione dalle inferenze restano da definire. |
+| D-080 | A6 | Derivare la partecipazione precedente quando possibile e usare `@username` Telegram e URL profilo LinkedIn, salvo dichiarazione di assenza. | Storico mancante non significa «non ha partecipato»; fallback ancora da decidere. |
+| D-081 | A7 | Accompagnare la richiesta autenticata di riaccettazione privacy con un'email di richiesta. | Pagamenti e diritti già validi non vengono annullati; invio transazionale distinto da D4. |
+| D-082 | A9 | Associare corpi IT/EN equivalenti alla stessa versione legale e conservare la lingua dell'accettazione. | Cambio lingua non crea una nuova versione; testi effettivi ancora da validare. |
+| D-083 | B1 | Confermare il posto sulla quota base più giorni scelti, senza pranzi, cene o attività. | Gli extra mantengono il saldo separato; la sola base per i benefit è una soglia diversa, D-089. |
+| D-084 | B2 | Applicare la transizione legacy con anteprima e sole iscrizioni attive ammissibili, preservando incassi e crediti. | Nessuna riattivazione indiscriminata di scadute o chiuse. |
+| D-085 | B3/B4 | Coprire il primo pasto selezionato con incasso organizzazione e limitare le altre voci comprese ai benefit. | Provider fuori dal conto e solo promemoria per l'utente; nessuna attività/servizio generico compreso aggiuntivo. |
+| D-086 | B5/B6 | Adottare le etichette proposte e richiedere revisione esplicita dell'importo se cambia il saldo della modale. | Sovraversamento come credito, nessun ritentativo automatico; restano due modalità di destinatario. |
+| D-087 | C1 / precisazione incasso | Trattare il non pagante iscritto come esente da quota e/o singole voci e gli incassi degli esterni come incassi separati dell'organizzazione. | Supera l'esclusione indistinta dall'economia in D-063: esterni fuori dalle quote degli iscritti, ma incassi presenti nel totale evento. |
+| D-088 | C2 | Inserire gli esterni con identità minima solo admin, senza account/coworking, contando le adesioni nelle capienze di pasti e attività. | Nessuna iscrizione ordinaria o presenza coworking fittizia. |
+| D-089 | C3 | Attribuire i benefit a chi ha pagato la quota base oppure agli interni non paganti e consentire cambi categoria con eventuale rimborso. | Distinta dalla soglia base+giorni; rimborso amministrativo tracciato, nessun versamento automatico. Quantità/consegne pregresse da dettagliare. |
+| D-090 | C4 | Consentire più attività da un contributo che resta modificabile, senza propagare automaticamente modifiche alle attività. | Supera la proposta di una sola conversione; restano riferimento fonte e protezione dal doppio salvataggio. |
+| D-091 | C5 | Richiedere due testi IT/EN per i contenuti visibili delle attività e includere le note interne nei CSV admin. | Dati legacy conservati; note mai nei payload/export partecipante. |
+| D-092 | D1 | Applicare i dettagli proposti anche a totali/fasce, con persone e link oppure righe di adesione con titolo attività. | Nessun nuovo calendario necessario. |
+| D-093 | D2 | Aggiornare l'ordine utile al ritorno/ricaricamento, senza salti durante l'interazione e con ordine cronologico fuori evento. | Data del rilascio senza demo e ordine CSV ancora da fissare. |
+| D-094 | D3 / ultima indicazione | Accantonare la vista calendario mockuppata e ritirare i relativi artefatti dal dossier. | Supera D-069; D1/D2 restano, D4 e integrazione già rinviati non vengono avviati. |
+| D-095 | E1 | Mostrare la proposta anonima senza consenso al nome, sempre soltanto agli autenticati. | Scartata l'esclusione dell'intero contributo; contenuti liberi identificanti e aggiornamento dopo revoca da dettagliare. |
+| D-096 | E2 | Limitare il catalogo partecipante ai contributi di prenotazioni attive. | Storico delle non attive soltanto admin, nei limiti della conservazione. |
+| D-097 | F1 | Usare lo stesso database con una sola edizione aperta alla volta e precedenti in sola lettura. | Opzione A scelta; archivi offline o deploy per anno non sono la direzione corrente. |
+| D-098 | F2 | Riusare gli account con nuova iscrizione e nuovi consensi per edizione. | Campi da riproporre/precompilare non ancora scelti, non inferiti dal «sì». |
+| D-099 | F3 | Riservare l'archivio agli admin attuali e precedenti. | Ambito delle edizioni leggibili dagli ex admin da dettagliare; nessuna scrittura attuale implicita né consultazione ordinaria partecipante. |
+| D-100 | F4 | Chiudere l'edizione tramite il comando CHIUDI EDIZIONE nelle Impostazioni. | Nessuna chiusura automatica alla data finale; rettifiche/riapertura dopo chiusura da definire. |
+| D-101 | F5 | Esplicitare i termini normativi applicabili senza estendere il decennio contabile a tutti i dati personali. | Dieci anni art. 2220 c.c. se applicabile; GDPR con durata/criteri per finalità. Le ipotesi 30/90 giorni e 12 mesi non sono default approvati; [fonti](../specs/revisione-2026-11-07/conservazione-normativa.md). |
+| D-102 | F6 | Copiare selettivamente impostazioni come bozza, senza iscrizioni, movimenti, consegne, risposte annuali o consensi. | Riprendere l'elenco F3; confermati riuso degli asset nei diritti esistenti e nessuna modifica al logo in bundle. |
+| D-103 | F7 | Puntare al supporto operativo delle edizioni prima del prossimo evento, se fattibile. | Data evento e spec esecutiva ancora necessarie; non promettere un rilascio né avviarlo con la sola valutazione. |
+| D-104 | A8 | Mantenere consensi facoltativi e revocabili separatamente senza promettere rimozione automatica di media da terzi. | Testi e destinazioni foto/video effettivi ancora da fornire; nessuna integrazione media autorizzata. |
+
+Il [registro aggiornato](../specs/revisione-2026-11-07/domande-aperte.md) distingue risposte chiuse da dettagli residui, senza riproporre come aperte le decisioni sopra. Il piano divide l'MVP 25 in presenze esterne, incassi separati ed esenzioni/rettifiche per mantenere rilasci piccoli.
+
+## D-105 · Attivazione della conferma su quota con ricalcolo esplicito
+
+- **Data**: 2026-11-07.
+- **Decisione del maintainer**: per il passaggio dell'MVP 18 scegliere «Ricalcolo con anteprima», usando impostazioni correnti per quota e totale delle sole attive; applicazione esplicita admin, pagamenti invariati e nessuna riattivazione indiscriminata.
+- **Motivo**: il modello attuale non conserva i prezzi storici per ogni voce. Il saldo/credito risultante può variare con il dovuto: le differenze sono esposte nell'anteprima, non cancellate o presentate come nuovi versamenti.
+- **Alternativa scartata per questo passaggio**: mantenere esattamente il dovuto salvato senza ricalcolo del totale. Restano confermate la stabilità delle già confermate e la separazione dei costi provider.
+
+## Proposte esecutive delle spec 17 e 18 · da rivedere
+
+**Data comune:** 2026-11-07. Il maintainer ha chiesto di preparare entrambe le spec, non di implementarle. Le voci seguenti registrano le scelte tecniche non banali rese concrete per la revisione: non sono un'autorizzazione di implementazione né modifiche già operative a `domain.md`.
+
+| ID | Proposta | Motivo / alternativa scartata nella proposta |
+|---|---|---|
+| D-106 | Nel 17 registrare eventi facoltativi per persona/edizione/finalità senza FK al booking, con stato calcolato dall'ultimo evento e gestione autenticata degli account noti. | Evitare perdita alla rimozione del booking, duplicati per lista e booleani globali; prove privacy/scarico/salute restano nei riferimenti attuali fino ai rispettivi MVP. [Design 17](../specs/mvp-17-consensi-riservatezza/design.md). |
+| D-107 | Nel 18 salvare quota e totale nello stesso ricalcolo e usare una politica di edizione attivata con preview verificata/idempotente. | Evitare quota ricavata dai prezzi nuovi accanto a totale vecchio o attivazione implicita da migrazione; mantenere D-017 sui prezzi ai ricalcoli successivi. [Design 18](../specs/mvp-18-conferma-quota/design.md). |
+| D-108 | Nel 18 reclamare una sola notifica per ciclo effettivo di conferma, riusando timer/job e trasferendo le differite valide al passaggio. | Le nuove conferme senza pagamento non possono creare un Payment fittizio; evitare duplicati tra attivazione, timer e job senza altra infrastruttura. [Design 18](../specs/mvp-18-conferma-quota/design.md#conferme-email-e-concorrenza). |
+| D-109 | Nel 17 conservare il corpo legale legacy e aggiungere corpi IT/EN espliciti per le nuove pubblicazioni, senza traduzioni o lingue retroattive inventate. | Nuova versione bilingue unica con compatibilità dei riferimenti accettati; testo originale ancora leggibile. [Design 17](../specs/mvp-17-consensi-riservatezza/design.md#modello-dati--migrazione-proposta-0016). |
+
+Materiale aperto per il 17: informative effettive IT/EN e destinazioni dei media da validare prima della produzione. I dettagli di soglia zero, residuo e prezzi del 18 sono proposti nel design per revisione, senza riaprire la formula o D-105 già decise.
+
+## D-110 · Override temporaneo di minimatch per GHSA-g3hv-75wg-m249
 
 - **Data**: 2026-11-07.
 - **Decisione**: `frontend/package.json` forza `minimatch` alla versione corretta `11.0.1` tramite `overrides`; il lockfile è rigenerato con npm. Rimuovere l'override quando ESLint, `@eslint/config-array` e `@typescript-eslint/typescript-estree` consentiranno una versione corretta nelle proprie dipendenze.
 - **Motivo**: CVE-2026-118764 consente amplificazione di pattern e consumo eccessivo di CPU/memoria; le versioni da 7 a prima di 11.0.1 sono vulnerabili. Anche le ultime release dei tre pacchetti richiedono ancora la serie 10, quindi il normale aggiornamento automatico non basta. La dipendenza è solo di sviluppo: il container finale copia gli asset statici, senza Node o ESLint.
 - **Compatibilità**: la serie 11 rimuove alcune API, ma i tre consumatori installati usano `Minimatch`, `match` e `minimatch`, ancora disponibili. Verificati con Node 22 installazione pulita, lint sugli stessi 103 file con diagnostica identica, suite frontend e build.
 - **Alternative scartate**: ignorare l'avviso o disabilitare l'audit (la dipendenza resta vulnerabile); modificare solo il lockfile (l'installazione successiva potrebbe reintrodurre la serie 10); aggiornare indiscriminatamente le altre dipendenze (non necessario).
+
+La decisione sull'override è arrivata su `main` dopo la registrazione D-050–D-109; l'identificativo è stato aggiornato qui per non duplicare i numeri.
