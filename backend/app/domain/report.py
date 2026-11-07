@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from app.domain.booking import occupies_seats
+from app.domain.collection import collectable
 from app.domain.fees import compute_fee
 from app.domain.meals import NO_DIET
 from app.domain.presence import presences
@@ -69,6 +70,7 @@ class ActivityFacts:
     period: str
     price_cents: int
     capacity: int | None
+    payment_mode: str = "organizer"
 
 
 @dataclass(frozen=True)
@@ -90,6 +92,7 @@ class EditionFacts:
     per_day_fee_cents: int
     lunch_price_cents: int
     dinner_price_cents: int
+    meal_terms: dict[tuple[date, str], tuple[int, str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -155,6 +158,7 @@ class ActivityRow:
     capacity: int | None
     joined: Split
     expected_cents: int
+    payment_mode: str = "organizer"
 
 
 @dataclass(frozen=True)
@@ -308,7 +312,9 @@ def _activities(
                 price_cents=activity.price_cents,
                 capacity=activity.capacity,
                 joined=joined,
-                expected_cents=activity.price_cents * joined.total,
+                expected_cents=collectable(activity.price_cents, activity.payment_mode)
+                * joined.total,
+                payment_mode=activity.payment_mode,
             )
         )
     return rows
@@ -336,7 +342,7 @@ def _revenue(
     activities: Sequence[ActivityFacts],
     edition: EditionFacts,
 ) -> RevenueSection:
-    price_of = {a.id: a.price_cents for a in activities}
+    price_of = {a.id: collectable(a.price_cents, a.payment_mode) for a in activities}
     seated = [b for b in bookings if occupies_seats(b.status)]
     due = sum(b.amount_due_cents for b in seated)
     fee = sum(
@@ -344,9 +350,17 @@ def _revenue(
         for b in seated
     )
     meals = sum(
-        edition.lunch_price_cents * sum(1 for _, k in b.meals if k == MEAL_LUNCH)
-        + edition.dinner_price_cents * sum(1 for _, k in b.meals if k == MEAL_DINNER)
+        collectable(
+            *edition.meal_terms.get(
+                (day, kind),
+                (
+                    edition.lunch_price_cents if kind == MEAL_LUNCH else edition.dinner_price_cents,
+                    "organizer",
+                ),
+            )
+        )
         for b in seated
+        for day, kind in b.meals
     )
     activity_cents = sum(price_of.get(a, 0) for b in seated for a in b.activity_ids)
     by_channel: Counter[str] = Counter()

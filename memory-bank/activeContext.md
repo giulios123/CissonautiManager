@@ -96,3 +96,9 @@ Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/...`, per il vincol
 - Il database Basic non si mette in pausa; la Container App deve restare a `minReplicas: 0`.
 - Presenza di giorno per il pranzo: la spec dell'MVP 5 propone mattina o pomeriggio (da confermare).
 - Esiti della call (D-008), sera derivata (D-009), nome con due s (D-012) e risorse ricreate (D-013): già registrati in `decisions.md`.
+
+## MVP 16 · Orari e pagamenti diretti (2026-11-06)
+
+Piano confermato dal maintainer e implementato sul branch `feat/mvp-16-pagamenti-diretti`, spec in `specs/mvp-16-pagamenti-diretti/`. Telefono obbligatorio, orari selezionabili, attività e pasti delegati con costo specifico e ricalcolo dei saldi anche dopo le adesioni.
+
+Completati codice, test automatici, migrazione, guida e checklist PR. Restano prova SQL Server reale (download immagine rifiutato) e visiva mobile/desktop (browser indisponibile), documentate nella descrizione PR. Nessun deploy in questa sessione.

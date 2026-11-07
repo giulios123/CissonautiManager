@@ -60,6 +60,10 @@ def make_session_factory(engine: Engine) -> sessionmaker[Session]:
 def get_db(request: Request) -> Iterator[Session]:
     session = request.app.state.session_factory()
     try:
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            from app.services.seats import lock_edition
+
+            lock_edition(session)
         yield session
     finally:
         session.close()

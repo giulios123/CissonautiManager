@@ -188,7 +188,7 @@ export function Registration() {
           first_name: text("first_name"),
           last_name: text("last_name"),
           email: text("email"),
-          phone: text("phone") || null,
+          phone: text("phone").trim(),
           invited_by: text("invited_by") || null,
           can_bring: text("can_bring"),
           locale,
@@ -271,7 +271,14 @@ export function Registration() {
             </label>
             <label>
               {t("reg.phone")}
-              <input type="tel" name="phone" autoComplete="tel" maxLength={50} />
+              <input
+                type="tel"
+                name="phone"
+                autoComplete="tel"
+                required
+                pattern=".*\S.*"
+                maxLength={50}
+              />
             </label>
             <label>
               {t("reg.invitedBy")}

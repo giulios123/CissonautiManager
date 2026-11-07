@@ -73,8 +73,10 @@ def check_activity_edit(
     when_changed: bool,
     new_capacity: int | None,
 ) -> Check:
-    """With people already signed up the price, the day and the part of the day stay as they are
-    (amounts must not change behind their back), and the capacity cannot drop below them."""
+    """Schedule edits are fixed with sign-ups. Financial edits use the repricing transaction.
+
+    `price_changed` is retained for callers that cannot atomically reprice existing bookings.
+    """
     if joined > 0 and (price_changed or when_changed):
         return Check(False, "fixed_with_people")
     if new_capacity is not None and new_capacity < joined:

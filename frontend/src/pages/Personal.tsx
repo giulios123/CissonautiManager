@@ -7,6 +7,7 @@ import { useI18n, type MessageKey } from "../i18n";
 import { formatEuro } from "../money";
 import { ROUTES } from "../routes";
 import { StatusBadge } from "../StatusBadge";
+import { CollectionDetails } from "../collection";
 import { PresenceSummary } from "../PresenceSummary";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
 import { ActivityPicker } from "./ActivityPicker";
@@ -126,7 +127,10 @@ function BookingCard({
           ) : (
             <ul>
               {meals.map((meal) => (
-                <li key={`${meal.date}:${meal.kind}`}>{meal.label}</li>
+                <li key={`${meal.date}:${meal.kind}`}>
+                  {meal.label}
+                  <CollectionDetails terms={meal} />
+                </li>
               ))}
             </ul>
           )}
@@ -158,7 +162,11 @@ function BookingCard({
           ) : (
             <ul>
               {activities.map((activity) => (
-                <li key={activity.id}>{activity.label}</li>
+                <li key={activity.id}>
+                  {activity.label}
+                  {activity.time_label && ` (${activity.time_label})`}
+                  <CollectionDetails terms={activity} />
+                </li>
               ))}
             </ul>
           )}

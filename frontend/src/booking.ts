@@ -2,6 +2,7 @@ import { intlTag } from "./i18n/locale";
 import { tNow, translatePlural } from "./i18n/messages";
 import { getLocale } from "./i18n/locale";
 import { computeFee } from "./money";
+import { collectableCents, type CollectionTerms } from "./collection";
 
 export type SlotInfo = {
   id: number;
@@ -121,8 +122,8 @@ export function isPresent(periods: Set<string>, period: string): boolean {
 }
 
 export type PricedExtras = {
-  meals: { date: string; kind: string }[];
-  activities: { date: string; period: string; price_cents: number }[];
+  meals: ({ date: string; kind: string } & CollectionTerms)[];
+  activities: ({ date: string; period: string } & CollectionTerms)[];
   lunchCents: number;
   dinnerCents: number;
 };
@@ -144,11 +145,16 @@ export function extrasPreview(days: Day[], selected: Set<number>, extras: Priced
         ? isPresent(at(meal.date), "morning") || isPresent(at(meal.date), "afternoon")
         : isPresent(at(meal.date), "evening");
     if (!allowed) return sum;
-    return sum + (meal.kind === "lunch" ? extras.lunchCents : extras.dinnerCents);
+    const defaultPrice = meal.kind === "lunch" ? extras.lunchCents : extras.dinnerCents;
+    const hasCollectionTerms =
+      meal.payment_mode !== undefined ||
+      meal.price_cents !== undefined ||
+      meal.collectable_cents !== undefined;
+    return sum + (hasCollectionTerms ? collectableCents(meal) : defaultPrice);
   }, 0);
   const activities = extras.activities.reduce(
     (sum, activity) =>
-      isPresent(at(activity.date), activity.period) ? sum + activity.price_cents : sum,
+      isPresent(at(activity.date), activity.period) ? sum + collectableCents(activity) : sum,
     0,
   );
   return meals + activities;

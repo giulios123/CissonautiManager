@@ -20,6 +20,7 @@
 | 13 | Email di iscrizione personalizzabile | fatto e provato in locale (task 1-8) |
 | 14 | Testi dell'evento e accesso diretto | fatto e provato in locale (task 1-9) |
 | 15 | Logo dell'edizione e accesso dalla registrazione (PR #15); riepiloghi compatti delle presenze (PR #16) | Logo: CI verde, restano prove manuali. Riepiloghi: test e verifiche locali passati, restano verifiche reali post-deploy |
+| 16 | Orari, telefono e pagamenti diretti | implementato sul branch `feat/mvp-16-pagamenti-diretti`; restano verifiche SQL Server e visive nell’ambiente adatto |
 
 ## Verifiche manuali
 
@@ -82,3 +83,13 @@
 ## MVP 15 · Logo dell'edizione e accesso dalla registrazione
 
 Richiesto il 2026-11-06. Implementato sul branch `feat/mvp-15-logo-accesso` (D-048), in PR #15. Passati 996 test backend, 358 test frontend, Ruff, lint/build frontend e upgrade/downgrade 0013↔0014 su SQLite. Anche la CI GitHub è verde: backend SQLite, migrazioni e test backend su SQL Server, frontend e build dell'immagine. Per i test backend locali il runner ha richiesto un piccolo shim in `/tmp` per compensare il selettore asyncio che non si sveglia tra thread; non ha modificato il repository. Da verificare a mano la checklist per gli organizzatori in `specs/mvp-15-logo-accesso/pr-description.md`.
+
+## MVP 16 · Orari, telefono e pagamenti diretti
+
+Implementato sul branch `feat/mvp-16-pagamenti-diretti` (D-049), spec e descrizione PR in `specs/mvp-16-pagamenti-diretti/`. Telefono obbligatorio, selettori ore/minuti e intervalli UTC, attività e pasti delegati con costo/istruzioni, ricalcolo delle prenotazioni attive interessate, crediti e conferme, report/CSV e guida IT/EN.
+
+Validazione: suite SQLite completa (1.021 test) e 34 test mirati successivi comprendenti l’ultima verifica della cronologia oraria; 366 test frontend; Ruff, ESLint/Prettier, build e controllo guida. Migrazione 0015 da zero, confronto metadata, upgrade/downgrade con attività legacy; SQL compilato per SQL Server. Per pytest, come nell’MVP 15, runner temporaneo in `/tmp/cissonauti_pytest.py` che limita l’attesa epoll per il problema di risveglio tra thread del sandbox, senza modificare codice o asserzioni.
+
+Prova HTTP reale su database migrato temporaneo: login, istruzioni visibili a quota saldata, attività 21:35–mezzanotte, pranzo provider→organizer→provider con quota 11→19→11 €, report coerente. Il server dimostrativo è stato fermato.
+
+Non verificato: SQL Server reale (pull dell’immagine ufficiale 2022 terminato con Forbidden; compilazione SQL e test del lock superati) e vista nel browser (runtime locale/cloud indisponibile). Checklist manuale in `pr-description.md`; nessun deploy eseguito.

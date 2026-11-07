@@ -91,11 +91,13 @@ def revive_expired(
     full = [a for a in activities if not has_free_seat(free[a.id])]
     if full:
         booking.activities = [a for a in booking.activities if a not in full]
-        edition = db.get(Edition, booking.edition_id)
-        assert edition is not None
-        recompute_amount(edition, booking)
         if dropped is not None:
             dropped.extend(full)
+    # Prices and collection policies may have changed while this booking was expired.
+    edition = db.get(Edition, booking.edition_id)
+    assert edition is not None
+    db.refresh(edition)
+    recompute_amount(edition, booking)
     booking.status = STATUS_PENDING
     booking.hold_expires_at = hold_deadline(now, _hold_days(db, booking))
     booking.hold_started_at = now

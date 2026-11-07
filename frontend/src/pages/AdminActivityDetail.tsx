@@ -7,6 +7,7 @@ import { StatusBadge } from "../StatusBadge";
 import { useI18n } from "../i18n";
 import { adminRegistrationPath, ROUTES } from "../routes";
 import { CsvButton } from "./CsvButton";
+import { CollectionDetails } from "../collection";
 
 type Person = {
   booking_id: number;
@@ -46,6 +47,7 @@ export function AdminActivityDetail() {
         {detail.free !== null && tn("aact.freePlaces", detail.free)}
       </p>
       {detail.description && <p>{detail.description}</p>}
+      <CollectionDetails terms={detail} />
       {detail.people.length === 0 ? (
         <p>{t("aact.noneSignedUp")}</p>
       ) : (

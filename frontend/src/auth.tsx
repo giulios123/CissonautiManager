@@ -3,8 +3,14 @@ import { Navigate } from "react-router-dom";
 import { api } from "./api";
 import { useT } from "./i18n";
 import { ROUTES } from "./routes";
+import type { CollectionTerms } from "./collection";
 
-export type MealView = { date: string; kind: "lunch" | "dinner"; label: string; past?: boolean };
+export type MealView = CollectionTerms & {
+  date: string;
+  kind: "lunch" | "dinner";
+  label: string;
+  past?: boolean;
+};
 
 export type BookingView = {
   id: number;
@@ -28,7 +34,13 @@ export type BookingView = {
   }[];
   meals?: MealView[];
   allowed_meals?: MealView[];
-  activities?: { id: number; title: string; label: string; price_cents: number }[];
+  activities?: (CollectionTerms & {
+    id: number;
+    title: string;
+    label: string;
+    price_cents: number;
+    time_label?: string | null;
+  })[];
   dropped_meals?: string[];
   dropped_activities?: string[];
   diet?: string | null;
@@ -72,7 +84,7 @@ export type Contribution = {
   description: string | null;
 };
 
-export type ActivityOffer = {
+export type ActivityOffer = CollectionTerms & {
   id: number;
   title: string;
   description: string | null;

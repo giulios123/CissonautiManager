@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.models import (
     CLOSE_BOOKED,
@@ -10,6 +11,7 @@ from app.models import (
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
     STATUS_PENDING,
+    Activity,
     Booking,
     Payment,
     Slot,
@@ -208,6 +210,48 @@ def test_entries_on_other_slots_are_kept(
     promote(target)
     db.refresh(other)
     assert other.closed_at is None
+
+
+def test_each_promotion_reloads_activity_terms_after_an_admin_reprices(
+    db, engine, full_monday, make_participant, make_booking, add_entry, fill_slot, promote, clock
+):
+    target, fillers = full_monday
+    ada = make_participant("ada@example.com")
+    tuesday = slot(db, 14)
+    hike = Activity(
+        edition_id=tuesday.edition_id,
+        title="Escursione",
+        date=tuesday.date,
+        period="morning",
+        price_cents=1500,
+    )
+    db.add(hike)
+    db.commit()
+    booking = make_booking(ada, [tuesday], amount_due_cents=2600)
+    booking.activities = [hike]
+    db.commit()
+    add_entry(target, ada, clock())
+    free_one(db, fillers)
+
+    [first] = promote(target)
+    assert first.booking.amount_due_cents == 2700
+
+    second_target = slot(db, 13, "afternoon")
+    second_fillers = fill_slot(second_target)
+    add_entry(second_target, ada, clock())
+    free_one(db, second_fillers)
+    db.commit()
+    with Session(engine, expire_on_commit=False) as admin_db:
+        saved_hike = admin_db.get(Activity, hike.id)
+        assert saved_hike is not None
+        saved_hike.payment_mode = "provider"
+        saved_hike.price_cents = 2300
+        admin_db.commit()
+
+    [second] = promote(second_target)
+    db.refresh(booking)
+    assert second.booking.amount_due_cents == 1200
+    assert booking.amount_due_cents == 1200
 
 
 def test_no_promotion_without_a_free_seat(

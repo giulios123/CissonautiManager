@@ -694,4 +694,57 @@ describe("slot preview with meals and activities", () => {
     // Without Monday morning, lunch and hike go: only Tuesday is left.
     expect(form.getByText(/Nuova quota/)).toHaveTextContent("Nuova quota: 11,00 €");
   });
+
+  it("excludes provider-paid extras from the slot preview", async () => {
+    const withExtras = {
+      ...me([
+        booking({
+          amount_due_cents: 1100,
+          meals: [
+            {
+              date: "2026-07-13",
+              kind: "lunch" as const,
+              label: "pranzo di lun 13/07",
+              price_cents: 2300,
+              payment_mode: "provider" as const,
+              payment_instructions: "Pagamento al ristorante",
+              collectable_cents: 0,
+            },
+          ],
+        }),
+      ]),
+      lunch_price_cents: 800,
+      dinner_price_cents: 1200,
+      activities: [
+        {
+          id: 1,
+          title: "Escursione",
+          description: null,
+          date: "2026-07-13",
+          period: "morning",
+          time_label: null,
+          price_cents: 1500,
+          payment_mode: "provider" as const,
+          payment_instructions: "Pagamento alla guida",
+          collectable_cents: 0,
+          capacity: null,
+          free: null,
+          joined: true,
+          past: false,
+        },
+      ],
+    };
+    openAt((url) => {
+      if (url === "/api/me") return { body: withExtras };
+      if (url === "/api/public/edition") return { body: EDITION };
+      return { status: 404, body: {} };
+    });
+
+    const form = await openEditor();
+    const [, , tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    expect(form.getByText(/Nuova quota/)).toHaveTextContent(
+      "Nuova quota: 12,00 € (1,00 € in più di ora)",
+    );
+  });
 });

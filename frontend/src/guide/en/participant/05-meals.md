@@ -1,6 +1,6 @@
 # Lunches and dinners
 
-Meals are not chosen when you sign up: you add them later, from your page, with “Choose lunches and dinners”. Every meal has a fixed price and is added to the fee.
+Meals are not chosen when you sign up: you add them later, from your page, with “Choose lunches and dinners”. Each meal shows its cost; it is added to the camp fee when the organizers collect payment.
 
 - **Lunch**: you can choose it on days when you are here in the morning or in the afternoon.
 - **Dinner**: you can choose it on days when you are here in the evening. If you booked morning and afternoon of the same day, the evening counts as presence.
@@ -11,3 +11,5 @@ Meals are not chosen when you sign up: you add them later, from your page, with 
 Under the meals you find “Dietary needs”. Choose your diet (omnivore, vegetarian, vegan) and, if needed, write **allergies and intolerances**: for these you must consent to the processing of health data, which you can read and tick right there. Then press **“Save dietary needs”**: until you do, nothing is saved.
 
 Only the organizers can see allergies, and they never appear in emails. If you save without consent, any allergies you wrote are deleted.
+
+Some lunches or dinners are paid directly to the restaurant or provider. Their cost and payment instructions appear before sign-up and remain in your summary. You still book in the app; the cost is excluded from the camp fee.

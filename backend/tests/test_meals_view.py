@@ -105,10 +105,35 @@ def test_csv_has_a_row_per_person_with_diet_and_allergies(
         "Email",
         "Regime",
         "Allergie e intolleranze",
+        "Prezzo",
+        "Incasso",
+        "Istruzioni di pagamento",
     ]
     assert rows == [
-        ["13/07/2026", "Pranzo", "Ada", "Lovelace", "ada@example.com", "Vegetariano", "Glutine"],
-        ["13/07/2026", "Cena", "Ada", "Lovelace", "ada@example.com", "Vegetariano", "Glutine"],
+        [
+            "13/07/2026",
+            "Pranzo",
+            "Ada",
+            "Lovelace",
+            "ada@example.com",
+            "Vegetariano",
+            "Glutine",
+            "8,00",
+            "Organizzatori",
+            "",
+        ],
+        [
+            "13/07/2026",
+            "Cena",
+            "Ada",
+            "Lovelace",
+            "ada@example.com",
+            "Vegetariano",
+            "Glutine",
+            "12,00",
+            "Organizzatori",
+            "",
+        ],
     ]
 
 

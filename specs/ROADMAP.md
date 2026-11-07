@@ -92,6 +92,12 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 - **Contenuto**: righe per giorno condivise tra interfaccia ed email; fasce mostrate solo per giornate parziali; legenda unica degli orari; lista d'attesa separata; riepilogo responsive in italiano e inglese.
 - **Fatto quando**: cinque giorni pieni occupano cinque righe; mattina+pomeriggio equivalgono a giornata piena; riepilogo, conferma e email mostrano gli stessi giorni, fasce e orari.
 
+## MVP 16 · Orari, telefono e pagamenti diretti
+
+- **Obiettivo**: scegliere gli orari delle attività, raccogliere il telefono e distinguere gli incassi degli organizzatori dai pagamenti all’erogatore.
+- **Contenuto**: intervalli orari da menu, telefono obbligatorio, modalità di incasso per attività e singolo pasto con costo e istruzioni; ricalcolo anche dopo le adesioni; report, CSV e guida bilingue. Migrazione 0015.
+- **Fatto quando**: le adesioni esterne restano nell’app ma non aumentano il saldo agli organizzatori; i cambi di costo/destinatario ricalcolano le prenotazioni attive interessate conservando versamenti e crediti.
+
 ## Backlog
 
 Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementano.
@@ -111,7 +117,7 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Due admin che si rimuovono a vicenda nello stesso istante possono lasciare zero admin: serve un controllo con blocco se diventa un problema reale.
 - Vista Persone senza paginazione: se le iscrizioni diventano molte, aggiungere pagine o scorrimento.
 - Lista d'attesa per le attività piene (emersa nella spec dell'MVP 6).
-- Annullare un'attività con iscritti togliendola a tutti e ricalcolando gli importi; cambiarne il prezzo dopo le adesioni (MVP 6).
+- Annullare un'attività con iscritti togliendola a tutti e ricalcolando gli importi (MVP 6).
 - Attività su più fasce o su tutto il giorno, come le escursioni (MVP 6).
 - Capienza dei pasti o chiusura delle adesioni a un'ora fissa (MVP 5).
 - Avviso a chi è in lista d'attesa quando la sua posizione cambia (MVP 4).

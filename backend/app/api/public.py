@@ -79,7 +79,7 @@ class RegistrationIn(BaseModel):
     first_name: Name
     last_name: Name
     email: EmailStr
-    phone: Annotated[str, StringConstraints(strip_whitespace=True, max_length=50)] | None = None
+    phone: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
     invited_by: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None = (
         None
     )

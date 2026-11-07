@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from app.models import Booking, Participant, Slot, WaitlistEntry
+from app.models import STATUS_EXPIRED, STATUS_PENDING, Booking, Participant, Slot, WaitlistEntry
 from app.services import edition as edition_service
 from tests.helpers import d, payload
 
@@ -94,6 +94,34 @@ def test_someone_already_on_a_waitlist_only_gets_the_link(client, db, fill_slot,
     assert db.scalar(select(Booking).where(Booking.slots.any(Slot.id == slot(db, 15).id))) is None
     [email] = outbox.sent
     assert email.subject == "Sei già iscritto al Cissonauti Summer Camp 2026"
+
+
+def test_new_registration_saves_phone_for_an_existing_participant_without_one(
+    client, db, make_participant, make_booking
+):
+    ada = make_participant("ada@example.com", phone=None)
+    make_booking(ada, [slot(db, 13)], status=STATUS_EXPIRED)
+
+    response = register(client, [slot(db, 14).id], [], phone="+39 333 1234567")
+
+    assert response.status_code == 201
+    assert response.json()["result"] == "created"
+    db.refresh(ada)
+    assert ada.phone == "+39 333 1234567"
+
+
+def test_already_registered_does_not_save_phone_before_a_new_registration(
+    client, db, make_participant, make_booking
+):
+    ada = make_participant("ada@example.com", phone=None)
+    make_booking(ada, [slot(db, 13)], status=STATUS_PENDING)
+
+    response = register(client, [slot(db, 14).id], [], phone="+39 333 1234567")
+
+    assert response.status_code == 201
+    assert response.json()["result"] == "already_registered"
+    db.refresh(ada)
+    assert ada.phone is None
 
 
 def test_at_least_one_slot_is_needed(client, edition):

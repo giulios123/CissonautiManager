@@ -7,6 +7,7 @@ import { useT } from "../i18n";
 import { getLocale } from "../i18n/locale";
 import { tNow, translatePlural } from "../i18n/messages";
 import { formatEuro } from "../money";
+import { collectableCents, CollectionDetails } from "../collection";
 
 function seatsText(offer: ActivityOffer) {
   if (offer.free === null) return tNow("act.unlimited");
@@ -40,7 +41,7 @@ export function ActivityPicker<T = unknown>({
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const price = (ids: Set<number>) =>
-    offers.filter((o) => ids.has(o.id)).reduce((sum, o) => sum + o.price_cents, 0);
+    offers.filter((o) => ids.has(o.id)).reduce((sum, o) => sum + collectableCents(o), 0);
   const fee = booking.amount_due_cents - price(original) + price(new Set(selected));
   const delta = fee - booking.amount_due_cents;
   const chosen = new Set([...selected].filter((id) => offered.has(id)));
@@ -92,6 +93,7 @@ export function ActivityPicker<T = unknown>({
               {periodLabel(offer.period).toLowerCase()}
               {offer.time_label && ` (${offer.time_label})`} · {priceLabel(offer.price_cents)} ·{" "}
               {offer.past ? t("edit.pastDay") : seatsText(offer)}
+              <CollectionDetails terms={offer} />
               {offer.description && (
                 <>
                   <br />

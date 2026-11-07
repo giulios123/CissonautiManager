@@ -366,7 +366,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
         )
         payments.extend(PaymentFacts(p.channel, p.amount_cents) for p in active_payments(booking))
     activities = [
-        ActivityFacts(a.id, a.title, a.date, a.period, a.price_cents, a.capacity)
+        ActivityFacts(a.id, a.title, a.date, a.period, a.price_cents, a.capacity, a.payment_mode)
         for a in db.scalars(select(Activity).where(Activity.edition_id == edition.id))
     ]
     waitlist = [
@@ -383,5 +383,16 @@ def load_report(db: Session, now: datetime) -> ReportData:
         per_day_fee_cents=edition.per_day_fee_cents,
         lunch_price_cents=edition.lunch_price_cents,
         dinner_price_cents=edition.dinner_price_cents,
+        meal_terms={
+            (m.date, m.kind): (
+                m.price_cents
+                if m.price_cents is not None
+                else (
+                    edition.lunch_price_cents if m.kind == "lunch" else edition.dinner_price_cents
+                ),
+                m.payment_mode,
+            )
+            for m in edition.meal_settings
+        },
     )
     return ReportData(edition, edition_report(facts, bookings, activities, waitlist, payments))

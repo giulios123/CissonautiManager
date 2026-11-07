@@ -146,7 +146,7 @@ class TestRegistration:
 
     def test_optional_fields_can_be_omitted(self, client, slot_ids):
         body = payload([slot_ids[(d(13), "morning")]])
-        del body["phone"], body["invited_by"]
+        del body["invited_by"]
         assert client.post("/api/public/registrations", json=body).status_code == 201
 
     def test_whitespace_is_trimmed_and_email_lowercased(self, client, db, slot_ids):

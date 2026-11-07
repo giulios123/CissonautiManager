@@ -45,6 +45,44 @@ def test_models_and_migrations_are_in_sync(alembic_config, database_url, empty_d
     assert diff == [], f"models differ from migrations, create a migration: {diff}"
 
 
+def test_migration_0015_preserves_legacy_activity_time_and_price(
+    alembic_config, database_url, empty_database
+):
+    from sqlalchemy.orm import Session
+
+    from app.models import Edition
+    from tests.conftest import DEFAULT_EDITION_VALUES
+
+    command.upgrade(alembic_config, "0014")
+    engine = make_engine(database_url)
+    with Session(engine) as db:
+        edition = Edition(**DEFAULT_EDITION_VALUES)
+        db.add(edition)
+        db.flush()
+        db.execute(
+            text(
+                "INSERT INTO activity (edition_id, title, date, period, time_label, price_cents,"
+                " created_at) VALUES (:e, 'Legacy', '2026-07-13', 'morning', 'around ten',"
+                " 1500, '2026-07-01 10:00:00')"
+            ),
+            {"e": edition.id},
+        )
+        db.commit()
+    command.upgrade(alembic_config, "head")
+    with engine.connect() as connection:
+        row = connection.execute(
+            text("SELECT time_label, price_cents, payment_mode, starts_at, ends_at FROM activity")
+        ).one()
+        assert tuple(row) == ("around ten", 1500, "organizer", None, None)
+    command.downgrade(alembic_config, "0014")
+    with engine.connect() as connection:
+        assert (
+            connection.execute(text("SELECT time_label FROM activity")).scalar_one() == "around ten"
+        )
+        assert "meal_setting" not in inspect(connection).get_table_names()
+    engine.dispose()
+
+
 def test_migration_0003_fills_hold_started_at_from_created_at(
     alembic_config, database_url, empty_database
 ):

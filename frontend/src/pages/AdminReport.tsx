@@ -34,6 +34,7 @@ type Report = {
     capacity: number | null;
     joined: Split;
     expected_cents: number;
+    payment_mode?: string;
   }[];
   contributions: Record<string, number>;
   waitlist: {
@@ -343,6 +344,12 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
                       {activity.price_cents === 0
                         ? t("activity.free")
                         : formatEuro(activity.price_cents)}
+                      {activity.payment_mode === "provider" && (
+                        <>
+                          <br />
+                          <small>{t("collection.provider")}</small>
+                        </>
+                      )}
                     </td>
                     <td>{activity.capacity ?? t("slots.unlimited")}</td>
                     <td>{activity.joined.confirmed}</td>

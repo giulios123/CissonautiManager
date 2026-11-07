@@ -49,7 +49,7 @@ from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services.amounts import recompute_amount
 from app.services.payments import paid_total
-from app.services.seats import expire_overdue, free_by_slot, slots_for_update
+from app.services.seats import expire_overdue, free_by_slot, lock_edition, slots_for_update
 from app.timefmt import format_slot
 
 
@@ -295,6 +295,11 @@ def promote_freed(
         return []
     done: list[Promotion] = []
     for slot_id in sorted(set(slot_ids)):
+        lock_edition(db, edition.id)
+        # This session is long-lived across the per-slot commits. With expire_on_commit=False,
+        # its cached bookings and activities can otherwise survive a concurrent admin repricing.
+        db.expire_all()
+        db.refresh(edition)
         expire_overdue(db, now)
         promotions = _promote_slot(db, edition, slot_id, now)
         db.commit()

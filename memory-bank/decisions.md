@@ -357,3 +357,11 @@
 - **Motivo**: richieste del maintainer. Il logo e il nome già esistono per ogni edizione, e memorizzare i byte normalizzati nel database segue la scelta fatta per la card email (D-045) senza una risorsa cloud aggiuntiva; il caricamento differito evita di trasferire l'immagine nelle richieste che non la usano.
 - **Alternative scartate**: URL remoto per il logo (dipendenza dal server dell'immagine e origine esterna); usare il logo personalizzato dentro l'iframe (duplicazione dell'intestazione del sito ospitante).
 
+
+## D-049 · Importi incassati dagli organizzatori e pagamenti diretti
+
+- **Data**: 2026-11-06.
+- **Decisione**: modalità `organizer`/`provider`, costo visibile distinto da `collectable_cents`. Le attività conservano il prezzo esistente; i pasti delegati usano configurazione per edizione/data/tipo, con ritorno ai prezzi generali per organizer. I nuovi orari sono intervalli UTC, scelti localmente nella fascia, mentre i testi preesistenti restano leggibili.
+- **Ricalcolo**: modifiche economiche ricalcolano solo prenotazioni attive interessate, in transazione e con cronologia. I versamenti e le scadenze restano; crediti visibili, confermate stabili, in attesa confermate se coperte. La riattivazione di una scaduta rilegge le condizioni attuali e ricalcola anche senza attività eliminate.
+- **Concorrenza**: le scritture HTTP acquisiscono il lock dell’edizione prima dei lock preesistenti; anche ogni promozione del job lo acquisisce prima di scadenze e slot, ricaricando l’edizione dopo il lock. Il volume dell’evento consente questa serializzazione semplice, con hint SQL Server UPDLOCK/HOLDLOCK.
+- **Alternative scartate**: prezzo zero per simulare il pagamento esterno (nasconde il costo reale); bloccare i cambi con iscritti (il maintainer richiede il ricalcolo); migrare automaticamente testi orari ambigui (rischio di inventare orari).
