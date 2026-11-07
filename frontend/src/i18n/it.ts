@@ -738,6 +738,8 @@ export const it = {
   "rep.refundedWord": "Rimborsato",
   "rep.net": "Netto (versato meno rimborsato)",
   "rep.toCollect": "Ancora da incassare",
+  "rep.toConfirm": "Residuo per confermare",
+  "rep.amountUnavailable": "non disponibile",
   "rep.credits": "Crediti da restituire",
   "rep.toRefund": "Disdette da rimborsare",
   "emt.title": "Email di iscrizione",

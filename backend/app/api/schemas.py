@@ -10,9 +10,18 @@ from app.domain.booking import (
     effective_status,
     is_past_day,
 )
+from app.domain.confirmation import confirmation_balance_cents, confirmation_due_cents
 from app.domain.fees import balance_cents
 from app.domain.meals import allowed_meals, meal_sort_key, periods_by_day
-from app.models import Booking, Edition, active_payments, slot_sort_key
+from app.models import (
+    STATUS_CONFIRMED,
+    STATUS_EXPIRED,
+    STATUS_PENDING,
+    Booking,
+    Edition,
+    active_payments,
+    slot_sort_key,
+)
 from app.services.amounts import activity_terms, meal_terms
 from app.timefmt import format_activity, format_meal, format_slot
 
@@ -66,6 +75,10 @@ class PaymentView(BaseModel):
 class BookingView(BaseModel):
     id: int
     status: str
+    confirmation_policy: str
+    registration_fee_cents: int | None
+    confirmation_due_cents: int | None
+    confirmation_balance_cents: int | None
     amount_due_cents: int
     paid_cents: int
     balance_cents: int
@@ -95,9 +108,26 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
     slots = sorted(booking.slots, key=slot_sort_key)
     booked_dates = {slot.date for slot in slots}
     status = effective_status(booking.status, booking.hold_expires_at, now)
+    confirmation_due = (
+        confirmation_due_cents(
+            edition.confirmation_policy, booking.amount_due_cents, booking.registration_fee_cents
+        )
+        if status in (STATUS_PENDING, STATUS_CONFIRMED, STATUS_EXPIRED)
+        else None
+    )
     return BookingView(
         id=booking.id,
         status=status,
+        confirmation_policy=edition.confirmation_policy,
+        registration_fee_cents=booking.registration_fee_cents,
+        confirmation_due_cents=confirmation_due,
+        confirmation_balance_cents=confirmation_balance_cents(
+            status,
+            edition.confirmation_policy,
+            booking.amount_due_cents,
+            booking.registration_fee_cents,
+            paid,
+        ),
         amount_due_cents=booking.amount_due_cents,
         paid_cents=paid,
         balance_cents=balance_cents(booking.amount_due_cents, paid),

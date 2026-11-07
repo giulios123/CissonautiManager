@@ -4,6 +4,7 @@ The summary of the numbers: registrations, attendance, meals, activities, contri
 
 - Allergies appear only as a number.
 - The amount due is broken down into fee, meals and activities; a “difference” row absorbs prices changed after sign-ups.
+- “Still to collect” is the full balance; “Remaining to confirm” is only the uncovered registration fee for bookings awaiting confirmation. They describe different amounts and are not added together.
 - For the waitlist you also see how many of those promoted were verified +1 at the time of promotion.
 - It can be **printed** (the menu and buttons disappear, about 4 A4 pages) and **downloaded as CSV**.
 

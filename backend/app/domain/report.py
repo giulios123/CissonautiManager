@@ -13,6 +13,7 @@ from datetime import date
 
 from app.domain.booking import occupies_seats
 from app.domain.collection import collectable
+from app.domain.confirmation import POLICY_LEGACY_TOTAL, confirmation_due_cents
 from app.domain.fees import compute_fee
 from app.domain.meals import NO_DIET
 from app.domain.presence import presences
@@ -60,6 +61,7 @@ class BookingFacts:
     diet: str | None
     has_allergies: bool
     contributions: tuple[str, ...]  # kinds
+    registration_fee_cents: int | None = None
 
 
 @dataclass(frozen=True)
@@ -93,6 +95,7 @@ class EditionFacts:
     lunch_price_cents: int
     dinner_price_cents: int
     meal_terms: dict[tuple[date, str], tuple[int, str]] = field(default_factory=dict)
+    confirmation_policy: str = POLICY_LEGACY_TOTAL
 
 
 @dataclass(frozen=True)
@@ -185,6 +188,7 @@ class RevenueSection:
     refunded_cents: int
     net_cents: int
     to_collect_cents: int
+    to_confirm_cents: int | None
     credits_cents: int
     to_refund_cents: int
 
@@ -346,7 +350,11 @@ def _revenue(
     seated = [b for b in bookings if occupies_seats(b.status)]
     due = sum(b.amount_due_cents for b in seated)
     fee = sum(
-        compute_fee({day for day, _ in b.slots}, edition.base_fee_cents, edition.per_day_fee_cents)
+        b.registration_fee_cents
+        if b.registration_fee_cents is not None
+        else compute_fee(
+            {day for day, _ in b.slots}, edition.base_fee_cents, edition.per_day_fee_cents
+        )
         for b in seated
     )
     meals = sum(
@@ -368,6 +376,21 @@ def _revenue(
         by_channel[payment.channel] += payment.amount_cents
     paid = sum(b.paid_cents for b in bookings)
     refunded = sum(b.refund_cents for b in bookings)
+    pending = [b for b in bookings if b.status == STATUS_PENDING]
+    pending_confirmation_dues = [
+        confirmation_due_cents(
+            edition.confirmation_policy, b.amount_due_cents, b.registration_fee_cents
+        )
+        for b in pending
+    ]
+    to_confirm = (
+        None
+        if any(due is None for due in pending_confirmation_dues)
+        else sum(
+            max(0, due - b.paid_cents)
+            for b, due in zip(pending, pending_confirmation_dues, strict=True)
+        )
+    )
     return RevenueSection(
         due_cents=due,
         due_fee_cents=fee,
@@ -379,6 +402,7 @@ def _revenue(
         refunded_cents=refunded,
         net_cents=paid - refunded,
         to_collect_cents=sum(max(b.amount_due_cents - b.paid_cents, 0) for b in seated),
+        to_confirm_cents=to_confirm,
         credits_cents=sum(max(b.paid_cents - b.amount_due_cents, 0) for b in seated),
         to_refund_cents=sum(
             max(b.paid_cents - b.refund_cents, 0)

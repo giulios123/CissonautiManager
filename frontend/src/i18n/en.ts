@@ -739,6 +739,8 @@ export const en: Record<MessageKey, string> = {
   "rep.refundedWord": "Refunded",
   "rep.net": "Net (paid minus refunded)",
   "rep.toCollect": "Still to collect",
+  "rep.toConfirm": "Remaining to confirm",
+  "rep.amountUnavailable": "not available",
   "rep.credits": "Credits to return",
   "rep.toRefund": "Cancellations to refund",
   "emt.title": "Registration email",

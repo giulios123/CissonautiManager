@@ -4,6 +4,7 @@ Il riepilogo dei numeri: iscrizioni, presenze, pasti, attività, contributi, lis
 
 - Le allergie compaiono solo come numero.
 - Il dovuto è scomposto in quota, pasti e attività; una riga «differenza» assorbe i prezzi cambiati dopo le iscrizioni.
+- «Ancora da incassare» è il saldo complessivo; «Residuo per confermare» indica solo la quota ancora scoperta nelle prenotazioni in attesa. I due valori descrivono importi diversi e non si sommano.
 - Per la lista d'attesa vedi anche quanti promossi erano +1 verificati al momento della promozione.
 - Si può **stampare** (il menu e i pulsanti spariscono, sono circa 4 pagine A4) e **scaricare in CSV**.
 

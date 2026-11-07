@@ -362,6 +362,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
                 diet=booking.diet,
                 has_allergies=bool((booking.allergies or "").strip()),
                 contributions=tuple(c.kind for c in booking.contributions),
+                registration_fee_cents=booking.registration_fee_cents,
             )
         )
         payments.extend(PaymentFacts(p.channel, p.amount_cents) for p in active_payments(booking))
@@ -394,5 +395,6 @@ def load_report(db: Session, now: datetime) -> ReportData:
             )
             for m in edition.meal_settings
         },
+        confirmation_policy=edition.confirmation_policy,
     )
     return ReportData(edition, edition_report(facts, bookings, activities, waitlist, payments))
