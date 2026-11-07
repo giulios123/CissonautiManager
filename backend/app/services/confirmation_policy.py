@@ -25,7 +25,7 @@ from app.models import (
 )
 from app.services import audit
 from app.services.amounts import calculate_amounts
-from app.services.payments import paid_total
+from app.services.payments import paid_total, queue_confirmation_notice
 from app.services.seats import lock_edition
 from app.timefmt import format_euro
 
@@ -68,6 +68,7 @@ def activate(
                 "activated_at": edition.confirmation_policy_activated_at,
                 "updated_bookings": 0,
                 "new_confirmations": 0,
+                "transferred_notices": 0,
             }
         raise PolicyAlreadyActive()
     if edition.confirmation_policy != POLICY_LEGACY_TOTAL:
@@ -80,8 +81,10 @@ def activate(
     if current["preview_token"] != preview_token:
         raise PreviewOutOfDate()
 
+    edition.confirmation_policy = POLICY_REGISTRATION_FEE
     changed = 0
     newly_confirmed = 0
+    transferred_notices = 0
     for row in current["_rows"]:
         booking = row["booking"]
         old_fee = booking.registration_fee_cents
@@ -90,10 +93,20 @@ def activate(
         booking.amount_due_cents = row["amount_due_cents"]
         if row["status_after"] == STATUS_CONFIRMED and booking.status != STATUS_CONFIRMED:
             booking.status = STATUS_CONFIRMED
-            booking.confirmation_cycle += 1
-            booking.confirmation_notice_due_at = now
-            booking.confirmation_notice_payment_id = None
+            queue_confirmation_notice(booking, now)
             newly_confirmed += 1
+        elif row["transfer_legacy_notice"]:
+            queue_confirmation_notice(
+                booking,
+                now,
+                payment_id=row["legacy_notice_payment_id"],
+                due_at=row["legacy_notice_due_at"],
+            )
+            for payment in booking.payments:
+                if payment.id == row["legacy_notice_payment_id"]:
+                    payment.confirmation_email_due_at = None
+                    break
+            transferred_notices += 1
         detail = (
             "Attivata conferma sulla quota: "
             f"quota {format_euro(old_fee) if old_fee is not None else 'non salvata'} → "
@@ -105,7 +118,6 @@ def activate(
         audit.log(db, actor, "confirmation_policy_activated", detail, booking.id)
         changed += 1
 
-    edition.confirmation_policy = POLICY_REGISTRATION_FEE
     edition.confirmation_policy_activated_at = now
     edition.confirmation_policy_preview_token = preview_token
     audit.log(
@@ -121,6 +133,7 @@ def activate(
         "activated_at": now,
         "updated_bookings": changed,
         "new_confirmations": newly_confirmed,
+        "transferred_notices": transferred_notices,
     }
 
 
@@ -188,6 +201,19 @@ def _build_preview(db: Session, edition: Edition, bookings: list[Booking], now: 
             )
             continue
         paid = paid_total(booking)
+        pending_notice = next(
+            (
+                payment
+                for payment in sorted(
+                    active_payments(booking),
+                    key=lambda item: (item.confirmation_email_due_at or now, item.id),
+                )
+                if payment.confirmation_email_due_at is not None
+                and payment.confirmation_email_sent_at is None
+            ),
+            None,
+        )
+        transfer_legacy_notice = status == STATUS_CONFIRMED and pending_notice is not None
         status_after = (
             STATUS_CONFIRMED
             if status == STATUS_CONFIRMED or paid >= registration_fee
@@ -209,7 +235,14 @@ def _build_preview(db: Session, edition: Edition, bookings: list[Booking], now: 
             if status_after == STATUS_PENDING
             else 0,
             "sends_confirmation": status == STATUS_PENDING and status_after == STATUS_CONFIRMED,
+            "legacy_notice_payment_id": pending_notice.id if transfer_legacy_notice else None,
+            "legacy_notice_due_at": (
+                pending_notice.confirmation_email_due_at if transfer_legacy_notice else None
+            ),
+            "transfer_legacy_notice": transfer_legacy_notice,
         }
+        if transfer_legacy_notice:
+            row["sends_confirmation"] = True
         rows.append(row)
         fingerprint_bookings.append(_booking_fingerprint(booking, status))
 

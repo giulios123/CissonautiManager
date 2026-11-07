@@ -32,6 +32,10 @@ OTHER_EMAIL_KINDS: dict[str, tuple[str, str]] = {
     "already_registered": ("email.already.subject", "email.already.body"),
     "magic_link": ("email.magic.subject", "email.magic.body"),
     "payment_confirmation": ("email.payment.subject", "email.payment.body"),
+    "booking_confirmation": (
+        "email.booking_confirmation.subject",
+        "email.booking_confirmation.body",
+    ),
     "reminder_mid": ("email.reminder.subject_mid", "email.reminder.intro_mid"),
     "reminder_final": ("email.reminder.subject_final", "email.reminder.intro_final"),
     "waitlist_promoted": ("email.promoted.subject", "email.promoted.body"),

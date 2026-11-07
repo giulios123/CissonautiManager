@@ -15,7 +15,7 @@ from app.models import MealSetting, Participant
 from app.services import audit
 from app.services import edition as edition_service
 from app.services.amounts import meal_terms
-from app.services.payments import paid_total, send_confirmation
+from app.services.payments import paid_total, send_transition_confirmation
 from app.services.pricing import reprice
 
 router = APIRouter(prefix="/api/admin/meals", tags=["admin"], dependencies=[Depends(require_admin)])
@@ -75,5 +75,5 @@ def set_meal_terms(
     confirmed = reprice(db, edition, admin, now, meal=(day, kind)) if financial_change else []
     db.commit()
     for booking in confirmed:
-        send_confirmation(sender, booking, paid_total(booking))
+        send_transition_confirmation(db, sender, booking, paid_total(booking), now)
     return after

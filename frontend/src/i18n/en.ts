@@ -801,6 +801,9 @@ export const en: Record<MessageKey, string> = {
   "emx.kind.payment_confirmation": "Payment received",
   "emx.auto.payment_confirmation":
     "The amount recorded, the slots of the booking and the closing line.",
+  "emx.kind.booking_confirmation": "Booking confirmed without a new payment",
+  "emx.auto.booking_confirmation":
+    "The covered fee, full balance or credit, booked slots and the personal page link.",
   "emx.kind.reminder_mid": "Payment reminder",
   "emx.auto.reminder_mid":
     'The deadline, what is left to pay, the payment reference, the payment instructions, the link to the personal page and the "if you already paid" note.',

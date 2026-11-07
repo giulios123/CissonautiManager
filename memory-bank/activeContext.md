@@ -2,7 +2,7 @@
 
 ## Ora
 
-**2026-11-07 · MVP17 implementato; MVP18 in lavorazione.** Branch `feat/mvp-18-conferma-quota`; T17-1–6 completati e T18-1–5 implementati con test mirati. Il maintainer conferma superate tutte le prove SQL, incluse quelle delle migrazioni interessate. T17-7/8 restano aperti per CI e collaudi manuali telefono/desktop/iframe; T18-6–10 sono ancora da completare. Le informative definitive IT/EN non sono pubblicate. Nessun deploy o invio email reale eseguito; la nuova quota resta legacy finché non viene attivata esplicitamente.
+**2026-11-07 · MVP17 implementato; MVP18 in lavorazione.** Branch `feat/mvp-18-conferma-quota`; T17-1–6 completati e T18-1–6 implementati con test mirati. Il maintainer conferma superate tutte le prove SQL, incluse quelle delle migrazioni interessate. T17-7/8 restano aperti per CI e collaudi manuali telefono/desktop/iframe; T18-7–10 sono ancora da completare. Le informative definitive IT/EN non sono pubblicate. Nessun deploy o invio email reale eseguito; la nuova quota resta legacy finché non viene attivata esplicitamente.
 
 **2026-11-07 · Spec esecutive MVP 17 e 18 pronte e in implementazione (B1).** Richiesta esplicita del maintainer di preparare entrambe: [17 · Consensi e riservatezza](../specs/mvp-17-consensi-riservatezza/requirements.md) con 8 task, design, microtesti IT/EN e prove manuali; [18 · Conferma con la sola quota](../specs/mvp-18-conferma-quota/requirements.md) con 10 task, design e prove manuali. Il codice 17 è in lavorazione; nessun deploy o invio reale eseguito.
 

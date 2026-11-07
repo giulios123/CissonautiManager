@@ -23,8 +23,9 @@ from app.services.payments import (
     REVIVED,
     dropped_activities_warning,
     paid_total,
+    queue_confirmation_notice,
     revive_expired,
-    send_confirmation,
+    send_transition_confirmation,
 )
 from app.services.registration import SlotsFull
 from app.services.seats import expire_overdue, free_by_slot
@@ -160,6 +161,7 @@ def reactivate(
     )
     if confirmed:
         booking.status = STATUS_CONFIRMED
+        queue_confirmation_notice(booking, now)
     if confirmed:
         detail = "Prenotazione riattivata e confermata: i pagamenti coprono già la quota"
     else:
@@ -170,5 +172,5 @@ def reactivate(
     audit.log(db, admin, "reactivated", detail, booking.id)
     db.commit()
     if confirmed:
-        send_confirmation(sender, booking, total)
+        send_transition_confirmation(db, sender, booking, total, now)
     return confirmed

@@ -9,7 +9,9 @@ from app.models import (
     STATUS_PENDING,
     AuditLog,
     BookingMeal,
+    Payment,
 )
+from app.services.payments import send_due_confirmations
 from tests.helpers import d
 
 PREVIEW = "/api/admin/edition/confirmation-policy/preview"
@@ -22,10 +24,14 @@ def slot_on(db, day):
     return db.scalar(select(Slot).where(Slot.date == d(day), Slot.period == "morning"))
 
 
-def payment(client, booking_id, cents):
+def payment(client, booking_id, cents, defer_confirmation_email=False):
     return client.post(
         f"/api/admin/registrations/{booking_id}/payments",
-        json={"amount_cents": cents, "channel": "iban"},
+        json={
+            "amount_cents": cents,
+            "channel": "iban",
+            "defer_confirmation_email": defer_confirmation_email,
+        },
     )
 
 
@@ -138,7 +144,11 @@ def test_apply_is_atomic_preserves_payments_and_is_idempotent(
         1900,
     )
     assert covered.hold_expires_at == hold_expires_at
-    assert (covered.confirmation_cycle, covered.confirmation_notice_due_at) == (1, clock())
+    assert (
+        covered.confirmation_cycle,
+        covered.confirmation_claimed_cycle,
+        covered.confirmation_notice_due_at,
+    ) == (1, 1, None)
     assert sum(p.amount_cents for p in covered.payments if p.voided_at is None) == 1100
     assert (confirmed.status, confirmed.registration_fee_cents, confirmed.amount_due_cents) == (
         STATUS_CONFIRMED,
@@ -150,7 +160,9 @@ def test_apply_is_atomic_preserves_payments_and_is_idempotent(
         None,
         3000,
     )
-    assert len(outbox.sent) == 0
+    assert len(outbox.sent) == 1
+    assert outbox.sent[0].subject.startswith("La tua iscrizione")
+    assert "Pagamento registrato" not in outbox.sent[0].body
     audit_count = db.scalar(select(func.count()).select_from(AuditLog))
 
     retry = admin_client.post(ACTIVATE, json={"preview_token": preview["preview_token"]})
@@ -218,3 +230,82 @@ def test_booking_without_slots_blocks_activation(
     assert preview["blockers"][0]["reason"] == "invalid_slots"
     blocked = admin_client.post(ACTIVATE, json={"preview_token": "0" * 64})
     assert blocked.status_code == 409
+
+
+def test_activation_transfers_a_pending_legacy_payment_notice_into_the_new_cycle(
+    admin_client, db, edition, make_participant, make_booking, outbox, clock
+):
+    booking = make_booking(
+        make_participant("ada@example.com"),
+        [slot_on(db, 13)],
+        amount_due_cents=1100,
+    )
+    response = payment(admin_client, booking.id, 1100, defer_confirmation_email=True)
+    assert response.status_code == 201
+    legacy_payment = db.query(Payment).one()
+    old_due_at = legacy_payment.confirmation_email_due_at
+    assert old_due_at == clock() + timedelta(seconds=30)
+
+    preview = admin_client.get(PREVIEW).json()
+    activated = admin_client.post(ACTIVATE, json={"preview_token": preview["preview_token"]})
+
+    assert activated.status_code == 200, activated.text
+    assert activated.json()["transferred_notices"] == 1
+    db.refresh(booking)
+    db.refresh(legacy_payment)
+    assert booking.confirmation_notice_due_at == old_due_at
+    assert booking.confirmation_notice_payment_id == legacy_payment.id
+    assert legacy_payment.confirmation_email_due_at is None
+    assert outbox.sent == []
+
+    clock.advance(seconds=31)
+    assert send_due_confirmations(db, outbox, clock()) == 1
+    assert len(outbox.sent) == 1
+    assert outbox.sent[0].subject.startswith("Pagamento ricevuto")
+    db.refresh(legacy_payment)
+    assert legacy_payment.confirmation_email_sent_at == clock()
+    assert send_due_confirmations(db, outbox, clock()) == 0
+    assert len(outbox.sent) == 1
+
+
+def test_failed_activation_notice_does_not_undo_policy_or_repeat_the_attempt(
+    admin_client,
+    db,
+    edition,
+    make_participant,
+    make_booking,
+    outbox,
+    monkeypatch,
+    caplog,
+):
+    edition.base_fee_cents = 500
+    edition.per_day_fee_cents = 0
+    edition.lunch_price_cents = 600
+    booking = make_booking(
+        make_participant("ada@example.com"),
+        [slot_on(db, 13)],
+        amount_due_cents=1100,
+    )
+    booking.meals = [BookingMeal(date=d(13), kind="lunch")]
+    db.commit()
+    assert payment(admin_client, booking.id, 500).status_code == 201
+    token = admin_client.get(PREVIEW).json()["preview_token"]
+
+    def fail(_message):
+        raise RuntimeError("email service unavailable")
+
+    monkeypatch.setattr(outbox, "send", fail)
+    with caplog.at_level("ERROR", logger="app.api.admin_edition"):
+        response = admin_client.post(ACTIVATE, json={"preview_token": token})
+
+    assert response.status_code == 200, response.text
+    assert "Confirmation-policy emails failed" in caplog.text
+    db.refresh(edition)
+    db.refresh(booking)
+    assert edition.confirmation_policy == POLICY_REGISTRATION_FEE
+    assert booking.confirmation_claimed_cycle == booking.confirmation_cycle == 1
+    assert booking.confirmation_notice_due_at is None
+    assert (
+        admin_client.post(ACTIVATE, json={"preview_token": token}).json()["already_applied"] is True
+    )
+    assert len(outbox.sent) == 0

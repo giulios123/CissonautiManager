@@ -269,6 +269,59 @@ def payment_confirmation_email(
     )
 
 
+def booking_confirmation_email(
+    booking: Booking,
+    paid_cents: int,
+    login_url: str,
+    texts: EmailTexts | None = None,
+) -> EmailMessage:
+    """Confirmation caused by a fee rule or booking change, without a new payment receipt."""
+    participant = booking.participant
+    loc = normalize_locale(participant.locale)
+    texts = texts or EmailTexts()
+    opening = texts.body or (
+        _greeting(participant.first_name, loc)
+        + t("email.booking_confirmation.body", loc, event=texts.event_name)
+    ).rstrip("\n")
+    fee_line = t(
+        "email.booking_confirmation.fee",
+        loc,
+        amount=format_euro(booking.registration_fee_cents or 0, loc),
+    )
+    balance_cents = booking.amount_due_cents - paid_cents
+    if balance_cents > 0:
+        balance_line = t(
+            "email.booking_confirmation.balance",
+            loc,
+            amount=format_euro(balance_cents, loc),
+        )
+    elif balance_cents < 0:
+        balance_line = t(
+            "email.booking_confirmation.credit",
+            loc,
+            amount=format_euro(-balance_cents, loc),
+        )
+    else:
+        balance_line = t("email.booking_confirmation.no_balance", loc)
+    body = (
+        opening
+        + "\n\n"
+        + fee_line
+        + "\n"
+        + balance_line
+        + "\n\n"
+        + _presence_block(booking, loc)
+        + t("email.booking_confirmation.access", loc, link=login_url)
+        + "\n"
+    )
+    return EmailMessage(
+        to=participant.email,
+        subject=_subject(texts, "email.booking_confirmation.subject", loc),
+        body=body,
+        html=_html(body, emphasized_lines=(fee_line, balance_line)),
+    )
+
+
 def reminder_email(
     booking: Booking,
     kind: str,

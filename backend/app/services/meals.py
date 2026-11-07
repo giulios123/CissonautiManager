@@ -18,7 +18,11 @@ from app.models import STATUS_CONFIRMED, STATUS_PENDING, Booking, BookingMeal, E
 from app.services import audit
 from app.services.amounts import confirmation_covered, recompute_amount
 from app.services.booking_changes import ChangeResult, NotEditable
-from app.services.payments import paid_total, send_confirmation
+from app.services.payments import (
+    paid_total,
+    queue_confirmation_notice,
+    send_transition_confirmation,
+)
 from app.services.seats import expire_overdue, lock_booking
 from app.timefmt import format_euro, format_meal
 
@@ -94,9 +98,10 @@ def change_meals(
     )
     if confirmed_now:
         booking.status = STATUS_CONFIRMED
+        queue_confirmation_notice(booking, now)
     db.commit()
     if confirmed_now:
-        send_confirmation(sender, booking, total)
+        send_transition_confirmation(db, sender, booking, total, now)
     return ChangeResult(booking, confirmed_now)
 
 

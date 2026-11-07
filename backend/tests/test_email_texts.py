@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from app.email.base import EmailTexts
 from app.email.templates import (
+    booking_confirmation_email,
     cancellation_email,
     payment_confirmation_email,
     reminder_email,
@@ -17,6 +18,7 @@ KINDS = [
     "already_registered",
     "magic_link",
     "payment_confirmation",
+    "booking_confirmation",
     "reminder_mid",
     "reminder_final",
     "waitlist_promoted",
@@ -67,6 +69,13 @@ class TestSettingsApi:
         assert cancellation["defaults"]["it"]["subject"] == "Disdetta al {event}"
         assert cancellation["defaults"]["en"]["subject"] == "Cancellation for {event}"
         assert cancellation["defaults"]["en"]["body"].startswith("Hi {first_name},\n\n")
+        confirmation = data["emails"]["booking_confirmation"]
+        assert confirmation["defaults"]["it"]["subject"] == (
+            "La tua iscrizione al {event} è confermata"
+        )
+        assert confirmation["defaults"]["en"]["subject"] == (
+            "Your registration for {event} is confirmed"
+        )
         assert data["form_intro"]["it"] == ""
         assert data["form_intro"]["defaults"]["en"].startswith("Choose when")
 
@@ -248,6 +257,22 @@ class TestTemplateFunctions:
         standard = payment_confirmation_email(booking, 1100, EmailTexts("Camp"))
         assert standard.subject == "Pagamento ricevuto: sei dentro al Camp!"
         assert standard.body.startswith("Ciao Ada,\n\nabbiamo registrato il tuo pagamento:")
+
+    def test_booking_confirmation_does_not_claim_a_new_payment(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 1600
+        texts = EmailTexts("Camp", "Conferma Camp", "Quota coperta.")
+
+        email = booking_confirmation_email(booking, 1200, "https://camp.example.org/login", texts)
+
+        assert email.subject == "Conferma Camp"
+        assert email.body.startswith("Quota coperta.\n\nQuota di partecipazione coperta: 12,00 €")
+        assert "Resta da saldare all'organizzazione: 4,00 €" in email.body
+        assert "https://camp.example.org/login" in email.body
+        assert "Pagamento registrato" not in email.body
 
     def test_reminders(self, make_participant, make_booking, db, edition):
         booking = self.booking(make_participant, make_booking, db)

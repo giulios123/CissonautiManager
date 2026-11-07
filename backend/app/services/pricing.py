@@ -9,7 +9,7 @@ from app.domain.booking import effective_status, occupies_seats
 from app.models import STATUS_CONFIRMED, STATUS_PENDING, Booking, Edition, Participant
 from app.services import audit
 from app.services.amounts import confirmation_covered, recompute_amount
-from app.services.payments import paid_total
+from app.services.payments import paid_total, queue_confirmation_notice
 from app.services.seats import lock_booking
 from app.timefmt import format_euro
 
@@ -56,5 +56,6 @@ def reprice(
             edition, booking, paid_total(booking)
         ):
             booking.status = STATUS_CONFIRMED
+            queue_confirmation_notice(booking, now)
             confirmed.append(booking)
     return confirmed

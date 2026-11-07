@@ -39,7 +39,11 @@ from app.models import (
 from app.services import audit
 from app.services.amounts import confirmation_covered, recompute_amount
 from app.services.booking_changes import ChangeResult, NotEditable
-from app.services.payments import paid_total, send_confirmation
+from app.services.payments import (
+    paid_total,
+    queue_confirmation_notice,
+    send_transition_confirmation,
+)
 from app.services.pricing import reprice
 from app.services.seats import (
     activities_for_update,
@@ -230,7 +234,7 @@ def update(
     db.commit()
     if sender is not None:
         for booking in confirmed:
-            send_confirmation(sender, booking, paid_total(booking))
+            send_transition_confirmation(db, sender, booking, paid_total(booking), now)
     return activity
 
 
@@ -360,9 +364,10 @@ def change_activities(
     )
     if confirmed_now:
         booking.status = STATUS_CONFIRMED
+        queue_confirmation_notice(booking, now)
     db.commit()
     if confirmed_now:
-        send_confirmation(sender, booking, total)
+        send_transition_confirmation(db, sender, booking, total, now)
     return ChangeResult(booking, confirmed_now, over_capacity_activities=over)
 
 

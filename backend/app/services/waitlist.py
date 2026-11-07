@@ -48,7 +48,7 @@ from app.services import auth as auth_service
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services.amounts import confirmation_covered, recompute_amount
-from app.services.payments import paid_total
+from app.services.payments import paid_total, queue_confirmation_notice, send_due_confirmations
 from app.services.seats import expire_overdue, free_by_slot, lock_edition, slots_for_update
 from app.timefmt import format_slot
 
@@ -409,6 +409,7 @@ def _add_slot(booking: Booking, edition: Edition, slot: Slot, kind: str, now: da
         booking.hold_expires_at = new_expiry
     if confirmation_covered(edition, booking, paid_total(booking)):
         booking.status = STATUS_CONFIRMED
+        queue_confirmation_notice(booking, now)
 
 
 def _notify(
@@ -422,6 +423,14 @@ def _notify(
     from app.services.registration import enabled_channels
 
     booking = promotion.booking
+    if (
+        promotion.kind == "add_to_pending"
+        and booking.status == STATUS_CONFIRMED
+        and edition.confirmation_policy == POLICY_REGISTRATION_FEE
+        and booking.confirmation_notice_due_at is not None
+    ):
+        send_due_confirmations(db, sender, now, settings)
+        return
     if promotion.kind == "new_booking":
         participant = db.get(Participant, booking.participant_id)
         assert participant is not None

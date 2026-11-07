@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.db import make_engine, make_session_factory, utcnow
-from app.domain.fees import is_covered
 from app.domain.reminders import due_reminder
 from app.email import EmailSender, build_email_sender
 from app.email.templates import reminder_email
@@ -27,8 +26,9 @@ from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
+from app.services.amounts import confirmation_due
 from app.services.payments import paid_total, send_due_confirmations
-from app.services.seats import expire_overdue
+from app.services.seats import expire_overdue, lock_booking, lock_edition
 
 logger = logging.getLogger("app.jobs.send_reminders")
 
@@ -56,6 +56,7 @@ def _claim(db: Session, booking: Booking, kind: str, now: datetime) -> bool:
             Booking.hold_started_at == booking.hold_started_at,
             Booking.hold_expires_at == booking.hold_expires_at,
             Booking.amount_due_cents == booking.amount_due_cents,
+            Booking.registration_fee_cents == booking.registration_fee_cents,
         )
         .values({column.key: now})
     )
@@ -72,15 +73,28 @@ def send_due_reminders(
     channels: dict[int, list[PaymentChannel]] = {}
     login_url = f"{settings.app_base_url.rstrip('/')}/login"
 
-    pending = db.scalars(
-        select(Booking)
+    pending_ids = db.scalars(
+        select(Booking.id)
         .where(Booking.status == STATUS_PENDING, Booking.hold_expires_at > now)
         .order_by(Booking.id)
     ).all()
-    for booking in pending:
+    for booking_id in pending_ids:
+        booking = db.get(Booking, booking_id)
+        if booking is None:
+            continue
+        if booking.status != STATUS_PENDING or booking.hold_expires_at <= now:
+            continue
         summary.examined += 1
-        paid = paid_total(booking)
-        if is_covered(booking.amount_due_cents, paid):
+        evaluated_state = (
+            booking.status,
+            booking.hold_started_at,
+            booking.hold_expires_at,
+            booking.amount_due_cents,
+            booking.registration_fee_cents,
+        )
+        initial_paid = paid_total(booking)
+        initial_due = confirmation_due(booking.edition, booking)
+        if initial_due is None or initial_paid >= initial_due:
             continue
         kind = due_reminder(
             booking.hold_started_at,
@@ -89,7 +103,36 @@ def send_due_reminders(
             booking.reminder_final_sent_at,
             now,
         )
-        if kind is None or not _claim(db, booking, kind, now):
+        if kind is None:
+            continue
+        lock_edition(db, booking.edition_id)
+        lock_booking(db, booking_id)
+        db.refresh(booking)
+        edition = db.get(Edition, booking.edition_id)
+        if edition is None:
+            db.rollback()
+            continue
+        db.refresh(edition)
+        paid = paid_total(booking)
+        due = confirmation_due(edition, booking)
+        if (
+            booking.status != STATUS_PENDING
+            or (
+                booking.status,
+                booking.hold_started_at,
+                booking.hold_expires_at,
+                booking.amount_due_cents,
+                booking.registration_fee_cents,
+            )
+            != evaluated_state
+            or booking.hold_expires_at <= now
+            or due is None
+            or due != initial_due
+            or paid >= due
+        ):
+            db.rollback()
+            continue
+        if not _claim(db, booking, kind, now):
             continue
         if booking.edition_id not in channels:
             edition = db.get(Edition, booking.edition_id)
@@ -100,7 +143,7 @@ def send_due_reminders(
                 booking,
                 kind,
                 channels[booking.edition_id],
-                booking.amount_due_cents - paid,
+                due - paid,
                 login_url,
                 email_templates_service.texts_for_booking(
                     db, booking, "reminder_final" if kind == "final" else "reminder_mid"
@@ -113,7 +156,7 @@ def send_due_reminders(
             summary.mid += 1
     summary.promoted = promote_open_slots(db, sender, settings, now)
     # Safety net for the confirmation emails whose timer was lost (restart, scale to zero).
-    summary.confirmations = send_due_confirmations(db, sender, now)
+    summary.confirmations = send_due_confirmations(db, sender, now, settings)
     return summary
 
 

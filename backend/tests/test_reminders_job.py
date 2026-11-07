@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.jobs import send_reminders
 from app.jobs.send_reminders import send_due_reminders
 from app.models import (
@@ -84,6 +85,22 @@ def test_reminder_names_the_balance_the_code_and_the_deadline(db, booking, outbo
     assert booking.participant.personal_code in body
     assert "04/07/2026" in body
     assert "https://camp.example.org/login" in body
+
+
+def test_confirmation_policy_reminder_uses_only_the_registration_fee_remainder(
+    db, booking, outbox, settings, clock
+):
+    booking.edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    booking.registration_fee_cents = 500
+    db.commit()
+    pay(db, booking, 300)
+    clock.advance(hours=36)
+
+    summary = run(db, outbox, settings, clock)
+
+    assert summary.mid == 1
+    assert "2,00 €" in outbox.sent[0].body
+    assert "8,00 €" not in outbox.sent[0].body
 
 
 @pytest.mark.parametrize("status", [STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_CANCEL_REQUESTED])

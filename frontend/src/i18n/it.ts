@@ -800,6 +800,9 @@ export const it = {
   "emx.kind.payment_confirmation": "Pagamento ricevuto",
   "emx.auto.payment_confirmation":
     "L'importo registrato, gli slot della prenotazione e il saluto finale.",
+  "emx.kind.booking_confirmation": "Prenotazione confermata senza nuovo pagamento",
+  "emx.auto.booking_confirmation":
+    "La quota coperta, il saldo o credito complessivo, gli slot e il link alla pagina personale.",
   "emx.kind.reminder_mid": "Promemoria di pagamento",
   "emx.auto.reminder_mid":
     "La scadenza del blocco, quanto resta da versare, la causale, le istruzioni di pagamento, il link alla pagina personale e l'avviso «se hai già pagato».",

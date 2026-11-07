@@ -16,13 +16,15 @@ depends_on = None
 def upgrade() -> None:
     with op.batch_alter_table("edition") as batch:
         batch.add_column(sa.Column("confirmation_policy", sa.Unicode(24), nullable=True))
-        batch.add_column(sa.Column("confirmation_policy_activated_at", sa.DateTime(), nullable=True))
-        batch.add_column(sa.Column("confirmation_policy_preview_token", sa.String(64), nullable=True))
+        batch.add_column(
+            sa.Column("confirmation_policy_activated_at", sa.DateTime(), nullable=True)
+        )
+        batch.add_column(
+            sa.Column("confirmation_policy_preview_token", sa.String(64), nullable=True)
+        )
     op.execute("UPDATE edition SET confirmation_policy = 'legacy_total'")
     with op.batch_alter_table("edition") as batch:
-        batch.alter_column(
-            "confirmation_policy", existing_type=sa.Unicode(24), nullable=False
-        )
+        batch.alter_column("confirmation_policy", existing_type=sa.Unicode(24), nullable=False)
 
     with op.batch_alter_table("booking") as batch:
         batch.add_column(sa.Column("registration_fee_cents", sa.Integer(), nullable=True))

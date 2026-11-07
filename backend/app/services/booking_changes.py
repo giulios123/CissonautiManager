@@ -35,7 +35,11 @@ from app.services import audit
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services.amounts import confirmation_covered, recompute_amount
-from app.services.payments import paid_total, send_confirmation
+from app.services.payments import (
+    paid_total,
+    queue_confirmation_notice,
+    send_transition_confirmation,
+)
 from app.services.registration import InvalidSlots, SlotsFull
 from app.services.seats import expire_overdue, free_by_slot, slots_for_update
 from app.timefmt import format_activity, format_euro, format_meal, format_slot
@@ -182,9 +186,10 @@ def change_slots(
     )
     if confirmed_now:
         booking.status = STATUS_CONFIRMED
+        queue_confirmation_notice(booking, now)
     db.commit()
     if confirmed_now:
-        send_confirmation(sender, booking, total)
+        send_transition_confirmation(db, sender, booking, total, now)
     return ChangeResult(
         booking,
         confirmed_now,

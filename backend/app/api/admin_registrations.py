@@ -436,7 +436,7 @@ def _send_confirmations_later(request: Request) -> None:
         try:
             with app.state.session_factory() as db:
                 payment_service.send_due_confirmations(
-                    db, app.state.email_sender, app.state.clock()
+                    db, app.state.email_sender, app.state.clock(), app.state.settings
                 )
         except Exception:
             logger.exception("Deferred confirmation emails failed")
@@ -466,6 +466,7 @@ def add_payment(
         note=body.note,
         now=now,
         defer_confirmation_email=body.defer_confirmation_email,
+        settings=request.app.state.settings,
     )
     if result.email_due_at is not None:
         _send_confirmations_later(request)

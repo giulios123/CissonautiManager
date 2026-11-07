@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime, time
 from typing import Annotated, Literal, Self
 
@@ -23,10 +24,12 @@ from app.models import (
 )
 from app.services import confirmation_policy as confirmation_policy_service
 from app.services import edition as edition_service
+from app.services import payments as payment_service
 from app.services import waitlist as waitlist_service
 from app.services.edition_logo import logo_url
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+logger = logging.getLogger("app.api.admin_edition")
 
 
 MIDNIGHT = time(0, 0)
@@ -183,6 +186,7 @@ class ConfirmationPolicyActivateOut(BaseModel):
     activated_at: datetime
     updated_bookings: int
     new_confirmations: int
+    transferred_notices: int
 
 
 def _legal_out(document: LegalDocument | None) -> LegalOut | None:
@@ -254,6 +258,8 @@ def activate_confirmation_policy(
     response: Response,
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
     now: datetime = Depends(get_now),
 ) -> ConfirmationPolicyActivateOut:
     response.headers["Cache-Control"] = "no-store"
@@ -275,6 +281,11 @@ def activate_confirmation_policy(
         raise HTTPException(
             status_code=409, detail=t("confirmation_policy.already_active")
         ) from exc
+    if not result["already_applied"]:
+        try:
+            payment_service.send_due_confirmations(db, sender, now, settings)
+        except Exception:
+            logger.exception("Confirmation-policy emails failed")
     return ConfirmationPolicyActivateOut(**result)
 
 
