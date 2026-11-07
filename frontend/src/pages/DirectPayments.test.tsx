@@ -19,6 +19,7 @@ const booking: BookingView = {
   editable: true,
   can_cancel: true,
   slots: [],
+  schedule: [],
   payments: [],
 };
 const direct = {
