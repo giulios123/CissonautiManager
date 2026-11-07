@@ -1,7 +1,7 @@
 from datetime import date, datetime, time
 from typing import Annotated, Literal, Self
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy.orm import Session
 
@@ -17,9 +17,11 @@ from app.models import (
     DOC_MEDIA,
     Edition,
     LegalDocument,
+    Participant,
     PaymentChannel,
     slot_sort_key,
 )
+from app.services import confirmation_policy as confirmation_policy_service
 from app.services import edition as edition_service
 from app.services import waitlist as waitlist_service
 from app.services.edition_logo import logo_url
@@ -136,6 +138,53 @@ class LegalIn(BaseModel):
         return value
 
 
+class ConfirmationPolicyRow(BaseModel):
+    booking_id: int
+    name: str
+    email: str
+    status_before: str
+    status_after: str
+    registration_fee_cents: int
+    amount_due_cents: int
+    paid_cents: int
+    balance_before_cents: int
+    balance_after_cents: int
+    confirmation_balance_after_cents: int
+    sends_confirmation: bool
+
+
+class ConfirmationPolicyBlocker(BaseModel):
+    booking_id: int
+    name: str
+    reason: str
+
+
+class ConfirmationPolicyPreviewOut(BaseModel):
+    current_policy: str
+    proposed_policy: str
+    ready: bool
+    already_active: bool
+    preview_token: str | None
+    eligible_count: int
+    excluded_expired_count: int
+    excluded_closed_count: int
+    waitlist_only_count: int
+    new_confirmation_count: int
+    blockers: list[ConfirmationPolicyBlocker]
+    rows: list[ConfirmationPolicyRow]
+
+
+class ConfirmationPolicyActivateIn(BaseModel):
+    preview_token: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
+
+
+class ConfirmationPolicyActivateOut(BaseModel):
+    already_applied: bool
+    activated_at: datetime
+    updated_bookings: int
+    new_confirmations: int
+
+
 def _legal_out(document: LegalDocument | None) -> LegalOut | None:
     if document is None:
         return None
@@ -184,6 +233,49 @@ def _require_edition(db: Session) -> Edition:
 @router.get("/edition")
 def get_edition(db: Session = Depends(get_db)) -> EditionOut:
     return _edition_out(db, _require_edition(db))
+
+
+@router.get("/edition/confirmation-policy/preview")
+def preview_confirmation_policy(
+    response: Response,
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> ConfirmationPolicyPreviewOut:
+    response.headers["Cache-Control"] = "no-store"
+    edition = _require_edition(db)
+    result = confirmation_policy_service.preview(db, edition, now)
+    result.pop("_rows", None)
+    return ConfirmationPolicyPreviewOut(**result)
+
+
+@router.post("/edition/confirmation-policy/activate")
+def activate_confirmation_policy(
+    body: ConfirmationPolicyActivateIn,
+    response: Response,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> ConfirmationPolicyActivateOut:
+    response.headers["Cache-Control"] = "no-store"
+    edition = _require_edition(db)
+    try:
+        result = confirmation_policy_service.activate(db, edition, admin, now, body.preview_token)
+    except confirmation_policy_service.PreviewOutOfDate as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail=t("confirmation_policy.preview_changed")
+        ) from exc
+    except confirmation_policy_service.PreviewNotReady as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail=t("confirmation_policy.preview_blocked")
+        ) from exc
+    except confirmation_policy_service.PolicyAlreadyActive as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail=t("confirmation_policy.already_active")
+        ) from exc
+    return ConfirmationPolicyActivateOut(**result)
 
 
 @router.put("/edition")
