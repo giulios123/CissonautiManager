@@ -16,8 +16,8 @@ Problemi da risolvere:
 
 - Semplicità prima di tutto: lo mantengono volontari, budget quasi zero, hosting su crediti Azure.
 - Open source su GitHub, licenza MIT. Chiunque può aprire issue e PR.
-- Codice, nomi, commit e commenti in inglese. Memory Bank, spec, README e UI in italiano.
-- UI solo in italiano, mobile-first, accessibile. Timezone Europe/Rome.
+- Codice, nomi, commit e commenti in inglese; documentazione di progetto in italiano. Per UI, email e guida vale la regola bilingue già approvata in `AGENTS.md` e `domain.md` (D-041/D-043).
+- Interfaccia mobile-first e accessibile. Timezone Europe/Rome.
 - Il repo deve funzionare con Claude Code, Codex e GitHub Copilot.
 
 ## Stack

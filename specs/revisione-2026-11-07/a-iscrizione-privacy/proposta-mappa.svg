@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
+  <title id="title">A7 · Proposta grafica della mappa delle provenienze</title>
+  <desc id="desc">Wireframe con venti regioni in una sagoma schematica dell'Italia, intensità petrolio, legenda e tabella alternativa. Dati inventati. Soglia minima cinque confermata; confini, insieme contato e base di pubblicazione ancora da definire. Non è una mappa implementata.</desc>
+  <defs>
+    <pattern id="suppressed" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="8" height="8" fill="#f1f3f3"/><path d="M0 0V8" stroke="#88999d" stroke-width="2"/></pattern>
+    <style>
+      text{font-family:Arial,sans-serif;fill:#203b43}.small{font-size:13px}.muted{fill:#52666d}.region{stroke:#fff;stroke-width:3;stroke-linejoin:round}.rlabel{font-size:11px;font-weight:700;text-anchor:middle}.light{fill:#fff}.heading{font-weight:700}
+    </style>
+  </defs>
+  <rect width="1280" height="820" fill="#f7f3eb"/>
+  <rect x="40" y="30" width="1200" height="760" rx="20" fill="#fff" stroke="#d8dfdf"/>
+  <rect x="40" y="30" width="1200" height="9" rx="4" fill="#ffbc42"/>
+  <text x="78" y="80" font-size="13" letter-spacing="2" class="heading">CISSONAUTI · PROPOSTA A7</text>
+  <text x="78" y="122" font-size="32" class="heading">Da dove arriviamo</text>
+  <text x="78" y="152" font-size="16" class="muted">Un colpo d’occhio sulle provenienze, senza un elenco di persone.</text>
+  <rect x="875" y="69" width="320" height="37" rx="18" fill="#fff1ce"/>
+  <text x="1035" y="93" text-anchor="middle" font-size="13" class="heading">BOZZA · NESSUN DATO REALE</text>
+  <text x="78" y="191" class="small muted">Edizione di esempio · aggiornamento esemplificativo</text>
+  <g transform="translate(110,200)">
+    <path class="region" fill="url(#suppressed)" d="M100 42L140 34L145 66L111 73Z"/>
+    <path class="region" fill="#77b4b9" d="M111 73L145 66L185 80L182 146L155 178L110 157L95 104Z"/>
+    <path class="region" fill="#335c67" d="M145 66L165 26L220 38L235 90L215 139L182 146L185 80Z"/>
+    <path class="region" fill="#c4dfe1" d="M220 38L235 5L278 9L291 54L264 82L235 90Z"/>
+    <path class="region" fill="#77b4b9" d="M235 90L264 82L291 54L324 83L316 127L279 146L215 139Z"/>
+    <path class="region" fill="url(#suppressed)" d="M291 54L321 31L355 52L352 96L324 83Z"/>
+    <path class="region" fill="#c4dfe1" d="M110 157L155 178L198 158L234 177L216 193L172 189L135 201L108 188Z"/>
+    <path class="region" fill="#77b4b9" d="M182 146L215 139L279 146L309 180L285 205L234 177L198 158L155 178Z"/>
+    <path class="region" fill="#77b4b9" d="M216 193L234 177L285 205L289 245L260 268L226 243Z"/>
+    <path class="region" fill="#c4dfe1" d="M285 205L309 180L332 218L346 258L316 269L289 245Z"/>
+    <path class="region" fill="url(#suppressed)" d="M289 245L316 269L306 301L277 292L260 268Z"/>
+    <path class="region" fill="#335c67" d="M226 243L260 268L277 292L306 301L320 331L300 352L266 318L240 293Z"/>
+    <path class="region" fill="#c4dfe1" d="M316 269L346 258L365 292L350 320L320 331L306 301Z"/>
+    <path class="region" fill="url(#suppressed)" d="M350 320L365 292L385 320L378 344L354 352L320 331Z"/>
+    <path class="region" fill="#77b4b9" d="M300 352L320 331L354 352L372 380L353 405L325 386Z"/>
+    <path class="region" fill="#c4dfe1" d="M378 344L385 320L409 331L423 320L445 332L452 353L425 356L462 384L450 401L410 369L389 367Z"/>
+    <path class="region" fill="url(#suppressed)" d="M354 352L378 344L389 367L410 369L400 408L377 421L353 405L372 380Z"/>
+    <path class="region" fill="#c4dfe1" d="M377 421L400 408L413 435L410 461L393 481L368 481L363 461L384 450Z"/>
+    <path class="region" fill="#77b4b9" d="M262 469L304 479L338 468L368 481L340 505L302 515L276 498Z"/>
+    <path class="region" fill="url(#suppressed)" d="M130 300L150 306L158 343L150 385L129 394L115 366L119 329Z"/>
+    <text class="rlabel" x="120" y="58">VdA</text><text class="rlabel" x="141" y="121">Piemonte</text>
+    <text class="rlabel light" x="200" y="93">Lombardia</text><text class="rlabel" x="254" y="40">TAA</text>
+    <text class="rlabel" x="280" y="112">Veneto</text><text class="rlabel" x="330" y="66">FVG</text>
+    <text class="rlabel" x="154" y="186">Liguria</text><text class="rlabel" x="256" y="170">Emilia-R.</text>
+    <text class="rlabel" x="252" y="226">Toscana</text><text class="rlabel" x="314" y="236">Marche</text>
+    <text class="rlabel" x="289" y="278">Umbria</text><text class="rlabel light" x="277" y="313">Lazio</text>
+    <text class="rlabel" x="337" y="294">Abruzzo</text><text class="rlabel" x="362" y="332">Molise</text>
+    <text class="rlabel" x="337" y="374">Campania</text><text class="rlabel" x="423" y="347">Puglia</text>
+    <text class="rlabel" x="385" y="393">Basilicata</text><text class="rlabel" x="390" y="444">Calabria</text>
+    <text class="rlabel" x="311" y="493">Sicilia</text><text class="rlabel" x="136" y="350">Sardegna</text>
+  </g>
+  <rect x="735" y="220" width="450" height="410" rx="16" fill="#f6f9f9" stroke="#d8dfdf"/>
+  <text x="765" y="259" font-size="20" class="heading">Legenda proposta</text>
+  <text x="765" y="286" class="small muted">Minimo 5 confermato · classi da valutare.</text>
+  <rect x="765" y="308" width="30" height="25" rx="4" fill="url(#suppressed)"/><text x="810" y="326" font-size="16">Dato non pubblicabile / mancante</text>
+  <rect x="765" y="351" width="30" height="25" rx="4" fill="#c4dfe1"/><text x="810" y="369" font-size="16">5–9 · classe di esempio</text>
+  <rect x="765" y="394" width="30" height="25" rx="4" fill="#77b4b9"/><text x="810" y="412" font-size="16">10–19 · classe di esempio</text>
+  <rect x="765" y="437" width="30" height="25" rx="4" fill="#335c67"/><text x="810" y="455" font-size="16">20 o più · classe di esempio</text>
+  <path d="M765 486H1155" stroke="#d8dfdf"/>
+  <text x="765" y="517" font-size="16" class="heading">Alternativa accessibile</text>
+  <text x="765" y="544" class="small">Tabella per regione con le stesse classi,</text>
+  <text x="765" y="567" class="small">senza conteggi esatti o dettagli individuali.</text>
+  <text x="765" y="603" class="small muted">Estero e sconosciuto: trattamento da decidere.</text>
+  <text x="78" y="758" class="small muted">Sagoma schematica, confini non geografici · nel prodotto finale: geometrie regionali verificate e licenza compatibile.</text>
+  <text x="765" y="677" font-size="15" class="heading">Niente nomi. Niente contatti.</text>
+  <text x="765" y="703" class="small muted">Anche totali e aggiornamenti dovranno evitare inferenze.</text>
+</svg>

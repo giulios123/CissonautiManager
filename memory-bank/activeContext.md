@@ -2,6 +2,18 @@
 
 ## Ora
 
+**2026-11-07 · MVP17 implementato, PR in preparazione.** Branch `feat/mvp-17-consensi-riservatezza`; T17-1–6 completati con test mirati. Il maintainer conferma superate tutte le prove SQL, incluse quelle delle migrazioni interessate. T17-7/8 restano aperti per CI e collaudi manuali telefono/desktop/iframe; le informative definitive IT/EN non sono pubblicate. Nessun deploy o invio email reale eseguito.
+
+**2026-11-07 · Spec esecutive MVP 17 e 18 pronte e in implementazione (B1).** Richiesta esplicita del maintainer di preparare entrambe: [17 · Consensi e riservatezza](../specs/mvp-17-consensi-riservatezza/requirements.md) con 8 task, design, microtesti IT/EN e prove manuali; [18 · Conferma con la sola quota](../specs/mvp-18-conferma-quota/requirements.md) con 10 task, design e prove manuali. Il codice 17 è in lavorazione; nessun deploy o invio reale eseguito.
+
+La scelta aggiuntiva confermata preparando la spec è D-105, ricalcolo dei due importi con anteprima e applicazione admin, versamenti intatti e variazioni di saldo/credito esplicite. Proposte tecniche D-106–D-109 registrate; le regole di prodotto restano quelle confermate. La migrazione additiva 0016 è in lavorazione e ha lasciato intatti i documenti legali legacy.
+
+Materiale aperto del 17: testi legali effettivi IT/EN e destinazioni media da validare prima della produzione; lo sviluppo può usare fixture esplicite. Il 18 seguirà dopo la chiusura tecnica del 17 e userà lo schema aggiornato. L'attivazione effettiva della nuova quota resterà un passaggio admin distinto dalla distribuzione.
+
+MVP 16 risulta implementato/task completati ma conserva le verifiche reali pendenti in `progress.md`; nessun merge/deploy dedotto dal checkout. Il [dossier A–F](../specs/revisione-2026-11-07/README.md) e il [registro risposte/residui](../specs/revisione-2026-11-07/domande-aperte.md) restano allineati. Calendario D3 accantonato, F valutazione con direzione scelta; nessuna implementazione delle altre proposte.
+
+## Contesto storico delle implementazioni precedenti
+
 MVP 1 chiuso salvo il task 15 (verifica in Google Sites), aperto e non bloccante. MVP 2 e MVP 3 su `main` e deployati su Azure (PR #4 e #5, task 9 dell'MVP 2 validato): `https://cissonauti-booking.wonderfulbush-cbda30f0.italynorth.azurecontainerapps.io`. MVP 4, 5 e 6 implementati e provati in locale sul branch `claude/quirky-meitner-qn9hwh`, in PR verso `main`; descrizioni per gli organizzatori in `specs/mvp-0{4,5,6}-*/pr-description.md`. Modifiche a `domain.md` dei tre MVP applicate.
 
 ## MVP 9 · Guida in app (2026-11-05)
@@ -101,4 +113,4 @@ Sviluppo sul branch `claude/magical-gauss-vbss2u` (non `feat/...`, per il vincol
 
 Piano confermato dal maintainer e implementato sul branch `feat/mvp-16-pagamenti-diretti`, spec in `specs/mvp-16-pagamenti-diretti/`. Telefono obbligatorio, orari selezionabili, attività e pasti delegati con costo specifico e ricalcolo dei saldi anche dopo le adesioni.
 
-Completati codice, test automatici, migrazione, guida e checklist PR. Restano prova SQL Server reale (download immagine rifiutato) e visiva mobile/desktop (browser indisponibile), documentate nella descrizione PR. Nessun deploy in questa sessione.
+Completati codice, test automatici, migrazione, guida e checklist PR. Il maintainer ha confermato superate le prove SQL; resta la prova visiva mobile/desktop. Nessun deploy in questa sessione.

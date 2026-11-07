@@ -98,6 +98,26 @@ MVP piccoli e successivi. Ogni MVP ha la sua cartella `specs/mvp-NN-<slug>/` cre
 - **Contenuto**: intervalli orari da menu, telefono obbligatorio, modalità di incasso per attività e singolo pasto con costo e istruzioni; ricalcolo anche dopo le adesioni; report, CSV e guida bilingue. Migrazione 0015.
 - **Fatto quando**: le adesioni esterne restano nell’app ma non aumentano il saldo agli organizzatori; i cambi di costo/destinatario ricalcolano le prenotazioni attive interessate conservando versamenti e crediti.
 
+## MVP 17 · Consensi separati e riservatezza
+
+Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 18 sulla sua base, senza checklist duplicate.
+
+- **Stato:** [spec esecutiva pronta per revisione](mvp-17-consensi-riservatezza/requirements.md), 8 task; nessuna implementazione.
+- **Contenuto:** scelte presenza/media facoltative, eventi per persona/edizione, gestione autenticata, testi legali IT/EN e protezione degli account già noti; legacy preservato, A5/A6/E3 nei rispettivi rilasci.
+- **Fatto quando:** form e sola lista registrano prove indipendenti, il proprietario cambia/revoca dopo login, nessuna nuova lettura nominale anonima o modifica di consensi altrui; testi definitivi distinti dai dati di prova.
+
+## MVP 18 · Conferma con la sola quota
+
+- **Stato:** [spec esecutiva pronta per revisione](mvp-18-conferma-quota/requirements.md), 10 task; preparata insieme al 17 su richiesta, nessuna implementazione.
+- **Contenuto:** quota base+giorni separata dal totale, transizioni/notifiche/promemoria coerenti e attivazione admin con ricalcolo in anteprima confermato in D-105; nessuna inclusione/esenzione anticipata.
+- **Fatto quando:** il pagamento della quota conferma anche con extra dovuti; preview/apply sono coerenti e idempotenti, confermate stabili e pagamenti intatti; codice distribuito e attivazione reale restano due passi distinti.
+
+## Revisione dopo il collaudo del 7 novembre 2026
+
+**Pianificazione aggiornata con le risposte del maintainer; nessun MVP avviato.** Il [dossier](revisione-2026-11-07/README.md) contiene spec A–E, valutazione F con stessa base dati scelta, proposta mappa A7 e riscontro promemoria D5. **Calendario D3 accantonato, mockup rimosso.** Decisioni canoniche D-050–D-075 e precisazioni D-076–D-104; [domande residue](revisione-2026-11-07/domande-aperte.md) limitate ai dettagli non risposti.
+
+Il [piano 17–31](revisione-2026-11-07/mvp.md) parte da consensi/riservatezza (17) e conferma su quota base+giorni (18), entrambi P1; pacchetto 25 diviso in presenze esterne senza account (25a), incassi separati (25b), esenzioni e rettifiche degli iscritti (25c). B4 comprende pasti e soltanto benefit aggiuntivi; pagina consegne nel 30 con soglia quota base/interni non paganti. F ha obiettivo prima del prossimo evento se fattibile, in una futura spec separata; mappa e tratto.email restano ai livelli di bozza previsti. Nessun reset/deploy avviato.
+
 ## Backlog
 
 Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementano.
@@ -123,7 +143,7 @@ Idee e questioni fuori dagli MVP correnti. Si aggiungono qui, non si implementan
 - Avviso a chi è in lista d'attesa quando la sua posizione cambia (MVP 4).
 - Anteprima della quota calcolata dal server nei modificatori di pasti e attività: oggi l'anteprima parte dalla quota salvata e, se un admin cambia un prezzo con iscrizioni già presenti, può differire dall'importo che viene poi salvato (che è sempre giusto). Emerso nella revisione della PR #6.
 - La verifica del +1 sta sul partecipante: con più edizioni va spostata (MVP 7).
-- Collegare il +1 a un partecipante vero (relazione invece del testo libero), emerso nella spec dell'MVP 7.
+- Collegare il +1 a un partecipante vero: proposta precedente **superata da A3/D-052**; resta testo libero verificato dall'admin, senza tendine nominali.
 - Report che confronta più edizioni, emerso nella spec dell'MVP 7.
 - Modalità scura e stile configurabile dal pannello admin, emersi nella spec dell'MVP 8.
 - Iscrizione in 3 passi con indicatore (scegli i turni, dati, pagamento) come nel mockup; accordion per giorno su telefono.

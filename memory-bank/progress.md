@@ -1,5 +1,23 @@
 # Progress
 
+## MVP 17 · Consensi facoltativi — PR in preparazione
+
+Branch `feat/mvp-17-consensi-riservatezza`. T17-1–6 implementati: schema, regole, pubblicazione IT/EN, registrazione/lista atomica, gestione autenticata e lettura admin. Gli account esistenti non modificano le scelte anonimamente e il codice personale non appare nella risposta. Test mirati T17-3: 104 backend/25 frontend; T17-4: 62 backend/21 frontend; T17-5: 50 backend; T17-6: 2 test dedicati e 19 frontend. Il maintainer conferma superate tutte le prove SQL. Restano CI della PR e prove manuali telefono/desktop/iframe; informative definitive IT/EN da validare prima della produzione. Descrizione PR in `specs/mvp-17-consensi-riservatezza/pr-description.md`.
+
+## Revisione documentale del 7 novembre 2026
+
+Spec A–E, procedure manuali (A6 esclusivamente manuale), piano rilasci, valutazione F e [registro risposte/residui](../specs/revisione-2026-11-07/domande-aperte.md) aggiornati con le risposte del maintainer e gli incassi esterni separati. Decisioni iniziali D-050–D-075 e precisazioni prevalenti D-076–D-104 in `decisions.md`. **Nessun nuovo MVP implementato.** Calendario D3 accantonato e mockup/anteprima rimossi; mappa A7 documentale aggiornata. F resta valutazione, con scelta dello stesso DB e account riusati confermata. Aggiunto [riscontro normativo conservazione](../specs/revisione-2026-11-07/conservazione-normativa.md), distinguendo termini condizionati e criteri GDPR; nessuna cancellazione di dati.
+
+Controlli della revisione limitati a coerenza, collegamenti, struttura e artefatti documentali. D5 verificato staticamente nel repository, esecuzione/recapito in produzione ancora non verificati. Suite applicative non eseguite per modifiche soltanto documentali; non dichiarare completati i test futuri descritti nelle spec.
+
+## Spec esecutive 17 e 18 · 7 novembre 2026
+
+Preparate su richiesta esplicita entrambe le spec B1: [17](../specs/mvp-17-consensi-riservatezza/requirements.md), 8 task e microtesti IT/EN; [18](../specs/mvp-18-conferma-quota/requirements.md), 10 task e transizione con anteprima confermata in D-105. Design, migrazioni proposte, API, percorsi interessati e procedure manuali sono documentati. **Nessun task applicativo eseguito e nessun test funzionale dichiarato passato.** Verifiche di questa fase: coerenza documentale, link/ancore, limiti dei task e perimetro senza modifiche applicative; suite/lint applicativi da eseguire durante lo sviluppo.
+
+## Piano operativo 17–18 · 7 novembre 2026
+
+Preparato il [piano comune](../specs/piano-mvp-17-18.md) con sequenza, dipendenze, risultati per fase, verifiche e passaggio di produzione separato. Collegati gli 8 task del 17 e i 10 del 18 senza nuove checklist applicative; nessuno spuntato o eseguito. Le informative definitive IT/EN rimangono necessarie per la raccolta in produzione, non per il collaudo con fixture. Controlli di questa sessione limitati a documenti, copertura/ordine dei task e collegamenti; nessuna suite applicativa o migrazione eseguita.
+
 ## Stato degli MVP
 
 | MVP | Nome | Stato |
@@ -20,7 +38,9 @@
 | 13 | Email di iscrizione personalizzabile | fatto e provato in locale (task 1-8) |
 | 14 | Testi dell'evento e accesso diretto | fatto e provato in locale (task 1-9) |
 | 15 | Logo dell'edizione e accesso dalla registrazione (PR #15); riepiloghi compatti delle presenze (PR #16) | Logo: CI verde, restano prove manuali. Riepiloghi: test e verifiche locali passati, restano verifiche reali post-deploy |
-| 16 | Orari, telefono e pagamenti diretti | implementato sul branch `feat/mvp-16-pagamenti-diretti`; restano verifiche SQL Server e visive nell’ambiente adatto |
+| 16 | Orari, telefono e pagamenti diretti | implementato sul branch `feat/mvp-16-pagamenti-diretti`; tutte le prove SQL confermate superate dal maintainer il 2026-11-07, resta la prova visiva |
+| 17 | Consensi separati e riservatezza | T17-1–6 implementati su `feat/mvp-17-consensi-riservatezza`; SQL confermato superato dal maintainer; restano CI e prove manuali |
+| 18 | Conferma con la sola quota | spec esecutiva pronta per revisione (B1), 10 task; preparazione congiunta richiesta, non implementato |
 
 ## Verifiche manuali
 
@@ -77,7 +97,7 @@
 
 ## Bug corretti fuori MVP
 
-- 2026-11-07 (D-050): riprodotto con `npm audit` l'avviso `GHSA-g3hv-75wg-m249` / `CVE-2026-118764` su `minimatch@10.2.6`, dipendenza di sviluppo di ESLint e TypeScript ESLint. Override temporaneo alla versione corretta `11.0.1` e lockfile rigenerato: audit completo senza vulnerabilità. Con Node 22: `npm ci`, 378 test frontend, lint e build superati; confronto ESLint prima/dopo sugli stessi 103 file e con gli stessi messaggi (resta l'avviso preesistente in `ConfirmDialog.tsx`). Nessun cambiamento al comportamento dell'app o allo schema dati.
+- 2026-11-07 (D-110): riprodotto con `npm audit` l'avviso `GHSA-g3hv-75wg-m249` / `CVE-2026-118764` su `minimatch@10.2.6`, dipendenza di sviluppo di ESLint e TypeScript ESLint. Override temporaneo alla versione corretta `11.0.1` e lockfile rigenerato: audit completo senza vulnerabilità. Con Node 22: `npm ci`, 378 test frontend, lint e build superati; confronto ESLint prima/dopo sugli stessi 103 file e con gli stessi messaggi (resta l'avviso preesistente in `ConfirmDialog.tsx`). Nessun cambiamento al comportamento dell'app o allo schema dati.
 - 2026-11-06 (review della PR #13, D-046): il downgrade della migrazione 0011 falliva su SQL Server (vincolo di default della colonna `locale`); il modulo pubblico poteva cambiare la lingua salvata di una persona già registrata; i vecchi link alla guida con ancora italiana non portavano alla sezione; cambiando lingua in «Da incassare» si perdeva l'annullo dei pagamenti appena segnati. Corretti, con test (l'ultimo provato rosso senza la correzione). La prova su SQL Server è la CI.
 - 2026-11-04: nel riepilogo e nelle email il pomeriggio compariva prima della mattina (ordinamento per nome del periodo). Corretto ordinando per orario di inizio, con test di regressione.
 
@@ -93,7 +113,7 @@ Validazione: suite SQLite completa (1.021 test) e 34 test mirati successivi comp
 
 Prova HTTP reale su database migrato temporaneo: login, istruzioni visibili a quota saldata, attività 21:35–mezzanotte, pranzo provider→organizer→provider con quota 11→19→11 €, report coerente. Il server dimostrativo è stato fermato.
 
-Non verificato: SQL Server reale (pull dell’immagine ufficiale 2022 terminato con Forbidden; compilazione SQL e test del lock superati) e vista nel browser (runtime locale/cloud indisponibile). Checklist manuale in `pr-description.md`; nessun deploy eseguito.
+SQL Server: il maintainer ha confermato superate tutte le prove il 2026-11-07; vista nel browser ancora da verificare. Checklist manuale in `pr-description.md`; nessun deploy eseguito.
 
 ## Correzione riepiloghi e quota in alto · 2026-11-07
 
