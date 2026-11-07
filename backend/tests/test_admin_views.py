@@ -5,6 +5,7 @@ from datetime import date, timedelta
 import pytest
 from sqlalchemy import select
 
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.models import (
     STATUS_CANCEL_REQUESTED,
     STATUS_CONFIRMED,
@@ -374,6 +375,30 @@ class TestToCollect:
         assert rows["Overdue"]["status"] == STATUS_EXPIRED
         assert rows["Soon"]["booking_id"] == cases["soon"].id
         assert rows["Soon"]["hold_expires_at"]
+
+    def test_fee_policy_collection_row_separates_confirmation_from_total(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        from tests.test_change_slots import pay
+
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking = make_booking(
+            make_participant("quota@example.com"),
+            [slot(db, 13)],
+            amount_due_cents=2500,
+        )
+        booking.registration_fee_cents = 1100
+        db.commit()
+        pay(db, booking, 400)
+
+        rows = admin_client.get("/api/admin/views/to-collect").json()
+        [row] = [item for item in rows if item["booking_id"] == booking.id]
+
+        assert row["confirmation_policy"] == POLICY_REGISTRATION_FEE
+        assert row["registration_fee_cents"] == 1100
+        assert row["confirmation_due_cents"] == 1100
+        assert row["confirmation_balance_cents"] == 700
+        assert (row["amount_due_cents"], row["balance_cents"]) == (2500, 2100)
 
     def test_voided_payments_do_not_count(self, admin_client, db, cases):
         for payment in cases["balance"].payments:

@@ -56,6 +56,7 @@ export function MealEditor<T = unknown>({
   const days = [...new Set(allowed.map((meal) => meal.date))];
   const fee = mealsPreview(booking, selected, lunchCents, dinnerCents);
   const delta = fee - booking.amount_due_cents;
+  const feePolicy = booking.confirmation_policy === "registration_fee";
   const changed = selected.size !== original.size || [...selected].some((k) => !original.has(k));
 
   function toggle(meal: MealView, checked: boolean) {
@@ -117,7 +118,14 @@ export function MealEditor<T = unknown>({
         </fieldset>
       ))}
       <p aria-live="polite" className="fee">
-        {t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
+        {feePolicy && booking.registration_fee_cents != null && (
+          <>
+            {t("money.registrationFee")}{" "}
+            <strong>{formatEuro(booking.registration_fee_cents)}</strong>
+            <br />
+          </>
+        )}
+        {feePolicy ? t("edit.newTotal") : t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
         {delta !== 0 && (
           <>
             {" "}

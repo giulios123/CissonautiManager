@@ -41,6 +41,11 @@ type PublicEdition = {
 };
 type Summary = {
   personal_code: string | null;
+  status?: string;
+  confirmation_policy?: "legacy_total" | "registration_fee";
+  registration_fee_cents?: number | null;
+  confirmation_due_cents?: number | null;
+  confirmation_balance_cents?: number | null;
   amount_due_cents: number;
   hold_expires_at: string;
   slots: { date: string; period: string; label: string }[];
@@ -584,41 +589,84 @@ function Confirmation({
   message?: string;
 }) {
   const { t } = useI18n();
+  const feePolicy = booking.confirmation_policy === "registration_fee";
+  const confirmed = booking.status === "confermata";
   return (
     <main>
       <h1>{t("reg.receivedTitle")}</h1>
       <p role="status">{t("reg.receivedBody")}</p>
-      <p>
-        <strong>
-          {t("reg.amount")} {formatEuro(booking.amount_due_cents)}
-        </strong>
-      </p>
-      <p>
-        {t("reg.holdUntilBefore")} <strong>{formatDeadline(booking.hold_expires_at)}</strong>.{" "}
-        {t("reg.holdUntilAfter")}
-      </p>
+      {feePolicy ? (
+        <>
+          {booking.registration_fee_cents != null && (
+            <p>
+              <strong>
+                {t("money.registrationFee")} {formatEuro(booking.registration_fee_cents)}
+              </strong>
+            </p>
+          )}
+          <p>
+            <strong>
+              {t("money.totalDue")} {formatEuro(booking.amount_due_cents)}
+            </strong>
+          </p>
+          {confirmed ? (
+            <p role="status">{t("money.confirmed")}</p>
+          ) : (
+            <>
+              {booking.confirmation_balance_cents != null && (
+                <p>
+                  {t("money.confirmationDue")}{" "}
+                  <strong>{formatEuro(booking.confirmation_balance_cents)}</strong>
+                </p>
+              )}
+              <p className="legal">{t("money.extrasLater")}</p>
+              <p>
+                {t("reg.holdUntilBefore")}{" "}
+                <strong>{formatDeadline(booking.hold_expires_at)}</strong>.{" "}
+                {t("reg.holdUntilAfter")}
+              </p>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <p>
+            <strong>
+              {t("reg.amount")} {formatEuro(booking.amount_due_cents)}
+            </strong>
+          </p>
+          <p>
+            {t("reg.holdUntilBefore")} <strong>{formatDeadline(booking.hold_expires_at)}</strong>.{" "}
+            {t("reg.holdUntilAfter")}
+          </p>
+        </>
+      )}
       <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
       <WaitlistSummary waitlist={waitlist} />
-      <h2>{t("reg.howToPay")}</h2>
-      {booking.personal_code ? (
-        <p>
-          {t("reg.reference")} <strong>{booking.personal_code}</strong>
-        </p>
-      ) : (
-        <p>{message ?? t("reg.checkEmailForReference")}</p>
-      )}
-      {booking.payment_channels.length > 0 ? (
-        <ul>
-          {booking.payment_channels.map((channel) => (
-            <li key={channel.code}>
-              <strong>{channel.label}</strong>
-              <br />
-              <span className="legal">{channel.instructions}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>{t("reg.paymentSoon")}</p>
+      {!confirmed && (
+        <>
+          <h2>{t("reg.howToPay")}</h2>
+          {booking.personal_code ? (
+            <p>
+              {t("reg.reference")} <strong>{booking.personal_code}</strong>
+            </p>
+          ) : (
+            <p>{message ?? t("reg.checkEmailForReference")}</p>
+          )}
+          {booking.payment_channels.length > 0 ? (
+            <ul>
+              {booking.payment_channels.map((channel) => (
+                <li key={channel.code}>
+                  <strong>{channel.label}</strong>
+                  <br />
+                  <span className="legal">{channel.instructions}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>{t("reg.paymentSoon")}</p>
+          )}
+        </>
       )}
       <p>
         <RegistrationAccessLink>{t("reg.goToPersonal")}</RegistrationAccessLink>

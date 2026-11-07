@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.domain.booking import effective_status, occupies_seats
+from app.domain.confirmation import confirmation_balance_cents, confirmation_due_cents
 from app.domain.payments_review import (
     COLLECT_WAITING,
     REASON_LABELS,
@@ -156,6 +157,10 @@ class CollectRow:
     email: str
     personal_code: str
     status: str
+    confirmation_policy: str
+    registration_fee_cents: int | None
+    confirmation_due_cents: int | None
+    confirmation_balance_cents: int | None
     amount_due_cents: int
     paid_cents: int
     hold_expires_at: datetime
@@ -196,6 +201,20 @@ def collect_rows(db: Session, now: datetime) -> list[CollectRow]:
             email=participant.email,
             personal_code=participant.personal_code,
             status=status,
+            confirmation_policy=edition.confirmation_policy,
+            registration_fee_cents=booking.registration_fee_cents,
+            confirmation_due_cents=confirmation_due_cents(
+                edition.confirmation_policy,
+                booking.amount_due_cents,
+                booking.registration_fee_cents,
+            ),
+            confirmation_balance_cents=confirmation_balance_cents(
+                status,
+                edition.confirmation_policy,
+                booking.amount_due_cents,
+                booking.registration_fee_cents,
+                paid,
+            ),
             amount_due_cents=booking.amount_due_cents,
             paid_cents=paid,
             hold_expires_at=booking.hold_expires_at,

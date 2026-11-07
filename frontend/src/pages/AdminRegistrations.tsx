@@ -19,6 +19,9 @@ type Row = {
   days: number;
   evenings: number;
   status: string;
+  confirmation_policy?: "legacy_total" | "registration_fee" | null;
+  registration_fee_cents?: number | null;
+  confirmation_balance_cents?: number | null;
   amount_due_cents: number;
   paid_cents: number;
   balance_cents: number;
@@ -49,6 +52,7 @@ export function AdminRegistrations() {
   const [failed, setFailed] = useState(false);
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
+  const feePolicy = rows?.some((row) => row.confirmation_policy === "registration_fee") ?? false;
 
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +118,13 @@ export function AdminRegistrations() {
                   <th scope="col">{t("people.colDays")}</th>
                   <th scope="col">{t("people.colEvenings")}</th>
                   <th scope="col">{t("people.colStatus")}</th>
-                  <th scope="col">{t("people.colDue")}</th>
+                  {feePolicy && (
+                    <>
+                      <th scope="col">{t("people.colRegistrationFee")}</th>
+                      <th scope="col">{t("people.colToConfirm")}</th>
+                    </>
+                  )}
+                  <th scope="col">{feePolicy ? t("money.totalDue") : t("people.colDue")}</th>
                   <th scope="col">{t("people.colPaid")}</th>
                   <th scope="col">{t("people.colBalance")}</th>
                   <th scope="col">{t("people.colDeadline")}</th>
@@ -142,6 +152,22 @@ export function AdminRegistrations() {
                     <td>
                       <StatusBadge status={row.status} />
                     </td>
+                    {feePolicy && (
+                      <>
+                        <td>
+                          {row.confirmation_policy === "registration_fee" &&
+                          row.registration_fee_cents != null
+                            ? formatEuro(row.registration_fee_cents)
+                            : "-"}
+                        </td>
+                        <td>
+                          {row.confirmation_policy === "registration_fee" &&
+                          row.confirmation_balance_cents != null
+                            ? formatEuro(row.confirmation_balance_cents)
+                            : "-"}
+                        </td>
+                      </>
+                    )}
                     <td>{formatEuro(row.amount_due_cents)}</td>
                     <td>{formatEuro(row.paid_cents)}</td>
                     <td>{formatEuro(row.balance_cents)}</td>

@@ -58,6 +58,7 @@ function BookingCard({
   const activities = booking.activities ?? [];
   const meals = booking.meals ?? [];
   const pending = booking.status === "in_attesa_pagamento";
+  const feePolicy = booking.confirmation_policy === "registration_fee";
   const confirmedWithBalance = booking.status === "confermata" && booking.balance_cents > 0;
   return (
     <section
@@ -68,7 +69,22 @@ function BookingCard({
         <StatusBadge status={booking.status} />
       </h2>
       <p>
-        {t("me.fee")} <strong>{formatEuro(booking.amount_due_cents)}</strong>
+        {feePolicy && booking.registration_fee_cents != null && (
+          <>
+            {t("money.registrationFee")}{" "}
+            <strong>{formatEuro(booking.registration_fee_cents)}</strong>
+            <br />
+          </>
+        )}
+        {feePolicy ? t("money.totalDue") : t("me.fee")}{" "}
+        <strong>{formatEuro(booking.amount_due_cents)}</strong>
+        {feePolicy && pending && booking.confirmation_balance_cents != null && (
+          <>
+            <br />
+            {t("money.confirmationDue")}{" "}
+            <strong>{formatEuro(booking.confirmation_balance_cents)}</strong>
+          </>
+        )}
         <br />
         {t("me.paid")} <strong>{formatEuro(booking.paid_cents)}</strong>
         <br />
@@ -101,13 +117,18 @@ function BookingCard({
             {t("me.holdBefore")} <strong>{formatDeadline(booking.hold_expires_at)}</strong>.
           </p>
           <PaymentInstructions me={me} />
+          {feePolicy && <p className="legal">{t("money.extrasLater")}</p>}
         </>
       )}
       {confirmedWithBalance && (
         <>
-          <p>{t("me.changedSlots")}</p>
+          <p>{feePolicy ? t("money.confirmed") : t("me.changedSlots")}</p>
           <PaymentInstructions me={me} />
+          {feePolicy && <p className="legal">{t("money.extrasLater")}</p>}
         </>
+      )}
+      {feePolicy && booking.status === "confermata" && !confirmedWithBalance && (
+        <p className="legal">{t("money.confirmed")}</p>
       )}
       {booking.status === "scaduta" && (
         <p>

@@ -25,6 +25,9 @@ const row = {
   days: 2,
   evenings: 1,
   status: "in_attesa_pagamento",
+  confirmation_policy: "legacy_total",
+  registration_fee_cents: null,
+  confirmation_balance_cents: 1200,
   amount_due_cents: 1200,
   paid_cents: 0,
   balance_cents: 1200,
@@ -110,6 +113,37 @@ describe("admin area", () => {
     expect(screen.getByRole("table", { name: "Persone iscritte" })).toBeInTheDocument();
     expect(within(tableRow).getByText("In attesa di pagamento")).toBeInTheDocument();
     expect(within(tableRow).getAllByText(/12,00/)).toHaveLength(2);
+  });
+
+  it("separates the registration fee, confirmation remainder and total", async () => {
+    stub((_m, url) => ({
+      body:
+        url === "/api/me"
+          ? admin
+          : [
+              {
+                ...row,
+                confirmation_policy: "registration_fee",
+                registration_fee_cents: 1200,
+                confirmation_balance_cents: 700,
+                amount_due_cents: 2500,
+                balance_cents: 2500,
+              },
+            ],
+    }));
+    renderAt("/admin");
+    const table = await screen.findByRole("table", { name: "Persone iscritte" });
+    const link = await screen.findByRole("link", { name: /Ada Lovelace/ });
+    const cells = within(link.closest("tr")!)
+      .getAllByRole("cell")
+      .map((cell) => cell.textContent);
+    expect(within(table).getByRole("columnheader", { name: "Quota" })).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Residuo conferma" }),
+    ).toBeInTheDocument();
+    expect(cells.some((cell) => cell?.includes("12,00"))).toBe(true);
+    expect(cells.some((cell) => cell?.includes("7,00"))).toBe(true);
+    expect(cells.some((cell) => cell?.includes("25,00"))).toBe(true);
   });
 
   it("shows phone and evenings and offers the CSV with the same filters", async () => {
