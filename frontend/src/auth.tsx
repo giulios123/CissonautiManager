@@ -22,6 +22,7 @@ export type BookingView = {
   editable: boolean;
   can_cancel: boolean;
   slots: { id: number; date: string; period: string; label: string }[];
+  schedule: { date: string; period: string; start_time: string; end_time: string }[];
   payments: {
     id: number;
     amount_cents: number;

@@ -57,13 +57,28 @@ class TestFormats:
         login(client, outbox)
         english = client.get("/api/me", headers={"Accept-Language": "en"}).json()
         assert english["bookings"][0]["slots"][0]["label"] == "Mon 13 Jul morning (09:00-13:00)"
+        assert english["bookings"][0]["schedule"][0] == {
+            "date": "2026-07-13",
+            "period": "morning",
+            "start_time": "09:00:00",
+            "end_time": "13:00:00",
+        }
+        assert [slot["period"] for slot in english["bookings"][0]["schedule"]] == [
+            "morning",
+            "afternoon",
+            "evening",
+        ]
         italian = client.get("/api/me").json()
         assert italian["bookings"][0]["slots"][0]["label"] == "lun 13/07 mattina (09:00-13:00)"
 
 
 class TestEmailsInTheLanguageOfThePerson:
     def _register(self, client, edition, locale, email="ada@example.com"):
-        body = payload([edition.slots[0].id], locale=locale, email=email)
+        afternoon = min(
+            (slot for slot in edition.slots if slot.period == "afternoon"),
+            key=lambda slot: slot.date,
+        )
+        body = payload([afternoon.id], locale=locale, email=email)
         assert client.post("/api/public/registrations", json=body).status_code == 201
 
     def test_registration_in_english(self, client, edition, outbox):
@@ -73,14 +88,17 @@ class TestEmailsInTheLanguageOfThePerson:
         assert message.body.startswith("Hi Ada,")
         for expected in (
             "thank you for signing up for Cissonauti Summer Camp 2026!",
-            "Your slots:",
             "Amount to pay: €",
+            "1 day of attendance:",
+            "Mon 13 Jul",
+            "Afternoon",
+            "Times:",
             "Payment reference: CSC-",
             "Your place is held until",
             "How to pay:",
             "https://camp.example.org/login/verify?token=",
         ):
-            assert expected in message.body, expected
+            assert expected in message.body, (expected, message.body)
 
     def test_registration_in_italian_is_unchanged(self, client, edition, outbox):
         self._register(client, edition, "it")
@@ -134,6 +152,7 @@ class TestEmailsInTheLanguageOfThePerson:
         message = outbox.sent[0]
         assert message.subject == "Registration for Cissonauti Summer Camp 2026"
         assert message.body.startswith("Hi Ada,")
+        assert message.html is not None and "font-size:13px" in message.html
         assert db.scalar(select(Participant.locale)) == "it"
 
     def test_a_new_person_keeps_the_form_language(self, client, edition, db):
@@ -160,7 +179,10 @@ class TestEmailsInTheLanguageOfThePerson:
         message = outbox.sent[-1]
         assert message.subject == "Payment received: you're in for Cissonauti Summer Camp 2026!"
         assert "your registration for Cissonauti Summer Camp 2026 is confirmed" in message.body
-        assert "Mon 13 Jul morning" in message.body and "€11.00" in message.body
+        assert "€11.00" in message.body and "1 day of attendance:" in message.body
+        assert "Mon 13 Jul" in message.body
+        assert message.html is not None
+        assert "<strong>Payment recorded: €11.00</strong>" in message.html
 
     def test_reminders_in_english(
         self, db, make_participant, make_booking, slot_ids, outbox, settings, clock
@@ -212,3 +234,7 @@ def test_promotion_email_exists_in_both_languages(
         message = waitlist_promoted_email(booking, slot, kind, [], 500, "https://x.test/l")
         assert message.subject.startswith(subject)
         assert "https://x.test/l" in message.body
+        assert ("Mon 13 Jul" if locale == "en" else "lun 13 lug") in message.body
+        heading = "1 day of attendance:" if locale == "en" else "1 giorno di presenza:"
+        assert heading in message.body
+        assert message.html is not None and "font-size:13px" in message.html

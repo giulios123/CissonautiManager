@@ -118,13 +118,21 @@ class TestRegistration:
         assert booking.disclaimer_accepted_at == clock()
 
     def test_sends_email_with_summary_code_and_magic_link(self, client, outbox, slot_ids):
-        client.post("/api/public/registrations", json=payload([slot_ids[(d(13), "morning")]]))
+        booking = client.post(
+            "/api/public/registrations", json=payload([slot_ids[(d(13), "morning")]])
+        ).json()["booking"]
         assert len(outbox.sent) == 1
+        assert [slot["period"] for slot in booking["schedule"]] == [
+            "morning",
+            "afternoon",
+            "evening",
+        ]
         message = outbox.sent[0]
         assert message.to == "ada@example.com"
         assert "CSC-" in message.body
         assert "11,00 €" in message.body
-        assert "lun 13/07 mattina (09:00-13:00)" in message.body
+        assert "lun 13 lug" in message.body
+        assert "Mattina 09:00–13:00" in message.body
         assert "https://camp.example.org/login/verify?token=" in message.body
 
     def test_deadline_in_email_is_shown_in_rome_time(self, client, outbox, slot_ids):
@@ -330,7 +338,7 @@ class TestSlotOrder:
         periods = [s["period"] for s in booking["slots"]]
         assert periods == ["morning", "afternoon"]
         body = outbox.sent[0].body
-        assert body.index("mattina") < body.index("pomeriggio")
+        assert body.index("Mattina 09:00–13:00") < body.index("Pomeriggio 14:00–18:00")
 
     def test_public_edition_lists_morning_first(self, client, edition):
         first_day = client.get("/api/public/edition").json()["days"][0]

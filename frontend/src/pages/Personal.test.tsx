@@ -64,6 +64,11 @@ function booking(overrides: Partial<BookingView> = {}): BookingView {
     slots: [
       { id: 1, date: "2026-07-13", period: "morning", label: "lun 13/07 mattina (09:00-13:00)" },
     ],
+    schedule: [
+      { date: "2026-07-13", period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+      { date: "2026-07-13", period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+      { date: "2026-07-13", period: "evening", start_time: "19:00:00", end_time: "00:00:00" },
+    ],
     payments: [],
     ...overrides,
   };
@@ -94,7 +99,7 @@ function openAt(handler: (url: string, init?: RequestInit) => Reply) {
 }
 
 async function openEditor() {
-  await userEvent.click(await screen.findByRole("button", { name: "Cambia i tuoi slot" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Modifica presenze" }));
   return within(await screen.findByRole("form", { name: "Modifica i tuoi slot" }));
 }
 
@@ -215,7 +220,7 @@ describe("changing slots", () => {
       }),
     );
     expect(await screen.findByRole("heading", { name: "Scaduta" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Cambia i tuoi slot" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Modifica presenze" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Richiedi disdetta" })).not.toBeInTheDocument();
   });
 });

@@ -16,6 +16,7 @@ import { isInFrame } from "../frame";
 import { tNow } from "../i18n/messages";
 import { EVENT_NAME } from "../eventName";
 import { formatEuro } from "../money";
+import { PresenceSummary } from "../PresenceSummary";
 import { ROUTES } from "../routes";
 import { DayPicker } from "./DayPicker";
 
@@ -37,7 +38,8 @@ type Summary = {
   personal_code: string;
   amount_due_cents: number;
   hold_expires_at: string;
-  slots: { label: string }[];
+  slots: { date: string; period: string; label: string }[];
+  schedule: { date: string; period: string; start_time: string; end_time: string }[];
   payment_channels: Channel[];
 };
 type Waitlisted = { label: string; position: number };
@@ -142,19 +144,24 @@ export function Registration() {
       };
     }),
   }));
-  const chosenDays = edition.days
-    .map((day) => ({
+  const bookedSlots = edition.days.flatMap((day) =>
+    day.slots
+      .filter((slot) => toBook.has(slot.id))
+      .map((slot) => ({ date: day.date, period: slot.period })),
+  );
+  const waitingSlots = edition.days.flatMap((day) =>
+    day.slots
+      .filter((slot) => toWait.includes(slot.id))
+      .map((slot) => ({ date: day.date, period: periodLabel(slot.period) })),
+  );
+  const schedule = edition.days.flatMap((day) =>
+    day.slots.map((slot) => ({
       date: day.date,
-      label: formatDayShort(day.date),
-      slots: day.slots
-        .filter((slot) => selected.has(slot.id))
-        .map((slot) => ({
-          id: slot.id,
-          period: periodLabel(slot.period),
-          waiting: fullIds.has(slot.id),
-        })),
-    }))
-    .filter((day) => day.slots.length > 0);
+      period: slot.period,
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+    })),
+  );
   const first = edition.days[0]?.date;
   const last = edition.days[edition.days.length - 1]?.date;
 
@@ -240,7 +247,9 @@ export function Registration() {
       <form id="registration" onSubmit={submit} noValidate={false} className="with-summary">
         <div className="form-main">
           <section aria-labelledby="when-title">
-            <h2 id="when-title">{t("reg.whenTitle")}</h2>
+            <h2 id="when-title" tabIndex={-1}>
+              {t("reg.whenTitle")}
+            </h2>
             <DayPicker days={pickerDays} selected={selected} onChange={setSelected} />
           </section>
 
@@ -309,64 +318,58 @@ export function Registration() {
         </div>
 
         <aside className="summary" aria-label={t("reg.summary")}>
-          <div className="summary-head">
-            <h2>{t("reg.summary")}</h2>
-            <span className="count" aria-live="polite">
-              {tn("reg.shifts", selected.size)} · {tn("reg.days", chosenDays.length)}
-            </span>
-          </div>
-          {chosenDays.length > 0 && (
-            <ul className="plain summary-list">
-              {chosenDays.map((day) => (
-                <li key={day.date}>
-                  <span className="summary-day">{day.label}</span>
-                  <span className="summary-slots">
-                    {day.slots.map((slot) => (
-                      <button
-                        type="button"
-                        key={slot.id}
-                        className={`summary-pill${slot.waiting ? " waiting" : ""}`}
-                        title={slot.waiting ? t("reg.waitlistTitle") : undefined}
-                        aria-label={t(slot.waiting ? "reg.removeWaiting" : "reg.remove", {
-                          day: day.label,
-                          period: slot.period,
-                        })}
-                        onClick={() =>
-                          setSelected((current) => {
-                            const next = new Set(current);
-                            next.delete(slot.id);
-                            return next;
-                          })
-                        }
-                      >
-                        {slot.period}
-                        <span aria-hidden="true"> ×</span>
-                      </button>
-                    ))}
-                  </span>
-                </li>
-              ))}
-            </ul>
+          <PresenceSummary
+            slots={bookedSlots}
+            schedule={schedule}
+            className="registration-presences"
+          />
+          {waitingSlots.length > 0 && (
+            <div className="waiting-summary">
+              <h3>{t("presence.waitlist")}</h3>
+              <ul className="plain">
+                {waitingSlots.map((slot) => (
+                  <li key={`${slot.date}:${slot.period}`}>
+                    {formatDayShort(slot.date)} <span>{slot.period}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-          <p aria-live="polite" className="fee">
-            {toBook.size === 0 && toWait.length > 0 ? (
-              t("reg.waitOnly")
-            ) : (
-              <>
-                {t("reg.fee")} <strong>{formatEuro(fee)}</strong>
-              </>
-            )}
-            {toBook.size > 0 && toWait.length > 0 && (
-              <>
-                <br />
-                {tn("reg.waitCount", toWait.length)}
-              </>
-            )}
-          </p>
-          <p className="summary-note">{t("reg.confirmedAfterPayment")}</p>
-          <button type="submit" form="registration" disabled={sending}>
-            {sending ? t("reg.sending") : t("reg.submit")}
-          </button>
+          {selected.size > 0 && (
+            <a
+              className="summary-edit"
+              href="#when-title"
+              onClick={(event) => {
+                event.preventDefault();
+                const calendarHeading = document.getElementById("when-title");
+                calendarHeading?.scrollIntoView?.({ block: "center" });
+                calendarHeading?.focus({ preventScroll: true });
+              }}
+            >
+              {t("reg.editPresences")}
+            </a>
+          )}
+          <div className="summary-actions">
+            <p aria-live="polite" className="fee">
+              {toBook.size === 0 && toWait.length > 0 ? (
+                t("reg.waitOnly")
+              ) : (
+                <>
+                  {t("reg.fee")} <strong>{formatEuro(fee)}</strong>
+                </>
+              )}
+              {toBook.size > 0 && toWait.length > 0 && (
+                <>
+                  <br />
+                  {tn("reg.waitCount", toWait.length)}
+                </>
+              )}
+            </p>
+            <p className="summary-note">{t("reg.confirmedAfterPayment")}</p>
+            <button type="submit" form="registration" disabled={sending}>
+              {sending ? t("reg.sending") : t("reg.submit")}
+            </button>
+          </div>
         </aside>
       </form>
     </main>
@@ -446,22 +449,20 @@ function Confirmation({ booking, waitlist }: { booking: Summary; waitlist: Waitl
     <main>
       <h1>{t("reg.receivedTitle")}</h1>
       <p role="status">{t("reg.receivedBody")}</p>
-      <h2>{t("reg.yourSlots")}</h2>
-      <ul>
-        {booking.slots.map((slot) => (
-          <li key={slot.label}>{slot.label}</li>
-        ))}
-      </ul>
-      <WaitlistSummary waitlist={waitlist} />
-      <h2>{t("reg.howToPay")}</h2>
       <p>
-        {t("reg.amount")} <strong>{formatEuro(booking.amount_due_cents)}</strong>
-        <br />
-        {t("reg.reference")} <strong>{booking.personal_code}</strong>
+        <strong>
+          {t("reg.amount")} {formatEuro(booking.amount_due_cents)}
+        </strong>
       </p>
       <p>
         {t("reg.holdUntilBefore")} <strong>{formatDeadline(booking.hold_expires_at)}</strong>.{" "}
         {t("reg.holdUntilAfter")}
+      </p>
+      <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
+      <WaitlistSummary waitlist={waitlist} />
+      <h2>{t("reg.howToPay")}</h2>
+      <p>
+        {t("reg.reference")} <strong>{booking.personal_code}</strong>
       </p>
       {booking.payment_channels.length > 0 ? (
         <ul>

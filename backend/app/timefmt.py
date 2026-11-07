@@ -96,6 +96,14 @@ def format_day_short(day: date, locale: str | None = None) -> str:
     return f"{weekday} {day.strftime('%d/%m')}"
 
 
+def format_presence_day(day: date, locale: str | None = None) -> str:
+    """Compact calendar date for attendance summaries: "ven 20 nov" / "Fri 20 Nov"."""
+    loc = _loc(locale)
+    weekday = _WEEKDAYS[loc][day.weekday()]
+    month = _MONTHS_EN[day.month - 1] if loc == "en" else _MONTHS_LONG[loc][day.month - 1][:3]
+    return f"{weekday} {day.day} {month}"
+
+
 def format_deadline(value: datetime, locale: str | None = None) -> str:
     rome = to_rome(value)
     if _loc(locale) == "en":

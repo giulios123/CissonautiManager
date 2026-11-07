@@ -19,7 +19,7 @@
 | 12 | Pannello admin in inglese | fatto e provato in locale (task 1-5) |
 | 13 | Email di iscrizione personalizzabile | fatto e provato in locale (task 1-8) |
 | 14 | Testi dell'evento e accesso diretto | fatto e provato in locale (task 1-9) |
-| 15 | Logo dell'edizione e accesso dalla registrazione | implementato sul branch `feat/mvp-15-logo-accesso`; CI SQLite, SQL Server, frontend e build verdi; resta prova manuale |
+| 15 | Logo dell'edizione e accesso dalla registrazione (PR #15); riepiloghi compatti delle presenze (PR #16) | Logo: CI verde, restano prove manuali. Riepiloghi: test e verifiche locali passati, restano verifiche reali post-deploy |
 | 16 | Orari, telefono e pagamenti diretti | implementato sul branch `feat/mvp-16-pagamenti-diretti`; restano verifiche SQL Server e visive nell’ambiente adatto |
 
 ## Verifiche manuali
@@ -71,6 +71,9 @@
 
 - **MVP 14**, test automatici: backend e frontend verdi (testi delle altre email per lingua e loro effetto nelle email, testo sopra il modulo, link da 10 minuti riusabile, redirect a `/me`, nome edizione in header e titoli, barra admin sulla pagina personale), lint e `tsc` puliti, migrazione 0013 su e giù da zero. Prova in browser con DB nuovo (login admin che atterra su «Ciao …!», rinomina dell'edizione che cambia intestazione e titolo, testi salvati e email in console con testo nuovo e dati intatti, link aperto senza clic e riaperto).
 - **Non verificato (MVP 14)**: CI su SQL Server con la migrazione 0013; email vere con i testi personalizzati; embed in Google Sites con il nome dell'edizione. **Da verificare a mano**: rinominare l'edizione e controllare intestazione, scheda del browser e oggetto delle email; cambiare il testo di un'email in italiano e in inglese e iscriversi nelle due lingue; entrare da admin e trovarsi sulla propria pagina; aprire il link di accesso senza clic e riaprirlo entro 10 minuti.
+
+- **MVP 15**, completato in locale: suite completa backend 1000 test passati; suite completa frontend 363 test passati. Dopo le ultime rifiniture, i test mirati riepilogo, API e email sono passati. Build, lint, Ruff e guida verdi. In Chromium sono stati verificati il riepilogo desktop, il layout stretto e la barra fissa al 200%, il focus visibile da tastiera e il ritorno al calendario con selezioni conservate (test automatico); nessuna migrazione.
+- **Non verificato (MVP 15)**: prova su telefono fisico, iframe reale in Google Sites e resa in client di posta reali. Il contenuto HTML e il testo equivalente sono coperti dai test automatici.
 
 ## Bug corretti fuori MVP
 
