@@ -161,7 +161,18 @@ def _health_consent(db: Session, edition: Edition | None) -> LegalPublic | None:
     if edition is None:
         return None
     document = edition_service.latest_legal_document(db, edition, DOC_HEALTH)
-    return LegalPublic(version=document.version, body=document.body) if document else None
+    return (
+        LegalPublic(
+            id=document.id,
+            version=document.version,
+            body=document.body,
+            body_it=document.body_it,
+            body_en=document.body_en,
+            is_legacy=document.body_it is None or document.body_en is None,
+        )
+        if document
+        else None
+    )
 
 
 def _waitlist_view(db: Session, entry: WaitlistEntry) -> WaitlistView:

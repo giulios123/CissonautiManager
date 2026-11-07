@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from typing import Annotated, Literal, Self
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy.orm import Session
 
 from app.config import Settings
@@ -11,7 +11,15 @@ from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.email import EmailSender
 from app.email.card import MAX_UPLOAD_BYTES, InvalidImage, normalize_image
 from app.i18n import t
-from app.models import DOC_HEALTH, Edition, LegalDocument, PaymentChannel, slot_sort_key
+from app.models import (
+    DOC_ATTENDANCE,
+    DOC_HEALTH,
+    DOC_MEDIA,
+    Edition,
+    LegalDocument,
+    PaymentChannel,
+    slot_sort_key,
+)
 from app.services import edition as edition_service
 from app.services import waitlist as waitlist_service
 from app.services.edition_logo import logo_url
@@ -86,10 +94,13 @@ class ChannelOut(BaseModel):
 
 
 class LegalOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    id: int
     kind: str
     version: int
     body: str
+    body_it: str | None
+    body_en: str | None
+    is_legacy: bool
 
 
 class EditionOut(EditionIn):
@@ -100,6 +111,8 @@ class EditionOut(EditionIn):
     disclaimer: LegalOut | None
     # Specific consent for health data (allergies); optional, it does not close registrations.
     health: LegalOut | None = None
+    attendance: LegalOut | None = None
+    media: LegalOut | None = None
     logo_url: str | None = None
 
 
@@ -110,8 +123,31 @@ class ChannelIn(BaseModel):
 
 
 class LegalIn(BaseModel):
-    kind: Literal["privacy", "disclaimer", "health"]
-    body: str = Field(min_length=1, max_length=50000)
+    kind: Literal["privacy", "disclaimer", "health", "attendance", "media"]
+    body_it: str = Field(min_length=1, max_length=50000)
+    body_en: str = Field(min_length=1, max_length=50000)
+
+    @field_validator("body_it", "body_en")
+    @classmethod
+    def require_nonblank_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError(t("legal.bilingual_required"))
+        return value
+
+
+def _legal_out(document: LegalDocument | None) -> LegalOut | None:
+    if document is None:
+        return None
+    return LegalOut(
+        id=document.id,
+        kind=document.kind,
+        version=document.version,
+        body=document.body,
+        body_it=document.body_it,
+        body_en=document.body_en,
+        is_legacy=document.body_it is None or document.body_en is None,
+    )
 
 
 def _edition_out(db: Session, edition: Edition) -> EditionOut:
@@ -119,6 +155,8 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
     privacy = edition_service.latest_legal_document(db, edition, "privacy")
     disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
     health = edition_service.latest_legal_document(db, edition, DOC_HEALTH)
+    attendance = edition_service.latest_legal_document(db, edition, DOC_ATTENDANCE)
+    media = edition_service.latest_legal_document(db, edition, DOC_MEDIA)
     base = EditionIn.model_validate(edition, from_attributes=True)
     return EditionOut(
         **base.model_dump(),
@@ -128,9 +166,11 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
         payment_channels=[
             ChannelOut.model_validate(c) for c in edition_service.list_channels(db, edition)
         ],
-        privacy=LegalOut.model_validate(privacy) if privacy else None,
-        disclaimer=LegalOut.model_validate(disclaimer) if disclaimer else None,
-        health=LegalOut.model_validate(health) if health else None,
+        privacy=_legal_out(privacy),
+        disclaimer=_legal_out(disclaimer),
+        health=_legal_out(health),
+        attendance=_legal_out(attendance),
+        media=_legal_out(media),
     )
 
 
@@ -211,6 +251,8 @@ def put_payment_channels(body: list[ChannelIn], db: Session = Depends(get_db)) -
 def post_legal_document(body: LegalIn, db: Session = Depends(get_db)) -> LegalOut:
     edition = _require_edition(db)
     document: LegalDocument = edition_service.publish_legal_document(
-        db, edition, body.kind, body.body
+        db, edition, body.kind, body.body_it, body.body_en
     )
-    return LegalOut.model_validate(document)
+    result = _legal_out(document)
+    assert result is not None
+    return result

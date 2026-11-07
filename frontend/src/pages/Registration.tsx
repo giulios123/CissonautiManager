@@ -22,6 +22,7 @@ import { DayPicker } from "./DayPicker";
 
 type Channel = { code: string; label: string; instructions: string };
 type Legal = { version: number; body: string };
+type OptionalConsentText = { id: number; version: number; texts: Record<"it" | "en", string> };
 type PublicEdition = {
   registration_open: boolean;
   name: string | null;
@@ -33,6 +34,8 @@ type PublicEdition = {
   payment_channels: Channel[];
   privacy: Legal | null;
   disclaimer: Legal | null;
+  attendance_consent: OptionalConsentText | null;
+  media_consent: OptionalConsentText | null;
 };
 type Summary = {
   personal_code: string;

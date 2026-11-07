@@ -187,7 +187,10 @@ class TestValidation:
         assert len(response.json()["booking"]["slots"]) == 1
 
     def test_outdated_legal_version_is_rejected(self, client, admin_client, db, slot_ids):
-        admin_client.post("/api/admin/legal-documents", json={"kind": "privacy", "body": "v2"})
+        admin_client.post(
+            "/api/admin/legal-documents",
+            json={"kind": "privacy", "body_it": "v2", "body_en": "v2 English"},
+        )
         body = payload([slot_ids[(d(13), "morning")]])
         response = client.post("/api/public/registrations", json=body)
         assert response.status_code == 409

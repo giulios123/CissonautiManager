@@ -16,7 +16,15 @@ from app.deps import get_email_sender, get_now, get_settings_dep
 from app.domain.booking import is_past_day
 from app.email import EmailSender
 from app.i18n import LOCALES, channel_label, current_locale, t
-from app.models import slot_sort_key
+from app.models import (
+    DOC_ATTENDANCE,
+    DOC_DISCLAIMER,
+    DOC_MEDIA,
+    DOC_PRIVACY,
+    OPTIONAL_CONSENT_KINDS,
+    LegalDocument,
+    slot_sort_key,
+)
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services import registration as registration_service
@@ -50,6 +58,16 @@ class DayOut(BaseModel):
 class LegalPublic(BaseModel):
     version: int
     body: str
+    id: int | None = None
+    body_it: str | None = None
+    body_en: str | None = None
+    is_legacy: bool = False
+
+
+class OptionalConsentPublic(BaseModel):
+    id: int
+    version: int
+    texts: dict[str, str]
 
 
 class ChannelPublic(BaseModel):
@@ -73,6 +91,8 @@ class PublicEditionOut(BaseModel):
     payment_channels: list[ChannelPublic] = []
     privacy: LegalPublic | None = None
     disclaimer: LegalPublic | None = None
+    attendance_consent: OptionalConsentPublic | None = None
+    media_consent: OptionalConsentPublic | None = None
 
 
 class RegistrationIn(BaseModel):
@@ -148,6 +168,50 @@ def _channels(db: Session, edition) -> list[ChannelPublic]:
     ]
 
 
+def _legal_public(document: LegalDocument | None) -> LegalPublic | None:
+    if document is None:
+        return None
+    return LegalPublic(
+        id=document.id,
+        version=document.version,
+        body=document.body,
+        body_it=document.body_it,
+        body_en=document.body_en,
+        is_legacy=document.body_it is None or document.body_en is None,
+    )
+
+
+def _optional_consent_public(db: Session, edition, kind: str) -> OptionalConsentPublic | None:
+    document = edition_service.latest_legal_document(db, edition, kind)
+    if (
+        document is None
+        or not document.body_it
+        or not document.body_it.strip()
+        or not document.body_en
+        or not document.body_en.strip()
+    ):
+        return None
+    return OptionalConsentPublic(
+        id=document.id,
+        version=document.version,
+        texts={"it": document.body_it, "en": document.body_en},
+    )
+
+
+def _public_legal_fields(db: Session, edition) -> dict:
+    privacy = edition_service.latest_legal_document(db, edition, DOC_PRIVACY)
+    disclaimer = edition_service.latest_legal_document(db, edition, DOC_DISCLAIMER)
+    optional = {
+        kind: _optional_consent_public(db, edition, kind) for kind in OPTIONAL_CONSENT_KINDS
+    }
+    return {
+        "privacy": _legal_public(privacy),
+        "disclaimer": _legal_public(disclaimer),
+        "attendance_consent": optional[DOC_ATTENDANCE],
+        "media_consent": optional[DOC_MEDIA],
+    }
+
+
 @router.get("/edition/logo")
 def get_edition_logo(
     version: Annotated[str | None, Query(alias="v", min_length=64, max_length=64)] = None,
@@ -172,10 +236,12 @@ def get_public_edition(
 ) -> PublicEditionOut:
     edition = edition_service.get_active_edition(db)
     if not registration_service.is_registration_open(db, edition):
+        legal_fields = _public_legal_fields(db, edition) if edition is not None else {}
         return PublicEditionOut(
             registration_open=False,
             name=edition.name if edition else None,
             logo_url=logo_url(edition),
+            **legal_fields,
         )
     assert edition is not None
     expire_overdue(db, now)
@@ -219,8 +285,7 @@ def get_public_edition(
         hold_days=edition.hold_days,
         days=days,
         payment_channels=_channels(db, edition),
-        privacy=LegalPublic(version=privacy.version, body=privacy.body),
-        disclaimer=LegalPublic(version=disclaimer.version, body=disclaimer.body),
+        **_public_legal_fields(db, edition),
     )
 
 

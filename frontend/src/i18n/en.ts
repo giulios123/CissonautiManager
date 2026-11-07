@@ -625,10 +625,17 @@ export const en: Record<MessageKey, string> = {
   "set.loadError": "I can't load the settings.",
   "set.title": "Settings",
   "set.legalTitle": "Legal texts",
-  "set.legalIntro": "Every change creates a new version. Registrations keep the one they accepted.",
+  "set.legalIntro":
+    "Each text is published in Italian and English as one version. Registrations keep the version they accepted.",
   "set.privacyTitle": "Privacy notice",
   "set.disclaimerTitle": "Liability waiver",
   "set.healthTitle": "Consent for allergies and intolerances (health data)",
+  "set.attendanceTitle": "Show attendance to signed-in users",
+  "set.mediaTitle": "Photos and videos",
+  "set.textIt": "Italian text",
+  "set.textEn": "English text",
+  "set.legacyOriginal":
+    "Original text with no recorded translation. It stays unchanged; enter both texts to publish a new version.",
   "set.saveEditionFirst": "Save the edition to configure payment channels and legal texts.",
   "rep.dietOmnivore": "Omnivore",
   "rep.dietVegetarian": "Vegetarian",

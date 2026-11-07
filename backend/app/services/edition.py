@@ -4,7 +4,10 @@ from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
 from app.models import (
+    DOC_ATTENDANCE,
     DOC_DISCLAIMER,
+    DOC_HEALTH,
+    DOC_MEDIA,
     DOC_PRIVACY,
     PERIOD_AFTERNOON,
     PERIOD_EVENING,
@@ -16,6 +19,7 @@ from app.models import (
     Slot,
     WaitlistEntry,
 )
+from app.services.seats import lock_edition
 
 PAYMENT_CHANNELS = {
     "revolut": "Revolut",
@@ -24,6 +28,7 @@ PAYMENT_CHANNELS = {
     "iban": "Bonifico (IBAN)",
 }
 LEGAL_KINDS = (DOC_PRIVACY, DOC_DISCLAIMER)
+ALL_LEGAL_KINDS = (*LEGAL_KINDS, DOC_HEALTH, DOC_ATTENDANCE, DOC_MEDIA)
 
 
 class SlotsInUseError(Exception):
@@ -139,15 +144,30 @@ def latest_legal_document(db: Session, edition: Edition, kind: str) -> LegalDocu
     )
 
 
-def publish_legal_document(db: Session, edition: Edition, kind: str, body: str) -> LegalDocument:
-    """Publish a new version. Older versions stay, because bookings reference what was accepted."""
+def publish_legal_document(
+    db: Session, edition: Edition, kind: str, body_it: str, body_en: str
+) -> LegalDocument:
+    """Publish one immutable bilingual version; old bodies remain unchanged."""
+    if kind not in ALL_LEGAL_KINDS:
+        raise ValueError("unsupported legal document kind")
+    body_it = body_it.strip()
+    body_en = body_en.strip()
+    if not body_it or not body_en:
+        raise ValueError("both language bodies are required")
+
+    lock_edition(db, edition.id)
     current = db.scalar(
         select(func.max(LegalDocument.version)).where(
             LegalDocument.edition_id == edition.id, LegalDocument.kind == kind
         )
     )
     document = LegalDocument(
-        edition_id=edition.id, kind=kind, version=(current or 0) + 1, body=body
+        edition_id=edition.id,
+        kind=kind,
+        version=(current or 0) + 1,
+        body=body_it,
+        body_it=body_it,
+        body_en=body_en,
     )
     db.add(document)
     db.commit()

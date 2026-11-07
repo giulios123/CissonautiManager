@@ -15,7 +15,9 @@ def slot(db, day, period="morning") -> Slot:
 
 @pytest.fixture
 def consent_text(db, edition):
-    return edition_service.publish_legal_document(db, edition, "health", "Consenso dati sanitari")
+    return edition_service.publish_legal_document(
+        db, edition, "health", "Consenso dati sanitari", "Consent for health data"
+    )
 
 
 @pytest.fixture
@@ -81,8 +83,12 @@ def test_without_a_published_text_allergies_cannot_be_collected(member, edition)
 
 def test_me_shows_the_consent_text(member, consent_text):
     assert member.get("/api/me").json()["health_consent"] == {
+        "id": consent_text.id,
         "version": 1,
         "body": "Consenso dati sanitari",
+        "body_it": "Consenso dati sanitari",
+        "body_en": "Consent for health data",
+        "is_legacy": False,
     }
 
 
@@ -116,7 +122,9 @@ def test_removed_booking_takes_the_health_data_away(member, db, booking, consent
 
 
 def test_consent_to_an_outdated_text_is_refused(member, db, booking, consent_text, edition):
-    edition_service.publish_legal_document(db, edition, "health", "Consenso v2")
+    edition_service.publish_legal_document(
+        db, edition, "health", "Consenso v2", "Health consent v2"
+    )
     response = save(member, allergies="Arachidi", consent=True, consent_version=1)
     assert response.status_code == 409
     assert "aggiornato" in response.json()["detail"]
@@ -132,7 +140,9 @@ def test_a_diet_only_save_does_not_upgrade_the_accepted_version(
     member, db, booking, consent_text, edition
 ):
     save(member, allergies="Arachidi", consent=True, consent_version=1)
-    edition_service.publish_legal_document(db, edition, "health", "Consenso v2")
+    edition_service.publish_legal_document(
+        db, edition, "health", "Consenso v2", "Health consent v2"
+    )
     response = save(member, diet="vegan", allergies="Arachidi", consent=True, consent_version=1)
     assert response.status_code == 409
     db.refresh(booking)

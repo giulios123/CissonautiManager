@@ -624,10 +624,16 @@ export const it = {
   "set.title": "Impostazioni",
   "set.legalTitle": "Testi legali",
   "set.legalIntro":
-    "Ogni modifica crea una nuova versione. Le iscrizioni conservano quella accettata.",
+    "Ogni testo viene pubblicato in italiano e inglese come una sola versione. Le iscrizioni conservano quella accettata.",
   "set.privacyTitle": "Informativa privacy",
   "set.disclaimerTitle": "Scarico di responsabilità",
   "set.healthTitle": "Consenso per allergie e intolleranze (dati sanitari)",
+  "set.attendanceTitle": "Visibilità della presenza nell'area riservata",
+  "set.mediaTitle": "Foto e video",
+  "set.textIt": "Testo italiano",
+  "set.textEn": "Testo inglese",
+  "set.legacyOriginal":
+    "Testo originale senza traduzione registrata. Resta immutato; inserisci entrambi i testi per pubblicare una nuova versione.",
   "set.saveEditionFirst": "Salva l'edizione per configurare canali di pagamento e testi legali.",
   "rep.dietOmnivore": "Onnivoro",
   "rep.dietVegetarian": "Vegetariano",

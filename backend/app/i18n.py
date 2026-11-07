@@ -99,6 +99,10 @@ def t(key: str, locale: str | None = None, **params: object) -> str:
 
 # key -> {language: text}. `{name}` are placeholders filled by `t(key, name=...)`.
 MESSAGES: dict[str, dict[str, str]] = {
+    "legal.bilingual_required": {
+        "it": "Inserisci il testo completo sia in italiano sia in inglese.",
+        "en": "Enter the complete text in both Italian and English.",
+    },
     "collection.terms_required": {
         "it": "Per il pagamento diretto indica costo e istruzioni con il destinatario.",
         "en": "For direct payment, provide the cost and instructions including the recipient.",

@@ -159,13 +159,38 @@ class TestPaymentChannels:
 
 
 class TestLegalDocuments:
+    def test_legacy_document_keeps_its_original_body_without_inferred_translation(
+        self, admin_client, db, clock
+    ):
+        admin_client.put("/api/admin/edition", json=PAYLOAD)
+        edition = db.scalar(select(Edition))
+        db.add(
+            LegalDocument(
+                edition_id=edition.id,
+                kind="privacy",
+                version=1,
+                body="Original legacy wording",
+                published_at=clock(),
+            )
+        )
+        db.commit()
+
+        legal = admin_client.get("/api/admin/edition").json()["privacy"]
+
+        assert legal["body"] == "Original legacy wording"
+        assert legal["body_it"] is None
+        assert legal["body_en"] is None
+        assert legal["is_legacy"] is True
+
     def test_each_publication_is_a_new_version_and_old_ones_are_kept(self, admin_client, db):
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         first = admin_client.post(
-            "/api/admin/legal-documents", json={"kind": "privacy", "body": "A"}
+            "/api/admin/legal-documents",
+            json={"kind": "privacy", "body_it": "A", "body_en": "A EN"},
         )
         second = admin_client.post(
-            "/api/admin/legal-documents", json={"kind": "privacy", "body": "B"}
+            "/api/admin/legal-documents",
+            json={"kind": "privacy", "body_it": "B", "body_en": "B EN"},
         )
         assert (first.json()["version"], second.json()["version"]) == (1, 2)
         bodies = db.scalars(select(LegalDocument.body).order_by(LegalDocument.version)).all()
@@ -174,18 +199,73 @@ class TestLegalDocuments:
 
     def test_versions_are_counted_per_kind(self, admin_client):
         admin_client.put("/api/admin/edition", json=PAYLOAD)
-        admin_client.post("/api/admin/legal-documents", json={"kind": "privacy", "body": "A"})
+        admin_client.post(
+            "/api/admin/legal-documents",
+            json={"kind": "privacy", "body_it": "A", "body_en": "A EN"},
+        )
         response = admin_client.post(
-            "/api/admin/legal-documents", json={"kind": "disclaimer", "body": "D"}
+            "/api/admin/legal-documents",
+            json={"kind": "disclaimer", "body_it": "D", "body_en": "D EN"},
         )
         assert response.json()["version"] == 1
 
     def test_empty_text_is_rejected(self, admin_client):
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         response = admin_client.post(
-            "/api/admin/legal-documents", json={"kind": "privacy", "body": ""}
+            "/api/admin/legal-documents",
+            json={"kind": "privacy", "body_it": " ", "body_en": "Valid"},
         )
         assert response.status_code == 422
+
+    def test_optional_consent_is_published_as_one_bilingual_version(self, admin_client, client, db):
+        admin_client.put("/api/admin/edition", json=PAYLOAD)
+        for kind, italian, english in (
+            ("privacy", "Informativa", "Privacy notice v1"),
+            ("disclaimer", "Scarico", "Waiver"),
+        ):
+            assert (
+                admin_client.post(
+                    "/api/admin/legal-documents",
+                    json={"kind": kind, "body_it": italian, "body_en": english},
+                ).status_code
+                == 201
+            )
+        response = admin_client.post(
+            "/api/admin/legal-documents",
+            json={
+                "kind": "attendance",
+                "body_it": "Mostra la mia presenza agli iscritti.",
+                "body_en": "Show my attendance to signed-in participants.",
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["body"] == "Mostra la mia presenza agli iscritti."
+        assert response.json()["body_it"] == "Mostra la mia presenza agli iscritti."
+        assert response.json()["body_en"] == "Show my attendance to signed-in participants."
+        public = client.get("/api/public/edition").json()
+        assert public["privacy"]["is_legacy"] is False
+        assert public["privacy"]["body_en"] == "Privacy notice v1"
+        assert public["attendance_consent"] == {
+            "id": response.json()["id"],
+            "version": 1,
+            "texts": {
+                "it": "Mostra la mia presenza agli iscritti.",
+                "en": "Show my attendance to signed-in participants.",
+            },
+        }
+        assert public["media_consent"] is None
+        assert db.query(LegalDocument).filter_by(kind="attendance").count() == 1
+
+    def test_both_language_bodies_are_required_for_all_new_publications(self, admin_client):
+        admin_client.put("/api/admin/edition", json=PAYLOAD)
+        for body in (
+            {"kind": "privacy", "body_it": "Only Italian"},
+            {"kind": "media", "body_it": "Italian", "body_en": "   "},
+            {"kind": "attendance", "body": "Legacy shape"},
+        ):
+            response = admin_client.post("/api/admin/legal-documents", json=body)
+            assert response.status_code == 422
 
 
 class TestWaitlistPercent:
@@ -218,7 +298,8 @@ class TestMealSettings:
         admin_client.put("/api/admin/edition", json=PAYLOAD)
         for text in ("Consenso v1", "Consenso v2"):
             response = admin_client.post(
-                "/api/admin/legal-documents", json={"kind": "health", "body": text}
+                "/api/admin/legal-documents",
+                json={"kind": "health", "body_it": text, "body_en": f"EN: {text}"},
             )
             assert response.status_code == 201
         health = admin_client.get("/api/admin/edition").json()["health"]
