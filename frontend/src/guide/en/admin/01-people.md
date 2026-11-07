@@ -8,7 +8,7 @@ When you sign in (with the link or the password) you land on your own personal p
 
 ### What you see
 
-Details and consents, slots, meals with dietary needs (allergies included, which only you can see), activities, waitlist and the **history** of the changes you made by hand (who, when, what).
+Details and consents, attendance in one row per day (with times and partial periods), meals with dietary needs (allergies included, which only you can see), activities, waitlist and the **history** of the changes you made by hand (who, when, what).
 
 ### Recording a payment
 

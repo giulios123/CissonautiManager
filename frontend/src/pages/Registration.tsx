@@ -66,6 +66,29 @@ export function Registration() {
   const [sending, setSending] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    const header = document.querySelector<HTMLElement>(".site-header");
+    if (!toolbar || !header) return;
+
+    const updateOffset = () => {
+      const position = window.getComputedStyle(header).position;
+      const offset = position === "sticky" || position === "fixed" ? header.offsetHeight : 0;
+      toolbar.style.setProperty("--registration-sticky-offset", `${offset}px`);
+    };
+
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateOffset);
+    observer?.observe(header);
+    return () => {
+      window.removeEventListener("resize", updateOffset);
+      observer?.disconnect();
+    };
+  }, [edition, outcome]);
 
   useEffect(() => {
     fetchEdition()
@@ -245,6 +268,29 @@ export function Registration() {
       </div>
       <SignInPrompt />
       <form id="registration" onSubmit={submit} noValidate={false} className="with-summary">
+        <div ref={toolbarRef} className="registration-toolbar">
+          <div className="summary-actions">
+            <p aria-live="polite" className="fee">
+              {toBook.size === 0 && toWait.length > 0 ? (
+                t("reg.waitOnly")
+              ) : (
+                <>
+                  {t("reg.fee")} <strong>{formatEuro(fee)}</strong>
+                </>
+              )}
+              {toBook.size > 0 && toWait.length > 0 && (
+                <>
+                  <br />
+                  {tn("reg.waitCount", toWait.length)}
+                </>
+              )}
+            </p>
+            <p className="summary-note">{t("reg.confirmedAfterPayment")}</p>
+            <button type="submit" form="registration" disabled={sending}>
+              {sending ? t("reg.sending") : t("reg.submit")}
+            </button>
+          </div>
+        </div>
         <div className="form-main">
           <section aria-labelledby="when-title">
             <h2 id="when-title" tabIndex={-1}>
@@ -349,27 +395,6 @@ export function Registration() {
               {t("reg.editPresences")}
             </a>
           )}
-          <div className="summary-actions">
-            <p aria-live="polite" className="fee">
-              {toBook.size === 0 && toWait.length > 0 ? (
-                t("reg.waitOnly")
-              ) : (
-                <>
-                  {t("reg.fee")} <strong>{formatEuro(fee)}</strong>
-                </>
-              )}
-              {toBook.size > 0 && toWait.length > 0 && (
-                <>
-                  <br />
-                  {tn("reg.waitCount", toWait.length)}
-                </>
-              )}
-            </p>
-            <p className="summary-note">{t("reg.confirmedAfterPayment")}</p>
-            <button type="submit" form="registration" disabled={sending}>
-              {sending ? t("reg.sending") : t("reg.submit")}
-            </button>
-          </div>
         </aside>
       </form>
     </main>

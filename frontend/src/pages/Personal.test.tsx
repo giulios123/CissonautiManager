@@ -98,6 +98,35 @@ function openAt(handler: (url: string, init?: RequestInit) => Reply) {
   return calls;
 }
 
+describe("personal attendance summary", () => {
+  it("shows seven complete days in seven rows", async () => {
+    const dates = [
+      "2026-11-20",
+      "2026-11-21",
+      "2026-11-22",
+      "2026-11-23",
+      "2026-11-24",
+      "2026-11-25",
+      "2026-11-26",
+    ];
+    const schedule = dates.flatMap((date) => [
+      { date, period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+      { date, period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+      { date, period: "evening", start_time: "19:00:00", end_time: "00:00:00" },
+    ]);
+    const slots = schedule.map((slot, id) => ({ ...slot, id, label: slot.period }));
+    openAt((url) =>
+      url === "/api/me" ? { body: me([booking({ slots, schedule })]) } : { body: {} },
+    );
+
+    const summary = within(await screen.findByRole("region", { name: "Le tue presenze" }));
+    expect(summary.getAllByRole("listitem")).toHaveLength(7);
+    expect(summary.getByText("ven 20 nov")).toBeInTheDocument();
+    expect(summary.getByText("gio 26 nov")).toBeInTheDocument();
+    expect(summary.queryByText("Mattina · Pomeriggio")).not.toBeInTheDocument();
+  });
+});
+
 async function openEditor() {
   await userEvent.click(await screen.findByRole("button", { name: "Modifica presenze" }));
   return within(await screen.findByRole("form", { name: "Modifica i tuoi slot" }));

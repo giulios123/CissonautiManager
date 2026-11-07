@@ -101,6 +101,23 @@ describe("Registration page", () => {
     await userEvent.type(phone, "+39 333 1234567");
     expect(phone).toBeValid();
   });
+
+  it("keeps the fee and sign-up button in the top registration bar", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    const user = userEvent.setup();
+    const fee = await screen.findByText(/Quota da versare/);
+    const form = fee.closest("form")!;
+    const toolbar = form.querySelector(".registration-toolbar")!;
+    const summary = within(form).getByRole("complementary", { name: "Il tuo riepilogo" });
+
+    expect(toolbar).toContainElement(fee);
+    expect(toolbar).toContainElement(screen.getByRole("button", { name: "Iscriviti" }));
+    expect(toolbar).not.toContainElement(summary);
+    await user.click(await screen.findByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
+    expect(within(toolbar as HTMLElement).getByText(/Quota da versare/)).toHaveTextContent("11,00");
+  });
+
   it("tells people when registrations are closed", async () => {
     mockFetch({
       "/api/public/edition": { body: { registration_open: false, name: null, days: [] } },

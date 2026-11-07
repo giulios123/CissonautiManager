@@ -18,6 +18,7 @@ import { AdminSlotEditor } from "./AdminSlotEditor";
 import { ActivityPicker } from "./ActivityPicker";
 import { MealEditor } from "./MealEditor";
 import { PlusOneToggle } from "./PlusOneToggle";
+import { PresenceSummary } from "../PresenceSummary";
 
 export type Detail = {
   participant: {
@@ -209,11 +210,6 @@ export function AdminRegistrationDetail() {
         <h2 id="booking">
           {t("det.registration")} <StatusBadge status={booking.status} />
         </h2>
-        <ul>
-          {booking.slots.map((slot) => (
-            <li key={slot.label}>{slot.label}</li>
-          ))}
-        </ul>
         <p>
           {t("det.due")} <strong>{formatEuro(booking.amount_due_cents)}</strong>,{" "}
           {t("det.paidLower")} <strong>{formatEuro(booking.paid_cents)}</strong>,{" "}
@@ -222,6 +218,7 @@ export function AdminRegistrationDetail() {
             <> {t("det.heldUntil", { date: formatDeadline(booking.hold_expires_at) })}</>
           )}
         </p>
+        <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
         <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
       </section>
 

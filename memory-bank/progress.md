@@ -93,3 +93,7 @@ Validazione: suite SQLite completa (1.021 test) e 34 test mirati successivi comp
 Prova HTTP reale su database migrato temporaneo: login, istruzioni visibili a quota saldata, attività 21:35–mezzanotte, pranzo provider→organizer→provider con quota 11→19→11 €, report coerente. Il server dimostrativo è stato fermato.
 
 Non verificato: SQL Server reale (pull dell’immagine ufficiale 2022 terminato con Forbidden; compilazione SQL e test del lock superati) e vista nel browser (runtime locale/cloud indisponibile). Checklist manuale in `pr-description.md`; nessun deploy eseguito.
+
+## Correzione riepiloghi e quota in alto · 2026-11-07
+
+Feedback del maintainer: durante la registrazione la quota deve rimanere in alto; i riepiloghi della pagina personale e della scheda organizzatori devono restare compatti. La pagina personale già usa `PresenceSummary`; nella scheda organizzatori era rimasta la lista di ogni fascia (come nello screenshot). La scheda ora riusa il riepilogo per giorno; quota e invio restano in una barra superiore che si ferma sotto l'intestazione sticky. Guide aggiornate in italiano e inglese. Verificati 369 test frontend, lint, build e controllo guide; in Chromium la barra resta sotto l'intestazione su desktop e in cima su telefono e iframe, e l'iscrizione di prova si completa.
