@@ -5,7 +5,7 @@
 Sequenza, dipendenze e condizioni di attivazione nel [piano operativo comune 17–18](../piano-mvp-17-18.md); questa rimane la checklist canonica del 18.
 
 - [x] **T18-1 · Calcolo e invarianti.** Funzione unica quota+totale, soglia di conferma, residuo operativo e credito; 46 test mirati passati su quota base/giorni distinti, extra e provider, insieme ai percorsi di prezzo esistenti.
-- [ ] **T18-2 · Modello/migrazione 0017.** Politica edizione, quota salvata e metadati del ciclo notifica; migrazione neutra da zero/legacy, vincoli e metadata nei due database, nessuna attivazione o email da Alembic.
+- [ ] **T18-2 · Modello/migrazione 0017.** Politica edizione, quota salvata e metadati del ciclo notifica; migrazione neutra da zero/legacy e metadata verificati su SQLite (12 test migrazione/importi passati). Il test SQL Server della nuova revisione resta da eseguire nell'ambiente dedicato; la migrazione non attiva la politica e non invia email.
 - [ ] **T18-3 · Percorsi di conferma.** Aggiornare registrazione, pagamenti, annulli, riattivazione e promozione; test soglia esatta/parziale, scadenza, capienza/duplicati, zero e confermate stabili.
 - [ ] **T18-4 · Ricalcoli e report.** Salvare quota/totale insieme nei cambi slot/pasti/attività/prezzi; test prezzi correnti al ricalcolo, pagamenti/crediti e report/CSV riconciliati senza provider.
 - [ ] **T18-5 · Preview e applicazione admin.** API con lock, fingerprint, idempotenza, audit e commit unico; test dati cambiati, scadenza fra lettura/applicazione, rollback parziale impedito e nessuna riattivazione delle chiuse/scadute.

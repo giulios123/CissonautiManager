@@ -90,6 +90,10 @@ class Edition(Base):
     # Optional event logo, validated and stored as a metadata-free PNG.
     logo_image: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # New confirmation policy is explicitly activated after the admin reviews a preview.
+    confirmation_policy: Mapped[str] = mapped_column(Unicode(24), default="legacy_total")
+    confirmation_policy_activated_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    confirmation_policy_preview_token: Mapped[str | None] = mapped_column(String(64))
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")
     meal_settings: Mapped[list["MealSetting"]] = relationship(
@@ -198,6 +202,13 @@ class Booking(Base):
     refund_note: Mapped[str | None] = mapped_column(UnicodeText)
     refunded_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     amount_due_cents: Mapped[int] = mapped_column(Integer)
+    # The saved base-plus-days amount used to confirm this booking under the new policy.
+    registration_fee_cents: Mapped[int | None] = mapped_column(Integer)
+    # A confirmation notice belongs to the status transition, not to an arbitrary payment.
+    confirmation_cycle: Mapped[int] = mapped_column(Integer, default=0)
+    confirmation_claimed_cycle: Mapped[int] = mapped_column(Integer, default=0)
+    confirmation_notice_due_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    confirmation_notice_payment_id: Mapped[int | None] = mapped_column(Integer)
     # Dietary needs. The diet is not health data; allergies are, and need the specific consent.
     diet: Mapped[str | None] = mapped_column(Unicode(16))
     allergies: Mapped[str | None] = mapped_column(UnicodeText)
