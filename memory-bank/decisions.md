@@ -365,3 +365,11 @@
 - **Ricalcolo**: modifiche economiche ricalcolano solo prenotazioni attive interessate, in transazione e con cronologia. I versamenti e le scadenze restano; crediti visibili, confermate stabili, in attesa confermate se coperte. La riattivazione di una scaduta rilegge le condizioni attuali e ricalcola anche senza attività eliminate.
 - **Concorrenza**: le scritture HTTP acquisiscono il lock dell’edizione prima dei lock preesistenti; anche ogni promozione del job lo acquisisce prima di scadenze e slot, ricaricando l’edizione dopo il lock. Il volume dell’evento consente questa serializzazione semplice, con hint SQL Server UPDLOCK/HOLDLOCK.
 - **Alternative scartate**: prezzo zero per simulare il pagamento esterno (nasconde il costo reale); bloccare i cambi con iscritti (il maintainer richiede il ricalcolo); migrare automaticamente testi orari ambigui (rischio di inventare orari).
+
+## D-050 · Override temporaneo di minimatch per GHSA-g3hv-75wg-m249
+
+- **Data**: 2026-11-07.
+- **Decisione**: `frontend/package.json` forza `minimatch` alla versione corretta `11.0.1` tramite `overrides`; il lockfile è rigenerato con npm. Rimuovere l'override quando ESLint, `@eslint/config-array` e `@typescript-eslint/typescript-estree` consentiranno una versione corretta nelle proprie dipendenze.
+- **Motivo**: CVE-2026-118764 consente amplificazione di pattern e consumo eccessivo di CPU/memoria; le versioni da 7 a prima di 11.0.1 sono vulnerabili. Anche le ultime release dei tre pacchetti richiedono ancora la serie 10, quindi il normale aggiornamento automatico non basta. La dipendenza è solo di sviluppo: il container finale copia gli asset statici, senza Node o ESLint.
+- **Compatibilità**: la serie 11 rimuove alcune API, ma i tre consumatori installati usano `Minimatch`, `match` e `minimatch`, ancora disponibili. Verificati con Node 22 installazione pulita, lint sugli stessi 103 file con diagnostica identica, suite frontend e build.
+- **Alternative scartate**: ignorare l'avviso o disabilitare l'audit (la dipendenza resta vulnerabile); modificare solo il lockfile (l'installazione successiva potrebbe reintrodurre la serie 10); aggiornare indiscriminatamente le altre dipendenze (non necessario).
