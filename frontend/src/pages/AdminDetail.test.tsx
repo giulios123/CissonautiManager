@@ -1,6 +1,9 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+import { App } from "../App";
+import { I18nProvider, type Locale } from "../i18n";
 import { renderAt, stubAdminApi, type Call, type Reply } from "../test-utils";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -30,6 +33,11 @@ export const detailFixture = (
     slots: [
       { id: 1, date: "2026-07-13", period: "morning", label: "lun 13/07 mattina (09:00-13:00)" },
     ],
+    schedule: [
+      { date: "2026-07-13", period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+      { date: "2026-07-13", period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+      { date: "2026-07-13", period: "evening", start_time: "19:00:00", end_time: "00:00:00" },
+    ],
     payments: [],
     ...booking,
   },
@@ -49,6 +57,84 @@ export function serve(detail: unknown, extra?: (call: Call) => Reply | undefined
     return undefined;
   });
 }
+
+function renderAtLocale(path: string, locale: Locale) {
+  render(
+    <I18nProvider locale={locale}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </I18nProvider>,
+  );
+}
+
+describe("compact attendance on the registration detail", () => {
+  it("omits the attendance summary when the booking has no slots", async () => {
+    serve(detailFixture({}, { slots: [], schedule: [] }));
+    renderAt("/admin/registrations/7");
+
+    await screen.findByRole("heading", { name: "Ada Lovelace" });
+    expect(screen.queryByRole("region", { name: "Le tue presenze" })).not.toBeInTheDocument();
+  });
+
+  it("shows seven full days in seven rows even when all three periods are booked", async () => {
+    const dates = [
+      "2026-11-20",
+      "2026-11-21",
+      "2026-11-22",
+      "2026-11-23",
+      "2026-11-24",
+      "2026-11-25",
+      "2026-11-26",
+    ];
+    const schedule = dates.flatMap((date) => [
+      { date, period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+      { date, period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+      { date, period: "evening", start_time: "19:00:00", end_time: "00:00:00" },
+    ]);
+    const slots = schedule.map((slot, id) => ({ ...slot, id, label: slot.period }));
+    serve(detailFixture({}, { slots, schedule }));
+    renderAt("/admin/registrations/7");
+
+    const summary = within(await screen.findByRole("region", { name: "Le tue presenze" }));
+    expect(summary.getAllByRole("listitem")).toHaveLength(7);
+    expect(summary.getByText("ven 20 nov")).toBeInTheDocument();
+    expect(summary.getByText("gio 26 nov")).toBeInTheDocument();
+    expect(summary.queryByText("Mattina · Pomeriggio")).not.toBeInTheDocument();
+  });
+
+  it("keeps partial non-consecutive days and their different hours", async () => {
+    const schedule = [
+      { date: "2026-11-20", period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+      { date: "2026-11-22", period: "evening", start_time: "20:00:00", end_time: "00:00:00" },
+    ];
+    const slots = schedule.map((slot, id) => ({ ...slot, id, label: slot.period }));
+    serve(detailFixture({}, { slots, schedule }));
+    renderAt("/admin/registrations/7");
+
+    const summary = within(await screen.findByRole("region", { name: "Le tue presenze" }));
+    expect(summary.getAllByRole("listitem")).toHaveLength(2);
+    expect(summary.getByText("Mattina")).toBeInTheDocument();
+    expect(summary.getByText("Sera")).toBeInTheDocument();
+    expect(summary.getByText(/Mattina 09:00–13:00 \(20 nov\)/)).toBeInTheDocument();
+    expect(summary.getByText(/Sera 20:00–00:00 \(22 nov\)/)).toBeInTheDocument();
+  });
+
+  it("translates the shared summary in English", async () => {
+    const schedule = [
+      { date: "2026-11-20", period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+      { date: "2026-11-20", period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+    ];
+    const slots = schedule.map((slot, id) => ({ ...slot, id, label: slot.period }));
+    serve(detailFixture({}, { slots, schedule }));
+    renderAtLocale("/admin/registrations/7", "en");
+
+    const summary = within(await screen.findByRole("region", { name: "Your attendance" }));
+    expect(summary.getByText("Fri 20 Nov")).toBeInTheDocument();
+    expect(summary.getByText(/1 day/)).toBeInTheDocument();
+    expect(summary.getByText("Full days, except where periods are listed.")).toBeInTheDocument();
+  });
+});
 
 describe("refund", () => {
   const cancelled = detailFixture(

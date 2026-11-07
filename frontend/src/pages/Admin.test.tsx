@@ -48,6 +48,11 @@ const detail = (status: string, paid: number) => ({
     balance_cents: 1200 - paid,
     hold_expires_at: "2026-07-04T10:00:00Z",
     slots: [{ date: "2026-07-13", period: "morning", label: "lun 13/07 mattina (09:00-13:00)" }],
+    schedule: [
+      { date: "2026-07-13", period: "morning", start_time: "09:00:00", end_time: "13:00:00" },
+      { date: "2026-07-13", period: "afternoon", start_time: "14:00:00", end_time: "18:00:00" },
+      { date: "2026-07-13", period: "evening", start_time: "19:00:00", end_time: "00:00:00" },
+    ],
     payments: paid
       ? [{ amount_cents: paid, channel: "iban", paid_on: "2026-07-02", note: "via Anna" }]
       : [],

@@ -8,7 +8,7 @@ Quando entrate (con il link o con la password) arrivate alla vostra pagina perso
 
 ### Cosa si vede
 
-Dati e consensi, slot, pasti con esigenze alimentari (allergie comprese, che solo voi vedete), attività, lista d'attesa e la **cronologia** delle modifiche fatte a mano da voi (chi, quando, cosa).
+Dati e consensi, presenze in una riga per giorno (con orari e fasce parziali), pasti con esigenze alimentari (allergie comprese, che solo voi vedete), attività, lista d'attesa e la **cronologia** delle modifiche fatte a mano da voi (chi, quando, cosa).
 
 ### Registrare un pagamento
 
