@@ -2,14 +2,17 @@
 
 from sqlalchemy import select
 
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.email.base import EmailTexts
 from app.email.templates import (
+    booking_confirmation_email,
     cancellation_email,
     payment_confirmation_email,
+    registration_email,
     reminder_email,
     waitlist_promoted_email,
 )
-from app.models import Edition, EmailTemplate, Slot
+from app.models import STATUS_CONFIRMED, Edition, EmailTemplate, Slot
 from tests.helpers import payload
 
 KINDS = [
@@ -17,6 +20,7 @@ KINDS = [
     "already_registered",
     "magic_link",
     "payment_confirmation",
+    "booking_confirmation",
     "reminder_mid",
     "reminder_final",
     "waitlist_promoted",
@@ -67,6 +71,13 @@ class TestSettingsApi:
         assert cancellation["defaults"]["it"]["subject"] == "Disdetta al {event}"
         assert cancellation["defaults"]["en"]["subject"] == "Cancellation for {event}"
         assert cancellation["defaults"]["en"]["body"].startswith("Hi {first_name},\n\n")
+        confirmation = data["emails"]["booking_confirmation"]
+        assert confirmation["defaults"]["it"]["subject"] == (
+            "La tua iscrizione al {event} è confermata"
+        )
+        assert confirmation["defaults"]["en"]["subject"] == (
+            "Your registration for {event} is confirmed"
+        )
         assert data["form_intro"]["it"] == ""
         assert data["form_intro"]["defaults"]["en"].startswith("Choose when")
 
@@ -249,6 +260,118 @@ class TestTemplateFunctions:
         assert standard.subject == "Pagamento ricevuto: sei dentro al Camp!"
         assert standard.body.startswith("Ciao Ada,\n\nabbiamo registrato il tuo pagamento:")
 
+    def test_fee_policy_payment_confirmation_shows_total_and_extra_balance(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 1600
+
+        email = payment_confirmation_email(booking, 1200)
+
+        assert "Pagamento registrato: 12,00 €" in email.body
+        assert "Quota di partecipazione coperta: 12,00 €" in email.body
+        assert "Totale dovuto all'organizzazione: 16,00 €" in email.body
+        assert "Resta da saldare all'organizzazione: 4,00 €" in email.body
+        assert "Pranzi, cene e attività possono essere pagati dopo." in email.body
+
+    def test_payment_email_does_not_claim_the_fee_is_covered_after_a_price_increase(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.status = STATUS_CONFIRMED
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 1600
+
+        email = payment_confirmation_email(booking, 400, total_paid_cents=900)
+
+        assert "Quota di partecipazione: 12,00 €" in email.body
+        assert "Quota di partecipazione coperta" not in email.body
+        assert "Pagamento registrato: 4,00 €" in email.body
+
+    def test_booking_confirmation_does_not_claim_a_new_payment(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 1600
+        texts = EmailTexts("Camp", "Conferma Camp", "Quota coperta.")
+
+        email = booking_confirmation_email(booking, 1200, "https://camp.example.org/login", texts)
+
+        assert email.subject == "Conferma Camp"
+        assert email.body.startswith("Quota coperta.\n\nQuota di partecipazione coperta: 12,00 €")
+        assert "Resta da saldare all'organizzazione: 4,00 €" in email.body
+        assert "https://camp.example.org/login" in email.body
+        assert "Pagamento registrato" not in email.body
+        assert "Totale dovuto all'organizzazione: 16,00 €" in email.body
+        assert "Pranzi, cene e attività possono essere pagati dopo." in email.body
+
+    def test_registration_email_shows_quota_and_total_without_claiming_confirmation(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 2000
+
+        email = registration_email(
+            booking.participant,
+            booking,
+            [],
+            "https://camp.example.org/login",
+        )
+
+        assert "Quota di partecipazione: 12,00 €" in email.body
+        assert "Totale dovuto all'organizzazione: 20,00 €" in email.body
+        assert "Dovuto per confermare la prenotazione: 12,00 €" in email.body
+        assert "Pranzi, cene e attività possono essere pagati dopo." in email.body
+        assert "bloccato fino al" in email.body
+        assert "Come pagare:" in email.body
+        assert "Pagamento registrato" not in email.body
+
+    def test_zero_fee_registration_email_confirms_without_fake_payment_or_deadline(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.registration_fee_cents = 0
+        booking.amount_due_cents = 0
+        booking.status = STATUS_CONFIRMED
+
+        email = registration_email(
+            booking.participant,
+            booking,
+            [],
+            "https://camp.example.org/login",
+        )
+
+        assert "la tua prenotazione al Cissonauti Summer Camp è confermata." in email.body
+        assert "Quota di partecipazione: 0,00 €" in email.body
+        assert "Non resta altro da pagare all'organizzazione." in email.body
+        assert "Causale:" not in email.body
+        assert "Come pagare:" not in email.body
+        assert "bloccato fino al" not in email.body
+        assert "Pagamento registrato" not in email.body
+
+    def test_fee_policy_confirmation_template_uses_english_copy(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        booking.participant.locale = "en"
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 1600
+
+        email = booking_confirmation_email(booking, 1200, "https://camp.example.org/login")
+
+        assert "Registration fee covered: €12.00" in email.body
+        assert "Total due to the organisers: €16.00" in email.body
+        assert "Still due to the organisers: €4.00" in email.body
+        assert "Lunches, dinners and activities can be paid later." in email.body
+        assert "Payment recorded" not in email.body
+
     def test_reminders(self, make_participant, make_booking, db, edition):
         booking = self.booking(make_participant, make_booking, db)
         texts = EmailTexts("Camp", None, "Ricordati!")
@@ -261,6 +384,54 @@ class TestTemplateFunctions:
         final = reminder_email(booking, "final", [], 500, "http://x/login", EmailTexts("Camp"))
         assert mid.subject == "Promemoria: il tuo posto al Camp"
         assert final.subject == "Ultimo promemoria: il tuo posto al Camp sta per liberarsi"
+
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 3000
+        fee_reminder = reminder_email(booking, "final", [], 700, "http://x/login")
+        assert "quota necessaria a confermare" in fee_reminder.body
+        assert "Ancora da versare per confermare: 7,00 €" in fee_reminder.body
+        assert "Ancora da versare: 7,00 €" not in fee_reminder.body
+
+    def test_fee_policy_waitlist_promotion_uses_confirmation_balance(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.registration_fee_cents = 1200
+        booking.amount_due_cents = 2500
+        slot = booking.slots[0]
+
+        email = waitlist_promoted_email(
+            booking, slot, "new_booking", [], 2500, "https://camp.example.org/login"
+        )
+
+        assert "Quota di partecipazione: 12,00 €" in email.body
+        assert "Totale dovuto all'organizzazione: 25,00 €" in email.body
+        assert "quota necessaria a confermare" in email.body
+        assert "Ancora da versare per confermare: 12,00 €" in email.body
+        assert "Ancora da versare: 25,00 €" not in email.body
+
+    def test_zero_fee_waitlist_promotion_is_confirmed_without_payment_steps(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        edition.confirmation_policy = POLICY_REGISTRATION_FEE
+        booking.registration_fee_cents = 0
+        booking.amount_due_cents = 0
+        booking.status = STATUS_CONFIRMED
+        slot = booking.slots[0]
+
+        email = waitlist_promoted_email(
+            booking, slot, "new_booking", [], 0, "https://camp.example.org/login"
+        )
+
+        assert "la quota necessaria è coperta" in email.body
+        assert "Non resta altro da pagare all'organizzazione." in email.body
+        assert "Causale:" not in email.body
+        assert "Come pagare:" not in email.body
+        assert "bloccato fino al" not in email.body
+        assert "Pagamento registrato" not in email.body
 
     def test_promotion_and_cancellation(self, make_participant, make_booking, db, edition):
         booking = self.booking(make_participant, make_booking, db)

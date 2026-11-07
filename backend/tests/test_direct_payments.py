@@ -157,6 +157,7 @@ def test_meal_change_reprices_only_affected_active_bookings(
         1900,
         -800,
     )
+    assert detail["registration_fee_cents"] == 1100
     assert detail["status"] == "confermata"
     assert detail["meals"][0]["price_cents"] == 2300
     db.refresh(booking)

@@ -5,7 +5,6 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.domain.booking import can_extend_hold
-from app.domain.fees import is_covered
 from app.domain.reminders import reminders_to_keep_after_extension
 from app.email import EmailSender
 from app.models import (
@@ -17,14 +16,16 @@ from app.models import (
     Participant,
 )
 from app.services import audit, plus_one
+from app.services.amounts import confirmation_covered
 from app.services.participants import get_by_email, normalize_email
 from app.services.payments import (
     ALREADY_ACTIVE,
     REVIVED,
     dropped_activities_warning,
     paid_total,
+    queue_confirmation_notice,
     revive_expired,
-    send_confirmation,
+    send_transition_confirmation,
 )
 from app.services.registration import SlotsFull
 from app.services.seats import expire_overdue, free_by_slot
@@ -155,9 +156,12 @@ def reactivate(
         free = free_by_slot(db, booking.slots, now)
         raise SlotsFull([s for s in booking.slots if free[s.id] is not None and free[s.id] < 1])
     total = paid_total(booking)
-    confirmed = booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total)
+    confirmed = booking.status == STATUS_PENDING and confirmation_covered(
+        booking.edition, booking, total
+    )
     if confirmed:
         booking.status = STATUS_CONFIRMED
+        queue_confirmation_notice(booking, now)
     if confirmed:
         detail = "Prenotazione riattivata e confermata: i pagamenti coprono già la quota"
     else:
@@ -168,5 +172,5 @@ def reactivate(
     audit.log(db, admin, "reactivated", detail, booking.id)
     db.commit()
     if confirmed:
-        send_confirmation(sender, booking, total)
+        send_transition_confirmation(db, sender, booking, total, now)
     return confirmed

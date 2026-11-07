@@ -110,12 +110,63 @@ describe("the admin panel in English", () => {
   });
 
   it("shows the settings page in English", async () => {
-    stub((url) => (url === "/api/admin/edition" ? { status: 404, body: {} } : undefined));
+    stub((url) => {
+      if (url === "/api/admin/edition")
+        return {
+          body: {
+            id: 1,
+            name: "Camp 2026",
+            start_date: "2026-07-13",
+            end_date: "2026-07-17",
+            morning_start: "09:00:00",
+            morning_end: "13:00:00",
+            afternoon_start: "14:00:00",
+            afternoon_end: "18:00:00",
+            evening_start: "19:00:00",
+            evening_end: "00:00:00",
+            default_capacity: 25,
+            hold_days: 3,
+            waitlist_percent: 20,
+            base_fee_cents: 1000,
+            per_day_fee_cents: 100,
+            lunch_price_cents: 800,
+            dinner_price_cents: 1200,
+            slots: [],
+            logo_url: null,
+            payment_channels: [],
+            privacy: null,
+            disclaimer: null,
+          },
+        };
+      if (url === "/api/admin/edition/confirmation-policy/preview")
+        return {
+          body: {
+            current_policy: "legacy_total",
+            proposed_policy: "registration_fee",
+            ready: true,
+            already_active: false,
+            preview_token: "a".repeat(64),
+            eligible_count: 0,
+            excluded_expired_count: 0,
+            excluded_closed_count: 0,
+            waitlist_only_count: 0,
+            new_confirmation_count: 0,
+            email_templates_to_review: [],
+            blockers: [],
+            rows: [],
+          },
+        };
+      return undefined;
+    });
     renderEnglish("/admin/settings");
     expect(await screen.findByRole("heading", { name: "Settings", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save edition" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Booking confirmation rule" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Calculate preview" }));
     expect(
-      screen.getByText("Save the edition to configure payment channels and legal texts."),
+      await screen.findByText(
+        "The recalculation uses current prices. Payments and voids stay unchanged; the balance or credit may change. Only active bookings are recalculated.",
+      ),
     ).toBeInTheDocument();
   });
 });

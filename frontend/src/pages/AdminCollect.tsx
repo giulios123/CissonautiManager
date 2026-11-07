@@ -16,6 +16,9 @@ type Row = {
   email: string;
   personal_code: string;
   status: string;
+  confirmation_policy?: "legacy_total" | "registration_fee";
+  registration_fee_cents?: number | null;
+  confirmation_balance_cents?: number | null;
   amount_due_cents: number;
   paid_cents: number;
   balance_cents: number;
@@ -77,6 +80,7 @@ export function AdminCollect() {
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [message, setMessage] = useState("");
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  const feePolicy = rows?.some((row) => row.confirmation_policy === "registration_fee") ?? false;
 
   const load = useCallback(() => {
     api<Row[]>("/api/admin/views/to-collect")
@@ -138,13 +142,20 @@ export function AdminCollect() {
 
   async function markPaid(row: Row) {
     const name = `${row.first_name} ${row.last_name}`;
+    const amountCents =
+      row.confirmation_policy === "registration_fee" &&
+      (row.status === "in_attesa_pagamento" || row.status === "scaduta") &&
+      row.confirmation_balance_cents != null &&
+      row.confirmation_balance_cents > 0
+        ? row.confirmation_balance_cents
+        : row.balance_cents;
     setBusyFor(row.booking_id, true);
     setErrors((current) => without(current, row.booking_id));
     try {
       const detail = await api<Detail>(`/api/admin/registrations/${row.booking_id}/payments`, {
         method: "POST",
         json: {
-          amount_cents: row.balance_cents,
+          amount_cents: amountCents,
           channel,
           defer_confirmation_email: true,
         },
@@ -154,7 +165,7 @@ export function AdminCollect() {
         ...current,
         [row.booking_id]: {
           paymentId: detail.payment_id as number,
-          amountCents: row.balance_cents,
+          amountCents,
           row,
         },
       }));
@@ -163,7 +174,7 @@ export function AdminCollect() {
         setTimeout(() => finish(row.booking_id, true), UNDO_WINDOW_MS),
       );
       setMessage(
-        t("collect.paymentRecorded", { amount: formatEuro(row.balance_cents), name }) +
+        t("collect.paymentRecorded", { amount: formatEuro(amountCents), name }) +
           (detail.warning ? ` ${detail.warning}` : ""),
       );
     } catch (error) {
@@ -242,7 +253,13 @@ export function AdminCollect() {
                   <th scope="col">{t("people.colPerson")}</th>
                   <th scope="col">{t("collect.colReference")}</th>
                   <th scope="col">{t("people.colStatus")}</th>
-                  <th scope="col">{t("people.colDue")}</th>
+                  {feePolicy && (
+                    <>
+                      <th scope="col">{t("collect.colRegistrationFee")}</th>
+                      <th scope="col">{t("collect.colToConfirm")}</th>
+                    </>
+                  )}
+                  <th scope="col">{feePolicy ? t("collect.colTotal") : t("people.colDue")}</th>
                   <th scope="col">{t("people.colPaid")}</th>
                   <th scope="col">{t("people.colBalance")}</th>
                   <th scope="col">{t("people.colDeadline")}</th>
@@ -264,6 +281,20 @@ export function AdminCollect() {
                       <td>
                         <StatusBadge status={row.status} />
                       </td>
+                      {feePolicy && (
+                        <>
+                          <td>
+                            {row.registration_fee_cents == null
+                              ? "-"
+                              : formatEuro(row.registration_fee_cents)}
+                          </td>
+                          <td>
+                            {row.confirmation_balance_cents == null
+                              ? "-"
+                              : formatEuro(row.confirmation_balance_cents)}
+                          </td>
+                        </>
+                      )}
                       <td>{formatEuro(row.amount_due_cents)}</td>
                       <td>{formatEuro(row.paid_cents)}</td>
                       <td>{formatEuro(row.balance_cents)}</td>

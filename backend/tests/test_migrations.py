@@ -48,26 +48,28 @@ def test_models_and_migrations_are_in_sync(alembic_config, database_url, empty_d
 def test_migration_0015_preserves_legacy_activity_time_and_price(
     alembic_config, database_url, empty_database
 ):
-    from sqlalchemy.orm import Session
-
-    from app.models import Edition
-    from tests.conftest import DEFAULT_EDITION_VALUES
-
     command.upgrade(alembic_config, "0014")
     engine = make_engine(database_url)
-    with Session(engine) as db:
-        edition = Edition(**DEFAULT_EDITION_VALUES)
-        db.add(edition)
-        db.flush()
-        db.execute(
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO edition (name, start_date, end_date, morning_start, morning_end,"
+                " afternoon_start, afternoon_end, evening_start, evening_end, default_capacity,"
+                " hold_days, base_fee_cents, per_day_fee_cents, is_active, waitlist_percent,"
+                " lunch_price_cents, dinner_price_cents) VALUES ('Camp', '2026-07-13',"
+                " '2026-07-17', '09:00:00', '13:00:00', '14:00:00', '18:00:00', '19:00:00',"
+                " '00:00:00', 25, 3, 1000, 100, 1, 20, 800, 1200)"
+            )
+        )
+        edition_id = connection.execute(text("SELECT id FROM edition")).scalar_one()
+        connection.execute(
             text(
                 "INSERT INTO activity (edition_id, title, date, period, time_label, price_cents,"
                 " created_at) VALUES (:e, 'Legacy', '2026-07-13', 'morning', 'around ten',"
                 " 1500, '2026-07-01 10:00:00')"
             ),
-            {"e": edition.id},
+            {"e": edition_id},
         )
-        db.commit()
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         row = connection.execute(
@@ -119,6 +121,92 @@ def test_migration_0016_preserves_legacy_legal_text_and_starts_with_no_consent_e
     assert events == 0
     assert "body_it" not in columns and "body_en" not in columns
     assert "consent_event" not in tables
+
+
+def test_migration_0017_keeps_legacy_policy_and_payment_notice_without_repricing(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0016")
+    engine = make_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO edition (name, start_date, end_date, morning_start, morning_end,"
+                " afternoon_start, afternoon_end, evening_start, evening_end, default_capacity,"
+                " hold_days, base_fee_cents, per_day_fee_cents, is_active, waitlist_percent,"
+                " lunch_price_cents, dinner_price_cents) VALUES ('Camp', '2026-07-13',"
+                " '2026-07-17', '09:00:00', '13:00:00', '14:00:00', '18:00:00', '19:00:00',"
+                " '00:00:00', 25, 3, 1000, 100, 1, 20, 800, 1200)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO participant (first_name, last_name, email, personal_code, role,"
+                " locale, created_at) VALUES ('Ada', 'Lovelace', 'ada@example.com', 'CSC-AAAA',"
+                " 'participant', 'it', '2026-07-01 10:00:00')"
+            )
+        )
+        for kind in ("privacy", "disclaimer"):
+            connection.execute(
+                text(
+                    "INSERT INTO legal_document (edition_id, kind, version, body, published_at)"
+                    " VALUES (1, :kind, 1, 'Legacy text', '2026-07-01 09:00:00')"
+                ),
+                {"kind": kind},
+            )
+        connection.execute(
+            text(
+                "INSERT INTO booking (edition_id, participant_id, status, hold_expires_at,"
+                " hold_started_at, amount_due_cents, privacy_document_id, privacy_accepted_at,"
+                " disclaimer_document_id, disclaimer_accepted_at, created_at) VALUES"
+                " (1, 1, 'in_attesa_pagamento', '2026-07-04 10:00:00',"
+                " '2026-07-01 10:00:00', 1350, 1, '2026-07-01 10:00:00', 2,"
+                " '2026-07-01 10:00:00', '2026-07-01 10:00:00')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO payment (booking_id, amount_cents, channel, paid_on, recorded_by_id,"
+                " created_at, confirmation_email_due_at) VALUES"
+                " (1, 400, 'iban', '2026-07-02', 1, '2026-07-02 10:00:00',"
+                " '2026-07-02 10:00:30')"
+            )
+        )
+
+    command.upgrade(alembic_config, "0017")
+    with engine.connect() as connection:
+        edition = connection.execute(
+            text(
+                "SELECT confirmation_policy, confirmation_policy_activated_at,"
+                " confirmation_policy_preview_token FROM edition"
+            )
+        ).one()
+        booking = connection.execute(
+            text(
+                "SELECT amount_due_cents, registration_fee_cents, confirmation_cycle,"
+                " confirmation_claimed_cycle, confirmation_notice_due_at,"
+                " confirmation_notice_payment_id FROM booking"
+            )
+        ).one()
+        payment = connection.execute(
+            text("SELECT amount_cents, confirmation_email_due_at FROM payment")
+        ).one()
+    command.downgrade(alembic_config, "0016")
+    with engine.connect() as connection:
+        edition_columns = {c["name"] for c in inspect(connection).get_columns("edition")}
+        booking_columns = {c["name"] for c in inspect(connection).get_columns("booking")}
+        preserved = connection.execute(text("SELECT amount_due_cents FROM booking")).scalar_one()
+        legacy_due = connection.execute(
+            text("SELECT confirmation_email_due_at FROM payment")
+        ).scalar_one()
+    engine.dispose()
+
+    assert tuple(edition) == ("legacy_total", None, None)
+    assert tuple(booking) == (1350, None, 0, 0, None, None)
+    assert payment.amount_cents == 400 and payment.confirmation_email_due_at is not None
+    assert preserved == 1350 and legacy_due is not None
+    assert "confirmation_policy" not in edition_columns
+    assert "registration_fee_cents" not in booking_columns
 
 
 def test_migration_0003_fills_hold_started_at_from_created_at(

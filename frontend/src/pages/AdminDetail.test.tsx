@@ -136,6 +136,32 @@ describe("compact attendance on the registration detail", () => {
   });
 });
 
+describe("confirmation amounts on the registration detail", () => {
+  it("shows the saved fee and prefills the amount needed to confirm", async () => {
+    serve(
+      detailFixture(
+        {},
+        {
+          confirmation_policy: "registration_fee",
+          registration_fee_cents: 1200,
+          confirmation_due_cents: 1200,
+          confirmation_balance_cents: 700,
+          amount_due_cents: 2500,
+          paid_cents: 500,
+          balance_cents: 2000,
+        },
+      ),
+    );
+    renderAt("/admin/registrations/7");
+
+    expect(await screen.findByText(/Quota di partecipazione:/)).toHaveTextContent("12,00 €");
+    expect(screen.getByText(/Dovuto per confermare la prenotazione:/)).toHaveTextContent("7,00 €");
+    expect(screen.getByText(/Totale dovuto all'organizzazione:/)).toHaveTextContent("25,00 €");
+    await userEvent.click(screen.getByRole("button", { name: /Metti il residuo per confermare/ }));
+    expect(screen.getByLabelText("Importo (€)")).toHaveValue("7,00");
+  });
+});
+
 describe("refund", () => {
   const cancelled = detailFixture(
     {},

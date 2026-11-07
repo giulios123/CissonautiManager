@@ -140,6 +140,18 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Non puoi togliere giorni con slot già prenotati: {days}",
         "en": "You can't remove days that have booked slots: {days}",
     },
+    "confirmation_policy.preview_changed": {
+        "it": "I dati sono cambiati. Ricarica l'anteprima prima di applicare.",
+        "en": "The data has changed. Refresh the preview before applying.",
+    },
+    "confirmation_policy.preview_blocked": {
+        "it": "Risolvi i dati segnalati nell'anteprima prima di applicare la regola.",
+        "en": "Resolve the issues shown in the preview before applying the rule.",
+    },
+    "confirmation_policy.already_active": {
+        "it": "La nuova regola di conferma è già attiva.",
+        "en": "The new confirmation rule is already active.",
+    },
     # --- activities (admin)
     "activity.outside_edition": {
         "it": "Il giorno deve essere tra le date dell'edizione",

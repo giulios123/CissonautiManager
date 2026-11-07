@@ -507,6 +507,10 @@ class CollectRowOut(BaseModel):
     email: str
     personal_code: str
     status: str
+    confirmation_policy: str
+    registration_fee_cents: int | None
+    confirmation_due_cents: int | None
+    confirmation_balance_cents: int | None
     amount_due_cents: int
     paid_cents: int
     balance_cents: int
@@ -525,6 +529,10 @@ def to_collect(
             email=r.email,
             personal_code=r.personal_code,
             status=r.status,
+            confirmation_policy=r.confirmation_policy,
+            registration_fee_cents=r.registration_fee_cents,
+            confirmation_due_cents=r.confirmation_due_cents,
+            confirmation_balance_cents=r.confirmation_balance_cents,
             amount_due_cents=r.amount_due_cents,
             paid_cents=r.paid_cents,
             balance_cents=r.balance_cents,

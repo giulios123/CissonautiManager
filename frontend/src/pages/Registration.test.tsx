@@ -376,6 +376,91 @@ describe("Registration page", () => {
     expect(sent.consent_locale).toBe("en");
   });
 
+  it("shows the fee needed to confirm separately from the full total", async () => {
+    mockFetch({
+      "/api/public/edition": { body: edition },
+      "/api/public/registrations": {
+        status: 201,
+        body: {
+          result: "created",
+          booking: {
+            personal_code: "CSC-7K3P",
+            status: "in_attesa_pagamento",
+            confirmation_policy: "registration_fee",
+            registration_fee_cents: 1100,
+            confirmation_due_cents: 1100,
+            confirmation_balance_cents: 1100,
+            amount_due_cents: 1900,
+            hold_expires_at: "2026-07-04T10:00:00Z",
+            slots: [{ date: "2026-07-13", period: "morning", label: "lun 13/07 mattina" }],
+            schedule: [],
+            payment_channels: [{ code: "iban", label: "Bonifico", instructions: "IT00" }],
+          },
+        },
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByText(/Quota da versare/);
+    await user.click(screen.getByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
+    await user.type(screen.getByLabelText("Nome"), "Ada");
+    await user.type(screen.getByLabelText("Cognome"), "Lovelace");
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
+    await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
+    await user.click(screen.getByLabelText(/informativa privacy$/));
+    await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await user.click(screen.getByRole("button", { name: "Iscriviti" }));
+
+    const confirmation = await screen.findByRole("main");
+    expect(confirmation).toHaveTextContent("Quota di partecipazione: 11,00 €");
+    expect(confirmation).toHaveTextContent("Dovuto per confermare la prenotazione: 11,00 €");
+    expect(confirmation).toHaveTextContent("Totale dovuto all'organizzazione: 19,00 €");
+    expect(confirmation).toHaveTextContent("Pranzi, cene e attività possono essere pagati dopo.");
+  });
+
+  it("does not show a payment deadline or payment instructions for a confirmed zero-fee place", async () => {
+    mockFetch({
+      "/api/public/edition": { body: edition },
+      "/api/public/registrations": {
+        status: 201,
+        body: {
+          result: "created",
+          booking: {
+            personal_code: "CSC-7K3P",
+            status: "confermata",
+            confirmation_policy: "registration_fee",
+            registration_fee_cents: 0,
+            confirmation_due_cents: 0,
+            confirmation_balance_cents: 0,
+            amount_due_cents: 0,
+            hold_expires_at: "2026-07-04T10:00:00Z",
+            slots: [{ date: "2026-07-13", period: "morning", label: "lun 13/07 mattina" }],
+            schedule: [],
+            payment_channels: [{ code: "iban", label: "Bonifico", instructions: "IT00" }],
+          },
+        },
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByText(/Quota da versare/);
+    await user.click(screen.getByLabelText(/Mattina 09:00-13:00 · 10 posti liberi/));
+    await user.type(screen.getByLabelText("Nome"), "Ada");
+    await user.type(screen.getByLabelText("Cognome"), "Lovelace");
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.type(screen.getByLabelText("Telefono"), "+39 333 1234567");
+    await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
+    await user.click(screen.getByLabelText(/informativa privacy$/));
+    await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await user.click(screen.getByRole("button", { name: "Iscriviti" }));
+
+    const confirmation = await screen.findByRole("main");
+    expect(confirmation).toHaveTextContent("La prenotazione è confermata.");
+    expect(confirmation).not.toHaveTextContent("Il posto è bloccato fino al");
+    expect(confirmation).not.toHaveTextContent("Come pagare");
+  });
+
   it("does not repeat a known account's payment reference in the anonymous response", async () => {
     mockFetch({
       "/api/public/edition": { body: edition },

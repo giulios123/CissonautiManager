@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import { useRefreshEventName } from "../eventName";
 import { useT } from "../i18n";
 import { hasMessage, tNow } from "../i18n/messages";
 import { AdminEmailTexts } from "./AdminEmailTexts";
 import { AdminRegistrationEmail } from "./AdminRegistrationEmail";
-import { centsToInput, parseEuroToCents } from "../money";
+import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminEditionLogo } from "./AdminEditionLogo";
 
 type Channel = { code: string; label: string; instructions: string; enabled: boolean };
@@ -48,6 +48,56 @@ type Edition = {
 
 type Notice = { kind: "ok" | "error"; text: string } | null;
 
+type ConfirmationPolicyRow = {
+  booking_id: number;
+  name: string;
+  email: string;
+  status_before: string;
+  status_after: string;
+  registration_fee_cents: number;
+  amount_due_cents: number;
+  paid_cents: number;
+  balance_before_cents: number;
+  balance_after_cents: number;
+  confirmation_balance_after_cents: number;
+  sends_confirmation: boolean;
+};
+
+type ConfirmationPolicyPreview = {
+  current_policy: "legacy_total" | "registration_fee";
+  proposed_policy: "legacy_total" | "registration_fee";
+  ready: boolean;
+  already_active: boolean;
+  preview_token: string | null;
+  eligible_count: number;
+  excluded_expired_count: number;
+  excluded_closed_count: number;
+  waitlist_only_count: number;
+  new_confirmation_count: number;
+  email_templates_to_review: ConfirmationPolicyEmailReview[];
+  blockers: { booking_id: number; name: string; reason: string }[];
+  rows: ConfirmationPolicyRow[];
+};
+
+type ConfirmationPolicyActivation = {
+  already_applied: boolean;
+  activated_at: string;
+  updated_bookings: number;
+  new_confirmations: number;
+  transferred_notices: number;
+};
+
+type ConfirmationPolicyEmailReview = {
+  kind:
+    | "registration"
+    | "payment_confirmation"
+    | "booking_confirmation"
+    | "reminder_mid"
+    | "reminder_final"
+    | "waitlist_promoted";
+  locale: "it" | "en";
+};
+
 const hhmm = (value: string) => value.slice(0, 5);
 
 function errorText(error: unknown): string {
@@ -66,6 +116,228 @@ function NoticeLine({ notice }: { notice: Notice }) {
     <p role={notice.kind === "error" ? "alert" : "status"} className={`notice ${notice.kind}`}>
       {notice.text}
     </p>
+  );
+}
+
+function confirmationStatus(status: string, t: ReturnType<typeof useT>): string {
+  const key = `status.${status}`;
+  return hasMessage(key) ? t(key) : status;
+}
+
+function policyBalance(cents: number, t: ReturnType<typeof useT>): string {
+  return cents < 0
+    ? t("set.policyCredit", { amount: formatEuro(Math.abs(cents)) })
+    : formatEuro(cents);
+}
+
+function ConfirmationPolicySection() {
+  const t = useT();
+  const [preview, setPreview] = useState<ConfirmationPolicyPreview | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<Notice>(null);
+  const actionInFlight = useRef(false);
+
+  async function loadPreview() {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
+    setBusy(true);
+    setNotice(null);
+    setPreview(null);
+    try {
+      const next = await api<ConfirmationPolicyPreview>(
+        "/api/admin/edition/confirmation-policy/preview",
+        { cache: "no-store" },
+      );
+      setPreview(next);
+    } catch (error) {
+      setNotice({ kind: "error", text: errorText(error) });
+    } finally {
+      actionInFlight.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function activate() {
+    if (actionInFlight.current || !preview?.ready || !preview.preview_token) return;
+    actionInFlight.current = true;
+    setBusy(true);
+    setNotice(null);
+    try {
+      const result = await api<ConfirmationPolicyActivation>(
+        "/api/admin/edition/confirmation-policy/activate",
+        { method: "POST", json: { preview_token: preview.preview_token } },
+      );
+      setPreview((current) =>
+        current
+          ? {
+              ...current,
+              current_policy: "registration_fee",
+              proposed_policy: "registration_fee",
+              already_active: true,
+              ready: false,
+              preview_token: null,
+            }
+          : current,
+      );
+      setNotice({
+        kind: "ok",
+        text: t("set.policyActivated", {
+          bookings: result.updated_bookings,
+          confirmations: result.new_confirmations,
+          emails: result.transferred_notices,
+        }),
+      });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) setPreview(null);
+      setNotice({ kind: "error", text: errorText(error) });
+    } finally {
+      actionInFlight.current = false;
+      setBusy(false);
+    }
+  }
+
+  function cancelPreview() {
+    if (busy) return;
+    setPreview(null);
+    setNotice(null);
+  }
+
+  return (
+    <section aria-labelledby="confirmation-policy-title">
+      <h2 id="confirmation-policy-title">{t("set.policyTitle")}</h2>
+      <p>{t("set.policyIntro")}</p>
+      <p>
+        {t("set.policyCurrent")}{" "}
+        <strong>
+          {preview
+            ? t(
+                preview.current_policy === "registration_fee"
+                  ? "set.policyActive"
+                  : "set.policyLegacy",
+              )
+            : t("set.policyUnknown")}
+        </strong>
+      </p>
+      {preview?.already_active ? (
+        <p role="status">{t("set.policyAlreadyActive")}</p>
+      ) : (
+        <>
+          {!preview && (
+            <button type="button" onClick={loadPreview} disabled={busy}>
+              {busy ? t("common.loading") : t("set.policyPreview")}
+            </button>
+          )}
+          {preview && (
+            <>
+              <h3>{t("set.policyPreviewTitle")}</h3>
+              <p>{t("set.policyPreviewRule")}</p>
+              <ul>
+                <li>{t("set.policyEligible", { n: preview.eligible_count })}</li>
+                <li>{t("set.policyExcludedExpired", { n: preview.excluded_expired_count })}</li>
+                <li>{t("set.policyExcludedClosed", { n: preview.excluded_closed_count })}</li>
+                <li>{t("set.policyWaitlistOnly", { n: preview.waitlist_only_count })}</li>
+                <li>{t("set.policyEmails", { n: preview.new_confirmation_count })}</li>
+              </ul>
+              {preview.email_templates_to_review.length > 0 && (
+                <div className="notice">
+                  <p>
+                    <strong>{t("set.policyEmailReview")}</strong>
+                  </p>
+                  <p>{t("set.policyEmailReviewIntro")}</p>
+                  <ul>
+                    {preview.email_templates_to_review.map((email) => {
+                      const labels = {
+                        registration: "set.policyEmailRegistration",
+                        payment_confirmation: "set.policyEmailPayment",
+                        booking_confirmation: "set.policyEmailBooking",
+                        reminder_mid: "set.policyEmailReminder",
+                        reminder_final: "set.policyEmailReminder",
+                        waitlist_promoted: "set.policyEmailWaitlist",
+                      } as const;
+                      return (
+                        <li key={`${email.kind}-${email.locale}`}>
+                          {t(labels[email.kind])} (
+                          {t(email.locale === "it" ? "lang.it" : "lang.en")})
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              {preview.blockers.length > 0 && (
+                <div className="notice error" role="alert">
+                  <p>{t("set.policyBlockers")}</p>
+                  <ul>
+                    {preview.blockers.map((blocker) => (
+                      <li key={blocker.booking_id}>
+                        {blocker.name}:{" "}
+                        {t(
+                          blocker.reason === "invalid_slots"
+                            ? "set.policyInvalidSlots"
+                            : "set.policyInvalidAmounts",
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {preview.rows.length > 0 && (
+                <div className="table-wrap">
+                  <table>
+                    <caption>{t("set.policyRowsCaption")}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">{t("set.policyPerson")}</th>
+                        <th scope="col">{t("set.policyStatusBefore")}</th>
+                        <th scope="col">{t("set.policyStatusAfter")}</th>
+                        <th scope="col">{t("money.registrationFee")}</th>
+                        <th scope="col">{t("money.totalDue")}</th>
+                        <th scope="col">{t("people.colPaid")}</th>
+                        <th scope="col">{t("set.policyBalanceBefore")}</th>
+                        <th scope="col">{t("set.policyBalanceAfter")}</th>
+                        <th scope="col">{t("money.confirmationDue")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.rows.map((row) => (
+                        <tr key={row.booking_id}>
+                          <th scope="row">
+                            {row.name}
+                            <br />
+                            <span className="legal">{row.email}</span>
+                          </th>
+                          <td>{confirmationStatus(row.status_before, t)}</td>
+                          <td>{confirmationStatus(row.status_after, t)}</td>
+                          <td>{formatEuro(row.registration_fee_cents)}</td>
+                          <td>{formatEuro(row.amount_due_cents)}</td>
+                          <td>{formatEuro(row.paid_cents)}</td>
+                          <td>{policyBalance(row.balance_before_cents, t)}</td>
+                          <td>{policyBalance(row.balance_after_cents, t)}</td>
+                          <td>{formatEuro(row.confirmation_balance_after_cents)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="row">
+                <button
+                  type="button"
+                  onClick={activate}
+                  disabled={busy || !preview.ready || !preview.preview_token}
+                >
+                  {busy ? t("common.loading") : t("set.policyApply")}
+                </button>
+                <button type="button" className="secondary" onClick={cancelPreview} disabled={busy}>
+                  {t("set.policyCancelPreview")}
+                </button>
+              </div>
+            </>
+          )}
+        </>
+      )}
+      <NoticeLine notice={notice} />
+    </section>
   );
 }
 
@@ -413,6 +685,7 @@ export function AdminSettings() {
       <EditionSection edition={edition} onSaved={setEdition} />
       {edition ? (
         <>
+          <ConfirmationPolicySection />
           <AdminEditionLogo
             logoUrl={edition.logo_url}
             onSaved={(logoUrl) =>

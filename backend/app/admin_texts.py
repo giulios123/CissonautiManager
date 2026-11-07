@@ -30,6 +30,8 @@ LABELS_EN: dict[str, str] = {
     "Sere": "Evenings",
     "Stato": "Status",
     "Dovuto": "Due",
+    "Quota di partecipazione": "Registration fee",
+    "Residuo per confermare": "Remaining to confirm",
     "Versato": "Paid",
     "Saldo": "Balance",
     "Scadenza blocco": "Hold deadline",

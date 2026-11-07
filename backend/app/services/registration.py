@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.domain.booking import effective_status, has_free_seat, hold_deadline
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.email import EmailSender
 from app.email.templates import (
     already_registered_email,
@@ -31,7 +32,7 @@ from app.services import email_templates as email_templates_service
 from app.services import waitlist as waitlist_service
 from app.services.amounts import recompute_amount
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
-from app.services.seats import expire_overdue, free_by_slot, slots_for_update
+from app.services.seats import expire_overdue, free_by_slot, lock_edition, slots_for_update
 
 
 class RegistrationClosed(Exception):
@@ -130,6 +131,10 @@ def register(
     if not is_registration_open(db, edition):
         raise RegistrationClosed()
     assert edition is not None
+    lock_edition(db, edition.id)
+    db.refresh(edition)
+    if not is_registration_open(db, edition):
+        raise RegistrationClosed()
 
     privacy = edition_service.latest_legal_document(db, edition, "privacy")
     disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
@@ -273,6 +278,11 @@ def _new_booking(
     )
     booking.slots = slots
     recompute_amount(edition, booking)
+    if (
+        edition.confirmation_policy == POLICY_REGISTRATION_FEE
+        and booking.registration_fee_cents == 0
+    ):
+        booking.status = STATUS_CONFIRMED
     db.add(booking)
     db.flush()
     return booking

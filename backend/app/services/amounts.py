@@ -3,6 +3,7 @@
 from datetime import date
 
 from app.domain.collection import collectable
+from app.domain.confirmation import confirmation_due_cents
 from app.domain.fees import compute_fee
 from app.models import MEAL_LUNCH, Activity, Booking, Edition
 
@@ -33,12 +34,29 @@ def activity_terms(activity: Activity) -> dict:
 def recompute_amount(edition: Edition, booking: Booking) -> int:
     """Set the amount due from the booking's slots, meals and paid activities, at the current
     prices (D-017), and return it."""
-    booking.amount_due_cents = compute_fee(
-        [s.date for s in booking.slots],
-        edition.base_fee_cents,
-        edition.per_day_fee_cents,
-    ) + sum(meal_terms(edition, m.date, m.kind)["collectable_cents"] for m in booking.meals)
-    booking.amount_due_cents += sum(
-        collectable(a.price_cents, a.payment_mode) for a in booking.activities
-    )
+    booking.registration_fee_cents, booking.amount_due_cents = calculate_amounts(edition, booking)
     return booking.amount_due_cents
+
+
+def calculate_amounts(edition: Edition, booking: Booking) -> tuple[int, int]:
+    """Calculate the base-plus-days registration fee and total organiser receivable."""
+    registration_fee_cents = compute_fee(
+        [s.date for s in booking.slots], edition.base_fee_cents, edition.per_day_fee_cents
+    )
+    total_due_cents = registration_fee_cents + sum(
+        meal_terms(edition, m.date, m.kind)["collectable_cents"] for m in booking.meals
+    )
+    total_due_cents += sum(collectable(a.price_cents, a.payment_mode) for a in booking.activities)
+    return registration_fee_cents, total_due_cents
+
+
+def confirmation_due(edition: Edition, booking: Booking) -> int | None:
+    """The saved amount a booking must cover to hold its place under this edition's policy."""
+    return confirmation_due_cents(
+        edition.confirmation_policy, booking.amount_due_cents, booking.registration_fee_cents
+    )
+
+
+def confirmation_covered(edition: Edition, booking: Booking, paid_cents: int) -> bool:
+    due = confirmation_due(edition, booking)
+    return due is not None and paid_cents >= due

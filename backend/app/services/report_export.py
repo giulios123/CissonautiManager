@@ -160,6 +160,11 @@ def report_rows(report: EditionReport) -> list[Row]:
         _plain(section, "Rimborsato", Amount(money.refunded_cents)),
         _plain(section, "Netto (versato meno rimborsato)", Amount(money.net_cents)),
         _plain(section, "Ancora da incassare", Amount(money.to_collect_cents)),
+        _plain(
+            section,
+            "Residuo per confermare",
+            Amount(money.to_confirm_cents) if money.to_confirm_cents is not None else None,
+        ),
         _plain(section, "Crediti da restituire", Amount(money.credits_cents)),
         _plain(section, "Disdette da rimborsare", Amount(money.to_refund_cents)),
     ]

@@ -4,10 +4,11 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, object_session
 
+from app.config import Settings, get_settings
 from app.domain.booking import can_reactivate, has_free_seat, hold_deadline, status_after_void
-from app.domain.fees import is_covered
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.email import EmailSender
-from app.email.templates import payment_confirmation_email
+from app.email.templates import booking_confirmation_email, payment_confirmation_email
 from app.i18n import t
 from app.models import (
     STATUS_CONFIRMED,
@@ -23,7 +24,7 @@ from app.models import (
 from app.services import audit
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
-from app.services.amounts import recompute_amount
+from app.services.amounts import confirmation_covered, confirmation_due, recompute_amount
 from app.services.seats import (
     activities_for_update,
     expire_overdue,
@@ -31,6 +32,7 @@ from app.services.seats import (
     free_by_slot,
     has_other_active_booking,
     lock_booking,
+    lock_edition,
     slots_for_update,
 )
 from app.timefmt import format_activity, format_euro, status_label
@@ -55,11 +57,56 @@ def paid_total(booking: Booking) -> int:
     return sum(p.amount_cents for p in active_payments(booking))
 
 
-def send_confirmation(sender: EmailSender, booking: Booking, paid_cents: int) -> None:
+def send_confirmation(
+    sender: EmailSender,
+    booking: Booking,
+    paid_cents: int,
+    *,
+    total_paid_cents: int | None = None,
+) -> None:
     db = object_session(booking)
     assert db is not None
     texts = email_templates_service.texts_for_booking(db, booking, "payment_confirmation")
-    sender.send(payment_confirmation_email(booking, paid_cents, texts))
+    sender.send(
+        payment_confirmation_email(
+            booking,
+            paid_cents,
+            texts,
+            total_paid_cents=total_paid_cents,
+        )
+    )
+
+
+def queue_confirmation_notice(
+    booking: Booking,
+    now: datetime,
+    *,
+    payment_id: int | None = None,
+    due_at: datetime | None = None,
+) -> bool:
+    """Persist one notification cycle for a newly confirmed booking under the fee policy."""
+    if booking.edition.confirmation_policy != POLICY_REGISTRATION_FEE:
+        return False
+    booking.confirmation_cycle = (
+        max(booking.confirmation_cycle, booking.confirmation_claimed_cycle) + 1
+    )
+    booking.confirmation_notice_due_at = due_at or now
+    booking.confirmation_notice_payment_id = payment_id
+    return True
+
+
+def send_transition_confirmation(
+    db: Session,
+    sender: EmailSender,
+    booking: Booking,
+    paid_cents: int,
+    now: datetime,
+) -> None:
+    """Dispatch the queued fee-policy notice or preserve the legacy payment email."""
+    if booking.edition.confirmation_policy == POLICY_REGISTRATION_FEE:
+        send_due_confirmations(db, sender, now)
+    else:
+        send_confirmation(sender, booking, paid_cents)
 
 
 REVIVED = "revived"
@@ -117,6 +164,7 @@ def record_payment(
     note: str | None,
     now: datetime,
     defer_confirmation_email: bool = False,
+    settings: Settings | None = None,
 ) -> PaymentResult:
     """Register a payment and update the booking: confirm it when covered, revive it if expired.
 
@@ -127,6 +175,7 @@ def record_payment(
     An expired booking is revived only if every one of its slots still has a free seat. Otherwise
     the payment is kept and the booking stays expired, with a warning for the admin.
     """
+    lock_edition(db, booking.edition_id)
     lock_booking(db, booking.id)
     expire_overdue(db, now)
     db.refresh(booking)
@@ -162,18 +211,30 @@ def record_payment(
             )
 
     confirmed_now = False
-    if booking.status == STATUS_PENDING and is_covered(booking.amount_due_cents, total):
+    if booking.status == STATUS_PENDING and confirmation_covered(booking.edition, booking, total):
         booking.status = STATUS_CONFIRMED
         confirmed_now = True
 
     email_due_at = None
     if confirmed_now and defer_confirmation_email:
         email_due_at = now + CONFIRMATION_EMAIL_DELAY
+    queued_cycle = False
+    if confirmed_now and booking.edition.confirmation_policy == POLICY_REGISTRATION_FEE:
+        queued_cycle = queue_confirmation_notice(
+            booking,
+            now,
+            payment_id=payment.id,
+            due_at=email_due_at or now,
+        )
+    elif confirmed_now and defer_confirmation_email:
         payment.confirmation_email_due_at = email_due_at
 
     db.commit()
     if confirmed_now and not defer_confirmation_email:
-        send_confirmation(sender, booking, total)
+        if queued_cycle:
+            send_due_confirmations(db, sender, now, settings)
+        else:
+            send_confirmation(sender, booking, total)
     return PaymentResult(
         payment,
         confirmed_now,
@@ -184,41 +245,169 @@ def record_payment(
     )
 
 
-def send_due_confirmations(db: Session, sender: EmailSender, now: datetime) -> int:
-    """Send the deferred confirmation emails that are due. Returns how many went out.
+def send_due_confirmations(
+    db: Session, sender: EmailSender, now: datetime, settings: Settings | None = None
+) -> int:
+    """Claim and send legacy receipts or the current confirmed-status notification cycle.
 
-    Each one is claimed with a conditional UPDATE before sending, so two runs (the timer of the
-    web app and the hourly job) never send the same email twice. A voided payment never sends,
-    and neither does a booking that is no longer confirmed. A failed delivery is not retried.
+    Claims commit before delivery. A failed email is logged by the caller and is not retried,
+    while the conditional update prevents a timer and the hourly job from sending it twice.
     """
-    due = db.scalars(
-        select(Payment).where(
-            Payment.confirmation_email_due_at <= now,
-            Payment.confirmation_email_sent_at.is_(None),
-            Payment.voided_at.is_(None),
-        )
-    ).all()
+    settings = settings or get_settings()
     sent = 0
-    for payment in due:
+
+    legacy_payment_ids = list(
+        db.scalars(
+            select(Payment.id)
+            .join(Booking, Booking.id == Payment.booking_id)
+            .join(Edition, Edition.id == Booking.edition_id)
+            .where(
+                Edition.confirmation_policy != POLICY_REGISTRATION_FEE,
+                Payment.confirmation_email_due_at <= now,
+                Payment.confirmation_email_sent_at.is_(None),
+                Payment.voided_at.is_(None),
+            )
+            .order_by(Payment.id)
+        )
+    )
+    for payment_id in legacy_payment_ids:
+        payment = db.get(Payment, payment_id)
+        if payment is None:
+            continue
+        booking = db.get(Booking, payment.booking_id)
+        if booking is None:
+            continue
+        lock_edition(db, booking.edition_id)
+        lock_booking(db, booking.id)
+        db.refresh(booking)
+        db.refresh(payment)
+        edition = db.get(Edition, booking.edition_id)
+        if edition is None:
+            db.rollback()
+            continue
+        db.refresh(edition)
+        if (
+            edition.confirmation_policy == POLICY_REGISTRATION_FEE
+            or payment.confirmation_email_due_at is None
+            or payment.confirmation_email_due_at > now
+            or payment.confirmation_email_sent_at is not None
+            or payment.voided_at is not None
+        ):
+            db.rollback()
+            continue
         claimed = db.execute(
             update(Payment)
             .where(
                 Payment.id == payment.id,
                 Payment.confirmation_email_sent_at.is_(None),
                 Payment.voided_at.is_(None),
+                Payment.confirmation_email_due_at <= now,
             )
             .values(confirmation_email_sent_at=now)
         )
         db.commit()
-        if claimed.rowcount != 1:
-            continue
-        booking = db.get(Booking, payment.booking_id)
-        if booking is None:
+        if claimed.rowcount != 1 or booking.status != STATUS_CONFIRMED:
             continue
         db.refresh(booking)
-        if booking.status != STATUS_CONFIRMED:
-            continue
         send_confirmation(sender, booking, paid_total(booking))
+        sent += 1
+
+    cycle_candidates = list(
+        db.execute(
+            select(Booking.id, Booking.confirmation_cycle)
+            .join(Edition, Edition.id == Booking.edition_id)
+            .where(
+                Edition.confirmation_policy == POLICY_REGISTRATION_FEE,
+                Booking.confirmation_notice_due_at <= now,
+                Booking.confirmation_cycle > Booking.confirmation_claimed_cycle,
+            )
+            .order_by(Booking.id)
+        ).all()
+    )
+    login_url = f"{settings.app_base_url.rstrip('/')}/login"
+    for booking_id, candidate_cycle in cycle_candidates:
+        booking = db.get(Booking, booking_id)
+        if booking is None:
+            continue
+        lock_edition(db, booking.edition_id)
+        lock_booking(db, booking.id)
+        db.refresh(booking)
+        edition = db.get(Edition, booking.edition_id)
+        if edition is None:
+            db.rollback()
+            continue
+        db.refresh(edition)
+        due_at = booking.confirmation_notice_due_at
+        if (
+            edition.confirmation_policy != POLICY_REGISTRATION_FEE
+            or booking.confirmation_cycle != candidate_cycle
+            or booking.confirmation_claimed_cycle >= candidate_cycle
+            or due_at is None
+            or due_at > now
+        ):
+            db.rollback()
+            continue
+
+        source_payment = None
+        if booking.confirmation_notice_payment_id is not None:
+            source_payment = db.get(Payment, booking.confirmation_notice_payment_id)
+        invalid_source = booking.confirmation_notice_payment_id is not None and (
+            source_payment is None
+            or source_payment.booking_id != booking.id
+            or source_payment.voided_at is not None
+        )
+        if booking.status != STATUS_CONFIRMED or invalid_source:
+            db.execute(
+                update(Booking)
+                .where(
+                    Booking.id == booking.id,
+                    Booking.confirmation_cycle == candidate_cycle,
+                )
+                .values(
+                    confirmation_claimed_cycle=candidate_cycle,
+                    confirmation_notice_due_at=None,
+                    confirmation_notice_payment_id=None,
+                )
+            )
+            db.commit()
+            continue
+
+        claimed = db.execute(
+            update(Booking)
+            .where(
+                Booking.id == booking.id,
+                Booking.status == STATUS_CONFIRMED,
+                Booking.confirmation_cycle == candidate_cycle,
+                Booking.confirmation_claimed_cycle < candidate_cycle,
+                Booking.confirmation_notice_due_at == due_at,
+                Booking.confirmation_notice_due_at <= now,
+            )
+            .values(
+                confirmation_claimed_cycle=candidate_cycle,
+                confirmation_notice_due_at=None,
+            )
+        )
+        if claimed.rowcount == 1 and source_payment is not None:
+            db.execute(
+                update(Payment)
+                .where(Payment.id == source_payment.id, Payment.booking_id == booking.id)
+                .values(confirmation_email_sent_at=now)
+            )
+        db.commit()
+        if claimed.rowcount != 1:
+            continue
+        db.refresh(booking)
+        paid = paid_total(booking)
+        if source_payment is not None:
+            send_confirmation(
+                sender,
+                booking,
+                source_payment.amount_cents,
+                total_paid_cents=paid,
+            )
+        else:
+            texts = email_templates_service.texts_for_booking(db, booking, "booking_confirmation")
+            sender.send(booking_confirmation_email(booking, paid, login_url, texts))
         sent += 1
     return sent
 
@@ -254,6 +443,7 @@ def void_payment(
     A confirmed booking that the remaining payments no longer cover goes back to waiting for
     payment, with a new hold counted from now (and fresh reminders).
     """
+    lock_edition(db, booking.edition_id)
     lock_booking(db, booking.id)
     expire_overdue(db, now)
     db.refresh(booking)
@@ -267,7 +457,12 @@ def void_payment(
     payment.voided_at = now
     payment.voided_by_id = admin.id
     payment.void_reason = reason
-    new_status = status_after_void(old_status, booking.amount_due_cents, paid_total(booking))
+    if booking.confirmation_notice_payment_id == payment.id:
+        booking.confirmation_notice_due_at = None
+        booking.confirmation_notice_payment_id = None
+    new_status = status_after_void(
+        old_status, confirmation_due(booking.edition, booking), paid_total(booking)
+    )
     if new_status != old_status:
         booking.status = new_status
         booking.hold_started_at = now

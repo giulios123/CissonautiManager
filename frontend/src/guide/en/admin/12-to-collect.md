@@ -6,7 +6,7 @@ The page to check the account and mark payments one after another, without openi
 
 1. At the top choose the **channel** the payments you are about to mark arrived through (Revolut, Satispay, PayPal, bank transfer). The choice applies to the whole page and the browser remembers it.
 2. Look at the movement on the account and type the **payment reference** (for example CSC-GGSU), the name or the email in the search field: the list narrows down.
-3. Press **Mark as paid** on the right row. A payment equal to the balance is recorded, with today's date and the chosen channel.
+3. Press **Mark as paid** on the right row. A payment is recorded with today's date and the chosen channel. Under the new rule, pending or expired bookings use the amount remaining to confirm; confirmed bookings with extras still use the full balance.
 
 ## If you pick the wrong row
 

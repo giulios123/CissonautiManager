@@ -2,7 +2,7 @@
 
 ## Ora
 
-**2026-11-07 · MVP17 implementato, PR in preparazione.** Branch `feat/mvp-17-consensi-riservatezza`; T17-1–6 completati con test mirati. Il maintainer conferma superate tutte le prove SQL, incluse quelle delle migrazioni interessate. T17-7/8 restano aperti per CI e collaudi manuali telefono/desktop/iframe; le informative definitive IT/EN non sono pubblicate. Nessun deploy o invio email reale eseguito.
+**2026-11-07 · MVP18 implementato.** Branch `feat/mvp-18-conferma-quota`; T18-1–10 completati. Suite completa backend: 1083 test; suite frontend: 394 test. Build, TypeScript, lint, Ruff e formattazione passati; resta il warning ESLint già presente in `ConfirmDialog.tsx` e il bundle Vite sopra 500 kB. Il maintainer conferma superate tutte le prove SQL; le verifiche manuali restano aperte in entrambe le checklist. MVP17 T17-1–6 implementati; T17-7/8 e i collaudi visivi telefono/desktop/iframe restano aperti. Nessun deploy o attivazione reale della nuova politica eseguiti. Nessun testo legale definitivo pubblicato.
 
 **2026-11-07 · Spec esecutive MVP 17 e 18 pronte e in implementazione (B1).** Richiesta esplicita del maintainer di preparare entrambe: [17 · Consensi e riservatezza](../specs/mvp-17-consensi-riservatezza/requirements.md) con 8 task, design, microtesti IT/EN e prove manuali; [18 · Conferma con la sola quota](../specs/mvp-18-conferma-quota/requirements.md) con 10 task, design e prove manuali. Il codice 17 è in lavorazione; nessun deploy o invio reale eseguito.
 

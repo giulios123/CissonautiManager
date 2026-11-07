@@ -3,9 +3,10 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 
+from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.jobs.send_reminders import send_due_reminders
 from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING, Payment, Slot
-from app.services.payments import send_due_confirmations
+from app.services.payments import queue_confirmation_notice, send_due_confirmations
 from tests.helpers import d
 
 
@@ -108,3 +109,114 @@ def test_a_payment_that_does_not_confirm_sends_nothing_even_with_the_flag(
 def test_the_response_names_the_payment_it_created(admin_client, booking, db):
     response = pay(admin_client, booking, defer_confirmation_email=True)
     assert response.json()["payment_id"] == db.scalars(select(Payment)).one().id
+
+
+def test_fee_policy_payment_confirms_at_the_fee_without_claiming_full_payment(
+    admin_client, booking, db, outbox
+):
+    booking.edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    booking.registration_fee_cents = 500
+    db.commit()
+
+    response = pay(admin_client, booking, amount_cents=500)
+
+    assert response.status_code == 201
+    assert response.json()["booking"]["status"] == STATUS_CONFIRMED
+    [message] = outbox.sent
+    assert message.subject.startswith("Pagamento ricevuto")
+    assert "Pagamento registrato: 5,00 €" in message.body
+    assert "Totale dovuto all'organizzazione: 11,00 €" in message.body
+    assert "Resta da saldare all'organizzazione: 6,00 €" in message.body
+    assert "Pagamento registrato: 11,00 €" not in message.body
+    db.refresh(booking)
+    payment = db.scalars(select(Payment)).one()
+    assert payment.confirmation_email_due_at is None
+    assert (booking.confirmation_cycle, booking.confirmation_claimed_cycle) == (1, 1)
+    assert booking.confirmation_notice_due_at is None
+
+
+def test_fee_policy_receipt_separates_latest_payment_from_total_balance(
+    admin_client, booking, outbox, db
+):
+    booking.edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    booking.registration_fee_cents = 500
+    db.commit()
+
+    first = pay(admin_client, booking, amount_cents=300)
+    assert first.json()["booking"]["status"] == STATUS_PENDING
+    assert outbox.sent == []
+
+    second = pay(admin_client, booking, amount_cents=200)
+    assert second.json()["booking"]["status"] == STATUS_CONFIRMED
+    [message] = outbox.sent
+    assert "Pagamento registrato: 2,00 €" in message.body
+    assert "Totale dovuto all'organizzazione: 11,00 €" in message.body
+    assert "Resta da saldare all'organizzazione: 6,00 €" in message.body
+
+
+def test_fee_policy_deferred_payment_uses_the_confirmation_cycle(
+    admin_client, booking, outbox, app, clock, db
+):
+    booking.edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    booking.registration_fee_cents = 500
+    db.commit()
+
+    response = pay(admin_client, booking, amount_cents=500, defer_confirmation_email=True)
+
+    assert response.status_code == 201
+    db.refresh(booking)
+    payment = db.scalars(select(Payment)).one()
+    assert payment.confirmation_email_due_at is None
+    assert booking.confirmation_notice_due_at == clock() + timedelta(seconds=30)
+    assert booking.confirmation_notice_payment_id == payment.id
+    assert outbox.sent == []
+    assert [delay for delay, _ in app.state.scheduled] == [30.0]
+
+    clock.advance(seconds=31)
+    app.state.scheduled[0][1]()
+    app.state.scheduled[0][1]()
+    assert len(confirmations(outbox)) == 1
+    db.refresh(booking)
+    assert booking.confirmation_notice_due_at is None
+    assert booking.confirmation_claimed_cycle == booking.confirmation_cycle == 1
+
+
+def test_voiding_fee_policy_source_payment_cancels_its_deferred_notice(
+    admin_client, booking, outbox, app, clock, db
+):
+    booking.edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    booking.registration_fee_cents = 500
+    db.commit()
+    pay(admin_client, booking, amount_cents=500, defer_confirmation_email=True)
+    payment = db.scalars(select(Payment)).one()
+
+    response = admin_client.post(
+        f"/api/admin/registrations/{booking.id}/payments/{payment.id}/void",
+        json={"reason": "Annullato subito dalla vista Da incassare"},
+    )
+
+    assert response.status_code == 200
+    db.refresh(booking)
+    assert booking.status == STATUS_PENDING
+    assert booking.confirmation_notice_due_at is None
+    assert booking.confirmation_notice_payment_id is None
+    clock.advance(seconds=31)
+    app.state.scheduled[0][1]()
+    assert outbox.sent == []
+
+
+def test_confirmation_cycle_without_payment_sends_no_receipt(db, booking, outbox, clock):
+    booking.edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    booking.registration_fee_cents = 500
+    booking.status = STATUS_CONFIRMED
+    queue_confirmation_notice(booking, clock())
+    db.commit()
+
+    assert send_due_confirmations(db, outbox, clock()) == 1
+
+    [message] = outbox.sent
+    assert message.subject.startswith("La tua iscrizione")
+    assert "resta confermata" in message.body
+    assert "Quota di partecipazione: 5,00 €" in message.body
+    assert "quota necessaria è coperta" not in message.body
+    assert "Pagamento registrato" not in message.body

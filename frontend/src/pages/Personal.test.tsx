@@ -180,6 +180,24 @@ describe("changing slots", () => {
     expect(form.getByText(/Nuova quota/)).not.toHaveTextContent("di ora");
   });
 
+  it("previews quota and total separately for a booking on the new policy", async () => {
+    const routesForFeePolicy = routes({
+      me: me([
+        booking({
+          confirmation_policy: "registration_fee",
+          registration_fee_cents: 1100,
+          amount_due_cents: 1100,
+        }),
+      ]),
+    });
+    openAt(routesForFeePolicy);
+    const form = await openEditor();
+    const [, , tuesday] = form.getAllByRole("group");
+    await userEvent.click(within(tuesday).getByRole("checkbox"));
+    expect(form.getByText(/Nuova quota di partecipazione/)).toHaveTextContent(/12,00/);
+    expect(form.getByText(/Nuovo totale dovuto all'organizzazione/)).toHaveTextContent(/12,00/);
+  });
+
   it("shows a lower fee when a day is dropped", async () => {
     openAt(routes());
     const form = await openEditor();
@@ -335,6 +353,49 @@ describe("balance and instructions", () => {
   it("shows the credit when the new amount is lower than what was paid", async () => {
     openAt(route([booking({ status: "confermata", paid_cents: 1200, balance_cents: -100 })]));
     expect(await screen.findByText(/Versato in più/)).toHaveTextContent("1,00 €");
+  });
+
+  it("shows fee, confirmation remainder and total separately under the new policy", async () => {
+    openAt(
+      route([
+        booking({
+          confirmation_policy: "registration_fee",
+          registration_fee_cents: 1200,
+          confirmation_due_cents: 1200,
+          confirmation_balance_cents: 700,
+          amount_due_cents: 2500,
+          paid_cents: 500,
+          balance_cents: 2000,
+        }),
+      ]),
+    );
+    const card = await screen.findByRole("region", { name: /Iscrizione/ });
+    expect(card).toHaveTextContent("Quota di partecipazione: 12,00 €");
+    expect(card).toHaveTextContent("Dovuto per confermare la prenotazione: 7,00 €");
+    expect(card).toHaveTextContent("Totale dovuto all'organizzazione: 25,00 €");
+    expect(card).toHaveTextContent("Pranzi, cene e attività possono essere pagati dopo.");
+  });
+
+  it("shows a confirmed booking's extra balance without a place-loss deadline", async () => {
+    openAt(
+      route([
+        booking({
+          confirmation_policy: "registration_fee",
+          registration_fee_cents: 1200,
+          confirmation_due_cents: 1200,
+          confirmation_balance_cents: 0,
+          status: "confermata",
+          amount_due_cents: 2500,
+          paid_cents: 1200,
+          balance_cents: 1300,
+        }),
+      ]),
+    );
+    const card = await screen.findByRole("region", { name: /Iscrizione/ });
+    expect(card).toHaveTextContent("La prenotazione è confermata.");
+    expect(card).toHaveTextContent("Ancora da versare: 13,00 €");
+    expect(card).toHaveTextContent("Pranzi, cene e attività possono essere pagati dopo.");
+    expect(card).not.toHaveTextContent("Il posto è bloccato fino al");
   });
 
   it("explains a requested cancellation and offers no actions", async () => {

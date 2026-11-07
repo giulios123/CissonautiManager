@@ -76,6 +76,7 @@ def test_add_a_slot_recomputes_the_amount_and_keeps_the_deadline(
     assert response.status_code == 200, response.text
     view = response.json()
     assert view["amount_due_cents"] == 1200
+    assert view["registration_fee_cents"] == 1200
     assert view["status"] == STATUS_PENDING
     assert len(view["slots"]) == 2
     db.refresh(booking)
@@ -86,6 +87,7 @@ def test_two_slots_on_the_same_day_count_the_day_once(member, db, ada, make_book
     make_booking(ada, [db.get(Slot, slot_ids[(d(13), MORNING)])])
     response = put(member, [slot_ids[(d(13), MORNING)], slot_ids[(d(13), AFTERNOON)]])
     assert response.json()["amount_due_cents"] == 1100
+    assert response.json()["registration_fee_cents"] == 1100
 
 
 def test_removing_a_slot_lowers_the_amount_and_frees_the_seat(

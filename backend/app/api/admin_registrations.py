@@ -66,6 +66,10 @@ class RegistrationRow(BaseModel):
     days: int
     evenings: int
     status: str
+    confirmation_policy: str | None = None
+    registration_fee_cents: int | None = None
+    confirmation_due_cents: int | None = None
+    confirmation_balance_cents: int | None = None
     amount_due_cents: int
     paid_cents: int
     balance_cents: int
@@ -184,6 +188,10 @@ def _row(booking: Booking, now: datetime, waitlist_slots: int = 0) -> Registrati
         days=len({s.date for s in booking.slots}),
         evenings=_evenings(booking, view.status),
         status=view.status,
+        confirmation_policy=view.confirmation_policy,
+        registration_fee_cents=view.registration_fee_cents,
+        confirmation_due_cents=view.confirmation_due_cents,
+        confirmation_balance_cents=view.confirmation_balance_cents,
         amount_due_cents=view.amount_due_cents,
         paid_cents=view.paid_cents,
         balance_cents=view.balance_cents,
@@ -204,6 +212,10 @@ def _waitlist_only_row(participant: Participant, entries: list[WaitlistEntry]) -
         days=0,
         evenings=0,
         status=WAITLIST_ONLY,
+        confirmation_policy=None,
+        registration_fee_cents=None,
+        confirmation_due_cents=None,
+        confirmation_balance_cents=None,
         amount_due_cents=0,
         paid_cents=0,
         balance_cents=0,
@@ -317,6 +329,10 @@ def _csv_rows(rows: list[RegistrationRow]):
             row.hold_expires_at if row.status == "in_attesa_pagamento" else None,
             row.created_at,
             row.waitlist_slots,
+            Amount(row.registration_fee_cents) if row.registration_fee_cents is not None else None,
+            Amount(row.confirmation_balance_cents)
+            if row.confirmation_balance_cents is not None
+            else None,
         ]
 
 
@@ -335,6 +351,8 @@ CSV_HEADER = [
     "Scadenza blocco",
     "Iscritto il",
     "Slot in lista d'attesa",
+    "Quota di partecipazione",
+    "Residuo per confermare",
 ]
 
 
@@ -418,7 +436,7 @@ def _send_confirmations_later(request: Request) -> None:
         try:
             with app.state.session_factory() as db:
                 payment_service.send_due_confirmations(
-                    db, app.state.email_sender, app.state.clock()
+                    db, app.state.email_sender, app.state.clock(), app.state.settings
                 )
         except Exception:
             logger.exception("Deferred confirmation emails failed")
@@ -448,6 +466,7 @@ def add_payment(
         note=body.note,
         now=now,
         defer_confirmation_email=body.defer_confirmation_email,
+        settings=request.app.state.settings,
     )
     if result.email_due_at is not None:
         _send_confirmations_later(request)

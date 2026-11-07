@@ -24,6 +24,9 @@ const row = (id: number, first: string, last: string, code: string, balance = 11
   email: `${first.toLowerCase()}@example.com`,
   personal_code: code,
   status: "in_attesa_pagamento",
+  confirmation_policy: "legacy_total" as "legacy_total" | "registration_fee",
+  registration_fee_cents: null as number | null,
+  confirmation_balance_cents: balance,
   amount_due_cents: balance,
   paid_cents: 0,
   balance_cents: balance,
@@ -186,6 +189,55 @@ describe("to collect view", () => {
       },
     ]);
     expect(screen.getByRole("status")).toHaveTextContent("19,00 € registrato per Grace Hopper");
+  });
+
+  it("quickly records only the confirmation remainder under the fee policy", async () => {
+    listing = [
+      {
+        ...row(7, "Ada", "Lovelace", "CSC-GGSU", 2500),
+        confirmation_policy: "registration_fee",
+        registration_fee_cents: 1100,
+        confirmation_balance_cents: 700,
+        paid_cents: 400,
+        balance_cents: 2100,
+      },
+    ];
+    renderPage();
+    expect(await screen.findByText("11,00 €")).toBeInTheDocument();
+    expect(screen.getByText("7,00 €")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Segna pagato per Ada Lovelace" }));
+
+    await waitFor(() => expect(posted()).toHaveLength(1));
+    expect(posted()[0].body).toEqual({
+      amount_cents: 700,
+      channel: "revolut",
+      defer_confirmation_email: true,
+    });
+    expect(await screen.findByText("Pagato 7,00 €")).toBeInTheDocument();
+  });
+
+  it("uses the full outstanding balance when an expired fee remainder is zero", async () => {
+    listing = [
+      {
+        ...row(7, "Ada", "Lovelace", "CSC-GGSU", 500),
+        status: "scaduta",
+        confirmation_policy: "registration_fee",
+        registration_fee_cents: 1100,
+        confirmation_balance_cents: 0,
+        paid_cents: 1100,
+        balance_cents: 500,
+      },
+    ];
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Segna pagato per Ada Lovelace" }));
+
+    await waitFor(() => expect(posted()).toHaveLength(1));
+    expect(posted()[0].body).toEqual({
+      amount_cents: 500,
+      channel: "revolut",
+      defer_confirmation_email: true,
+    });
   });
 
   it("shows the warning of the server, such as an expired booking without room", async () => {

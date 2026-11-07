@@ -33,6 +33,16 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         ),
         "en": ("Your place is held until {deadline}: without payment by then it will be released."),
     },
+    "email.registration.hold_until": {
+        "it": (
+            "Il posto è bloccato fino al {deadline}: entro quella data devi coprire la quota "
+            "necessaria a confermare."
+        ),
+        "en": (
+            "Your place is held until {deadline}: by then you must cover the fee needed to "
+            "confirm it."
+        ),
+    },
     "email.waitlist_section": {
         "it": (
             "Sei in lista d'attesa per:\n{slots}\n"
@@ -89,6 +99,38 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "it": "Quota da versare: {amount}",
         "en": "Amount to pay: {amount}",
     },
+    "email.registration.fee_split": {
+        "it": "Quota di partecipazione: {amount}",
+        "en": "Registration fee: {amount}",
+    },
+    "email.registration.total": {
+        "it": "Totale dovuto all'organizzazione: {amount}",
+        "en": "Total due to the organisers: {amount}",
+    },
+    "email.registration.confirmation_due": {
+        "it": "Dovuto per confermare la prenotazione: {amount}",
+        "en": "Amount due to confirm your booking: {amount}",
+    },
+    "email.registration.confirmed": {
+        "it": "la tua prenotazione al {event} è confermata.",
+        "en": "your booking for {event} is confirmed.",
+    },
+    "email.registration.balance": {
+        "it": "Resta da saldare all'organizzazione: {amount}",
+        "en": "Still due to the organisers: {amount}",
+    },
+    "email.registration.credit": {
+        "it": "Credito presso l'organizzazione: {amount}",
+        "en": "Credit with the organisers: {amount}",
+    },
+    "email.registration.no_balance": {
+        "it": "Non resta altro da pagare all'organizzazione.",
+        "en": "There is no remaining balance due to the organisers.",
+    },
+    "email.registration.extras_later": {
+        "it": "Pranzi, cene e attività possono essere pagati dopo.",
+        "en": "Lunches, dinners and activities can be paid later.",
+    },
     # --- waitlist
     "email.waitlist_joined.subject": {
         "it": "Sei in lista d'attesa al {event}",
@@ -141,6 +183,46 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "en": "Payment recorded: {amount}",
     },
     "email.payment.see_you": {"it": "Ci vediamo presto!", "en": "See you soon!"},
+    "email.booking_confirmation.subject": {
+        "it": "La tua iscrizione al {event} è confermata",
+        "en": "Your registration for {event} is confirmed",
+    },
+    "email.booking_confirmation.body": {
+        "it": "la quota necessaria è coperta e la tua iscrizione al {event} è confermata.",
+        "en": "the required fee is covered and your registration for {event} is confirmed.",
+    },
+    "email.booking_confirmation.fee": {
+        "it": "Quota di partecipazione coperta: {amount}",
+        "en": "Registration fee covered: {amount}",
+    },
+    "email.booking_confirmation.fee_uncovered": {
+        "it": "Quota di partecipazione: {amount}",
+        "en": "Registration fee: {amount}",
+    },
+    "email.booking_confirmation.balance": {
+        "it": "Resta da saldare all'organizzazione: {amount}",
+        "en": "Still due to the organisers: {amount}",
+    },
+    "email.booking_confirmation.total": {
+        "it": "Totale dovuto all'organizzazione: {amount}",
+        "en": "Total due to the organisers: {amount}",
+    },
+    "email.booking_confirmation.credit": {
+        "it": "Credito presso l'organizzazione: {amount}",
+        "en": "Credit with the organisers: {amount}",
+    },
+    "email.booking_confirmation.no_balance": {
+        "it": "Non resta altro da pagare all'organizzazione.",
+        "en": "There is no remaining balance due to the organisers.",
+    },
+    "email.booking_confirmation.access": {
+        "it": "Per vedere la tua iscrizione accedi alla pagina personale: {link}",
+        "en": "To view your registration, open your personal page: {link}",
+    },
+    "email.booking_confirmation.extras_later": {
+        "it": "Pranzi, cene e attività possono essere pagati dopo.",
+        "en": "Lunches, dinners and activities can be paid later.",
+    },
     # --- reminders
     "email.reminder.subject_final": {
         "it": "Ultimo promemoria: il tuo posto al {event} sta per liberarsi",
@@ -161,6 +243,10 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
     "email.reminder.balance": {
         "it": "Ancora da versare: {amount}",
         "en": "Still to pay: {amount}",
+    },
+    "email.reminder.confirmation_balance": {
+        "it": "Ancora da versare per confermare: {amount}",
+        "en": "Still due to confirm: {amount}",
     },
     "email.reminder.already_paid": {
         "it": (

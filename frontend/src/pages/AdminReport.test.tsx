@@ -72,6 +72,7 @@ const report = {
     refunded_cents: 1100,
     net_cents: 4300,
     to_collect_cents: 1400,
+    to_confirm_cents: 700,
     credits_cents: 400,
     to_refund_cents: 0,
   },
@@ -126,6 +127,7 @@ describe("report page", () => {
     const row = (label: string) => within(money).getByText(label).closest("tr") as HTMLElement;
     expect(within(row("Totale dovuto")).getByText("76,00 €")).toBeInTheDocument();
     expect(within(row("Ancora da incassare")).getByText("14,00 €")).toBeInTheDocument();
+    expect(within(row("Residuo per confermare")).getByText("7,00 €")).toBeInTheDocument();
     expect(within(row("Bonifico (IBAN)")).getByText("49,00 €")).toBeInTheDocument();
     expect(within(row("Netto (versato meno rimborsato)")).getByText("43,00 €")).toBeInTheDocument();
     expect(within(money).queryByText(/differenza di prezzi/)).not.toBeInTheDocument();

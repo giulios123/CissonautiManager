@@ -44,6 +44,7 @@ export function ActivityPicker<T = unknown>({
     offers.filter((o) => ids.has(o.id)).reduce((sum, o) => sum + collectableCents(o), 0);
   const fee = booking.amount_due_cents - price(original) + price(new Set(selected));
   const delta = fee - booking.amount_due_cents;
+  const feePolicy = booking.confirmation_policy === "registration_fee";
   const chosen = new Set([...selected].filter((id) => offered.has(id)));
   const changed = chosen.size !== original.size || [...chosen].some((id) => !original.has(id));
 
@@ -111,7 +112,14 @@ export function ActivityPicker<T = unknown>({
         </label>
       )}
       <p aria-live="polite" className="fee">
-        {t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
+        {feePolicy && booking.registration_fee_cents != null && (
+          <>
+            {t("money.registrationFee")}{" "}
+            <strong>{formatEuro(booking.registration_fee_cents)}</strong>
+            <br />
+          </>
+        )}
+        {feePolicy ? t("edit.newTotal") : t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
         {delta !== 0 && (
           <>
             {" "}

@@ -52,13 +52,14 @@ export function SlotEditor({
   if (loadError) return <p role="alert">{t("edit.slotsLoadError")}</p>;
   if (!edition) return <p aria-busy="true">{t("common.loading")}</p>;
 
-  const fee =
-    feePreview(
-      edition.days,
-      selected,
-      edition.base_fee_cents ?? 0,
-      edition.per_day_fee_cents ?? 0,
-    ) + (extras ? extrasPreview(edition.days, selected, extras) : 0);
+  const registrationFee = feePreview(
+    edition.days,
+    selected,
+    edition.base_fee_cents ?? 0,
+    edition.per_day_fee_cents ?? 0,
+  );
+  const fee = registrationFee + (extras ? extrasPreview(edition.days, selected, extras) : 0);
+  const feePolicy = booking.confirmation_policy === "registration_fee";
   const delta = fee - booking.amount_due_cents;
   const changed = selected.size !== original.size || [...selected].some((id) => !original.has(id));
 
@@ -123,7 +124,13 @@ export function SlotEditor({
         }}
       />
       <p aria-live="polite" className="fee">
-        {t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
+        {feePolicy && (
+          <>
+            {t("edit.newRegistrationFee")} <strong>{formatEuro(registrationFee)}</strong>
+            <br />
+          </>
+        )}
+        {feePolicy ? t("edit.newTotal") : t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
         {delta !== 0 && (
           <>
             {" "}

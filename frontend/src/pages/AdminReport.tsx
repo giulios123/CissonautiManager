@@ -57,6 +57,7 @@ type Report = {
     refunded_cents: number;
     net_cents: number;
     to_collect_cents: number;
+    to_confirm_cents: number | null;
     credits_cents: number;
     to_refund_cents: number;
   };
@@ -418,6 +419,13 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
             money(t("rep.refundedWord"), revenue.refunded_cents),
             money(t("rep.net"), revenue.net_cents),
             money(t("rep.toCollect"), revenue.to_collect_cents),
+            revenue.to_confirm_cents === null
+              ? {
+                  key: t("rep.toConfirm"),
+                  label: t("rep.toConfirm"),
+                  value: t("rep.amountUnavailable"),
+                }
+              : money(t("rep.toConfirm"), revenue.to_confirm_cents),
             money(t("rep.credits"), revenue.credits_cents),
             money(t("rep.toRefund"), revenue.to_refund_cents),
           ]}

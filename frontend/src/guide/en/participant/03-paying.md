@@ -5,11 +5,13 @@ Payments do not go through the app: you make them yourself with one of the liste
 1. On your page you find **fee**, **paid** and **still to pay**.
 2. Make the payment following the instructions of the channel you prefer.
 3. Write your personal code as the **payment reference** (like `CSC-7K3P`): it is always shown above the instructions. It is only used to recognize the payment, not to sign in.
-4. When the organizers record the payment, the status changes from “Awaiting payment” to “Confirmed” and you get an email.
+4. When recorded payments reach the amount required, the status changes from “Awaiting payment” to “Confirmed” and you get an email.
+
+If the edition uses the new rule, you only need to cover the **registration fee** to confirm your place: the base fee plus each distinct selected day. Lunches, dinners and activities do not count toward confirmation. Your page separates the fee, amount still needed to confirm, total due, payments and overall balance; extras can be paid later.
 
 ### The deadline
 
-You have a few days to pay, shown on the page. Halfway through and 24 hours before the deadline you get a reminder. If you don't pay in time the booking becomes “Expired” and the places are released.
+While the booking is awaiting payment, you have a few days to cover the amount needed to confirm, shown on the page. Halfway through and 24 hours before the deadline you get a reminder. If you don't pay in time the booking becomes “Expired” and the places are released. An already confirmed booking has no deadline for any extras still to pay.
 
 ### If you change something
 

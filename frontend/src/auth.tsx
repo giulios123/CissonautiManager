@@ -16,6 +16,10 @@ export type MealView = CollectionTerms & {
 export type BookingView = {
   id: number;
   status: string;
+  confirmation_policy?: "legacy_total" | "registration_fee";
+  registration_fee_cents?: number | null;
+  confirmation_due_cents?: number | null;
+  confirmation_balance_cents?: number | null;
   amount_due_cents: number;
   paid_cents: number;
   balance_cents: number;

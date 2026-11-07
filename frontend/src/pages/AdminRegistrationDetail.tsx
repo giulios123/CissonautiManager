@@ -83,6 +83,12 @@ export function AdminRegistrationDetail() {
   if (!detail) return <main aria-busy="true">{t("common.loading")}</main>;
 
   const { participant, booking } = detail;
+  const quickPaymentCents =
+    booking.confirmation_policy === "registration_fee" &&
+    (booking.status === "in_attesa_pagamento" || booking.status === "scaduta") &&
+    booking.confirmation_balance_cents != null
+      ? booking.confirmation_balance_cents
+      : booking.balance_cents;
 
   function afterCancel(result: AdminCancelResult) {
     if (result.outcome === "removed" || !result.detail) {
@@ -218,9 +224,39 @@ export function AdminRegistrationDetail() {
           {t("det.registration")} <StatusBadge status={booking.status} />
         </h2>
         <p>
-          {t("det.due")} <strong>{formatEuro(booking.amount_due_cents)}</strong>,{" "}
-          {t("det.paidLower")} <strong>{formatEuro(booking.paid_cents)}</strong>,{" "}
-          {t("det.balanceLower")} <strong>{formatEuro(booking.balance_cents)}</strong>.
+          {booking.confirmation_policy === "registration_fee" &&
+            booking.registration_fee_cents != null && (
+              <>
+                {t("money.registrationFee")}{" "}
+                <strong>{formatEuro(booking.registration_fee_cents)}</strong>
+                <br />
+              </>
+            )}
+          {booking.confirmation_policy === "registration_fee"
+            ? t("money.totalDue")
+            : t("det.due")}{" "}
+          <strong>{formatEuro(booking.amount_due_cents)}</strong>, {t("det.paidLower")}{" "}
+          <strong>{formatEuro(booking.paid_cents)}</strong>, {t("det.balanceLower")}{" "}
+          <strong>{formatEuro(booking.balance_cents)}</strong>.
+          {booking.confirmation_policy === "registration_fee" &&
+            booking.status === "in_attesa_pagamento" &&
+            booking.confirmation_balance_cents != null && (
+              <>
+                <br />
+                {t("money.confirmationDue")}{" "}
+                <strong>{formatEuro(booking.confirmation_balance_cents)}</strong>.
+                <br />
+                {t("money.extrasLater")}
+              </>
+            )}
+          {booking.confirmation_policy === "registration_fee" &&
+            booking.status === "confermata" && (
+              <>
+                <br />
+                {t("money.confirmed")}
+                {booking.balance_cents > 0 && ` ${t("money.extrasLater")}`}
+              </>
+            )}
           {booking.status === "in_attesa_pagamento" && (
             <> {t("det.heldUntil", { date: formatDeadline(booking.hold_expires_at) })}</>
           )}
@@ -381,14 +417,20 @@ export function AdminRegistrationDetail() {
             required
           />
         </label>
-        {booking.balance_cents > 0 && (
+        {quickPaymentCents > 0 && (
           <p>
             <button
               type="button"
               className="secondary"
-              onClick={() => setAmount(centsToInput(booking.balance_cents))}
+              onClick={() => setAmount(centsToInput(quickPaymentCents))}
             >
-              {t("det.useBalance", { amount: formatEuro(booking.balance_cents) })}
+              {t(
+                booking.confirmation_policy === "registration_fee" &&
+                  (booking.status === "in_attesa_pagamento" || booking.status === "scaduta")
+                  ? "det.useConfirmationDue"
+                  : "det.useBalance",
+                { amount: formatEuro(quickPaymentCents) },
+              )}
             </button>
           </p>
         )}

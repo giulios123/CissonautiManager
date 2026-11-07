@@ -14,6 +14,7 @@ from app.config import Settings
 from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
 from app.domain.booking import is_past_day
+from app.domain.confirmation import confirmation_balance_cents, confirmation_due_cents
 from app.email import EmailSender
 from app.i18n import LOCALES, channel_label, current_locale, t
 from app.models import (
@@ -153,6 +154,10 @@ class WaitlistedSlot(BaseModel):
 class BookingSummary(BaseModel):
     personal_code: str | None
     status: str
+    confirmation_policy: str
+    registration_fee_cents: int | None
+    confirmation_due_cents: int | None
+    confirmation_balance_cents: int | None
     amount_due_cents: int
     hold_expires_at: datetime
     slots: list[BookedSlot]
@@ -380,6 +385,20 @@ def create_registration(
         booking=BookingSummary(
             personal_code=result.participant.personal_code if result.new_participant else None,
             status=booking.status,
+            confirmation_policy=edition.confirmation_policy,
+            registration_fee_cents=booking.registration_fee_cents,
+            confirmation_due_cents=confirmation_due_cents(
+                edition.confirmation_policy,
+                booking.amount_due_cents,
+                booking.registration_fee_cents,
+            ),
+            confirmation_balance_cents=confirmation_balance_cents(
+                booking.status,
+                edition.confirmation_policy,
+                booking.amount_due_cents,
+                booking.registration_fee_cents,
+                0,
+            ),
             amount_due_cents=booking.amount_due_cents,
             hold_expires_at=booking.hold_expires_at,
             slots=[

@@ -8,12 +8,12 @@ Da **Impostazioni**, sotto «Email di iscrizione», trovate il resto dei testi c
 
 ### Le altre email
 
-Per ognuna (lista d'attesa, già iscritto, link di accesso, pagamento ricevuto, i due promemoria, posto liberato, disdetta) aprite la scheda e modificate:
+Per ognuna (lista d'attesa, già iscritto, link di accesso, pagamento ricevuto, conferma senza nuovo pagamento, i due promemoria, posto liberato, disdetta) aprite la scheda e modificate:
 
 - **Oggetto**.
 - **Testo iniziale**: il saluto e la prima frase.
 
-Dopo il testo iniziale seguono sempre i dati della prenotazione (slot, quota, causale, scadenza, istruzioni di pagamento, link, e le frasi finali di cortesia): la scheda riporta l'elenco della **parte automatica**, che non si modifica.
+Dopo il testo iniziale seguono sempre i dati della prenotazione (slot, quota, totale, saldo, causale, scadenza, istruzioni di pagamento, link, e le frasi finali di cortesia): la scheda riporta l'elenco della **parte automatica**, che non si modifica. La conferma senza nuovo pagamento non dichiara un incasso.
 
 ### Segnaposto
 

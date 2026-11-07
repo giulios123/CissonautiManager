@@ -6,11 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.booking import effective_status, occupies_seats
-from app.domain.fees import is_covered
 from app.models import STATUS_CONFIRMED, STATUS_PENDING, Booking, Edition, Participant
 from app.services import audit
-from app.services.amounts import recompute_amount
-from app.services.payments import paid_total
+from app.services.amounts import confirmation_covered, recompute_amount
+from app.services.payments import paid_total, queue_confirmation_notice
 from app.services.seats import lock_booking
 from app.timefmt import format_euro
 
@@ -53,9 +52,10 @@ def reprice(
                 f"Ricalcolo quota: {format_euro(old)} → {format_euro(booking.amount_due_cents)}.",
                 booking.id,
             )
-        if booking.status == STATUS_PENDING and is_covered(
-            booking.amount_due_cents, paid_total(booking)
+        if booking.status == STATUS_PENDING and confirmation_covered(
+            edition, booking, paid_total(booking)
         ):
             booking.status = STATUS_CONFIRMED
+            queue_confirmation_notice(booking, now)
             confirmed.append(booking)
     return confirmed
