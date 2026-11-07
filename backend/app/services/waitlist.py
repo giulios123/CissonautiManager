@@ -296,6 +296,9 @@ def promote_freed(
     done: list[Promotion] = []
     for slot_id in sorted(set(slot_ids)):
         lock_edition(db, edition.id)
+        # This session is long-lived across the per-slot commits. With expire_on_commit=False,
+        # its cached bookings and activities can otherwise survive a concurrent admin repricing.
+        db.expire_all()
         db.refresh(edition)
         expire_overdue(db, now)
         promotions = _promote_slot(db, edition, slot_id, now)

@@ -170,6 +170,8 @@ def register(
         ]
     except waitlist_service.EntryNotFound as exc:
         raise InvalidSlots() from exc
+    if existing is not None and not existing.phone:
+        existing.phone = data.phone or None
     db.commit()
 
     raw = auth_service.create_magic_link_token(db, participant, now)
