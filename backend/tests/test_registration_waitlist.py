@@ -96,7 +96,7 @@ def test_someone_already_on_a_waitlist_only_gets_the_link(client, db, fill_slot,
     assert email.subject == "Sei già iscritto al Cissonauti Summer Camp 2026"
 
 
-def test_new_registration_saves_phone_for_an_existing_participant_without_one(
+def test_new_anonymous_registration_does_not_change_existing_participant_phone(
     client, db, make_participant, make_booking
 ):
     ada = make_participant("ada@example.com", phone=None)
@@ -107,7 +107,7 @@ def test_new_registration_saves_phone_for_an_existing_participant_without_one(
     assert response.status_code == 201
     assert response.json()["result"] == "created"
     db.refresh(ada)
-    assert ada.phone == "+39 333 1234567"
+    assert ada.phone is None
 
 
 def test_already_registered_does_not_save_phone_before_a_new_registration(

@@ -125,6 +125,8 @@ class Participant(Base):
     last_name: Mapped[str] = mapped_column(Unicode(100))
     email: Mapped[str] = mapped_column(Unicode(320), unique=True)
     phone: Mapped[str | None] = mapped_column(Unicode(50))
+    telegram: Mapped[str | None] = mapped_column(Unicode(100))
+    linkedin: Mapped[str | None] = mapped_column(Unicode(500))
     invited_by: Mapped[str | None] = mapped_column(Unicode(200))
     can_bring: Mapped[str | None] = mapped_column(UnicodeText)
     personal_code: Mapped[str] = mapped_column(Unicode(16), unique=True)
@@ -137,6 +139,28 @@ class Participant(Base):
     plus_one_verified_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     plus_one_verified_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class ParticipantEditionProfile(Base):
+    __tablename__ = "participant_edition_profile"
+    __table_args__ = (
+        UniqueConstraint("participant_id", "edition_id", name="uq_participant_edition_profile"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
+    city: Mapped[str] = mapped_column(Unicode(200))
+    province: Mapped[str | None] = mapped_column(Unicode(100))
+    region: Mapped[str | None] = mapped_column(Unicode(100))
+    country: Mapped[str] = mapped_column(Unicode(100))
+    istat_code: Mapped[str | None] = mapped_column(Unicode(12))
+    job_title: Mapped[str] = mapped_column(Unicode(200))
+    company: Mapped[str] = mapped_column(Unicode(200))
+    expectations: Mapped[str] = mapped_column(UnicodeText)
+    attended_previous: Mapped[bool] = mapped_column(Boolean)
+    attendance_source: Mapped[str] = mapped_column(Unicode(16))
+    previous_edition_id: Mapped[int | None] = mapped_column(ForeignKey("edition.id"))
 
 
 class LegalDocument(Base):

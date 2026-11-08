@@ -101,6 +101,50 @@ function openAt(handler: (url: string, init?: RequestInit) => Reply, locale: Loc
   return calls;
 }
 
+describe("profile completion", () => {
+  it("lists the server-reported fields that need an answer", async () => {
+    openAt((url) =>
+      url === "/api/me/profile"
+        ? { body: { complete: false, missing_fields: ["phone", "company"], profile: null } }
+        : { body: me([booking()]) },
+    );
+    expect(
+      await screen.findByText("Dati da completare: Telefono, Azienda (oppure Nessuna azienda)"),
+    ).toBeInTheDocument();
+  });
+
+  it("updates the Italian province requirement when country changes", async () => {
+    const user = userEvent.setup();
+    openAt((url) =>
+      url === "/api/me/profile"
+        ? {
+            body: {
+              complete: false,
+              missing_fields: ["province"],
+              profile: {
+                city: "Città non censita",
+                province: "",
+                region: null,
+                country: "Italia",
+                istat_code: null,
+                job_title: "Studente",
+                company: "Nessuna azienda",
+                expectations: "Conoscere persone",
+                attended_previous: false,
+              },
+            },
+          }
+        : { body: me([booking()]) },
+    );
+    const province = await screen.findByLabelText("Provincia (se disponibile)");
+    expect(province).toBeRequired();
+    const country = screen.getByLabelText("Paese");
+    await user.clear(country);
+    await user.type(country, "Francia");
+    expect(province).not.toBeRequired();
+  });
+});
+
 describe("personal attendance summary", () => {
   it("shows seven complete days in seven rows", async () => {
     const dates = [

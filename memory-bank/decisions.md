@@ -467,4 +467,13 @@ Materiale aperto per il 17: informative effettive IT/EN e destinazioni dei media
 - **Compatibilità**: la serie 11 rimuove alcune API, ma i tre consumatori installati usano `Minimatch`, `match` e `minimatch`, ancora disponibili. Verificati con Node 22 installazione pulita, lint sugli stessi 103 file con diagnostica identica, suite frontend e build.
 - **Alternative scartate**: ignorare l'avviso o disabilitare l'audit (la dipendenza resta vulnerabile); modificare solo il lockfile (l'installazione successiva potrebbe reintrodurre la serie 10); aggiornare indiscriminatamente le altre dipendenze (non necessario).
 
+## D-111 · Profilo riutilizzabile e risposte annuali (MVP 19)
+
+- **Data**: 2026-11-08.
+- **Decisione**: tenere telefono/Telegram/LinkedIn sul partecipante e città/professione/azienda/aspettative/partecipazione in una riga per partecipante-edizione. Cataloghi geografici locali, con validazione comune-provincia-codice ISTAT.
+- **Motivo**: riusare i contatti dopo login senza attribuire al nuovo anno risposte annuali precedenti; non inviare query geografiche a terzi.
+- **Partecipazione precedente**: una prenotazione confermata nell'edizione cronologicamente precedente è prova positiva; altrimenti si conserva la dichiarazione esplicita.
+- **Sicurezza**: gli invii anonimi per email già nota non scrivono i dati del profilo. Solo il partecipante autenticato o un admin può completare/correggere.
+- **Spec**: [MVP 19](../specs/mvp-19-profilo-completo/design.md); l'aggiornamento delle regole prodotto è in `domain.md`.
+
 La decisione sull'override è arrivata su `main` dopo la registrazione D-050–D-109; l'identificativo è stato aggiornato qui per non duplicare i numeri.

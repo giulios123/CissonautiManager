@@ -1,5 +1,13 @@
 # Progress
 
+## MVP 19 · Profilo completo e iscritti precedenti — implementato sul branch
+
+Branch `feat/mvp-19-profilo-completo`; implementati i requisiti in `specs/mvp-19-profilo-completo/`. Migrazione 0018 aggiuntiva; profili annuali separati dai contatti; ricerca locale di 7.893 comuni italiani e 249 paesi; iscrizione e sola lista richiedono il profilo; account esistenti non si aggiornano anonimamente; API di completamento autenticato e correzione admin con audit; guide IT/EN aggiornate.
+
+Verifica: 1091 test backend completi passati prima degli ultimi cambi specifici; poi 71 test backend mirati, inclusa migrazione e derivazione dello storico, e altri 16 test profilo/migrazione dopo la normalizzazione finale del catalogo. 399 test frontend completi passati; 72 test mirati di registrazione/profilo/inglese ripetuti dopo gli ultimi cambi. Ruff, TypeScript, ESLint/Prettier, build e controllo guide passati. Rimane un warning ESLint preesistente in `ConfirmDialog.tsx`, l'avviso Vite per bundle oltre 500 kB e un warning deprecazione `httpx` nei test.
+
+Da collaudare manualmente: elenco `specs/mvp-19-profilo-completo/test-manuali.md` (telefono, desktop, tastiera, iframe, omonimie e profili esteri/non censiti). La migrazione SQLite è coperta; SQL Server va verificato nella CI. Nessun deploy o invio reale eseguito. Descrizione per la revisione: [`pr-description.md`](../specs/mvp-19-profilo-completo/pr-description.md).
+
 ## MVP 18 · Conferma con la sola quota — implementato sul branch
 
 Branch `feat/mvp-18-conferma-quota`; task T18-1–10 completati. L'edizione resta sulla regola legacy finché un admin non applica una nuova anteprima; con la nuova regola la prenotazione si conferma alla copertura della quota base+giorni, mantenendo separati saldo totale, extra e costi del fornitore. L'attivazione include anteprima/applicazione atomiche, cicli email, UI admin, guide e testi IT/EN.

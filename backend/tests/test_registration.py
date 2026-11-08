@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from sqlalchemy import func, select
@@ -10,7 +10,9 @@ from app.models import (
     STATUS_EXPIRED,
     STATUS_PENDING,
     Booking,
+    Edition,
     Participant,
+    ParticipantEditionProfile,
     Slot,
 )
 from tests.helpers import d, payload
@@ -68,6 +70,28 @@ class TestPublicEdition:
 
 
 class TestRegistration:
+    def test_declared_previous_attendance_is_not_overridden_without_confirmed_history(
+        self, client, db, slot_ids, edition
+    ):
+        db.add(
+            Edition(
+                name="Edizione precedente senza prenotazioni",
+                start_date=date(2025, 7, 1),
+                end_date=date(2025, 7, 7),
+                is_active=False,
+            )
+        )
+        db.commit()
+
+        response = client.post(
+            "/api/public/registrations",
+            json=payload([slot_ids[(d(13), "morning")]], attended_previous=True),
+        )
+        assert response.status_code == 201
+        profile = db.scalar(select(ParticipantEditionProfile))
+        assert profile.attended_previous is True
+        assert profile.attendance_source == "declared"
+
     def test_creates_pending_booking_with_amount_code_and_deadline(
         self, client, db, slot_ids, clock
     ):

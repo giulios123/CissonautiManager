@@ -61,7 +61,12 @@
 
 ## Dati e privacy
 
-- Campi di iscrizione: nome, cognome, email, telefono (obbligatorio nei nuovi invii, anche solo in lista d’attesa), "chi ti ha invitato?" (testo libero, opzionale), "cosa puoi portare al camp?" (testo libero).
+- Contatti riutilizzabili: nome, cognome, email, telefono (obbligatorio nei nuovi invii, anche solo in lista d’attesa), Telegram e LinkedIn. Un profilo social assente si dichiara esplicitamente; il vuoto indica dato mancante.
+- Per ogni nuova iscrizione, anche solo in lista d’attesa, si raccolgono città/paese, professione, azienda (si può rispondere «Nessuna azienda»), aspettative e partecipazione all’edizione precedente. Le risposte appartengono alla persona e all’edizione; i profili legacy restano mancanti fino a risposta esplicita.
+- Quando una prenotazione confermata dimostra la partecipazione all’edizione cronologicamente precedente, il sistema registra «sì» come dato derivato. Senza questa prova chiede la dichiarazione sì/no; l'assenza di storico non è un «no».
+- Comune italiano, provincia e codice ISTAT sono scelti da un catalogo locale. Per estero o comune non censito la città è libera; il fallback italiano richiede provincia dichiarata e non assegna automaticamente la regione.
+- Account esistenti non si aggiornano da invii anonimi. Dopo login, il richiamo persistente consente di completare i dati senza bloccare consultazione o modifiche di prenotazioni, lista d'attesa, pagamenti, consensi e disdetta. Il completamento non trasferisce né modifica consensi.
+- Campi aggiuntivi del modulo pubblico: "chi ti ha invitato?" (testo libero, opzionale), "cosa puoi portare al camp?" (testo libero).
 - Checkbox obbligatorie: informativa privacy e accettazione dello scarico di responsabilità. Entrambi i testi sono configurabili dall'admin e la versione accettata viene salvata con data e ora.
 - Esigenze alimentari: il regime (onnivoro, vegetariano, vegano) si salva senza consenso. Allergie e intolleranze sono dati sanitari: si salvano solo con un consenso specifico, il cui testo è configurabile dall'admin e versionato (si salvano versione, data e ora); togliere il consenso le cancella. Le vedono solo la persona e gli admin, mai nelle email. Stanno sulla prenotazione e spariscono con essa.
 

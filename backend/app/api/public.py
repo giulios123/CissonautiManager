@@ -1,6 +1,8 @@
+import json
 from datetime import date, datetime, time
 from hashlib import sha256
 from itertools import groupby
+from pathlib import Path
 from typing import Annotated, Literal, Self
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,6 +17,12 @@ from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
 from app.domain.booking import is_past_day
 from app.domain.confirmation import confirmation_balance_cents, confirmation_due_cents
+from app.domain.profile import (
+    InvalidProfileValue,
+    fold_geographic_text,
+    validate_geography,
+    validate_social_profiles,
+)
 from app.email import EmailSender
 from app.i18n import LOCALES, channel_label, current_locale, t
 from app.models import (
@@ -35,6 +43,43 @@ from app.services.seats import expire_overdue, free_by_slot
 from app.timefmt import format_slot
 
 router = APIRouter(prefix="/api/public", tags=["public"])
+
+_MUNICIPALITIES = json.loads(
+    (Path(__file__).resolve().parents[1] / "assets" / "municipalities.json").read_text(
+        encoding="utf-8"
+    )
+)["municipalities"]
+_COUNTRIES = json.loads(
+    (Path(__file__).resolve().parents[1] / "assets" / "countries.json").read_text(encoding="utf-8")
+)["countries"]
+
+
+class MunicipalityOut(BaseModel):
+    name: str
+    province: str
+    region: str
+    istat_code: str
+
+
+class CountryOut(BaseModel):
+    code: str
+    name: str
+
+
+@router.get("/countries", response_model=list[CountryOut])
+def list_countries() -> list[dict]:
+    return _COUNTRIES
+
+
+@router.get("/municipalities", response_model=list[MunicipalityOut])
+def search_municipalities(q: Annotated[str, Query(min_length=2, max_length=100)]) -> list[dict]:
+    query = fold_geographic_text(q.strip())
+    if not query:
+        return []
+    matches = [item for item in _MUNICIPALITIES if query in fold_geographic_text(item["name"])]
+    matches.sort(key=lambda item: (fold_geographic_text(item["name"]), item["province"]))
+    return matches[:20]
+
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 
@@ -107,6 +152,23 @@ class RegistrationIn(BaseModel):
     last_name: Name
     email: EmailStr
     phone: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+    telegram: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    linkedin: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+    city: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    province: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+    region: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+    country: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    istat_code: Annotated[str, StringConstraints(strip_whitespace=True, max_length=12)] | None = (
+        None
+    )
+    job_title: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)
+    ]
+    company: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    expectations: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)
+    ]
+    attended_previous: bool
     invited_by: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None = (
         None
     )
@@ -135,6 +197,17 @@ class RegistrationIn(BaseModel):
             raise ValueError(t("register.privacy_required"))
         if not self.accept_disclaimer:
             raise ValueError(t("register.disclaimer_required"))
+        try:
+            validate_social_profiles(self.telegram, self.linkedin)
+            validate_geography(
+                self.city,
+                self.country,
+                self.province,
+                self.istat_code,
+                _MUNICIPALITIES,
+            )
+        except InvalidProfileValue as exc:
+            raise ValueError(t(exc.message_key)) from exc
         return self
 
 
@@ -329,6 +402,9 @@ def create_registration(
     except registration_service.InvalidOptionalConsent as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=t("register.optional_consent_invalid")) from exc
+    except registration_service.InvalidProfile as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=t("profile.required")) from exc
     except registration_service.InvalidSlots as exc:
         raise HTTPException(status_code=422, detail=t("slots.invalid")) from exc
     except registration_service.SlotsFull as exc:

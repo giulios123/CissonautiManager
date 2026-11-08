@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { type BookingView, type Me } from "../auth";
@@ -17,6 +17,217 @@ import { DietaryForm } from "./DietaryForm";
 import { MealEditor } from "./MealEditor";
 import { SlotEditor } from "./SlotEditor";
 import { Waitlist } from "./Waitlist";
+
+function ProfileCompletion() {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [municipalities, setMunicipalities] = useState<
+    Array<{ name: string; province: string; region: string; istat_code: string }>
+  >([]);
+  const [countries, setCountries] = useState<Array<{ code: string; name: string }>>([]);
+  const [message, setMessage] = useState<string | null>(null);
+  useEffect(() => {
+    void api<Record<string, unknown>>("/api/me/profile")
+      .then((data) => {
+        const annual =
+          typeof data.profile === "object" && data.profile !== null
+            ? (data.profile as Record<string, unknown>)
+            : {};
+        setProfile({ ...data, ...annual });
+        setOpen(data.complete !== true);
+      })
+      .catch(() => setProfile(null));
+  }, []);
+  useEffect(() => {
+    void api<Array<{ code: string; name: string }>>("/api/public/countries")
+      .then((items) => setCountries(Array.isArray(items) ? items : []))
+      .catch(() => setCountries([]));
+  }, []);
+  useEffect(() => {
+    const city = String(profile?.city ?? "").trim();
+    if (city.length < 2) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void api<Array<{ name: string; province: string; region: string; istat_code: string }>>(
+        `/api/public/municipalities?q=${encodeURIComponent(city)}`,
+      )
+        .then((items) => setMunicipalities(Array.isArray(items) ? items : []))
+        .catch(() => setMunicipalities([]));
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [profile?.city]);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const val = (key: string) => String(form.get(key) ?? "").trim();
+    try {
+      await api("/api/me/profile", {
+        method: "PUT",
+        json: {
+          phone: val("phone"),
+          telegram: val("telegram"),
+          linkedin: val("linkedin"),
+          city: val("city"),
+          province: val("province") || null,
+          region: val("region") || null,
+          country: val("country"),
+          istat_code: val("istat_code") || null,
+          job_title: val("job_title"),
+          company: val("company"),
+          expectations: val("expectations"),
+          attended_previous: val("attended_previous") === "yes",
+        },
+      });
+      setMessage(t("profile.saved"));
+      setOpen(false);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : t("common.somethingWrong"));
+    }
+  }
+  if (!profile || (profile.complete === true && !open)) return null;
+  const missingLabels: Record<string, MessageKey> = {
+    phone: "reg.phone",
+    telegram: "profile.telegram",
+    linkedin: "profile.linkedin",
+    city: "profile.city",
+    province: "profile.province",
+    country: "profile.country",
+    job_title: "profile.jobTitle",
+    company: "profile.company",
+    expectations: "profile.expectations",
+    attended_previous: "profile.previous",
+  };
+  const missingFields = Array.isArray(profile.missing_fields)
+    ? (profile.missing_fields as string[]).map((name) => t(missingLabels[name] ?? "profile.city"))
+    : [];
+  return (
+    <section className="card" aria-labelledby="profile-title">
+      <h2 id="profile-title">{t("profile.incomplete")}</h2>
+      {missingFields.length > 0 && (
+        <p>{t("profile.missing", { fields: missingFields.join(", ") })}</p>
+      )}
+      {open ? (
+        <form onSubmit={submit}>
+          {(
+            [
+              ["phone", "reg.phone"],
+              ["telegram", "profile.telegram"],
+              ["linkedin", "profile.linkedin"],
+              ["city", "profile.city"],
+              ["province", "profile.province"],
+              ["region", "profile.region"],
+              ["country", "profile.country"],
+              ["istat_code", "profile.istatCode"],
+              ["job_title", "profile.jobTitle"],
+              ["company", "profile.company"],
+              ["expectations", "profile.expectations"],
+            ] as const
+          ).map(([name, label]) => (
+            <label key={name}>
+              {t(label)}
+              <input
+                name={name}
+                required={
+                  !["region", "istat_code"].includes(name) &&
+                  (name !== "province" ||
+                    (["italia", "italy"].includes(String(profile.country ?? "").toLowerCase()) &&
+                      !profile.istat_code))
+                }
+                defaultValue={
+                  ["city", "province", "region", "istat_code", "country"].includes(name)
+                    ? undefined
+                    : String(profile[name] ?? "")
+                }
+                list={
+                  name === "city"
+                    ? "profile-municipality-options"
+                    : name === "country"
+                      ? "profile-country-options"
+                      : undefined
+                }
+                {...(["city", "province", "region", "istat_code", "country"].includes(name)
+                  ? {
+                      value: String(profile[name] ?? ""),
+                      onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                        const value = event.currentTarget.value;
+                        if (name === "country") {
+                          setProfile({
+                            ...profile,
+                            country: value,
+                            province: "",
+                            region: "",
+                            istat_code: "",
+                          });
+                          return;
+                        }
+                        if (name !== "city") {
+                          setProfile({ ...profile, [name]: value });
+                          return;
+                        }
+                        const match = municipalities.find(
+                          (item) => `${item.name} — ${item.province}` === value,
+                        );
+                        setProfile({
+                          ...profile,
+                          city: match?.name ?? value,
+                          province: match?.province ?? "",
+                          region: match?.region ?? "",
+                          istat_code: match?.istat_code ?? "",
+                        });
+                      },
+                    }
+                  : {})}
+              />
+            </label>
+          ))}
+          <datalist id="profile-municipality-options">
+            {String(profile.city ?? "").trim().length >= 2 &&
+              municipalities.map((item, index) => (
+                <option
+                  key={`${item.name}-${item.province}-${index}`}
+                  value={`${item.name} — ${item.province}`}
+                  label={item.region}
+                />
+              ))}
+          </datalist>
+          <datalist id="profile-country-options">
+            {countries.map((item) => (
+              <option key={item.code} value={item.name} />
+            ))}
+          </datalist>
+          <label>
+            {t("profile.previous")}
+            <select
+              name="attended_previous"
+              required
+              defaultValue={
+                typeof profile.attended_previous === "boolean"
+                  ? profile.attended_previous
+                    ? "yes"
+                    : "no"
+                  : ""
+              }
+            >
+              <option value="" disabled>
+                {t("profile.choose")}
+              </option>
+              <option value="yes">{t("common.yes")}</option>
+              <option value="no">{t("common.no")}</option>
+            </select>
+          </label>
+          <button type="submit">{t("profile.save")}</button>
+        </form>
+      ) : (
+        <button type="button" onClick={() => setOpen(true)}>
+          {t("profile.save")}
+        </button>
+      )}
+      {message && <p role="status">{message}</p>}
+    </section>
+  );
+}
 
 type State = { status: "loading" } | { status: "anonymous" } | { status: "ready"; me: Me };
 
@@ -347,6 +558,7 @@ export function Personal() {
           </Link>
         </p>
       )}
+      <ProfileCompletion />
       {me.bookings.length === 0
         ? (me.waitlist ?? []).length === 0 && (
             <p>

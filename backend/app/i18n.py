@@ -435,6 +435,30 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Per iscriverti devi accettare lo scarico di responsabilità",
         "en": "To sign up you must accept the liability waiver",
     },
+    "profile.invalid_telegram": {
+        "it": "Inserisci un @username Telegram oppure dichiara che non lo possiedi.",
+        "en": "Enter a Telegram @username or state that you do not have one.",
+    },
+    "profile.invalid_linkedin": {
+        "it": "Inserisci un URL HTTPS LinkedIn oppure dichiara che non lo possiedi.",
+        "en": "Enter an HTTPS LinkedIn URL or state that you do not have one.",
+    },
+    "profile.invalid_municipality": {
+        "it": "Il comune, la provincia e il codice ISTAT non corrispondono.",
+        "en": "The municipality, province and ISTAT code do not match.",
+    },
+    "profile.province_required": {
+        "it": "Per un comune italiano non presente nell'elenco, indica la provincia.",
+        "en": "For an Italian municipality missing from the list, enter its province.",
+    },
+    "profile.required": {
+        "it": "Completa tutti i campi obbligatori del profilo.",
+        "en": "Complete all required profile fields.",
+    },
+    "profile.no_active_edition": {
+        "it": "Non c'è un'edizione attiva.",
+        "en": "There is no active edition.",
+    },
     "register.closed": {"it": "Le iscrizioni non sono aperte", "en": "Registrations are not open"},
     "register.legal_outdated": {
         "it": "I testi legali sono stati aggiornati: ricarica la pagina e rileggili",
