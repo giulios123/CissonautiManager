@@ -2,6 +2,8 @@
 
 This is the starting page of the panel: one row per person, with code, status, days, evenings, paid, due, balance and deadline. With the new rule, the table also shows the registration fee and amount remaining to confirm; the registration page shows the overall balance or credit. With the search field you find someone by name, email or code, with the filter you choose the status, and with “Download CSV” you export the list (it opens in Excel). CSV files come out in the language the app is in at that moment (headers and statuses), with the same format as always.
 
+Open “Cancellation history” to find new cancellations for the edition, including after a booking was removed. Search by name or email to see who requested the cancellation, when it happened, the edition, and the outcome.
+
 Tapping a person opens their **registration page**.
 
 When you sign in (with the link or the password) you land on your own personal page, like any registered person, with the “Go to the organizers' panel” button at the top. From the panel, “My page” takes you back there.

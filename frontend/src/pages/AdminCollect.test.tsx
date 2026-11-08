@@ -26,6 +26,7 @@ const row = (id: number, first: string, last: string, code: string, balance = 11
   status: "in_attesa_pagamento",
   confirmation_policy: "legacy_total" as "legacy_total" | "registration_fee",
   registration_fee_cents: null as number | null,
+  confirmation_due_cents: balance,
   confirmation_balance_cents: balance,
   amount_due_cents: balance,
   paid_cents: 0,
@@ -48,6 +49,8 @@ function detail(payments: { id: number; voided: boolean }[], warning: string | n
     booking: { payments: [...payments, { id: 99, voided: false }] },
     warning,
     payment_id: 41,
+    payment_replayed: false,
+    payment_undo_until: "2026-11-08T15:44:10Z",
   };
 }
 
@@ -94,7 +97,7 @@ function renderPage() {
 const posted = () => calls.filter((c) => c.method === "POST");
 
 describe("to collect view", () => {
-  it("lists the people with their causale, balance and a link to the record", async () => {
+  it("lists the people with their causale, balance and quick payment action", async () => {
     renderPage();
     expect(await screen.findByText("CSC-GGSU")).toBeInTheDocument();
     expect(screen.getByText("2 da incassare")).toBeInTheDocument();
@@ -102,7 +105,27 @@ describe("to collect view", () => {
       "href",
       "/admin/registrations/7",
     );
-    expect(screen.getAllByRole("link", { name: "Altro importo" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Altro importo" })).toHaveLength(2);
+  });
+
+  it("submits a quick payment with a snapshot and idempotency key", async () => {
+    renderPage();
+    fireEvent.click(
+      await screen.findAllByRole("button", { name: "Altro importo" }).then((x) => x[0]),
+    );
+    fireEvent.change(screen.getByLabelText("Importo ricevuto (€)"), { target: { value: "5,50" } });
+    fireEvent.click(screen.getByRole("button", { name: "Registra pagamento" }));
+    await waitFor(() => expect(posted()).toHaveLength(1));
+    const body = posted()[0].body as {
+      amount_cents: number;
+      expected_snapshot: { paid_cents: number };
+      request_key: string;
+      defer_confirmation_email: boolean;
+    };
+    expect(body.amount_cents).toBe(550);
+    expect(body.expected_snapshot.paid_cents).toBe(0);
+    expect(body.request_key).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(body.defer_confirmation_email).toBe(true);
   });
 
   it("says so when there is nothing to collect", async () => {

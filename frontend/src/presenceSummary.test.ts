@@ -4,7 +4,7 @@ import {
   scheduleForPresences,
   summarizePresences,
   type ScheduleSlot,
-} from "./presenceSummary";
+} from "./presence-summary";
 
 describe("attendance summary", () => {
   it("uses one date row for morning and afternoon, and preserves non-consecutive dates", () => {

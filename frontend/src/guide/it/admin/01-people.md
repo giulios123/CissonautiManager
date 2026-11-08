@@ -2,6 +2,8 @@
 
 È la pagina di partenza del pannello: una riga per persona, con codice, stato, giorni, sere, versato, dovuto, saldo e scadenza. Con la nuova regola la tabella aggiunge quota e residuo per confermare; la scheda mostra anche saldo totale o credito. Con il campo di ricerca trovi qualcuno per nome, email o codice, con il filtro scegli lo stato, con «Scarica CSV» esporti l'elenco (si apre in Excel). I CSV escono nella lingua dell'app in quel momento (intestazioni e stati), con lo stesso formato di sempre.
 
+Da «Storico cancellazioni» consulti le nuove disdette dell'edizione anche dopo la rimozione della prenotazione. Puoi cercare per nome o email e vedere chi ha richiesto la disdetta, quando, l'edizione e l'esito.
+
 Toccando una persona si apre la **scheda iscrizione**.
 
 Quando entrate (con il link o con la password) arrivate alla vostra pagina personale, come ogni iscritto, con in alto il pulsante «Vai al pannello organizzatori». Dal pannello, «La mia pagina» vi riporta lì.

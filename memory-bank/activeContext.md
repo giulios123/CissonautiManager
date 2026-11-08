@@ -2,9 +2,11 @@
 
 ## Ora
 
-**2026-11-08 · MVP20 implementato sul branch `feat/mvp-20-riaccettazione-privacy`, atop MVP19 in `main`.** Nuova accettazione privacy versionata, migrazione legacy `0019` dopo la migrazione profilo `0018`, blocco backend delle modifiche pendenti, UI partecipante/admin e richiesta email una tantum nel job orario. T20-1–7 completati; T20-8 aperto: suite backend completa, SQL Server e prove organizzatori. Verificati 30 test backend mirati, 401 frontend completi e 3 test mirati aggiuntivi sulla versione finale, Ruff, ESLint/Prettier, TypeScript/build e guida bilingue. Il runner backend completo è stato fermato al 19% dopo dieci minuti; in questa sessione non sono disponibili TEST_DATABASE_URL né accesso al socket Docker. Nessun deploy, email reale o testo legale definitivo.
+**2026-11-08 · MVP20 presente in `main`; T20-8 completata come confermato dal maintainer.** Questa sessione ha eseguito la suite backend completa: 1103 test passati con 3 warning di deprecazione. Il maintainer conferma completati anche SQL Server e collaudo organizzatori. Nessun deploy, email reale o testo legale definitivo è stato eseguito in questa sessione.
 
 **MVP 19** implementato e ora presente in `main`: profilo annuale e contatti social, cataloghi locali ISTAT/ISO, campi obbligatori anche per sola lista, API personali/admin e richiamo legacy non bloccante; guide IT/EN e spec in `specs/mvp-19-profilo-completo/`. Restano le prove visuali e la verifica SQL Server CI della sessione precedente. Nessun deploy o email reale.
+
+**MVP 21 e 22 · Implementazione sul branch `feat/mvp-21-storico-cancellazioni`.** Storico admin e modale d'incasso rapido implementati; migrazioni `0020`/`0021`, guide IT/EN e test aggiunti. Backend 1105 test passati, frontend 407 test passati, lint e build verdi. Rimangono SQL Server CI per entrambe le migrazioni e collaudo manuale A6/organizzatori. Il criterio di conservazione del registro 21 resta da definire prima del rilascio in produzione. Nessun deploy effettuato.
 
 MVP18 resta implementato: backend 1083 test, frontend 394, prove SQL confermate dal maintainer; le procedure manuali e l'attivazione reale sono ancora aperte. Per MVP17 restano collaudo visivo e testi legali definitivi.
 

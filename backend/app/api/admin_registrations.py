@@ -2,13 +2,14 @@ import logging
 from collections import defaultdict
 from datetime import date, datetime
 from typing import Annotated, Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, Field, StringConstraints
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
 from app.config import Settings
@@ -22,6 +23,7 @@ from app.i18n import t
 from app.models import (
     STATUS_EXPIRED,
     Activity,
+    AuditLog,
     Booking,
     Edition,
     LegalDocument,
@@ -110,6 +112,23 @@ class HistoryEntry(BaseModel):
     detail: str
 
 
+class CancellationEntry(BaseModel):
+    id: int
+    participant_id: int
+    first_name: str
+    last_name: str
+    email: str
+    edition_name: str
+    at: datetime
+    actor: str | None
+    outcome: str
+
+
+class CancellationPage(BaseModel):
+    items: list[CancellationEntry]
+    total: int
+
+
 class WaitlistItem(BaseModel):
     id: int
     label: str
@@ -129,6 +148,8 @@ class RegistrationDetail(BaseModel):
     # Set only by the response to a new payment: the one that request created, so a client can
     # undo exactly that payment even if another admin pays the same booking at the same time.
     payment_id: int | None = None
+    payment_replayed: bool = False
+    payment_undo_until: datetime | None = None
     lunch_price_cents: int = 0
     dinner_price_cents: int = 0
     activity_offers: list[ActivityOffer] = []
@@ -163,6 +184,17 @@ class PaymentIn(BaseModel):
     note: str | None = Field(default=None, max_length=1000)
     # The "to collect" view asks for the confirmation email to wait, to leave time to undo.
     defer_confirmation_email: bool = False
+    request_key: UUID | None = None
+    expected_snapshot: "PaymentSnapshot | None" = None
+
+
+class PaymentSnapshot(BaseModel):
+    status: str
+    confirmation_policy: str
+    amount_due_cents: int
+    paid_cents: int
+    registration_fee_cents: int | None
+    confirmation_due_cents: int
 
 
 def _evenings(booking: Booking, status: str) -> int:
@@ -455,24 +487,43 @@ def add_payment(
     now: datetime = Depends(get_now),
 ) -> RegistrationDetail:
     booking = _get_booking(db, booking_id)
-    result = payment_service.record_payment(
-        db,
-        sender,
-        booking,
-        admin,
-        amount_cents=body.amount_cents,
-        channel=body.channel,
-        paid_on=body.paid_on or to_rome(now).date(),
-        note=body.note,
-        now=now,
-        defer_confirmation_email=body.defer_confirmation_email,
-        settings=request.app.state.settings,
-    )
+    try:
+        result = payment_service.record_payment(
+            db,
+            sender,
+            booking,
+            admin,
+            amount_cents=body.amount_cents,
+            channel=body.channel,
+            paid_on=body.paid_on or to_rome(now).date(),
+            note=body.note,
+            now=now,
+            defer_confirmation_email=body.defer_confirmation_email,
+            settings=request.app.state.settings,
+            request_key=str(body.request_key) if body.request_key else None,
+            expected_snapshot=(
+                (
+                    body.expected_snapshot.status,
+                    body.expected_snapshot.confirmation_policy,
+                    body.expected_snapshot.amount_due_cents,
+                    body.expected_snapshot.paid_cents,
+                    body.expected_snapshot.registration_fee_cents,
+                    body.expected_snapshot.confirmation_due_cents,
+                )
+                if body.expected_snapshot is not None
+                else None
+            ),
+        )
+    except payment_service.StalePayment as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("payment.balance_changed")) from exc
     if result.email_due_at is not None:
         _send_confirmations_later(request)
     db.refresh(booking)
     detail = _detail(db, booking, now, warning=result.warning)
     detail.payment_id = result.payment.id
+    detail.payment_replayed = result.replayed
+    detail.payment_undo_until = result.payment.created_at + payment_service.PAYMENT_UNDO_WINDOW
     return detail
 
 
@@ -748,6 +799,59 @@ def cancel_registration(
         return CancelOut(outcome=outcome)
     db.refresh(booking)
     return CancelOut(outcome=outcome, detail=_detail(db, booking, now))
+
+
+@router.get("/cancellations", response_model=CancellationPage)
+def list_cancellations(
+    q: str = Query(default="", max_length=200),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    _admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> CancellationPage:
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return CancellationPage(items=[], total=0)
+    person = aliased(Participant, name="cancelled_person")
+    actor = aliased(Participant, name="cancellation_actor")
+    query = (
+        select(AuditLog, person, Edition, actor)
+        .join(person, person.id == AuditLog.participant_id)
+        .join(Edition, Edition.id == AuditLog.edition_id)
+        .outerjoin(actor, actor.id == AuditLog.actor_id)
+        .where(AuditLog.edition_id == edition.id, AuditLog.outcome.is_not(None))
+    )
+    needle = q.strip()
+    if needle:
+        pattern = f"%{needle}%"
+        query = query.where(
+            or_(
+                person.first_name.ilike(pattern),
+                person.last_name.ilike(pattern),
+                person.email.ilike(pattern),
+            )
+        )
+    total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
+    rows = db.execute(
+        query.order_by(AuditLog.at.desc(), AuditLog.id.desc()).offset(offset).limit(limit)
+    ).all()
+    return CancellationPage(
+        items=[
+            CancellationEntry(
+                id=entry.id,
+                participant_id=person.id,
+                first_name=person.first_name,
+                last_name=person.last_name,
+                email=person.email,
+                edition_name=edition_row.name,
+                at=entry.at,
+                actor=f"{actor.first_name} {actor.last_name}".strip() if actor else None,
+                outcome=entry.outcome,
+            )
+            for entry, person, edition_row, actor in rows
+        ],
+        total=total,
+    )
 
 
 class VoidIn(BaseModel):

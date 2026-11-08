@@ -16,7 +16,7 @@ L'email di conferma alla persona parte **dopo 30 secondi**, così un annullo tem
 
 ## Importo diverso dal saldo
 
-Se sul conto è arrivata una cifra diversa, usa «Altro importo»: ti porta alla scheda, dove registri l'importo esatto. Lì l'email di conferma parte subito.
+Se sul conto è arrivata una cifra diversa, usa «Altro importo»: nella modale inserisci importo, data e nota. Il saldo si aggiorna dopo il salvataggio; se un altro admin lo ha cambiato mentre lavoravi, controlla i nuovi valori e conferma di nuovo. L'annullo e l'email differita seguono gli stessi tempi del pagamento rapido.
 
 ## Una scaduta che ha pagato
 

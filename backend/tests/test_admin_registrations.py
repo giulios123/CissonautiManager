@@ -141,6 +141,56 @@ class TestRecordPayment:
         )
         assert payment.recorded_by_id is not None
 
+    def test_quick_payment_request_is_idempotent_and_reuses_undo_deadline(
+        self, admin_client, ada_booking, db
+    ):
+        body = {
+            "amount_cents": 500,
+            "channel": "iban",
+            "paid_on": "2026-07-02",
+            "note": "bonifico",
+            "defer_confirmation_email": True,
+            "request_key": "2c48f9b8-15d7-4660-b80a-983e1e81e4a2",
+            "expected_snapshot": {
+                "status": STATUS_PENDING,
+                "confirmation_policy": "legacy_total",
+                "amount_due_cents": 1200,
+                "paid_cents": 0,
+                "registration_fee_cents": None,
+                "confirmation_due_cents": 1200,
+            },
+        }
+        first = admin_client.post(f"/api/admin/registrations/{ada_booking.id}/payments", json=body)
+        second = admin_client.post(f"/api/admin/registrations/{ada_booking.id}/payments", json=body)
+        assert first.status_code == second.status_code == 201
+        assert first.json()["payment_id"] == second.json()["payment_id"]
+        assert first.json()["payment_replayed"] is False
+        assert second.json()["payment_replayed"] is True
+        assert first.json()["payment_undo_until"] == second.json()["payment_undo_until"]
+        assert db.scalar(select(func.count()).select_from(Payment)) == 1
+
+    def test_quick_payment_rejects_stale_balance(self, admin_client, ada_booking, db):
+        snapshot = {
+            "status": STATUS_PENDING,
+            "confirmation_policy": "legacy_total",
+            "amount_due_cents": 1200,
+            "paid_cents": 0,
+            "registration_fee_cents": None,
+            "confirmation_due_cents": 1200,
+        }
+        pay(admin_client, ada_booking.id, 100)
+        response = admin_client.post(
+            f"/api/admin/registrations/{ada_booking.id}/payments",
+            json={
+                "amount_cents": 500,
+                "channel": "iban",
+                "request_key": "2c48f9b8-15d7-4660-b80a-983e1e81e4a2",
+                "expected_snapshot": snapshot,
+            },
+        )
+        assert response.status_code == 409
+        assert db.scalar(select(func.count()).select_from(Payment)) == 1
+
     def test_date_defaults_to_today_in_rome(self, admin_client, ada_booking, db, clock):
         clock.advance(hours=14)  # 2026-07-01 10:00 UTC + 14h = 00:00 on July 2nd in Rome
         pay(admin_client, ada_booking.id, 500)

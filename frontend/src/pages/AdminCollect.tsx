@@ -8,22 +8,9 @@ import { tNow } from "../i18n/messages";
 import { formatEuro } from "../money";
 import { adminRegistrationPath } from "../routes";
 import type { Detail } from "./AdminRegistrationDetail";
+import { QuickPaymentDialog, type CollectRow } from "./QuickPaymentDialog";
 
-type Row = {
-  booking_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  personal_code: string;
-  status: string;
-  confirmation_policy?: "legacy_total" | "registration_fee";
-  registration_fee_cents?: number | null;
-  confirmation_balance_cents?: number | null;
-  amount_due_cents: number;
-  paid_cents: number;
-  balance_cents: number;
-  hold_expires_at: string;
-};
+type Row = CollectRow;
 
 // The row is kept with the payment, so it stays on screen until its own undo window ends,
 // whatever the list says after a refresh.
@@ -79,6 +66,7 @@ export function AdminCollect() {
   const [busy, setBusy] = useState<Set<number>>(new Set());
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [message, setMessage] = useState("");
+  const [quickPaymentRow, setQuickPaymentRow] = useState<Row | null>(null);
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const feePolicy = rows?.some((row) => row.confirmation_policy === "registration_fee") ?? false;
 
@@ -213,137 +201,181 @@ export function AdminCollect() {
   const shown = rows?.filter((row) => !needle || matches(row, needle)) ?? [];
 
   return (
-    <main className="wide">
-      <h1>{t("collect.title")}</h1>
-      <p>{t("collect.intro")}</p>
-      <div className="row filters">
-        <label>
-          {t("collect.channel")}
-          <select value={channel} onChange={(e) => chooseChannel(e.target.value)}>
-            {CHANNELS.map(([code, label]) => (
-              <option key={code} value={code}>
-                {t(label)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t("collect.search")}
-          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
-      </div>
-      <p role="status" aria-live="polite" className="notice ok" hidden={!message}>
-        {message}
-      </p>
-      {failed && <p role="alert">{t("collect.loadError")}</p>}
-      {rows === null ? (
-        <p aria-busy="true">{t("common.loading")}</p>
-      ) : rows.length === 0 ? (
-        <p>{t("collect.empty")}</p>
-      ) : shown.length === 0 ? (
-        <p>{t("collect.noResults")}</p>
-      ) : (
-        <>
-          <p>{t("collect.count", { n: shown.length })}</p>
-          <div className="table-wrap">
-            <table>
-              <caption className="sr-only">{t("collect.caption")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("people.colPerson")}</th>
-                  <th scope="col">{t("collect.colReference")}</th>
-                  <th scope="col">{t("people.colStatus")}</th>
-                  {feePolicy && (
-                    <>
-                      <th scope="col">{t("collect.colRegistrationFee")}</th>
-                      <th scope="col">{t("collect.colToConfirm")}</th>
-                    </>
-                  )}
-                  <th scope="col">{feePolicy ? t("collect.colTotal") : t("people.colDue")}</th>
-                  <th scope="col">{t("people.colPaid")}</th>
-                  <th scope="col">{t("people.colBalance")}</th>
-                  <th scope="col">{t("people.colDeadline")}</th>
-                  <th scope="col">{t("collect.colAction")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((row) => {
-                  const name = `${row.first_name} ${row.last_name}`;
-                  const paid = done[row.booking_id];
-                  return (
-                    <tr key={row.booking_id}>
-                      <th scope="row">
-                        <Link to={adminRegistrationPath(row.booking_id)}>{name}</Link>
-                        <br />
-                        <small>{row.email}</small>
-                      </th>
-                      <td>{row.personal_code}</td>
-                      <td>
-                        <StatusBadge status={row.status} />
-                      </td>
-                      {feePolicy && (
-                        <>
-                          <td>
-                            {row.registration_fee_cents == null
-                              ? "-"
-                              : formatEuro(row.registration_fee_cents)}
-                          </td>
-                          <td>
-                            {row.confirmation_balance_cents == null
-                              ? "-"
-                              : formatEuro(row.confirmation_balance_cents)}
-                          </td>
-                        </>
-                      )}
-                      <td>{formatEuro(row.amount_due_cents)}</td>
-                      <td>{formatEuro(row.paid_cents)}</td>
-                      <td>{formatEuro(row.balance_cents)}</td>
-                      <td>{formatDeadline(row.hold_expires_at)}</td>
-                      <td>
-                        {paid ? (
+    <>
+      <main className="wide">
+        <h1>{t("collect.title")}</h1>
+        <p>{t("collect.intro")}</p>
+        <div className="row filters">
+          <label>
+            {t("collect.channel")}
+            <select value={channel} onChange={(e) => chooseChannel(e.target.value)}>
+              {CHANNELS.map(([code, label]) => (
+                <option key={code} value={code}>
+                  {t(label)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("collect.search")}
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+        </div>
+        <p role="status" aria-live="polite" className="notice ok" hidden={!message}>
+          {message}
+        </p>
+        {failed && <p role="alert">{t("collect.loadError")}</p>}
+        {rows === null ? (
+          <p aria-busy="true">{t("common.loading")}</p>
+        ) : rows.length === 0 ? (
+          <p>{t("collect.empty")}</p>
+        ) : shown.length === 0 ? (
+          <p>{t("collect.noResults")}</p>
+        ) : (
+          <>
+            <p>{t("collect.count", { n: shown.length })}</p>
+            <div className="table-wrap">
+              <table>
+                <caption className="sr-only">{t("collect.caption")}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t("people.colPerson")}</th>
+                    <th scope="col">{t("collect.colReference")}</th>
+                    <th scope="col">{t("people.colStatus")}</th>
+                    {feePolicy && (
+                      <>
+                        <th scope="col">{t("collect.colRegistrationFee")}</th>
+                        <th scope="col">{t("collect.colToConfirm")}</th>
+                      </>
+                    )}
+                    <th scope="col">{feePolicy ? t("collect.colTotal") : t("people.colDue")}</th>
+                    <th scope="col">{t("people.colPaid")}</th>
+                    <th scope="col">{t("people.colBalance")}</th>
+                    <th scope="col">{t("people.colDeadline")}</th>
+                    <th scope="col">{t("collect.colAction")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((row) => {
+                    const name = `${row.first_name} ${row.last_name}`;
+                    const paid = done[row.booking_id];
+                    return (
+                      <tr key={row.booking_id}>
+                        <th scope="row">
+                          <Link to={adminRegistrationPath(row.booking_id)}>{name}</Link>
+                          <br />
+                          <small>{row.email}</small>
+                        </th>
+                        <td>{row.personal_code}</td>
+                        <td>
+                          <StatusBadge status={row.status} />
+                        </td>
+                        {feePolicy && (
                           <>
-                            <span>
-                              {t("collect.paid", { amount: formatEuro(paid.amountCents) })}
-                            </span>{" "}
-                            <button
-                              type="button"
-                              className="secondary"
-                              disabled={busy.has(row.booking_id)}
-                              aria-label={t("collect.undoAria", { name })}
-                              onClick={() => undo(row, paid.paymentId)}
-                            >
-                              {t("collect.undo")}
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              disabled={busy.has(row.booking_id)}
-                              aria-label={t("collect.markAria", { name })}
-                              onClick={() => markPaid(row)}
-                            >
-                              {t("collect.mark")}
-                            </button>{" "}
-                            <Link to={adminRegistrationPath(row.booking_id)}>
-                              {t("collect.otherAmount")}
-                            </Link>
+                            <td>
+                              {row.registration_fee_cents == null
+                                ? "-"
+                                : formatEuro(row.registration_fee_cents)}
+                            </td>
+                            <td>
+                              {row.confirmation_balance_cents == null
+                                ? "-"
+                                : formatEuro(row.confirmation_balance_cents)}
+                            </td>
                           </>
                         )}
-                        {errors[row.booking_id] && (
-                          <p role="alert" className="notice error">
-                            {errors[row.booking_id]}
-                          </p>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </>
+                        <td>{formatEuro(row.amount_due_cents)}</td>
+                        <td>{formatEuro(row.paid_cents)}</td>
+                        <td>{formatEuro(row.balance_cents)}</td>
+                        <td>{formatDeadline(row.hold_expires_at)}</td>
+                        <td>
+                          {paid ? (
+                            <>
+                              <span>
+                                {t("collect.paid", { amount: formatEuro(paid.amountCents) })}
+                              </span>{" "}
+                              <button
+                                type="button"
+                                className="secondary"
+                                disabled={busy.has(row.booking_id)}
+                                aria-label={t("collect.undoAria", { name })}
+                                onClick={() => undo(row, paid.paymentId)}
+                              >
+                                {t("collect.undo")}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                disabled={busy.has(row.booking_id)}
+                                aria-label={t("collect.markAria", { name })}
+                                onClick={() => markPaid(row)}
+                              >
+                                {t("collect.mark")}
+                              </button>{" "}
+                              <button
+                                type="button"
+                                className="link"
+                                onClick={() => setQuickPaymentRow(row)}
+                              >
+                                {t("collect.otherAmount")}
+                              </button>
+                            </>
+                          )}
+                          {errors[row.booking_id] && (
+                            <p role="alert" className="notice error">
+                              {errors[row.booking_id]}
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </main>
+      {quickPaymentRow && (
+        <QuickPaymentDialog
+          initialRow={quickPaymentRow}
+          channel={channel}
+          onCancel={() => setQuickPaymentRow(null)}
+          onSaved={(savedRow, paymentId, amountCents, undoUntil, replayed) => {
+            setQuickPaymentRow(null);
+            if (replayed) {
+              load();
+              setMessage(t("quickPayment.alreadyRecorded"));
+              return;
+            }
+            setDone((current) => ({
+              ...current,
+              [savedRow.booking_id]: { paymentId, amountCents, row: savedRow },
+            }));
+            doneRef.current = {
+              ...doneRef.current,
+              [savedRow.booking_id]: { paymentId, amountCents, row: savedRow },
+            };
+            const remaining = undoUntil
+              ? Math.max(0, new Date(undoUntil).getTime() - Date.now())
+              : UNDO_WINDOW_MS;
+            if (remaining === 0) finish(savedRow.booking_id, true);
+            else
+              timers.current.set(
+                savedRow.booking_id,
+                setTimeout(() => finish(savedRow.booking_id, true), remaining),
+              );
+            setMessage(
+              t("collect.paymentRecorded", {
+                amount: formatEuro(amountCents),
+                name: `${savedRow.first_name} ${savedRow.last_name}`,
+              }),
+            );
+          }}
+        />
       )}
-    </main>
+    </>
   );
 }

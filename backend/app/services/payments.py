@@ -5,7 +5,13 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session, object_session
 
 from app.config import Settings, get_settings
-from app.domain.booking import can_reactivate, has_free_seat, hold_deadline, status_after_void
+from app.domain.booking import (
+    can_reactivate,
+    effective_status,
+    has_free_seat,
+    hold_deadline,
+    status_after_void,
+)
 from app.domain.confirmation import POLICY_REGISTRATION_FEE
 from app.email import EmailSender
 from app.email.templates import booking_confirmation_email, payment_confirmation_email
@@ -24,7 +30,12 @@ from app.models import (
 from app.services import audit
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
-from app.services.amounts import confirmation_covered, confirmation_due, recompute_amount
+from app.services.amounts import (
+    confirmation_covered,
+    confirmation_due,
+    confirmation_due_cents,
+    recompute_amount,
+)
 from app.services.seats import (
     activities_for_update,
     expire_overdue,
@@ -39,6 +50,7 @@ from app.timefmt import format_activity, format_euro, status_label
 
 # How long the confirmation email of a quick payment waits, so a mistaken click can be undone.
 CONFIRMATION_EMAIL_DELAY = timedelta(seconds=30)
+PAYMENT_UNDO_WINDOW = timedelta(seconds=10)
 
 
 @dataclass
@@ -51,6 +63,7 @@ class PaymentResult:
     email_due_at: datetime | None = None
     # Activities dropped on reactivation because they had no seat left.
     dropped_activities: list[Activity] = field(default_factory=list)
+    replayed: bool = False
 
 
 def paid_total(booking: Booking) -> int:
@@ -165,6 +178,8 @@ def record_payment(
     now: datetime,
     defer_confirmation_email: bool = False,
     settings: Settings | None = None,
+    request_key: str | None = None,
+    expected_snapshot: tuple[str, str, int, int, int | None, int] | None = None,
 ) -> PaymentResult:
     """Register a payment and update the booking: confirm it when covered, revive it if expired.
 
@@ -179,6 +194,34 @@ def record_payment(
     lock_booking(db, booking.id)
     expire_overdue(db, now)
     db.refresh(booking)
+    if request_key is not None:
+        existing = db.scalar(select(Payment).where(Payment.request_key == request_key))
+        if existing is not None:
+            if (
+                existing.booking_id != booking.id
+                or existing.recorded_by_id != admin.id
+                or existing.amount_cents != amount_cents
+                or existing.channel != channel
+                or existing.paid_on != paid_on
+                or existing.note != (note or None)
+            ):
+                raise StalePayment()
+            return PaymentResult(existing, False, False, None, replayed=True)
+    if expected_snapshot is not None:
+        current_snapshot = (
+            effective_status(booking.status, booking.hold_expires_at, now),
+            booking.edition.confirmation_policy,
+            booking.amount_due_cents,
+            paid_total(booking),
+            booking.registration_fee_cents,
+            confirmation_due_cents(
+                booking.edition.confirmation_policy,
+                booking.amount_due_cents,
+                booking.registration_fee_cents,
+            ),
+        )
+        if current_snapshot != expected_snapshot:
+            raise StalePayment()
 
     payment = Payment(
         booking_id=booking.id,
@@ -188,6 +231,7 @@ def record_payment(
         note=note or None,
         recorded_by_id=admin.id,
         created_at=now,
+        request_key=request_key,
     )
     db.add(payment)
     db.flush()
@@ -423,6 +467,10 @@ def _hold_days(db: Session, booking: Booking) -> int:
 
 
 class PaymentNotFound(Exception):
+    pass
+
+
+class StalePayment(Exception):
     pass
 
 

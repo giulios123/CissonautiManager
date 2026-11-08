@@ -275,19 +275,24 @@ def request_cancellation(
         booking.slots = []
         db.delete(booking)
         outcome = "removed"
-    if actor is not None:
-        participant = booking.participant
-        result = (
-            "iscrizione rimossa, nessun pagamento" if outcome == "removed" else "disdetta richiesta"
-        )
-        audit.log(
-            db,
-            actor,
-            "cancelled_by_admin",
-            f"Disdetta registrata a nome di {participant.first_name} {participant.last_name} "
-            f"({participant.email}): {result}",
-            None if outcome == "removed" else booking.id,
-        )
+    participant = booking.participant
+    result = (
+        "iscrizione rimossa, nessun pagamento" if outcome == "removed" else "disdetta richiesta"
+    )
+    detail = (
+        f"Disdetta registrata a nome di {participant.first_name} {participant.last_name} "
+        f"({participant.email}): {result}"
+    )
+    audit.cancellation(
+        db,
+        participant_id=participant.id,
+        edition_id=booking.edition_id,
+        actor_id=actor.id if actor is not None else None,
+        booking_id=None if outcome == "removed" else booking.id,
+        outcome=result,
+        at=now,
+        detail=detail,
+    )
     db.commit()
     sender.send(
         cancellation_email(

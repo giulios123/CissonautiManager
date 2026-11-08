@@ -262,6 +262,10 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "The new deadline must be later than the current one",
     },
     "payment.not_found": {"it": "Pagamento non trovato", "en": "Payment not found"},
+    "payment.balance_changed": {
+        "it": "Il saldo è cambiato. Aggiorna i dati prima di registrare il pagamento.",
+        "en": "The balance changed. Refresh the details before recording the payment.",
+    },
     "payment.already_voided": {
         "it": "Questo pagamento è già annullato",
         "en": "This payment is already voided",

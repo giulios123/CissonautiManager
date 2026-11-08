@@ -5,7 +5,7 @@ import { formatDeadline, statusLabel } from "../booking";
 import { StatusBadge } from "../StatusBadge";
 import { useI18n } from "../i18n";
 import { formatEuro } from "../money";
-import { adminRegistrationPath } from "../routes";
+import { adminRegistrationPath, ROUTES } from "../routes";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
@@ -74,6 +74,9 @@ export function AdminRegistrations() {
   return (
     <main className="wide">
       <h1>{t("people.title")}</h1>
+      <p>
+        <Link to={ROUTES.adminCancellations}>{t("cancellations.link")}</Link>
+      </p>
       {notice && (
         <p role="status" className="notice ok">
           {notice}
