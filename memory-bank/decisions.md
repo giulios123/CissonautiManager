@@ -477,3 +477,10 @@ Materiale aperto per il 17: informative effettive IT/EN e destinazioni dei media
 - **Spec**: [MVP 19](../specs/mvp-19-profilo-completo/design.md); l'aggiornamento delle regole prodotto è in `domain.md`.
 
 La decisione sull'override è arrivata su `main` dopo la registrazione D-050–D-109; l'identificativo è stato aggiornato qui per non duplicare i numeri.
+
+## D-111 · Una sola richiesta email per versione privacy
+
+- **Data**: 2026-11-08.
+- **Decisione**: riusare il job orario per inviare una richiesta per persona, edizione e documento privacy. Registrare il tentativo prima dell'invio con vincolo univoco; non riprovare automaticamente un invio fallito.
+- **Motivo**: evitare duplicati anche con job concorrenti e mantenere il comportamento semplice concordato per l'MVP 20, senza creare una coda o un nuovo processo.
+- **Riferimento**: [Design MVP 20](../specs/mvp-20-riaccettazione-privacy/design.md#interfaccia-email-e-guide).

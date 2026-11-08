@@ -81,6 +81,8 @@ export type Me = {
   contributions?: Contribution[];
   can_bring?: string | null;
   profile_complete?: boolean;
+  privacy_associated?: boolean;
+  privacy_acceptance_required?: boolean;
 };
 
 export type Contribution = {

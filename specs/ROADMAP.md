@@ -112,6 +112,12 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 - **Contenuto:** quota base+giorni separata dal totale, transizioni/notifiche/promemoria coerenti e attivazione admin con ricalcolo in anteprima confermato in D-105; nessuna inclusione/esenzione anticipata.
 - **Fatto quando:** il pagamento della quota conferma anche con extra dovuti; preview/apply sono coerenti e idempotenti, confermate stabili e pagamenti intatti; codice distribuito e attivazione reale restano due passi distinti.
 
+## MVP 20 · Nuova accettazione privacy
+
+- **Stato:** implementato localmente su base MVP 17; spec e checklist in [mvp-20-riaccettazione-privacy](mvp-20-riaccettazione-privacy/requirements.md). L'MVP 19 resta indipendente.
+- **Contenuto:** accettazione autenticata e versionata, blocco delle modifiche partecipante finché pendente, storico admin, migrazione delle prove legacy e richiesta email una tantum dal job orario.
+- **Da verificare prima del rilascio:** suite backend completa, migrazione su SQL Server, prove manuali telefono/desktop, destinatari email e testo legale IT/EN definitivo.
+
 ## Revisione dopo il collaudo del 7 novembre 2026
 
 **Pianificazione aggiornata con le risposte del maintainer; nessun MVP avviato.** Il [dossier](revisione-2026-11-07/README.md) contiene spec A–E, valutazione F con stessa base dati scelta, proposta mappa A7 e riscontro promemoria D5. **Calendario D3 accantonato, mockup rimosso.** Decisioni canoniche D-050–D-075 e precisazioni D-076–D-104; [domande residue](revisione-2026-11-07/domande-aperte.md) limitate ai dettagli non risposti.

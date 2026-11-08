@@ -179,7 +179,7 @@ class LegalDocument(Base):
 
 
 class ConsentEvent(Base):
-    """Append-only optional consent evidence, independent from a booking's lifetime."""
+    """Append-only privacy evidence, independent from a booking's lifetime."""
 
     __tablename__ = "consent_event"
     __table_args__ = (
@@ -198,7 +198,8 @@ class ConsentEvent(Base):
     kind: Mapped[str] = mapped_column(Unicode(16))
     action: Mapped[str] = mapped_column(Unicode(12))
     document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
-    locale: Mapped[str] = mapped_column(String(2))
+    # Imported legacy acceptances did not record a language; keep it unknown.
+    locale: Mapped[str | None] = mapped_column(String(2))
     recorded_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
     source: Mapped[str] = mapped_column(Unicode(20))
 
@@ -423,6 +424,19 @@ class WaitlistEntry(Base):
 
     slot: Mapped[Slot] = relationship()
     participant: Mapped[Participant] = relationship()
+
+
+class PrivacyNoticeAttempt(Base):
+    """At-most-once email attempt for a privacy document and edition participant."""
+
+    __tablename__ = "privacy_notice_attempt"
+    __table_args__ = (UniqueConstraint("edition_id", "participant_id", "document_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
+    participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    document_id: Mapped[int] = mapped_column(ForeignKey("legal_document.id"))
+    attempted_at: Mapped[datetime] = mapped_column(UtcDateTime)
 
 
 class AuditLog(Base):

@@ -31,6 +31,16 @@ export type ConsentCollection = {
   edition_id: number | null;
   associated: boolean;
   consents: Consent[];
+  privacy_current_version?: number | null;
+  privacy_accepted_version?: number | null;
+  privacy_acceptance_required?: boolean;
+  privacy_history?: {
+    id: number;
+    locale: string | null;
+    recorded_at: string;
+    source: string;
+    document: Document;
+  }[];
 };
 
 function available(document: Document | null): document is Document {
@@ -257,6 +267,39 @@ export function AdminConsentHistory({ participantId }: { participantId: number }
         <div>
           {failed && <p role="alert">{t("consent.loadError")}</p>}
           {!failed && data === null && <p aria-busy="true">{t("common.loading")}</p>}
+          {data?.privacy_current_version != null && (
+            <section>
+              <h3>{t("privacy.title")}</h3>
+              <p>{t("privacy.current", { version: data.privacy_current_version })}</p>
+              <p>
+                {data.privacy_acceptance_required ? t("privacy.pending") : t("privacy.accepted")}
+              </p>
+              {data.privacy_accepted_version != null && (
+                <p>{t("privacy.acceptedVersion", { version: data.privacy_accepted_version })}</p>
+              )}
+              {(data.privacy_history ?? []).length > 0 && (
+                <details>
+                  <summary>{t("privacy.history")}</summary>
+                  <ol>
+                    {data.privacy_history!.map((event) => (
+                      <li key={event.id}>
+                        {t("privacy.version", { version: event.document.version })} ·{" "}
+                        {dateLabel(event.recorded_at, locale)} · {event.source}
+                        <details>
+                          <summary>{t("consent.readHistoryText")}</summary>
+                          <div className="legal">
+                            {event.locale
+                              ? textFor(event.document, event.locale)
+                              : event.document.body}
+                          </div>
+                        </details>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+            </section>
+          )}
           {data?.consents.map((item) => (
             <section key={item.kind}>
               <h3>{t(item.kind === "attendance" ? "consent.attendance" : "consent.media")}</h3>

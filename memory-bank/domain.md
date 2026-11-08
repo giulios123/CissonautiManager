@@ -67,7 +67,8 @@
 - Comune italiano, provincia e codice ISTAT sono scelti da un catalogo locale. Per estero o comune non censito la città è libera; il fallback italiano richiede provincia dichiarata e non assegna automaticamente la regione.
 - Account esistenti non si aggiornano da invii anonimi. Dopo login, il richiamo persistente consente di completare i dati senza bloccare consultazione o modifiche di prenotazioni, lista d'attesa, pagamenti, consensi e disdetta. Il completamento non trasferisce né modifica consensi.
 - Campi aggiuntivi del modulo pubblico: "chi ti ha invitato?" (testo libero, opzionale), "cosa puoi portare al camp?" (testo libero).
-- Checkbox obbligatorie: informativa privacy e accettazione dello scarico di responsabilità. Entrambi i testi sono configurabili dall'admin e la versione accettata viene salvata con data e ora.
+- Checkbox obbligatorie in iscrizione: informativa privacy e accettazione dello scarico di responsabilità. Entrambi i testi sono configurabili dall'admin e la versione accettata viene salvata con data e ora. La prova privacy è riferita a persona, edizione e documento; resta consultabile anche senza una prenotazione attiva. Una nuova versione richiede una scelta esplicita autenticata. La reiscrizione pubblica di un account già esistente non vale come nuova accettazione.
+- Se la nuova informativa è pendente, la persona può leggere, pagare importi già dovuti, gestire e revocare consensi facoltativi, aggiornare i dati alimentari, lasciare la lista d'attesa, cambiare password o lingua e disdire. Non può modificare presenze, aggiungere un'iscrizione in lista d'attesa, cambiare pasti o attività né modificare i contributi offerti. Le azioni admin restano disponibili e non registrano accettazioni per conto della persona.
 - Esigenze alimentari: il regime (onnivoro, vegetariano, vegano) si salva senza consenso. Allergie e intolleranze sono dati sanitari: si salvano solo con un consenso specifico, il cui testo è configurabile dall'admin e versionato (si salvano versione, data e ora); togliere il consenso le cancella. Le vedono solo la persona e gli admin, mai nelle email. Stanno sulla prenotazione e spariscono con essa.
 
 ## Pannello admin
@@ -81,6 +82,8 @@
 ## Email
 
 Ogni email parte nella lingua del partecipante (italiano o inglese). La conferma di iscrizione ha oggetto e testo iniziale modificabili dall'admin per ciascuna lingua (segnaposto: nome, cognome, evento, data di inizio e di fine); riepilogo economico, slot, eventuale causale, eventuali istruzioni e scadenza, link personale e frasi finali sono costruiti in base allo stato e alla policy e non si modificano dall'editor. Se l'admin ha caricato uno sfondo, la email contiene un'immagine con la frase «Sono nome cognome e sarò a evento dal … al …» (in inglese «I'm … and I'll be at … from … to …»), modificabile per lingua con colore e posizione; non la riceve chi è solo in lista d'attesa.
+
+Quando la privacy corrente è pendente per una prenotazione attiva o una lista d'attesa aperta, il job orario invia un solo link al login per persona, edizione e versione. Il tentativo si registra prima dell'invio e non viene ripetuto automaticamente; aprire il link non costituisce accettazione.
 
 Il nome dell'edizione compare nell'intestazione, nel titolo delle pagine e negli oggetti delle email. Anche delle altre email (lista d'attesa, già iscritto, link di accesso, pagamento ricevuto, i due promemoria, posto liberato, disdetta) l'admin modifica oggetto e testo iniziale per ciascuna lingua, con gli stessi segnaposto; la parte con i dati (slot, quota, causale, scadenza, istruzioni di pagamento, link e frasi finali) è sempre automatica. Vuoto = testo standard. Il paragrafo sopra il modulo di iscrizione si modifica allo stesso modo, per lingua.
 

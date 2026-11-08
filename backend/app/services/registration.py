@@ -30,6 +30,7 @@ from app.services import auth as auth_service
 from app.services import consents as consent_service
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
+from app.services import privacy as privacy_service
 from app.services import waitlist as waitlist_service
 from app.services.amounts import recompute_amount
 from app.services.participants import get_by_email, new_unique_personal_code, normalize_email
@@ -264,6 +265,17 @@ def register(
     except waitlist_service.EntryNotFound as exc:
         raise InvalidSlots() from exc
     if new_participant:
+        privacy_service.accept_current(
+            db,
+            edition,
+            participant,
+            document_id=privacy.id,
+            version=privacy.version,
+            locale=data.locale,
+            now=now,
+            allow_legacy=True,
+            source="public_registration",
+        )
         for kind, choice in data.optional_consents.items():
             try:
                 consent_service.record_choice(

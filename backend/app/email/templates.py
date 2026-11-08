@@ -105,6 +105,30 @@ def cancellation_email(
     )
 
 
+def privacy_renewal_email(
+    participant: Participant,
+    *,
+    event_name: str,
+    version: int,
+    link: str,
+    locale: str | None = None,
+) -> EmailMessage:
+    """Ask the person to review and accept a newly published privacy notice after sign-in."""
+    loc = normalize_locale(locale or participant.locale)
+    body = (
+        _greeting(participant.first_name, loc)
+        + t("email.privacy_renewal.body", loc, event=event_name, version=version)
+        + "\n\n"
+        + t("email.privacy_renewal.link", loc, link=link)
+    )
+    return EmailMessage(
+        to=participant.email,
+        subject=t("email.privacy_renewal.subject", loc, event=event_name),
+        body=body,
+        html=_html(body),
+    )
+
+
 _URL = re.compile(r"https?://[^\s<>\"]+")
 
 

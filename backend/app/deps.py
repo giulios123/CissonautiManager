@@ -38,3 +38,22 @@ def require_admin(user: Participant = Depends(current_user)) -> Participant:
     if user.role != ROLE_ADMIN:
         raise HTTPException(status_code=403, detail="Admin only")
     return user
+
+
+def require_privacy_acceptance(
+    user: Participant = Depends(current_user), db: Session = Depends(get_db)
+) -> None:
+    """Block participant-side edits until the current edition's privacy is accepted."""
+    from app.i18n import t
+    from app.services import edition as edition_service
+    from app.services import privacy as privacy_service
+
+    edition = edition_service.get_active_edition(db)
+    if privacy_service.acceptance_required(db, edition, user):
+        raise HTTPException(
+            status_code=428,
+            detail={
+                "code": "privacy_acceptance_required",
+                "message": t("privacy.acceptance_required"),
+            },
+        )

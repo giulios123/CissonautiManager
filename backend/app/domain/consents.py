@@ -10,6 +10,7 @@ GRANTED = "granted"
 DECLINED = "declined"
 WITHDRAWN = "withdrawn"
 CONSENT_ACTIONS = (GRANTED, DECLINED, WITHDRAWN)
+PRIVACY_ACCEPTED = "accepted"
 
 
 @dataclass(frozen=True)
@@ -90,3 +91,10 @@ def action_for_choice(
     if event is not None and event.action == GRANTED:
         return WITHDRAWN, event.document_id
     return DECLINED, current_document_id
+
+
+def privacy_acceptance_is_current(
+    accepted_document_ids: Iterable[int], current_document: LegalDocument | None
+) -> bool:
+    """An explicit acceptance of the exact published privacy document is required."""
+    return current_document is not None and current_document.id in set(accepted_document_ids)

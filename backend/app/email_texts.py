@@ -14,6 +14,26 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "it": "Per vedere o modificare la tua iscrizione: {link}",
         "en": "To view or change your registration: {link}",
     },
+    "email.privacy_renewal.subject": {
+        "it": "Nuova informativa privacy per {event}",
+        "en": "Updated privacy notice for {event}",
+    },
+    "email.privacy_renewal.body": {
+        "it": (
+            "è disponibile la versione {version} dell'informativa privacy per {event}. "
+            "Accedi alla tua pagina personale, leggila e conferma di averla letta. "
+            "Fino ad allora alcune modifiche all'iscrizione restano sospese."
+        ),
+        "en": (
+            "version {version} of the privacy notice for {event} is available. "
+            "Sign in to your personal page, read it and confirm that you have read it. "
+            "Some registration changes are paused until then."
+        ),
+    },
+    "email.privacy_renewal.link": {
+        "it": "Accedi e apri la tua pagina personale: {link}",
+        "en": "Sign in and open your personal page: {link}",
+    },
     "email.your_slots": {"it": "I tuoi slot:", "en": "Your slots:"},
     "email.presence.heading.one": {"it": "1 giorno di presenza:", "en": "1 day of attendance:"},
     "email.presence.heading.other": {

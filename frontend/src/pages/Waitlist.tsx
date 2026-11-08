@@ -10,7 +10,15 @@ const fetchDays = () =>
   api<{ days: Day[] }>("/api/public/edition").then((edition) => edition.days ?? []);
 
 /** The person's waitlist entries, and the full slots they can still wait for. */
-export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }) {
+export function Waitlist({
+  me,
+  reload,
+  privacyRequired = false,
+}: {
+  me: Me;
+  reload: () => Promise<void>;
+  privacyRequired?: boolean;
+}) {
   const t = useT();
   const [days, setDays] = useState<Day[] | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -98,7 +106,7 @@ export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }
               <button
                 type="button"
                 className="secondary"
-                disabled={busy}
+                disabled={busy || privacyRequired}
                 onClick={() =>
                   act("/api/me/waitlist", "POST", t("wl.joined"), { slot_id: slot.id })
                 }
@@ -109,6 +117,7 @@ export function Waitlist({ me, reload }: { me: Me; reload: () => Promise<void> }
           ))}
         </ul>
       )}
+      {privacyRequired && <p className="notice">{t("privacy.blocked")}</p>}
       {message && (
         <p
           role={message.ok ? "status" : "alert"}
