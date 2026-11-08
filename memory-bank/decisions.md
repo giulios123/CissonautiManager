@@ -484,3 +484,10 @@ La decisione sull'override è arrivata su `main` dopo la registrazione D-050–D
 - **Decisione**: riusare il job orario per inviare una richiesta per persona, edizione e documento privacy. Registrare il tentativo prima dell'invio con vincolo univoco; non riprovare automaticamente un invio fallito.
 - **Motivo**: evitare duplicati anche con job concorrenti e mantenere il comportamento semplice concordato per l'MVP 20, senza creare una coda o un nuovo processo.
 - **Riferimento**: [Design MVP 20](../specs/mvp-20-riaccettazione-privacy/design.md#interfaccia-email-e-guide).
+
+## D-112 · Conservazione dello storico delle disdette per un anno
+
+- **Data**: 2026-11-08.
+- **Decisione del maintainer**: conservare ogni nuova voce di rinuncia per un anno dalla data della disdetta; rimuoverla nel job orario quando raggiunge l'anniversario.
+- **Motivo**: mantenere una finestra annuale di consultazione amministrativa limitando la durata del collegamento identificativo.
+- **Ambito**: si eliminano soltanto gli eventi di cancellazione strutturati; le altre voci audit seguono la loro policy.

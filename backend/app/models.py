@@ -12,6 +12,7 @@ from sqlalchemy import (
     Unicode,
     UnicodeText,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -357,6 +358,15 @@ class PaymentChannel(Base):
 
 class Payment(Base):
     __tablename__ = "payment"
+    __table_args__ = (
+        Index(
+            "uq_payment_request_key",
+            "request_key",
+            unique=True,
+            mssql_where=text("request_key IS NOT NULL"),
+            sqlite_where=text("request_key IS NOT NULL"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"))
@@ -374,6 +384,7 @@ class Payment(Base):
     # due time has passed, unless the payment is voided first.
     confirmation_email_due_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     confirmation_email_sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    request_key: Mapped[str | None] = mapped_column(Unicode(36), nullable=True)
 
     booking: Mapped[Booking] = relationship(back_populates="payments")
 
@@ -444,12 +455,16 @@ class AuditLog(Base):
     must outlive a booking that gets removed."""
 
     __tablename__ = "audit_log"
+    __table_args__ = (Index("ix_audit_log_edition_cancellation", "edition_id", "at", "id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
-    actor_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
     booking_id: Mapped[int | None] = mapped_column(Integer)
+    participant_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
+    edition_id: Mapped[int | None] = mapped_column(ForeignKey("edition.id"))
     action: Mapped[str] = mapped_column(Unicode(40))
+    outcome: Mapped[str | None] = mapped_column(Unicode(24))
     detail: Mapped[str] = mapped_column(UnicodeText, default="")
 
 

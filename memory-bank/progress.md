@@ -1,5 +1,13 @@
 # Progress
 
+## Chiusura MVP 20 · T20-8
+
+Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche SQL Server e del collaudo degli organizzatori. Nella sessione corrente la suite backend completa ha superato 1103 test (3 warning di deprecazione). T20-8 è chiusa; la chiusura non dichiara eseguiti deploy o invii email reali.
+
+## MVP 21 e 22 · Implementazione in verifica
+
+Implementati sul branch `feat/mvp-21-storico-cancellazioni`: registro admin delle nuove disdette, conservazione per un anno con pulizia nel job orario, modale d'incasso rapido con snapshot e retry idempotente, guide IT/EN e migrazioni `0020`/`0021`. Copilot ha rilevato nove difetti nella PR unica, corretti nel branch: ordine della rotta, outcome strutturato, downgrade, cursore stabile, retry/annullo, warning e aggiornamento immediato dei dati. Verifica locale dopo le correzioni: backend 1112 test, frontend 410 test, Ruff, ESLint/Prettier, TypeScript e build verdi. Il maintainer conferma completati SQL Server e collaudi manuali di entrambi gli MVP. La nuova CI della PR e il controllo dei thread Copilot restano da completare. Per il type-check, `presenceSummary.ts` è stato rinominato `presence-summary.ts` per evitare collisioni di maiuscole/minuscole sul filesystem locale. Nessun deploy effettuato.
+
 ## MVP 20 · Nuova accettazione privacy — implementato sul branch
 
 La migrazione `0019` trasforma gli snapshot legali legacy in prove versionate con lingua sconosciuta e crea il vincolo per il singolo tentativo email, dopo la migrazione `0018` del profilo partecipante già presente in `main`. Accettazione autenticata e storico sono disponibili per partecipanti e organizzatori; le scritture limitate vengono protette anche lato API. Nuovi account accettano durante la registrazione; gli account noti restano in sospeso finché non confermano dopo il login. Il job orario invia una richiesta IT/EN per versione e non la ripete.

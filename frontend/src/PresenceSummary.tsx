@@ -5,8 +5,8 @@ import {
   presenceCount,
   scheduleForPresences,
   summarizePresences,
-} from "./presenceSummary";
-import type { PresenceSlot, ScheduleSlot } from "./presenceSummary";
+} from "./presence-summary";
+import type { PresenceSlot, ScheduleSlot } from "./presence-summary";
 
 export function PresenceSummary({
   slots,

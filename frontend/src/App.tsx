@@ -10,6 +10,7 @@ import { AdminRegistrationDetail } from "./pages/AdminRegistrationDetail";
 import { AdminReport } from "./pages/AdminReport";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
 import { AdminCollect } from "./pages/AdminCollect";
+import { AdminCancellations } from "./pages/AdminCancellations";
 import { AdminReview } from "./pages/AdminReview";
 import { AdminSlots } from "./pages/AdminSlots";
 import { AdminWeek } from "./pages/AdminWeek";
@@ -87,6 +88,7 @@ function AppRoutes() {
           }
         >
           <Route index element={<AdminRegistrations />} />
+          <Route path="cancellations" element={<AdminCancellations />} />
           <Route path="registrations/:id" element={<AdminRegistrationDetail />} />
           <Route path="days" element={<AdminSlots />} />
           <Route path="week" element={<AdminWeek />} />

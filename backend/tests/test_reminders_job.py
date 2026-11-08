@@ -11,9 +11,11 @@ from app.models import (
     STATUS_CANCEL_REQUESTED,
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
+    AuditLog,
     Booking,
     Slot,
 )
+from app.services.audit import purge_expired_cancellations
 from tests.helpers import d
 from tests.test_change_slots import pay
 
@@ -34,6 +36,53 @@ def run(db, outbox, settings, clock):
 
 def subjects(outbox):
     return [message.subject for message in outbox.sent]
+
+
+def test_cancellation_history_is_pruned_at_one_year_but_other_audit_remains(
+    db, make_participant, clock
+):
+    participant = make_participant("ada@example.com")
+    now = clock()
+    cutoff = now.replace(year=now.year - 1)
+    db.add_all(
+        [
+            AuditLog(
+                at=cutoff - timedelta(seconds=1),
+                participant_id=participant.id,
+                action="cancelled_by_participant",
+                outcome="removed",
+                detail="expired cancellation",
+            ),
+            AuditLog(
+                at=cutoff,
+                participant_id=participant.id,
+                action="cancelled_by_participant",
+                outcome="requested",
+                detail="one year old cancellation",
+            ),
+            AuditLog(
+                at=cutoff + timedelta(seconds=1),
+                participant_id=participant.id,
+                action="cancelled_by_participant",
+                outcome="removed",
+                detail="recent cancellation",
+            ),
+            AuditLog(
+                at=cutoff - timedelta(days=20),
+                participant_id=participant.id,
+                action="details_changed",
+                detail="other audit event",
+            ),
+        ]
+    )
+    db.commit()
+
+    assert purge_expired_cancellations(db, now) == 2
+    remaining = db.query(AuditLog).order_by(AuditLog.id).all()
+    assert [entry.detail for entry in remaining] == [
+        "recent cancellation",
+        "other audit event",
+    ]
 
 
 def test_nothing_is_sent_before_half_of_the_hold(db, booking, outbox, settings, clock):

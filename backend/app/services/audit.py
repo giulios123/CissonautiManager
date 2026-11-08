@@ -1,4 +1,6 @@
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models import AuditLog, Participant
@@ -9,6 +11,47 @@ def log(
 ) -> None:
     """Record something an admin did by hand. The caller commits together with the change."""
     db.add(AuditLog(actor_id=actor.id, booking_id=booking_id, action=action, detail=detail))
+
+
+def cancellation(
+    db: Session,
+    *,
+    participant_id: int,
+    edition_id: int,
+    actor_id: int | None,
+    booking_id: int | None,
+    outcome: str,
+    at,
+    detail: str,
+) -> AuditLog:
+    entry = AuditLog(
+        actor_id=actor_id,
+        participant_id=participant_id,
+        edition_id=edition_id,
+        booking_id=booking_id,
+        action="cancelled_by_admin" if actor_id is not None else "cancelled_by_participant",
+        outcome=outcome,
+        at=at,
+        detail=detail,
+    )
+    db.add(entry)
+    return entry
+
+
+def purge_expired_cancellations(db: Session, now: datetime) -> int:
+    """Remove cancellation history at its one-year anniversary."""
+    try:
+        cutoff = now.replace(year=now.year - 1)
+    except ValueError:
+        cutoff = now.replace(year=now.year - 1, month=2, day=28)
+    result = db.execute(
+        delete(AuditLog).where(
+            AuditLog.outcome.in_(("removed", "requested")),
+            AuditLog.at <= cutoff,
+        )
+    )
+    db.commit()
+    return result.rowcount or 0
 
 
 def history(db: Session, booking_id: int) -> list[tuple[AuditLog, Participant]]:

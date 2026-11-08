@@ -116,7 +116,19 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 - **Stato:** implementato localmente su base MVP 17; spec e checklist in [mvp-20-riaccettazione-privacy](mvp-20-riaccettazione-privacy/requirements.md). L'MVP 19 resta indipendente.
 - **Contenuto:** accettazione autenticata e versionata, blocco delle modifiche partecipante finché pendente, storico admin, migrazione delle prove legacy e richiesta email una tantum dal job orario.
-- **Da verificare prima del rilascio:** suite backend completa, migrazione su SQL Server, prove manuali telefono/desktop, destinatari email e testo legale IT/EN definitivo.
+- **T20-8 completata:** suite backend completa (1103 test in locale), migrazione SQL Server e collaudo organizzatori confermati dal maintainer. Prima dell'uso reale restano destinatari email e testi legali IT/EN definitivi. Nessun deploy o invio reale dichiarato.
+
+## MVP 21 · Storico delle cancellazioni
+
+- **Stato:** implementato sul branch `feat/mvp-21-storico-cancellazioni`; suite locale, migrazione SQL Server CI e collaudo manuale A6 confermati completati dal maintainer. Nessun deploy eseguito.
+- **Contenuto:** registro amministrativo delle nuove disdette, consultabile dopo la rimozione della prenotazione, con autore, edizione, data ed esito; migrazione additiva e prova di accettazione esclusivamente manuale A6.
+- **Conservazione:** un anno dalla cancellazione, pulizia automatica nel job orario; collaudo manuale A6 completato.
+
+## MVP 22 · Altro importo da «Da incassare»
+
+- **Stato:** implementato sullo stesso branch di lavoro; test SQLite, frontend, lint, build, migrazione SQL Server CI e collaudo manuale confermati completati dal maintainer. Nessun deploy eseguito.
+- **Contenuto:** modale per registrare importi parziali, con controllo concorrente del saldo, retry idempotente, annullo entro 10 secondi ed email differita di 30 secondi.
+- **Fatto quando:** un admin aggiorna il saldo dalla lista senza duplicare pagamenti, e il raggiungimento della quota conferma il posto secondo la policy 18 lasciando visibili gli extra dovuti.
 
 ## Revisione dopo il collaudo del 7 novembre 2026
 

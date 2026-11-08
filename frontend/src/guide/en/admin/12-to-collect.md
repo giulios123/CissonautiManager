@@ -16,7 +16,7 @@ The confirmation email to the person goes out **after 30 seconds**, so a timely 
 
 ## An amount different from the balance
 
-If a different amount arrived on the account, use “Other amount”: it takes you to the registration page, where you record the exact amount. There the confirmation email goes out right away.
+If a different amount arrived on the account, use “Other amount” to enter the amount, date, and note in a dialog. The balance updates after saving. If another admin changed it while you were working, review the new values and confirm again. Undo and the delayed email use the same timings as quick payment.
 
 ## An expired booking that paid
 
