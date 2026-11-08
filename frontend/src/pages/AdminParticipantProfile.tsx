@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import { useT } from "../i18n";
 
@@ -12,11 +12,25 @@ type ParticipantProfile = {
 export function AdminParticipantProfile({ participantId }: { participantId: number }) {
   const t = useT();
   const [data, setData] = useState<ParticipantProfile | null>(null);
+  const [location, setLocation] = useState({
+    country: "",
+    province: "",
+    region: "",
+    istat_code: "",
+  });
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   useEffect(() => {
     void api<ParticipantProfile>(`/api/admin/participants/${participantId}/profile`)
-      .then(setData)
+      .then((loaded) => {
+        setData(loaded);
+        setLocation({
+          country: String(loaded.profile?.country ?? ""),
+          province: String(loaded.profile?.province ?? ""),
+          region: String(loaded.profile?.region ?? ""),
+          istat_code: String(loaded.profile?.istat_code ?? ""),
+        });
+      })
       .catch(() => setError(t("common.somethingWrong")));
   }, [participantId, t]);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -76,8 +90,26 @@ export function AdminParticipantProfile({ participantId }: { participantId: numb
             {t(label)}
             <input
               name={name}
-              required={name !== "province" && name !== "region" && name !== "istat_code"}
-              defaultValue={initial[name] ?? ""}
+              required={
+                name !== "region" &&
+                name !== "istat_code" &&
+                (name !== "province" ||
+                  (["italia", "italy"].includes(location.country.trim().toLowerCase()) &&
+                    !location.istat_code))
+              }
+              {...(["country", "province", "region", "istat_code"].includes(name)
+                ? {
+                    value: location[name as keyof typeof location],
+                    onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                      const value = event.currentTarget.value;
+                      setLocation((current) =>
+                        name === "country"
+                          ? { country: value, province: "", region: "", istat_code: "" }
+                          : { ...current, [name]: value },
+                      );
+                    },
+                  }
+                : { defaultValue: initial[name] ?? "" })}
             />
           </label>
         ))}

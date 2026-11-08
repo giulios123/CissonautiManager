@@ -1,5 +1,4 @@
 import json
-import unicodedata
 from datetime import date, datetime, time
 from hashlib import sha256
 from itertools import groupby
@@ -18,6 +17,12 @@ from app.db import get_db
 from app.deps import get_email_sender, get_now, get_settings_dep
 from app.domain.booking import is_past_day
 from app.domain.confirmation import confirmation_balance_cents, confirmation_due_cents
+from app.domain.profile import (
+    InvalidProfileValue,
+    fold_geographic_text,
+    validate_geography,
+    validate_social_profiles,
+)
 from app.email import EmailSender
 from app.i18n import LOCALES, channel_label, current_locale, t
 from app.models import (
@@ -49,14 +54,6 @@ _COUNTRIES = json.loads(
 )["countries"]
 
 
-def _fold(value: str) -> str:
-    return "".join(
-        char
-        for char in unicodedata.normalize("NFKD", value.casefold())
-        if not unicodedata.combining(char)
-    )
-
-
 class MunicipalityOut(BaseModel):
     name: str
     province: str
@@ -76,11 +73,11 @@ def list_countries() -> list[dict]:
 
 @router.get("/municipalities", response_model=list[MunicipalityOut])
 def search_municipalities(q: Annotated[str, Query(min_length=2, max_length=100)]) -> list[dict]:
-    query = _fold(q.strip())
+    query = fold_geographic_text(q.strip())
     if not query:
         return []
-    matches = [item for item in _MUNICIPALITIES if query in _fold(item["name"])]
-    matches.sort(key=lambda item: (_fold(item["name"]), item["province"]))
+    matches = [item for item in _MUNICIPALITIES if query in fold_geographic_text(item["name"])]
+    matches.sort(key=lambda item: (fold_geographic_text(item["name"]), item["province"]))
     return matches[:20]
 
 
@@ -200,31 +197,17 @@ class RegistrationIn(BaseModel):
             raise ValueError(t("register.privacy_required"))
         if not self.accept_disclaimer:
             raise ValueError(t("register.disclaimer_required"))
-        telegram = self.telegram.strip().casefold()
-        if telegram not in {"none", "non possiedo", "i don't have it"} and not (
-            self.telegram.strip().startswith("@")
-        ):
-            raise ValueError(t("profile.invalid_telegram"))
-        linkedin = self.linkedin.strip().casefold()
-        if linkedin not in {
-            "none",
-            "non possiedo",
-            "i don't have it",
-        } and not self.linkedin.strip().startswith("https://www.linkedin.com/"):
-            raise ValueError(t("profile.invalid_linkedin"))
-        if self.istat_code:
-            municipality = next(
-                (m for m in _MUNICIPALITIES if m["istat_code"] == self.istat_code), None
+        try:
+            validate_social_profiles(self.telegram, self.linkedin)
+            validate_geography(
+                self.city,
+                self.country,
+                self.province,
+                self.istat_code,
+                _MUNICIPALITIES,
             )
-            if (
-                municipality is None
-                or self.country.casefold() not in {"italia", "italy"}
-                or _fold(municipality["name"]) != _fold(self.city)
-                or municipality["province"] != (self.province or "")
-            ):
-                raise ValueError(t("profile.invalid_municipality"))
-        elif self.country.casefold() in {"italia", "italy"} and not self.province:
-            raise ValueError(t("profile.province_required"))
+        except InvalidProfileValue as exc:
+            raise ValueError(t(exc.message_key)) from exc
         return self
 
 
@@ -419,6 +402,9 @@ def create_registration(
     except registration_service.InvalidOptionalConsent as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=t("register.optional_consent_invalid")) from exc
+    except registration_service.InvalidProfile as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=t("profile.required")) from exc
     except registration_service.InvalidSlots as exc:
         raise HTTPException(status_code=422, detail=t("slots.invalid")) from exc
     except registration_service.SlotsFull as exc:

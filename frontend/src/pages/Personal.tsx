@@ -136,7 +136,7 @@ function ProfileCompletion() {
                       !profile.istat_code))
                 }
                 defaultValue={
-                  ["city", "province", "region", "istat_code"].includes(name)
+                  ["city", "province", "region", "istat_code", "country"].includes(name)
                     ? undefined
                     : String(profile[name] ?? "")
                 }
@@ -147,11 +147,21 @@ function ProfileCompletion() {
                       ? "profile-country-options"
                       : undefined
                 }
-                {...(["city", "province", "region", "istat_code"].includes(name)
+                {...(["city", "province", "region", "istat_code", "country"].includes(name)
                   ? {
                       value: String(profile[name] ?? ""),
                       onChange: (event: ChangeEvent<HTMLInputElement>) => {
                         const value = event.currentTarget.value;
+                        if (name === "country") {
+                          setProfile({
+                            ...profile,
+                            country: value,
+                            province: "",
+                            region: "",
+                            istat_code: "",
+                          });
+                          return;
+                        }
                         if (name !== "city") {
                           setProfile({ ...profile, [name]: value });
                           return;

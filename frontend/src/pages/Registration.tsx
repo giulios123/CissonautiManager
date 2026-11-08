@@ -531,7 +531,15 @@ export function Registration() {
                 maxLength={100}
                 list="country-options"
                 value={country}
-                onChange={(event) => setCountry(event.currentTarget.value)}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setCountry(value);
+                  if (!["italia", "italy"].includes(value.trim().toLowerCase())) {
+                    setProvince("");
+                    setRegion("");
+                    setIstatCode("");
+                  }
+                }}
               />
               <datalist id="country-options">
                 {countries.map((item) => (

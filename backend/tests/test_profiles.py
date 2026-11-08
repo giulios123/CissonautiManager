@@ -45,8 +45,8 @@ def test_authenticated_profile_reports_missing_fields_and_saves_profile(
         "/api/me/profile",
         json={
             "phone": "+39 333 1234567",
-            "telegram": "Non possiedo",
-            "linkedin": "Non possiedo",
+            "telegram": "I don't have it",
+            "linkedin": "https://linkedin.com/in/ada",
             "city": "Torino",
             "province": "TO",
             "region": "Piemonte",

@@ -44,6 +44,10 @@ class InvalidSlots(Exception):
     pass
 
 
+class InvalidProfile(Exception):
+    pass
+
+
 class LegalTextsChanged(Exception):
     pass
 
@@ -193,7 +197,7 @@ def register(
             data.attended_previous,
         )
         if any(value is None or value == "" for value in required_profile):
-            raise InvalidSlots()
+            raise InvalidProfile()
         participant = Participant(
             first_name=data.first_name,
             last_name=data.last_name,
@@ -217,7 +221,7 @@ def register(
             if edition.start_date
             else None
         )
-        attended = bool(
+        previous_confirmation = bool(
             previous
             and db.scalar(
                 select(Booking.id)
@@ -241,8 +245,8 @@ def register(
                 job_title=data.job_title,
                 company=data.company,
                 expectations=data.expectations,
-                attended_previous=attended if previous else bool(data.attended_previous),
-                attendance_source="derived" if previous else "declared",
+                attended_previous=(True if previous_confirmation else bool(data.attended_previous)),
+                attendance_source="derived" if previous_confirmation else "declared",
                 previous_edition_id=previous.id if previous else None,
             )
         )

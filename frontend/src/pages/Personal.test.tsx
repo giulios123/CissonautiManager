@@ -112,6 +112,37 @@ describe("profile completion", () => {
       await screen.findByText("Dati da completare: Telefono, Azienda (oppure Nessuna azienda)"),
     ).toBeInTheDocument();
   });
+
+  it("updates the Italian province requirement when country changes", async () => {
+    const user = userEvent.setup();
+    openAt((url) =>
+      url === "/api/me/profile"
+        ? {
+            body: {
+              complete: false,
+              missing_fields: ["province"],
+              profile: {
+                city: "Città non censita",
+                province: "",
+                region: null,
+                country: "Italia",
+                istat_code: null,
+                job_title: "Studente",
+                company: "Nessuna azienda",
+                expectations: "Conoscere persone",
+                attended_previous: false,
+              },
+            },
+          }
+        : { body: me([booking()]) },
+    );
+    const province = await screen.findByLabelText("Provincia (se disponibile)");
+    expect(province).toBeRequired();
+    const country = screen.getByLabelText("Paese");
+    await user.clear(country);
+    await user.type(country, "Francia");
+    expect(province).not.toBeRequired();
+  });
 });
 
 describe("personal attendance summary", () => {

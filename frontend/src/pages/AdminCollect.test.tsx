@@ -126,6 +126,7 @@ describe("to collect view", () => {
 
   it("filters by name, email and causale, ignoring case", async () => {
     renderPage();
+    expect(await screen.findByText("2 da incassare")).toBeInTheDocument();
     const search = await screen.findByLabelText("Cerca per nome, email o causale");
     fireEvent.change(search, { target: { value: "  g8ax " } });
     expect(screen.getByText("1 da incassare")).toBeInTheDocument();

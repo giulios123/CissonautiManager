@@ -7,11 +7,12 @@ from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.public import _MUNICIPALITIES, ChannelPublic, LegalPublic, _fold
+from app.api.public import _MUNICIPALITIES, ChannelPublic, LegalPublic
 from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
 from app.config import Settings
 from app.db import get_db
 from app.deps import current_user, get_email_sender, get_now, get_settings_dep
+from app.domain.profile import InvalidProfileValue, validate_geography, validate_social_profiles
 from app.email import EmailSender
 from app.i18n import channel_label, t
 from app.models import (
@@ -317,30 +318,17 @@ def update_my_profile(
     edition = edition_service.get_active_edition(db)
     if edition is None:
         raise HTTPException(status_code=409, detail=t("profile.no_active_edition"))
-    if body.telegram.strip().lower() not in {
-        "none",
-        "non possiedo",
-    } and not body.telegram.strip().startswith("@"):
-        raise HTTPException(status_code=422, detail=t("profile.invalid_telegram"))
-    if body.linkedin.strip().lower() not in {
-        "none",
-        "non possiedo",
-        "i don't have it",
-    } and not body.linkedin.startswith("https://www.linkedin.com/"):
-        raise HTTPException(status_code=422, detail=t("profile.invalid_linkedin"))
-    if body.istat_code:
-        municipality = next(
-            (item for item in _MUNICIPALITIES if item["istat_code"] == body.istat_code), None
+    try:
+        validate_social_profiles(body.telegram, body.linkedin)
+        validate_geography(
+            body.city,
+            body.country,
+            body.province,
+            body.istat_code,
+            _MUNICIPALITIES,
         )
-        if (
-            municipality is None
-            or body.country.casefold() not in {"italia", "italy"}
-            or _fold(municipality["name"]) != _fold(body.city)
-            or municipality["province"] != (body.province or "")
-        ):
-            raise HTTPException(status_code=422, detail=t("profile.invalid_municipality"))
-    elif body.country.casefold() in {"italia", "italy"} and not body.province:
-        raise HTTPException(status_code=422, detail=t("profile.province_required"))
+    except InvalidProfileValue as exc:
+        raise HTTPException(status_code=422, detail=t(exc.message_key)) from exc
     values = body.model_dump()
     user.phone = values.pop("phone").strip()
     user.telegram = values.pop("telegram").strip()

@@ -451,6 +451,10 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Per un comune italiano non presente nell'elenco, indica la provincia.",
         "en": "For an Italian municipality missing from the list, enter its province.",
     },
+    "profile.required": {
+        "it": "Completa tutti i campi obbligatori del profilo.",
+        "en": "Complete all required profile fields.",
+    },
     "profile.no_active_edition": {
         "it": "Non c'è un'edizione attiva.",
         "en": "There is no active edition.",
