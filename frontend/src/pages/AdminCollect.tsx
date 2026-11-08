@@ -78,9 +78,17 @@ export function AdminCollect() {
         setRows((previous) => {
           const next = [...loaded];
           for (const { row } of Object.values(doneRef.current)) {
-            if (next.some((r) => r.booking_id === row.booking_id)) continue;
-            const at = previous?.findIndex((r) => r.booking_id === row.booking_id) ?? -1;
-            next.splice(at < 0 ? next.length : Math.min(at, next.length), 0, row);
+            const currentIndex = next.findIndex((r) => r.booking_id === row.booking_id);
+            if (currentIndex >= 0) {
+              next[currentIndex] = row;
+              continue;
+            }
+            const previousIndex = previous?.findIndex((r) => r.booking_id === row.booking_id) ?? -1;
+            next.splice(
+              previousIndex < 0 ? next.length : Math.min(previousIndex, next.length),
+              0,
+              row,
+            );
           }
           return next;
         });
@@ -343,24 +351,32 @@ export function AdminCollect() {
           initialRow={quickPaymentRow}
           channel={channel}
           onCancel={() => setQuickPaymentRow(null)}
-          onSaved={(savedRow, paymentId, amountCents, undoUntil, replayed) => {
+          onSaved={(savedRow, paymentId, amountCents, undoUntil, replayed, warning) => {
             setQuickPaymentRow(null);
-            if (replayed) {
+            const remaining = undoUntil
+              ? Math.max(0, new Date(undoUntil).getTime() - Date.now())
+              : replayed
+                ? 0
+                : UNDO_WINDOW_MS;
+            if (replayed && remaining === 0) {
               load();
-              setMessage(t("quickPayment.alreadyRecorded"));
+              setMessage(t("quickPayment.alreadyRecorded") + (warning ? ` ${warning}` : ""));
               return;
             }
             setDone((current) => ({
               ...current,
               [savedRow.booking_id]: { paymentId, amountCents, row: savedRow },
             }));
+            setRows(
+              (current) =>
+                current?.map((item) =>
+                  item.booking_id === savedRow.booking_id ? savedRow : item,
+                ) ?? current,
+            );
             doneRef.current = {
               ...doneRef.current,
               [savedRow.booking_id]: { paymentId, amountCents, row: savedRow },
             };
-            const remaining = undoUntil
-              ? Math.max(0, new Date(undoUntil).getTime() - Date.now())
-              : UNDO_WINDOW_MS;
             if (remaining === 0) finish(savedRow.booking_id, true);
             else
               timers.current.set(
@@ -368,10 +384,12 @@ export function AdminCollect() {
                 setTimeout(() => finish(savedRow.booking_id, true), remaining),
               );
             setMessage(
-              t("collect.paymentRecorded", {
-                amount: formatEuro(amountCents),
-                name: `${savedRow.first_name} ${savedRow.last_name}`,
-              }),
+              replayed
+                ? t("quickPayment.alreadyRecorded") + (warning ? ` ${warning}` : "")
+                : t("collect.paymentRecorded", {
+                    amount: formatEuro(amountCents),
+                    name: `${savedRow.first_name} ${savedRow.last_name}`,
+                  }) + (warning ? ` ${warning}` : ""),
             );
           }}
         />

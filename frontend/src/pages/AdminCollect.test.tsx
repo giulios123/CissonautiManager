@@ -41,15 +41,40 @@ type Call = { url: string; method: string; body: unknown };
 let calls: Call[];
 let listing: ReturnType<typeof row>[];
 let failPayment: boolean;
+let replayPayment: boolean;
+let losePaymentResponse: boolean;
+let paymentAttempts: number;
 
 // The booking lists a higher payment id than the one just created, as if another admin had paid
 // the same booking: undo must use the id the server returned, not the highest one.
-function detail(payments: { id: number; voided: boolean }[], warning: string | null = null) {
+function detail(
+  payments: { id: number; voided: boolean }[],
+  warning: string | null = null,
+  replayed = false,
+) {
   return {
-    booking: { payments: [...payments, { id: 99, voided: false }] },
+    participant: {
+      first_name: "Ada",
+      last_name: "Lovelace",
+      email: "ada@example.com",
+      personal_code: "CSC-GGSU",
+    },
+    booking: {
+      id: 7,
+      status: "confermata",
+      confirmation_policy: "legacy_total",
+      registration_fee_cents: null,
+      confirmation_due_cents: 1100,
+      confirmation_balance_cents: 0,
+      amount_due_cents: 1100,
+      paid_cents: 550,
+      balance_cents: 550,
+      hold_expires_at: "2026-11-08T15:44:00Z",
+      payments: [...payments, { id: 99, voided: false }],
+    },
     warning,
     payment_id: 41,
-    payment_replayed: false,
+    payment_replayed: replayed,
     payment_undo_until: "2026-11-08T15:44:10Z",
   };
 }
@@ -58,6 +83,9 @@ beforeEach(() => {
   calls = [];
   listing = [ADA, GRACE];
   failPayment = false;
+  replayPayment = false;
+  losePaymentResponse = false;
+  paymentAttempts = 0;
   window.localStorage.clear();
   vi.stubGlobal(
     "fetch",
@@ -68,11 +96,17 @@ beforeEach(() => {
       if (url === "/api/admin/views/to-collect")
         return new Response(JSON.stringify(listing), { status: 200 });
       if (url.endsWith("/payments") && method === "POST") {
+        paymentAttempts += 1;
+        if (losePaymentResponse && paymentAttempts === 1)
+          return new Response(JSON.stringify({ detail: "errore" }), { status: 500 });
         if (failPayment)
           return new Response(JSON.stringify({ detail: "Prenotazione non trovata" }), {
             status: 404,
           });
-        return new Response(JSON.stringify(detail([{ id: 41, voided: false }])), { status: 201 });
+        return new Response(
+          JSON.stringify(detail([{ id: 41, voided: false }], null, replayPayment)),
+          { status: 201 },
+        );
       }
       if (url.endsWith("/void"))
         return new Response(JSON.stringify(detail([{ id: 41, voided: true }])), { status: 200 });
@@ -126,6 +160,48 @@ describe("to collect view", () => {
     expect(body.expected_snapshot.paid_cents).toBe(0);
     expect(body.request_key).toMatch(/^[0-9a-f-]{36}$/i);
     expect(body.defer_confirmation_email).toBe(true);
+  });
+
+  it("updates the row immediately and preserves undo on a replay", async () => {
+    replayPayment = true;
+    renderPage();
+    const open = (await screen.findAllByRole("button", { name: "Altro importo" }))[0];
+    fireEvent.click(open);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-11-08T15:44:05Z"));
+    fireEvent.change(screen.getByLabelText("Importo ricevuto (€)"), { target: { value: "5,50" } });
+    fireEvent.click(screen.getByRole("button", { name: "Registra pagamento" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Annulla il pagamento di Ada Lovelace" }),
+    ).toBeEnabled();
+    const adaRow = screen.getByRole("row", { name: /Ada Lovelace/ });
+    expect(adaRow).toHaveTextContent("Confermata");
+    const cells = adaRow.querySelectorAll("td");
+    expect(cells[3]).toHaveTextContent("5,50");
+    expect(cells[4]).toHaveTextContent("5,50");
+  });
+
+  it("keeps the attempted payload and key for an uncertain response", async () => {
+    losePaymentResponse = true;
+    renderPage();
+    fireEvent.click(
+      await screen.findAllByRole("button", { name: "Altro importo" }).then((x) => x[0]),
+    );
+    fireEvent.change(screen.getByLabelText("Importo ricevuto (€)"), { target: { value: "5,50" } });
+    fireEvent.change(screen.getByLabelText("Nota (facoltativa)"), {
+      target: { value: "prima rata" },
+    });
+    const save = screen.getByRole("button", { name: "Registra pagamento" });
+    fireEvent.click(save);
+    expect(await screen.findByRole("alert")).toHaveTextContent("errore");
+    const firstPayload = posted()[0].body;
+    expect(screen.getByLabelText("Importo ricevuto (€)")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "No, torno indietro" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Riprova lo stesso pagamento" }));
+    await waitFor(() => expect(posted()).toHaveLength(2));
+    expect(posted()[1].body).toEqual(firstPayload);
   });
 
   it("says so when there is nothing to collect", async () => {
@@ -357,6 +433,25 @@ describe("to collect view", () => {
 });
 
 describe("changing language on the to collect view", () => {
+  it("closes an unsaved quick-payment dialog and restores focus to its opener", async () => {
+    render(
+      <I18nProvider locale="it">
+        <MemoryRouter initialEntries={["/admin/to-collect"]}>
+          <App />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+    const opener = (await screen.findAllByRole("button", { name: "Altro importo" }))[0];
+    opener.focus();
+    fireEvent.click(opener);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Inglese" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(opener);
+  });
+
   it("keeps the undo of a payment marked a moment ago, without asking the server again", async () => {
     render(
       <I18nProvider locale="it">

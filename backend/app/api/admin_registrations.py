@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, Field, StringConstraints
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 
@@ -126,7 +126,7 @@ class CancellationEntry(BaseModel):
 
 class CancellationPage(BaseModel):
     items: list[CancellationEntry]
-    total: int
+    has_more: bool
 
 
 class WaitlistItem(BaseModel):
@@ -447,15 +447,6 @@ def list_registrations(
     return rows
 
 
-@router.get("/{booking_id}")
-def get_registration(
-    booking_id: int, db: Session = Depends(get_db), now: datetime = Depends(get_now)
-) -> RegistrationDetail:
-    expire_overdue(db, now)
-    db.commit()
-    return _detail(db, _get_booking(db, booking_id), now)
-
-
 def _send_confirmations_later(request: Request) -> None:
     """Ask the app to send the deferred confirmation emails once their delay is over.
 
@@ -514,6 +505,12 @@ def add_payment(
                 else None
             ),
         )
+    except payment_service.PaymentRequestConflict as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "payment_request_conflict", "message": t("payment.retry_conflict")},
+        ) from exc
     except payment_service.StalePayment as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail=t("payment.balance_changed")) from exc
@@ -523,7 +520,8 @@ def add_payment(
     detail = _detail(db, booking, now, warning=result.warning)
     detail.payment_id = result.payment.id
     detail.payment_replayed = result.replayed
-    detail.payment_undo_until = result.payment.created_at + payment_service.PAYMENT_UNDO_WINDOW
+    if result.payment.voided_at is None:
+        detail.payment_undo_until = result.payment.created_at + payment_service.PAYMENT_UNDO_WINDOW
     return detail
 
 
@@ -804,14 +802,17 @@ def cancel_registration(
 @router.get("/cancellations", response_model=CancellationPage)
 def list_cancellations(
     q: str = Query(default="", max_length=200),
-    offset: int = Query(default=0, ge=0),
+    before_at: datetime | None = None,
+    before_id: int | None = Query(default=None, ge=1),
     limit: int = Query(default=50, ge=1, le=100),
     _admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> CancellationPage:
+    if (before_at is None) != (before_id is None):
+        raise HTTPException(status_code=422, detail="Both cursor fields are required")
     edition = edition_service.get_active_edition(db)
     if edition is None:
-        return CancellationPage(items=[], total=0)
+        return CancellationPage(items=[], has_more=False)
     person = aliased(Participant, name="cancelled_person")
     actor = aliased(Participant, name="cancellation_actor")
     query = (
@@ -831,10 +832,13 @@ def list_cancellations(
                 person.email.ilike(pattern),
             )
         )
-    total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    rows = db.execute(
-        query.order_by(AuditLog.at.desc(), AuditLog.id.desc()).offset(offset).limit(limit)
-    ).all()
+    if before_at is not None and before_id is not None:
+        query = query.where(
+            or_(AuditLog.at < before_at, and_(AuditLog.at == before_at, AuditLog.id < before_id))
+        )
+    rows = db.execute(query.order_by(AuditLog.at.desc(), AuditLog.id.desc()).limit(limit + 1)).all()
+    has_more = len(rows) > limit
+    rows = rows[:limit]
     return CancellationPage(
         items=[
             CancellationEntry(
@@ -850,8 +854,17 @@ def list_cancellations(
             )
             for entry, person, edition_row, actor in rows
         ],
-        total=total,
+        has_more=has_more,
     )
+
+
+@router.get("/{booking_id}")
+def get_registration(
+    booking_id: int, db: Session = Depends(get_db), now: datetime = Depends(get_now)
+) -> RegistrationDetail:
+    expire_overdue(db, now)
+    db.commit()
+    return _detail(db, _get_booking(db, booking_id), now)
 
 
 class VoidIn(BaseModel):

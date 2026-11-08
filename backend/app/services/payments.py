@@ -205,7 +205,7 @@ def record_payment(
                 or existing.paid_on != paid_on
                 or existing.note != (note or None)
             ):
-                raise StalePayment()
+                raise PaymentRequestConflict()
             return PaymentResult(existing, False, False, None, replayed=True)
     if expected_snapshot is not None:
         current_snapshot = (
@@ -472,6 +472,10 @@ class PaymentNotFound(Exception):
 
 class StalePayment(Exception):
     pass
+
+
+class PaymentRequestConflict(Exception):
+    """An idempotency key was already used for a different payment payload."""
 
 
 class AlreadyVoided(Exception):

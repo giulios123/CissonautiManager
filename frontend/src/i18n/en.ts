@@ -472,6 +472,7 @@ export const en: Record<MessageKey, string> = {
   "quickPayment.date": "Payment date",
   "quickPayment.note": "Note (optional)",
   "quickPayment.save": "Record payment",
+  "quickPayment.retry": "Retry the same payment",
   "quickPayment.totalBalance": "Total balance: {amount}",
   "quickPayment.confirmationBalance": "Still due to confirm: {amount}",
   "quickPayment.invalidAmount":

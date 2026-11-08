@@ -37,6 +37,40 @@ def test_upgrade_from_scratch_creates_all_tables(alembic_config, database_url, e
     engine.dispose()
 
 
+def test_downgrade_0020_keeps_participant_cancellation_actor(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0019")
+    engine = make_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO participant"
+                " (first_name, last_name, email, personal_code, role, locale, created_at)"
+                " VALUES ('Ada', 'Lovelace', 'ada@example.com', 'CSC-ADA1', 'participant',"
+                " 'it', '2026-07-01 10:00:00')"
+            )
+        )
+    command.upgrade(alembic_config, "0020")
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO audit_log"
+                " (at, actor_id, participant_id, action, outcome, detail)"
+                " VALUES ('2026-07-01 10:00:00', NULL, 1, 'cancelled_by_participant',"
+                " 'removed', 'participant cancellation')"
+            )
+        )
+    command.downgrade(alembic_config, "0019")
+    with engine.connect() as connection:
+        actor_id = connection.execute(text("SELECT actor_id FROM audit_log")).scalar_one()
+        columns = {column["name"] for column in inspect(connection).get_columns("audit_log")}
+    engine.dispose()
+
+    assert actor_id == 1
+    assert "participant_id" not in columns
+
+
 def test_models_and_migrations_are_in_sync(alembic_config, database_url, empty_database):
     command.upgrade(alembic_config, "head")
     engine = make_engine(database_url)

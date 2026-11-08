@@ -472,6 +472,7 @@ export const it = {
   "quickPayment.date": "Data del pagamento",
   "quickPayment.note": "Nota (facoltativa)",
   "quickPayment.save": "Registra pagamento",
+  "quickPayment.retry": "Riprova lo stesso pagamento",
   "quickPayment.totalBalance": "Saldo totale: {amount}",
   "quickPayment.confirmationBalance": "Ancora da versare per confermare: {amount}",
   "quickPayment.invalidAmount": "Inserisci un importo maggiore di zero con massimo due decimali.",

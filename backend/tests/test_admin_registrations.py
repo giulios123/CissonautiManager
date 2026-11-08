@@ -8,6 +8,7 @@ from app.models import (
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
     STATUS_PENDING,
+    AuditLog,
     Booking,
     Payment,
     Slot,
@@ -39,6 +40,11 @@ class TestAccess:
         login(client, outbox)
         assert client.get("/api/admin/registrations").status_code == 403
         assert client.post("/api/admin/registrations/1/payments", json={}).status_code == 403
+
+    def test_cancellation_history_static_route_is_not_captured_as_booking_id(self, admin_client):
+        response = admin_client.get("/api/admin/registrations/cancellations")
+        assert response.status_code == 200
+        assert response.json() == {"items": [], "has_more": False}
 
 
 class TestList:
@@ -190,6 +196,83 @@ class TestRecordPayment:
         )
         assert response.status_code == 409
         assert db.scalar(select(func.count()).select_from(Payment)) == 1
+
+    def test_reusing_payment_key_with_different_payload_is_a_distinct_conflict(
+        self, admin_client, ada_booking
+    ):
+        key = "2c48f9b8-15d7-4660-b80a-983e1e81e4a2"
+        first = pay(admin_client, ada_booking.id, 100, request_key=key)
+        assert first.status_code == 201
+        conflict = pay(admin_client, ada_booking.id, 200, request_key=key)
+        assert conflict.status_code == 409
+        assert conflict.json()["detail"]["code"] == "payment_request_conflict"
+
+    def test_replay_of_voided_payment_does_not_offer_an_undo_window(
+        self, admin_client, ada_booking
+    ):
+        body = {
+            "amount_cents": 100,
+            "channel": "iban",
+            "request_key": "2c48f9b8-15d7-4660-b80a-983e1e81e4a2",
+        }
+        first = admin_client.post(f"/api/admin/registrations/{ada_booking.id}/payments", json=body)
+        payment_id = first.json()["payment_id"]
+        undone = admin_client.post(
+            f"/api/admin/registrations/{ada_booking.id}/payments/{payment_id}/void",
+            json={"reason": "entered by mistake"},
+        )
+        assert undone.status_code == 200
+
+        replay = admin_client.post(f"/api/admin/registrations/{ada_booking.id}/payments", json=body)
+        assert replay.status_code == 201
+        assert replay.json()["payment_replayed"] is True
+        assert replay.json()["payment_undo_until"] is None
+
+
+class TestCancellationHistory:
+    def test_participant_cancellation_is_visible_with_a_structured_outcome(
+        self, admin_client, ada_booking, db, client, outbox
+    ):
+        from tests.test_auth import login
+
+        login(client, outbox)
+        response = client.post("/api/me/booking/cancel")
+        assert response.status_code == 200
+
+        history = admin_client.get("/api/admin/registrations/cancellations")
+        assert history.status_code == 200
+        assert history.json()["items"][0]["outcome"] == "removed"
+
+    def test_cursor_pages_do_not_repeat_rows(self, admin_client, ada_booking, db, clock):
+        db.add_all(
+            [
+                AuditLog(
+                    at=clock(),
+                    actor_id=None,
+                    booking_id=None,
+                    participant_id=ada_booking.participant_id,
+                    edition_id=ada_booking.edition_id,
+                    action="cancelled_by_participant",
+                    outcome="removed",
+                    detail=f"Cancellation {index}",
+                )
+                for index in range(4)
+            ]
+        )
+        db.commit()
+
+        first = admin_client.get(
+            "/api/admin/registrations/cancellations", params={"limit": 2}
+        ).json()
+        cursor = first["items"][-1]
+        second = admin_client.get(
+            "/api/admin/registrations/cancellations",
+            params={"limit": 2, "before_at": cursor["at"], "before_id": cursor["id"]},
+        ).json()
+        assert set(row["id"] for row in first["items"]).isdisjoint(
+            row["id"] for row in second["items"]
+        )
+        assert first["has_more"] is True
 
     def test_date_defaults_to_today_in_rome(self, admin_client, ada_booking, db, clock):
         clock.advance(hours=14)  # 2026-07-01 10:00 UTC + 14h = 00:00 on July 2nd in Rome

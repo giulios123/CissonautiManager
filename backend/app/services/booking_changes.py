@@ -289,7 +289,7 @@ def request_cancellation(
         edition_id=booking.edition_id,
         actor_id=actor.id if actor is not None else None,
         booking_id=None if outcome == "removed" else booking.id,
-        outcome=result,
+        outcome=outcome,
         at=now,
         detail=detail,
     )

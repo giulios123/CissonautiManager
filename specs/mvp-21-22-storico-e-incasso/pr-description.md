@@ -8,12 +8,12 @@
 
 ## Verifiche automatiche
 
-- [x] Suite backend completa: 1106 test passati.
-- [x] Suite frontend: 407 test passati; lint, TypeScript e build passati.
+- [x] Suite backend completa: 1112 test passati.
+- [x] Suite frontend: 410 test passati; lint, TypeScript e build passati.
 - [x] Ruff e formattazione backend passati.
 - [x] Migrazioni SQLite da zero e da `0019` verificate.
 - [x] Verifica SQL Server confermata dal maintainer.
-- [ ] CI della PR completata.
+- [ ] CI della PR aggiornata dopo le correzioni Copilot completata.
 
 ## Collaudo per gli organizzatori
 

@@ -15,18 +15,25 @@ type Entry = {
   outcome: "removed" | "requested";
 };
 
-type Page = { items: Entry[]; total: number };
+type Page = { items: Entry[]; has_more: boolean };
+type Cursor = { at: string; id: number };
 
 export function AdminCancellations() {
   const t = useT();
   const [query, setQuery] = useState("");
-  const [offset, setOffset] = useState(0);
+  const [cursors, setCursors] = useState<(Cursor | null)[]>([null]);
+  const [pageIndex, setPageIndex] = useState(0);
   const [page, setPage] = useState<Page | null>(null);
   const [failed, setFailed] = useState(false);
+  const cursor = cursors[pageIndex] ?? null;
 
   useEffect(() => {
     let cancelled = false;
-    const params = new URLSearchParams({ q: query, offset: String(offset), limit: "50" });
+    const params = new URLSearchParams({ q: query, limit: "50" });
+    if (cursor) {
+      params.set("before_at", cursor.at);
+      params.set("before_id", String(cursor.id));
+    }
     api<Page>(`/api/admin/registrations/cancellations?${params}`)
       .then((result) => {
         if (!cancelled) {
@@ -40,7 +47,7 @@ export function AdminCancellations() {
     return () => {
       cancelled = true;
     };
-  }, [query, offset]);
+  }, [query, cursor]);
 
   return (
     <main className="wide">
@@ -52,7 +59,8 @@ export function AdminCancellations() {
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
-            setOffset(0);
+            setCursors([null]);
+            setPageIndex(0);
           }}
         />
       </label>
@@ -101,15 +109,23 @@ export function AdminCancellations() {
           <nav aria-label={t("cancellations.pagination")}>
             <button
               type="button"
-              disabled={offset === 0}
-              onClick={() => setOffset(Math.max(0, offset - 50))}
+              disabled={pageIndex === 0}
+              onClick={() => setPageIndex((current) => Math.max(0, current - 1))}
             >
               {t("cancellations.previous")}
             </button>
             <button
               type="button"
-              disabled={offset + page.items.length >= page.total}
-              onClick={() => setOffset(offset + 50)}
+              disabled={!page.has_more || page.items.length === 0}
+              onClick={() => {
+                const last = page.items.at(-1);
+                if (!last) return;
+                setCursors((current) => [
+                  ...current.slice(0, pageIndex + 1),
+                  { at: last.at, id: last.id },
+                ]);
+                setPageIndex((current) => current + 1);
+              }}
             >
               {t("cancellations.next")}
             </button>

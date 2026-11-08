@@ -22,6 +22,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   working = false,
+  cancelDisabled = false,
   confirmDisabled = false,
   error = null,
   onConfirm,
@@ -33,6 +34,7 @@ export function ConfirmDialog({
   confirmLabel: string;
   cancelLabel?: string;
   working?: boolean;
+  cancelDisabled?: boolean;
   confirmDisabled?: boolean;
   error?: string | null;
   onConfirm: () => void;
@@ -47,13 +49,14 @@ export function ConfirmDialog({
 
   useEffect(() => {
     cancelRef.current?.focus();
-    return () => returnFocusTo?.current?.focus();
+    const target = returnFocusTo?.current;
+    return () => target?.focus();
   }, [returnFocusTo]);
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
       event.stopPropagation();
-      onCancel();
+      if (!cancelDisabled) onCancel();
       return;
     }
     if (event.key !== "Tab") return;
@@ -90,7 +93,13 @@ export function ConfirmDialog({
           </p>
         )}
         <div className="actions">
-          <button type="button" className="secondary" ref={cancelRef} onClick={onCancel}>
+          <button
+            type="button"
+            className="secondary"
+            ref={cancelRef}
+            disabled={cancelDisabled}
+            onClick={onCancel}
+          >
             {cancelLabel ?? t("dialog.back")}
           </button>
           <button

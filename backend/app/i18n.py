@@ -266,6 +266,16 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Il saldo è cambiato. Aggiorna i dati prima di registrare il pagamento.",
         "en": "The balance changed. Refresh the details before recording the payment.",
     },
+    "payment.retry_conflict": {
+        "it": (
+            "Questo tentativo è già associato a un pagamento diverso. "
+            "Ripeti la richiesta originale senza modificarla."
+        ),
+        "en": (
+            "This attempt is already linked to a different payment. "
+            "Retry the original request without changing it."
+        ),
+    },
     "payment.already_voided": {
         "it": "Questo pagamento è già annullato",
         "en": "This payment is already voided",
