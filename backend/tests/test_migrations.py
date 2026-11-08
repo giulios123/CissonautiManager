@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
@@ -207,6 +209,110 @@ def test_migration_0017_keeps_legacy_policy_and_payment_notice_without_repricing
     assert preserved == 1350 and legacy_due is not None
     assert "confirmation_policy" not in edition_columns
     assert "registration_fee_cents" not in booking_columns
+
+
+def test_migration_0019_imports_legacy_privacy_proofs_without_inventing_locale(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0017")
+    engine = make_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO edition (name, start_date, end_date, morning_start, morning_end,"
+                " afternoon_start, afternoon_end, evening_start, evening_end, default_capacity,"
+                " hold_days, base_fee_cents, per_day_fee_cents, is_active, waitlist_percent,"
+                " lunch_price_cents, dinner_price_cents, confirmation_policy)"
+                " VALUES ('Camp', '2026-07-13', '2026-07-17', '09:00:00', '13:00:00',"
+                " '14:00:00', '18:00:00', '19:00:00', '00:00:00', 25, 3, 1000, 100,"
+                " 1, 20, 800, 1200, 'legacy_total')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO participant (first_name, last_name, email, personal_code, role,"
+                " locale, created_at) VALUES ('Ada', 'Lovelace', 'ada@example.com', 'CSC-AAAA',"
+                " 'participant', 'it', '2026-07-01 10:00:00')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO legal_document (edition_id, kind, version, body, published_at)"
+                " VALUES (1, 'privacy', 1, 'Legacy privacy text', '2026-07-01 09:00:00')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO legal_document (edition_id, kind, version, body, published_at)"
+                " VALUES (1, 'disclaimer', 1, 'Legacy disclaimer', '2026-07-01 09:00:00')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO slot (edition_id, date, period, start_time, end_time, capacity)"
+                " VALUES (1, '2026-07-13', 'morning', '09:00:00', '13:00:00', 25)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO booking (edition_id, participant_id, status, hold_expires_at,"
+                " hold_started_at, amount_due_cents, confirmation_cycle,"
+                " confirmation_claimed_cycle, privacy_document_id, privacy_accepted_at,"
+                " disclaimer_document_id, disclaimer_accepted_at, created_at) VALUES"
+                " (1, 1, 'in_attesa_pagamento', '2026-07-04 10:00:00',"
+                " '2026-07-01 10:00:00', 1100, 0, 0, 1, '2026-07-01 10:00:00', 2,"
+                " '2026-07-01 10:00:00', '2026-07-01 10:00:00')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO waitlist_entry (slot_id, participant_id, created_at,"
+                " privacy_document_id, privacy_accepted_at, disclaimer_document_id,"
+                " disclaimer_accepted_at, promoted_as_plus_one) VALUES"
+                " (1, 1, '2026-07-02 10:00:00', 1, '2026-07-01 10:00:00', 2,"
+                " '2026-07-01 10:00:00', 0)"
+            )
+        )
+
+    command.upgrade(alembic_config, "0019")
+    with engine.connect() as connection:
+        events = connection.execute(
+            text(
+                "SELECT edition_id, participant_id, kind, action, document_id, locale,"
+                " recorded_at, source FROM consent_event WHERE kind = 'privacy'"
+            )
+        ).all()
+        attempt_columns = {
+            column["name"] for column in inspect(connection).get_columns("privacy_notice_attempt")
+        }
+    engine.dispose()
+
+    assert len(events) == 1
+    assert tuple(events[0][:6]) == (1, 1, "privacy", "accepted", 1, None)
+    recorded_at = events[0][6]
+    if isinstance(recorded_at, datetime):
+        recorded_at = recorded_at.isoformat(sep=" ", timespec="microseconds")
+    assert recorded_at == "2026-07-01 10:00:00.000000"
+    assert events[0][7] == "legacy_import"
+    assert {"attempted_at", "participant_id", "document_id"} <= attempt_columns
+
+    command.downgrade(alembic_config, "0017")
+    engine = make_engine(database_url)
+    with engine.connect() as connection:
+        assert "privacy_notice_attempt" not in inspect(connection).get_table_names()
+        assert (
+            connection.execute(
+                text("SELECT COUNT(*) FROM consent_event WHERE kind = 'privacy'")
+            ).scalar_one()
+            == 0
+        )
+        locale = next(
+            column
+            for column in inspect(connection).get_columns("consent_event")
+            if column["name"] == "locale"
+        )
+        assert locale["nullable"] is False
+    engine.dispose()
 
 
 def test_migration_0003_fills_hold_started_at_from_created_at(

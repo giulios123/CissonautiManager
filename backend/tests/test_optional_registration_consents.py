@@ -3,6 +3,7 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.models import (
+    OPTIONAL_CONSENT_KINDS,
     STATUS_EXPIRED,
     ConsentEvent,
     LegalDocument,
@@ -10,6 +11,14 @@ from app.models import (
     Slot,
 )
 from tests.helpers import d, payload
+
+
+def optional_events(db):
+    return db.scalars(
+        select(ConsentEvent)
+        .where(ConsentEvent.kind.in_(OPTIONAL_CONSENT_KINDS))
+        .order_by(ConsentEvent.id)
+    ).all()
 
 
 def publish_optional_documents(db, edition):
@@ -61,7 +70,7 @@ def test_new_registration_records_each_optional_choice_once_for_the_person(
     )
 
     assert response.status_code == 201
-    events = db.scalars(select(ConsentEvent).order_by(ConsentEvent.id)).all()
+    events = optional_events(db)
     assert [(event.kind, event.action) for event in events] == [
         ("attendance", "granted"),
         ("media", "declined"),
@@ -97,10 +106,10 @@ def test_waitlist_only_registration_records_the_same_pair_without_a_booking(
 
     assert response.status_code == 201
     assert response.json()["result"] == "waitlisted"
-    assert len(db.scalars(select(ConsentEvent)).all()) == 2
+    assert len(optional_events(db)) == 2
     person = db.scalar(select(Participant).where(Participant.email == "ada@example.com"))
     assert person is not None
-    assert all(event.participant_id == person.id for event in db.scalars(select(ConsentEvent)))
+    assert all(event.participant_id == person.id for event in optional_events(db))
 
 
 def test_omitted_optional_choices_leave_no_event(client, db, edition, slot_ids):
@@ -112,7 +121,7 @@ def test_omitted_optional_choices_leave_no_event(client, db, edition, slot_ids):
     )
 
     assert response.status_code == 201
-    assert db.scalars(select(ConsentEvent)).all() == []
+    assert optional_events(db) == []
 
 
 def test_full_slot_rolls_back_person_booking_and_optional_events(
@@ -129,7 +138,7 @@ def test_full_slot_rolls_back_person_booking_and_optional_events(
 
     assert response.status_code == 409
     assert db.scalar(select(Participant).where(Participant.email == "ada@example.com")) is None
-    assert db.scalars(select(ConsentEvent)).all() == []
+    assert optional_events(db) == []
 
 
 def test_new_optional_text_published_after_form_load_requires_refresh(
@@ -158,7 +167,7 @@ def test_new_optional_text_published_after_form_load_requires_refresh(
 
     assert response.status_code == 409
     assert db.scalar(select(Participant).where(Participant.email == "ada@example.com")) is None
-    assert db.scalars(select(ConsentEvent)).all() == []
+    assert optional_events(db) == []
 
 
 def test_existing_active_account_cannot_change_choices_or_recover_its_code(
@@ -194,8 +203,13 @@ def test_existing_active_account_cannot_change_choices_or_recover_its_code(
     assert "CSC-" not in response.text
     assert "ada@example.com" not in response.text
     assert "Ada" not in response.text
-    db.refresh(db.scalar(select(ConsentEvent)))
-    assert db.scalar(select(ConsentEvent)).action == "granted"
+    event = db.scalar(
+        select(ConsentEvent).where(
+            ConsentEvent.participant_id == ada.id,
+            ConsentEvent.kind == "attendance",
+        )
+    )
+    assert event is not None and event.action == "granted"
 
 
 def test_returning_existing_account_gets_personal_code_only_by_email(
@@ -223,4 +237,4 @@ def test_returning_existing_account_gets_personal_code_only_by_email(
     assert old.participant.personal_code not in response.text
     assert len(outbox.sent) == 1
     assert old.participant.personal_code in outbox.sent[0].body
-    assert db.scalars(select(ConsentEvent)).all() == []
+    assert optional_events(db) == []

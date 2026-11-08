@@ -388,6 +388,14 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Il testo completo in italiano e inglese non è disponibile.",
         "en": "The complete text in Italian and English is unavailable.",
     },
+    "privacy.acceptance_required": {
+        "it": "Leggi e accetta la nuova informativa privacy prima di modificare l'iscrizione.",
+        "en": "Read and accept the updated privacy notice before changing your registration.",
+    },
+    "privacy.version_changed": {
+        "it": "L'informativa è cambiata. Ricarica la pagina e leggi la versione corrente.",
+        "en": "The privacy notice has changed. Reload the page and read the current version.",
+    },
     "contribution.title_required": {
         "it": "Scrivi un titolo per il tuo contributo",
         "en": "Write a title for your contribution",

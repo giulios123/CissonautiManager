@@ -93,7 +93,10 @@ def test_revoke_remains_available_after_new_document_and_booking_removal(
     assert response.status_code == 200, response.text
     assert response.json()["consents"][0]["action"] == "withdrawn"
     events = db.scalars(
-        select(ConsentEvent).where(ConsentEvent.participant_id == participant.id)
+        select(ConsentEvent).where(
+            ConsentEvent.participant_id == participant.id,
+            ConsentEvent.kind == "attendance",
+        )
     ).all()
     assert [(event.action, event.document_id) for event in events] == [
         ("granted", docs["attendance"].id),
@@ -113,7 +116,10 @@ def test_stale_choice_conflicts_and_does_not_append(consent_member, db):
     assert client.put("/api/me/consents/attendance", json=payload).status_code == 200
     response = client.put("/api/me/consents/attendance", json={**payload, "granted": False})
     assert response.status_code == 409
-    assert db.query(ConsentEvent).filter_by(participant_id=participant.id).count() == 1
+    assert (
+        db.query(ConsentEvent).filter_by(participant_id=participant.id, kind="attendance").count()
+        == 1
+    )
 
 
 def test_admin_can_read_waitlist_only_person_history(

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
-import { ConsentPanel, type ConsentCollection } from "./consents";
+import { AdminConsentHistory, ConsentPanel, type ConsentCollection } from "./consents";
 import { I18nProvider } from "./i18n";
 
 const document = {
@@ -134,5 +134,46 @@ describe("optional consent form", () => {
     const yes = (await screen.findAllByRole("radio", { name: "Sì, acconsento" }))[0];
     expect(yes).not.toBeChecked();
     expect(screen.getByText(/Il testo è cambiato/)).toBeInTheDocument();
+  });
+});
+
+describe("organizer privacy history", () => {
+  it("shows the recorded language and labels legacy language as unknown", async () => {
+    const history = {
+      ...empty,
+      privacy_current_version: 2,
+      privacy_accepted_version: 1,
+      privacy_acceptance_required: true,
+      privacy_history: [
+        {
+          id: 1,
+          locale: "it",
+          recorded_at: "2026-07-01T10:00:00Z",
+          source: "self_service",
+          document: { ...document, version: 2 },
+        },
+        {
+          id: 2,
+          locale: null,
+          recorded_at: "2026-07-01T11:00:00Z",
+          source: "legacy_import",
+          document: { ...document, version: 1 },
+        },
+      ],
+    } satisfies ConsentCollection;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(history), { status: 200 })),
+    );
+    render(
+      <I18nProvider locale="it">
+        <AdminConsentHistory participantId={7} />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Mostra storico consensi" }));
+
+    const rows = await screen.findAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("lingua IT");
+    expect(rows[1]).toHaveTextContent("lingua non registrata");
   });
 });

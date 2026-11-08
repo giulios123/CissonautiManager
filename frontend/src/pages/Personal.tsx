@@ -10,6 +10,7 @@ import { StatusBadge } from "../StatusBadge";
 import { CollectionDetails } from "../collection";
 import { PresenceSummary } from "../PresenceSummary";
 import { ConsentPanel } from "../consents";
+import { PrivacyAcceptancePanel } from "../privacy";
 import { CancelBooking, type CancelOutcome } from "./CancelBooking";
 import { ActivityPicker } from "./ActivityPicker";
 import { Contributions } from "./Contributions";
@@ -256,11 +257,13 @@ function BookingCard({
   me,
   reload,
   onCancelled,
+  privacyRequired,
 }: {
   booking: BookingView;
   me: Me;
   reload: () => Promise<void>;
   onCancelled: (outcome: CancelOutcome) => Promise<void>;
+  privacyRequired: boolean;
 }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
@@ -317,9 +320,14 @@ function BookingCard({
           type="button"
           className="secondary"
           aria-expanded={editing}
+          disabled={privacyRequired}
           onClick={() => setEditing((value) => !value)}
         >
-          {editing ? t("me.closeEdit") : t("me.editPresences")}
+          {privacyRequired
+            ? t("privacy.blocked")
+            : editing
+              ? t("me.closeEdit")
+              : t("me.editPresences")}
         </button>
       )}
       {pending && (
@@ -372,12 +380,17 @@ function BookingCard({
               type="button"
               className="secondary"
               aria-expanded={editingMeals}
+              disabled={privacyRequired}
               onClick={() => setEditingMeals((value) => !value)}
             >
-              {editingMeals ? t("me.closeMeals") : t("me.chooseMeals")}
+              {privacyRequired
+                ? t("privacy.blocked")
+                : editingMeals
+                  ? t("me.closeMeals")
+                  : t("me.chooseMeals")}
             </button>
           )}
-          {editingMeals && booking.editable && (
+          {editingMeals && booking.editable && !privacyRequired && (
             <MealEditor
               booking={booking}
               lunchCents={me.lunch_price_cents ?? 0}
@@ -408,12 +421,17 @@ function BookingCard({
               type="button"
               className="secondary"
               aria-expanded={editingActivities}
+              disabled={privacyRequired}
               onClick={() => setEditingActivities((value) => !value)}
             >
-              {editingActivities ? t("me.closeActivities") : t("me.chooseActivities")}
+              {privacyRequired
+                ? t("privacy.blocked")
+                : editingActivities
+                  ? t("me.closeActivities")
+                  : t("me.chooseActivities")}
             </button>
           )}
-          {editingActivities && booking.editable && (
+          {editingActivities && booking.editable && !privacyRequired && (
             <ActivityPicker booking={booking} offers={me.activities ?? []} onSaved={reload} />
           )}
         </section>
@@ -440,7 +458,7 @@ function BookingCard({
           {booking.can_cancel && <CancelBooking booking={booking} onDone={onCancelled} />}
         </div>
       )}
-      {editing && booking.editable && (
+      {editing && booking.editable && !privacyRequired && (
         <SlotEditor
           booking={booking}
           onSaved={reload}
@@ -572,10 +590,19 @@ export function Personal() {
               me={me}
               reload={reload}
               onCancelled={onCancelled}
+              privacyRequired={Boolean(me.privacy_acceptance_required)}
             />
           ))}
-      {me.bookings.some((b) => b.editable) && <Contributions me={me} editable reload={reload} />}
-      <Waitlist me={me} reload={reload} />
+      {me.privacy_associated && <PrivacyAcceptancePanel onRefresh={reload} />}
+      {me.bookings.some((b) => b.editable) && (
+        <Contributions
+          me={me}
+          editable={!me.privacy_acceptance_required}
+          readOnly={Boolean(me.privacy_acceptance_required)}
+          reload={reload}
+        />
+      )}
+      <Waitlist me={me} reload={reload} privacyRequired={Boolean(me.privacy_acceptance_required)} />
       <ConsentPanel />
       <PasswordForm hasPassword={me.has_password} />
       <p>

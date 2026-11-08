@@ -13,7 +13,16 @@ from app.config import Settings
 from app.db import Base, make_engine
 from app.email import EmailMessage, EmailSender
 from app.main import create_app
-from app.models import ROLE_ADMIN, ROLE_PARTICIPANT, STATUS_PENDING, Booking, Participant, Slot
+from app.models import (
+    DOC_PRIVACY,
+    ROLE_ADMIN,
+    ROLE_PARTICIPANT,
+    STATUS_PENDING,
+    Booking,
+    ConsentEvent,
+    Participant,
+    Slot,
+)
 from app.services import edition as edition_service
 from app.services.passwords import hash_password
 
@@ -183,6 +192,19 @@ def make_booking(db, edition, clock):
         booking.slots = list(slots)
         db.add(booking)
         db.commit()
+        db.add(
+            ConsentEvent(
+                edition_id=edition.id,
+                participant_id=participant.id,
+                kind=DOC_PRIVACY,
+                action="accepted",
+                document_id=privacy.id,
+                locale="it",
+                recorded_at=clock(),
+                source="self_service",
+            )
+        )
+        db.commit()
         return booking
 
     return _make
@@ -245,6 +267,19 @@ def add_entry(db, edition):
             disclaimer_accepted_at=at,
         )
         db.add(entry)
+        db.commit()
+        db.add(
+            ConsentEvent(
+                edition_id=edition.id,
+                participant_id=participant.id,
+                kind=DOC_PRIVACY,
+                action="accepted",
+                document_id=privacy.id,
+                locale="it",
+                recorded_at=at,
+                source="self_service",
+            )
+        )
         db.commit()
         return entry
 

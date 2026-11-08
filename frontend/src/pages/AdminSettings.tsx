@@ -639,6 +639,7 @@ function LegalSection({
   return (
     <form onSubmit={submit} aria-labelledby={`${kind}-title`}>
       <h3 id={`${kind}-title`}>{title}</h3>
+      {kind === "privacy" && <p className="notice">{t("privacy.publishedNotice")}</p>}
       <p>{version ? t("set.currentVersion", { n: version }) : t("set.noText")}</p>
       {legacy && current && (
         <div className="notice">

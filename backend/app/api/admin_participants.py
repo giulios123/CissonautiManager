@@ -16,6 +16,7 @@ from app.services import audit as audit_service
 from app.services import consents as consent_service
 from app.services import edition as edition_service
 from app.services import plus_one as plus_one_service
+from app.services import privacy as privacy_service
 
 router = APIRouter(
     prefix="/api/admin/participants", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -61,10 +62,31 @@ class OptionalConsentView(BaseModel):
     events: list[ConsentEventView]
 
 
+class PrivacyDocumentView(BaseModel):
+    id: int
+    version: int
+    body: str
+    body_it: str | None
+    body_en: str | None
+    is_legacy: bool
+
+
+class PrivacyAcceptanceView(BaseModel):
+    id: int
+    locale: str | None
+    recorded_at: datetime
+    source: str
+    document: PrivacyDocumentView
+
+
 class ConsentCollectionView(BaseModel):
     edition_id: int
     associated: bool
     consents: list[OptionalConsentView]
+    privacy_current_version: int | None = None
+    privacy_accepted_version: int | None = None
+    privacy_acceptance_required: bool = False
+    privacy_history: list[PrivacyAcceptanceView] = []
 
 
 class ParticipantProfileIn(BaseModel):
@@ -222,4 +244,34 @@ def get_participant_consents(
     snapshot = consent_service.collection_snapshot(db, edition, participant)
     if not snapshot["associated"]:
         raise HTTPException(status_code=404, detail=t("consent.association_not_found"))
-    return ConsentCollectionView.model_validate(snapshot)
+    current = edition_service.latest_legal_document(db, edition, "privacy")
+    latest = privacy_service.latest_acceptance(db, edition, participant)
+    history = privacy_service.acceptance_history(db, edition, participant)
+    return ConsentCollectionView.model_validate(
+        {
+            **snapshot,
+            "privacy_current_version": current.version if current else None,
+            "privacy_accepted_version": latest.document.version if latest else None,
+            "privacy_acceptance_required": privacy_service.acceptance_required(
+                db, edition, participant
+            ),
+            "privacy_history": [
+                {
+                    "id": event.id,
+                    "locale": event.locale,
+                    "recorded_at": event.recorded_at,
+                    "source": event.source,
+                    "document": {
+                        "id": event.document.id,
+                        "version": event.document.version,
+                        "body": event.document.body,
+                        "body_it": event.document.body_it,
+                        "body_en": event.document.body_en,
+                        "is_legacy": event.document.body_it is None
+                        or event.document.body_en is None,
+                    },
+                }
+                for event in history
+            ],
+        }
+    )

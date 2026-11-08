@@ -1,6 +1,12 @@
 # Progress
 
-## MVP 19 · Profilo completo e iscritti precedenti — implementato sul branch
+## MVP 20 · Nuova accettazione privacy — implementato sul branch
+
+La migrazione `0019` trasforma gli snapshot legali legacy in prove versionate con lingua sconosciuta e crea il vincolo per il singolo tentativo email, dopo la migrazione `0018` del profilo partecipante già presente in `main`. Accettazione autenticata e storico sono disponibili per partecipanti e organizzatori; le scritture limitate vengono protette anche lato API. Nuovi account accettano durante la registrazione; gli account noti restano in sospeso finché non confermano dopo il login. Il job orario invia una richiesta IT/EN per versione e non la ripete.
+
+Verificati 30 test backend mirati (privacy, migrazioni SQLite con upgrade/downgrade, registrazione e consensi), 401 test frontend completi e 3 test mirati sulla versione finale del pannello; Ruff, formattazione, ESLint/Prettier, TypeScript, build e controllo guide IT/EN passati. ESLint segnala il warning preesistente in `ConfirmDialog.tsx`; Vite segnala il bundle principale sopra 500 kB. La suite backend completa è stata interrotta al 19% dopo circa dieci minuti per la lentezza del runner nel sandbox. SQL Server non è configurato nella sessione e il socket Docker non è accessibile; la checklist manuale per gli organizzatori è in [`pr-description.md`](../specs/mvp-20-riaccettazione-privacy/pr-description.md). Nessun deploy, email reale o pubblicazione dei testi legali definitivi eseguiti.
+
+## MVP 19 · Profilo completo e iscritti precedenti — presente in main
 
 Branch `feat/mvp-19-profilo-completo`; implementati i requisiti in `specs/mvp-19-profilo-completo/`. Migrazione 0018 aggiuntiva; profili annuali separati dai contatti; ricerca locale di 7.893 comuni italiani e 249 paesi; iscrizione e sola lista richiedono il profilo; account esistenti non si aggiornano anonimamente; API di completamento autenticato e correzione admin con audit; guide IT/EN aggiornate.
 

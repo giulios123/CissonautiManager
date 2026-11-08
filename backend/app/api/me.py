@@ -5,22 +5,31 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.public import _MUNICIPALITIES, ChannelPublic, LegalPublic
 from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
 from app.config import Settings
 from app.db import get_db
-from app.deps import current_user, get_email_sender, get_now, get_settings_dep
+from app.deps import (
+    current_user,
+    get_email_sender,
+    get_now,
+    get_settings_dep,
+    require_privacy_acceptance,
+)
 from app.domain.profile import InvalidProfileValue, validate_geography, validate_social_profiles
 from app.email import EmailSender
 from app.i18n import channel_label, t
 from app.models import (
     DOC_HEALTH,
+    DOC_PRIVACY,
     STATUS_CONFIRMED,
     Booking,
+    ConsentEvent,
     Contribution,
     Edition,
+    LegalDocument,
     Participant,
     ParticipantEditionProfile,
     WaitlistEntry,
@@ -32,6 +41,7 @@ from app.services import contributions as contributions_service
 from app.services import edition as edition_service
 from app.services import health as health_service
 from app.services import meals as meals_service
+from app.services import privacy as privacy_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
 from app.services.passwords import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
@@ -79,6 +89,8 @@ class MeOut(BaseModel):
     # What the person wrote at registration under "cosa puoi portare al camp?".
     can_bring: str | None = None
     profile_complete: bool = True
+    privacy_associated: bool = False
+    privacy_acceptance_required: bool = False
 
 
 class LocaleIn(BaseModel):
@@ -129,6 +141,39 @@ class ConsentUpdateIn(BaseModel):
     version: int | None = None
     locale: Literal["it", "en"]
     expected_event_id: int | None
+
+
+class PrivacyDocumentView(BaseModel):
+    id: int
+    version: int
+    body: str
+    body_it: str | None
+    body_en: str | None
+    is_legacy: bool
+
+
+class PrivacyAcceptanceView(BaseModel):
+    id: int
+    locale: str | None
+    recorded_at: datetime
+    source: str
+    document: PrivacyDocumentView
+
+
+class PrivacyStateView(BaseModel):
+    edition_id: int | None
+    associated: bool
+    required: bool
+    current_document: PrivacyDocumentView | None
+    accepted_document_id: int | None
+    history: list[PrivacyAcceptanceView]
+
+
+class PrivacyAcceptanceIn(BaseModel):
+    document_id: int
+    version: int
+    locale: Literal["it", "en"]
+    accepted: Literal[True]
 
 
 @router.put("/me/locale", status_code=204)
@@ -209,6 +254,10 @@ def get_me(
         lunch_price_cents=edition.lunch_price_cents if edition else None,
         dinner_price_cents=edition.dinner_price_cents if edition else None,
         profile_complete=profile_complete,
+        privacy_associated=(
+            edition is not None and consent_service.has_edition_association(db, edition, user)
+        ),
+        privacy_acceptance_required=privacy_service.acceptance_required(db, edition, user),
     )
 
 
@@ -393,6 +442,104 @@ def get_my_consents(
     return ConsentCollectionView.model_validate(snapshot)
 
 
+def _privacy_document(document: LegalDocument | None) -> PrivacyDocumentView | None:
+    if document is None:
+        return None
+    return PrivacyDocumentView(
+        id=document.id,
+        version=document.version,
+        body=document.body,
+        body_it=document.body_it,
+        body_en=document.body_en,
+        is_legacy=document.body_it is None or document.body_en is None,
+    )
+
+
+def _privacy_state(db: Session, edition: Edition | None, user: Participant) -> PrivacyStateView:
+    if edition is None:
+        return PrivacyStateView(
+            edition_id=None,
+            associated=False,
+            required=False,
+            current_document=None,
+            accepted_document_id=None,
+            history=[],
+        )
+    associated = consent_service.has_edition_association(db, edition, user)
+    current = edition_service.latest_legal_document(db, edition, DOC_PRIVACY)
+    history = list(
+        db.scalars(
+            select(ConsentEvent)
+            .options(joinedload(ConsentEvent.document))
+            .where(
+                ConsentEvent.edition_id == edition.id,
+                ConsentEvent.participant_id == user.id,
+                ConsentEvent.kind == DOC_PRIVACY,
+                ConsentEvent.action == "accepted",
+            )
+            .order_by(ConsentEvent.recorded_at, ConsentEvent.id)
+        )
+    )
+    latest = privacy_service.latest_acceptance(db, edition, user)
+    return PrivacyStateView(
+        edition_id=edition.id,
+        associated=associated,
+        required=privacy_service.acceptance_required(db, edition, user),
+        current_document=_privacy_document(current),
+        accepted_document_id=latest.document_id if latest is not None else None,
+        history=[
+            PrivacyAcceptanceView(
+                id=event.id,
+                locale=event.locale,
+                recorded_at=event.recorded_at,
+                source=event.source,
+                document=_privacy_document(event.document),
+            )
+            for event in history
+        ],
+    )
+
+
+@router.get("/me/privacy", response_model=PrivacyStateView)
+def get_my_privacy(
+    response: Response,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> PrivacyStateView:
+    response.headers["Cache-Control"] = "private, no-store"
+    return _privacy_state(db, edition_service.get_active_edition(db), user)
+
+
+@router.post("/me/privacy/accept", response_model=PrivacyStateView)
+def accept_my_privacy(
+    body: PrivacyAcceptanceIn,
+    response: Response,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> PrivacyStateView:
+    response.headers["Cache-Control"] = "private, no-store"
+    edition = edition_service.get_active_edition(db)
+    if edition is None or not consent_service.has_edition_association(db, edition, user):
+        raise HTTPException(status_code=404, detail=t("consent.association_not_found"))
+    try:
+        privacy_service.accept_current(
+            db,
+            edition,
+            user,
+            document_id=body.document_id,
+            version=body.version,
+            locale=body.locale,
+            now=now,
+            allow_legacy=False,
+        )
+    except privacy_service.PrivacyDocumentConflict as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("privacy.version_changed")) from exc
+    db.commit()
+    return _privacy_state(db, edition, user)
+
+
 @router.put("/me/consents/{kind}", response_model=ConsentCollectionView)
 def update_my_consent(
     kind: str,
@@ -487,7 +634,7 @@ class WaitlistIn(BaseModel):
     slot_id: int
 
 
-@router.post("/me/waitlist", status_code=201)
+@router.post("/me/waitlist", status_code=201, dependencies=[Depends(require_privacy_acceptance)])
 def join_waitlist(
     body: WaitlistIn,
     user: Participant = Depends(current_user),
@@ -536,7 +683,11 @@ class SlotsIn(BaseModel):
     slot_ids: list[int] = Field(max_length=60)
 
 
-@router.put("/me/booking/slots", response_model=None)
+@router.put(
+    "/me/booking/slots",
+    response_model=None,
+    dependencies=[Depends(require_privacy_acceptance)],
+)
 def change_my_slots(
     body: SlotsIn,
     user: Participant = Depends(current_user),
@@ -598,7 +749,7 @@ MEAL_REFUSALS = {
 }
 
 
-@router.put("/me/booking/meals")
+@router.put("/me/booking/meals", dependencies=[Depends(require_privacy_acceptance)])
 def change_my_meals(
     body: MealsIn,
     user: Participant = Depends(current_user),
@@ -679,7 +830,7 @@ def activity_refusal(exc: activity_service.ActivitiesRefused) -> str:
     return t("activities.not_present", names=names)
 
 
-@router.put("/me/booking/activities")
+@router.put("/me/booking/activities", dependencies=[Depends(require_privacy_acceptance)])
 def change_my_activities(
     body: ActivitiesIn,
     user: Participant = Depends(current_user),
@@ -716,7 +867,9 @@ CONTRIBUTION_REFUSALS = {
 }
 
 
-@router.post("/me/contributions", status_code=201)
+@router.post(
+    "/me/contributions", status_code=201, dependencies=[Depends(require_privacy_acceptance)]
+)
 def add_contribution(
     body: ContributionIn,
     user: Participant = Depends(current_user),
@@ -737,7 +890,10 @@ def add_contribution(
     return _contribution_out(contribution)
 
 
-@router.patch("/me/contributions/{contribution_id}")
+@router.patch(
+    "/me/contributions/{contribution_id}",
+    dependencies=[Depends(require_privacy_acceptance)],
+)
 def update_contribution(
     contribution_id: int,
     body: ContributionIn,
@@ -756,7 +912,11 @@ def update_contribution(
     return _contribution_out(contribution)
 
 
-@router.delete("/me/contributions/{contribution_id}", status_code=204)
+@router.delete(
+    "/me/contributions/{contribution_id}",
+    status_code=204,
+    dependencies=[Depends(require_privacy_acceptance)],
+)
 def delete_contribution(
     contribution_id: int,
     user: Participant = Depends(current_user),

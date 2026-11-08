@@ -100,10 +100,12 @@ function ContributionForm({
 export function Contributions({
   me,
   editable,
+  readOnly = false,
   reload,
 }: {
   me: Me;
   editable: boolean;
+  readOnly?: boolean;
   reload: () => Promise<void>;
 }) {
   const t = useT();
@@ -126,13 +128,14 @@ export function Contributions({
     <section className="card" aria-labelledby="contributions-title">
       <h2 id="contributions-title">{t("contrib.heading")}</h2>
       <p>{t("contrib.intro")}</p>
+      {readOnly && <p className="notice">{t("privacy.blocked")}</p>}
       {me.can_bring && (
         <p className="legal">{t("contrib.wroteAtSignup", { text: me.can_bring })}</p>
       )}
       {items.length > 0 && (
         <ul>
           {items.map((item) =>
-            editing === item.id ? (
+            editing === item.id && !readOnly ? (
               <li key={item.id}>
                 <ContributionForm
                   initial={item}
@@ -146,12 +149,16 @@ export function Contributions({
                   <strong>{t(KIND_KEYS[item.kind])}</strong>: {item.title}
                   {item.description && ` (${item.description})`}
                 </span>
-                <button type="button" className="secondary" onClick={() => setEditing(item.id)}>
-                  {t("contrib.edit")}
-                </button>
-                <button type="button" className="secondary" onClick={() => remove(item)}>
-                  {t("contrib.remove")}
-                </button>
+                {!readOnly && (
+                  <>
+                    <button type="button" className="secondary" onClick={() => setEditing(item.id)}>
+                      {t("contrib.edit")}
+                    </button>
+                    <button type="button" className="secondary" onClick={() => remove(item)}>
+                      {t("contrib.remove")}
+                    </button>
+                  </>
+                )}
               </li>
             ),
           )}

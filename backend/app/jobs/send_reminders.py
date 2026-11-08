@@ -14,16 +14,25 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.db import make_engine, make_session_factory, utcnow
 from app.domain.reminders import due_reminder
 from app.email import EmailSender, build_email_sender
-from app.email.templates import reminder_email
-from app.models import STATUS_PENDING, Booking, Edition, PaymentChannel
+from app.email.templates import privacy_renewal_email, reminder_email
+from app.models import (
+    DOC_PRIVACY,
+    STATUS_PENDING,
+    Booking,
+    Edition,
+    Participant,
+    PaymentChannel,
+)
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
+from app.services import privacy as privacy_service
 from app.services import registration as registration_service
 from app.services import waitlist as waitlist_service
 from app.services.amounts import confirmation_due
@@ -40,6 +49,7 @@ class ReminderSummary:
     final: int = 0
     promoted: int = 0
     confirmations: int = 0
+    privacy_notices: int = 0
 
 
 def _claim(db: Session, booking: Booking, kind: str, now: datetime) -> bool:
@@ -155,9 +165,67 @@ def send_due_reminders(
         else:
             summary.mid += 1
     summary.promoted = promote_open_slots(db, sender, settings, now)
+    summary.privacy_notices = send_due_privacy_notices(db, sender, settings, now)
     # Safety net for the confirmation emails whose timer was lost (restart, scale to zero).
     summary.confirmations = send_due_confirmations(db, sender, now, settings)
     return summary
+
+
+def send_due_privacy_notices(
+    db: Session, sender: EmailSender, settings: Settings, now: datetime
+) -> int:
+    """Notify each active participant once about the current privacy version."""
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return 0
+    document = edition_service.latest_legal_document(db, edition, DOC_PRIVACY)
+    if document is None:
+        return 0
+
+    count = 0
+    login_root = f"{settings.app_base_url.rstrip('/')}/login"
+    for participant_id in privacy_service.active_recipient_ids(db, edition, now):
+        try:
+            lock_edition(db, edition.id)
+            db.refresh(edition)
+            current = edition_service.latest_legal_document(db, edition, DOC_PRIVACY)
+            participant = db.get(Participant, participant_id)
+            if (
+                current is None
+                or current.id != document.id
+                or participant is None
+                or not privacy_service.is_active_recipient(db, edition, participant, now)
+            ):
+                db.rollback()
+                continue
+            if not privacy_service.claim_notice_attempt(db, edition, participant, current, now):
+                db.rollback()
+                continue
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            continue
+
+        locale = participant.locale if participant.locale in ("it", "en") else "it"
+        link = f"{login_root}?lang={locale}"
+        try:
+            sender.send(
+                privacy_renewal_email(
+                    participant,
+                    event_name=edition.name,
+                    version=document.version,
+                    link=link,
+                    locale=locale,
+                )
+            )
+        except Exception:
+            logger.exception(
+                "Privacy renewal email attempt failed participant_id=%d document_id=%d",
+                participant.id,
+                document.id,
+            )
+        count += 1
+    return count
 
 
 def promote_open_slots(db: Session, sender: EmailSender, settings: Settings, now: datetime) -> int:
@@ -178,12 +246,14 @@ def main() -> None:
         summary = send_due_reminders(db, sender, settings, utcnow())
     engine.dispose()
     logger.info(
-        "Reminders: examined=%d mid=%d final=%d; waitlist promotions=%d; confirmations=%d",
+        "Reminders: examined=%d mid=%d final=%d; waitlist promotions=%d; confirmations=%d; "
+        "privacy=%d",
         summary.examined,
         summary.mid,
         summary.final,
         summary.promoted,
         summary.confirmations,
+        summary.privacy_notices,
     )
 
 
