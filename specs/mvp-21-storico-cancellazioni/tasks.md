@@ -5,5 +5,5 @@
 - [x] T21-3 Registrare atomicamente disdette autonome e admin con persona, edizione, autore, timestamp ed esito; mantenere una sola voce per evento.
 - [x] T21-4 Aggiungere `GET /api/admin/registrations/cancellations`, filtro per nome/email e paginazione stabile protetta da admin.
 - [x] T21-5 Aggiungere vista e collegamento «Storico cancellazioni» con testi IT/EN, data Europe/Rome e stati accessibili.
-- [ ] T21-6 Aggiornare la cronologia della scheda e le guide admin IT/EN; SQL Server CI ancora da eseguire.
-- [ ] T21-7 Far eseguire al maintainer la sola checklist manuale A6; registrare esiti e checklist PR per gli organizzatori in `progress.md`.
+- [x] T21-6 Aggiornare la cronologia della scheda e le guide admin IT/EN; suite, migrazione SQL Server, Ruff, frontend, build e controllo Guide CI completati.
+- [x] T21-7 Collaudo manuale A6 completato dal maintainer; esiti confermati l'8 novembre 2026.

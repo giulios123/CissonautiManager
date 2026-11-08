@@ -120,13 +120,13 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 21 · Storico delle cancellazioni
 
-- **Stato:** implementato sul branch `feat/mvp-21-storico-cancellazioni`; MVP 20/T20-8 completata. Migrazione SQLite e verifiche automatiche locali passate; SQL Server CI e procedura manuale A6 ancora da eseguire.
+- **Stato:** implementato sul branch `feat/mvp-21-storico-cancellazioni`; suite locale, migrazione SQL Server CI e collaudo manuale A6 confermati completati dal maintainer. Nessun deploy eseguito.
 - **Contenuto:** registro amministrativo delle nuove disdette, consultabile dopo la rimozione della prenotazione, con autore, edizione, data ed esito; migrazione additiva e prova di accettazione esclusivamente manuale A6.
 - **Prima del rilascio:** definire il criterio di conservazione; completare il collaudo manuale della specifica.
 
 ## MVP 22 · Altro importo da «Da incassare»
 
-- **Stato:** implementato sullo stesso branch di lavoro, dopo il codice 21; test SQLite, frontend, lint e build locali passati. Migrazione SQL Server CI e collaudo manuale ancora da eseguire.
+- **Stato:** implementato sullo stesso branch di lavoro; test SQLite, frontend, lint, build, migrazione SQL Server CI e collaudo manuale confermati completati dal maintainer. Nessun deploy eseguito.
 - **Contenuto:** modale per registrare importi parziali, con controllo concorrente del saldo, retry idempotente, annullo entro 10 secondi ed email differita di 30 secondi.
 - **Fatto quando:** un admin aggiorna il saldo dalla lista senza duplicare pagamenti, e il raggiungimento della quota conferma il posto secondo la policy 18 lasciando visibili gli extra dovuti.
 

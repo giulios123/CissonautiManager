@@ -7,4 +7,4 @@
 - [x] T22-5 Gestire conflitto aggiornando lo snapshot senza perdere l'importo digitato e mantenere la chiave sui retry incerti.
 - [x] T22-6 Collegare replay alla scadenza originaria dell'annullo e alla email differita/job.
 - [x] T22-7 Aggiungere test API di snapshot/idempotenza e test UI di invio rapido.
-- [ ] T22-8 Guide IT/EN e verifiche locali completate; SQL Server CI e collaudo manuale restano da eseguire.
+- [x] T22-8 Guide IT/EN, suite, lint, migrazioni SQLite e build completati; SQL Server CI e collaudo manuale confermati dal maintainer l'8 novembre 2026.
