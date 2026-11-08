@@ -80,6 +80,7 @@ export type Me = {
   activities?: ActivityOffer[];
   contributions?: Contribution[];
   can_bring?: string | null;
+  profile_complete?: boolean;
 };
 
 export type Contribution = {

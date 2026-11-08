@@ -21,6 +21,7 @@ from app.models import (
     Edition,
     LegalDocument,
     Participant,
+    ParticipantEditionProfile,
     PaymentChannel,
     Slot,
     WaitlistEntry,
@@ -84,6 +85,17 @@ class RegistrationData:
     locale: str = "it"
     optional_consents: dict[str, OptionalConsentChoice] = field(default_factory=dict)
     consent_locale: str | None = None
+    telegram: str | None = None
+    linkedin: str | None = None
+    city: str | None = None
+    province: str | None = None
+    region: str | None = None
+    country: str | None = None
+    istat_code: str | None = None
+    job_title: str | None = None
+    company: str | None = None
+    expectations: str | None = None
+    attended_previous: bool | None = None
 
 
 @dataclass
@@ -170,11 +182,25 @@ def register(
     participant = existing
     new_participant = participant is None
     if participant is None:
+        required_profile = (
+            data.telegram,
+            data.linkedin,
+            data.city,
+            data.country,
+            data.job_title,
+            data.company,
+            data.expectations,
+            data.attended_previous,
+        )
+        if any(value is None or value == "" for value in required_profile):
+            raise InvalidSlots()
         participant = Participant(
             first_name=data.first_name,
             last_name=data.last_name,
             email=normalize_email(data.email),
             phone=data.phone or None,
+            telegram=data.telegram,
+            linkedin=data.linkedin,
             invited_by=data.invited_by or None,
             can_bring=data.can_bring,
             personal_code=new_unique_personal_code(db),
@@ -182,6 +208,44 @@ def register(
         )
         db.add(participant)
         db.flush()
+        previous = (
+            db.scalar(
+                select(Edition)
+                .where(Edition.end_date < edition.start_date)
+                .order_by(Edition.end_date.desc())
+            )
+            if edition.start_date
+            else None
+        )
+        attended = bool(
+            previous
+            and db.scalar(
+                select(Booking.id)
+                .where(
+                    Booking.participant_id == participant.id,
+                    Booking.edition_id == previous.id,
+                    Booking.status == STATUS_CONFIRMED,
+                )
+                .limit(1)
+            )
+        )
+        db.add(
+            ParticipantEditionProfile(
+                participant_id=participant.id,
+                edition_id=edition.id,
+                city=data.city,
+                province=data.province,
+                region=data.region,
+                country=data.country,
+                istat_code=data.istat_code,
+                job_title=data.job_title,
+                company=data.company,
+                expectations=data.expectations,
+                attended_previous=attended if previous else bool(data.attended_previous),
+                attendance_source="derived" if previous else "declared",
+                previous_edition_id=previous.id if previous else None,
+            )
+        )
 
     booking = None
     if slots:
@@ -218,8 +282,6 @@ def register(
                 consent_service.InvalidConsentKind,
             ) as exc:
                 raise InvalidOptionalConsent() from exc
-    if existing is not None and not existing.phone:
-        existing.phone = data.phone or None
     db.commit()
 
     raw = auth_service.create_magic_link_token(db, participant, now)

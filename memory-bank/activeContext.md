@@ -2,7 +2,9 @@
 
 ## Ora
 
-**2026-11-07 · MVP18 implementato.** Branch `feat/mvp-18-conferma-quota`; T18-1–10 completati. Suite completa backend: 1083 test; suite frontend: 394 test. Build, TypeScript, lint, Ruff e formattazione passati; resta il warning ESLint già presente in `ConfirmDialog.tsx` e il bundle Vite sopra 500 kB. Il maintainer conferma superate tutte le prove SQL; le verifiche manuali restano aperte in entrambe le checklist. MVP17 T17-1–6 implementati; T17-7/8 e i collaudi visivi telefono/desktop/iframe restano aperti. Nessun deploy o attivazione reale della nuova politica eseguiti. Nessun testo legale definitivo pubblicato.
+**2026-11-08 · MVP 19 implementato sul branch `feat/mvp-19-profilo-completo`.** Migrazione additiva 0018, profilo annuale e contatti social, cataloghi locali ISTAT/ISO, campi obbligatori anche per sola lista, API personali/admin e richiamo legacy non bloccante; guide IT/EN e spec complete in `specs/mvp-19-profilo-completo/`. Suite backend completa: 1091 passate prima degli ultimi aggiustamenti; 71 test mirati backend dopo le validazioni e 16 test profilo/migrazione dopo la correzione del catalogo; suite frontend completa 399 passata, con 72 test mirati UI/lingua verdi. Build, TypeScript, lint, Ruff e guida passano. Restano le prove visuali telefono/desktop/tastiera/iframe e la verifica SQL Server CI. Nessun deploy o email reale.
+
+**MVP 18** risulta implementato sul branch `feat/mvp-18-conferma-quota`; suite completa backend 1083 e frontend 394 nella verifica precedente. Le checklist manuali di 17/18 restano aperte. Nessun deploy o attivazione reale della nuova politica eseguiti. Nessun testo legale definitivo pubblicato.
 
 **2026-11-07 · Spec esecutive MVP 17 e 18 pronte e in implementazione (B1).** Richiesta esplicita del maintainer di preparare entrambe: [17 · Consensi e riservatezza](../specs/mvp-17-consensi-riservatezza/requirements.md) con 8 task, design, microtesti IT/EN e prove manuali; [18 · Conferma con la sola quota](../specs/mvp-18-conferma-quota/requirements.md) con 10 task, design e prove manuali. Il codice 17 è in lavorazione; nessun deploy o invio reale eseguito.
 

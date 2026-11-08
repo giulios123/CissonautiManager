@@ -1,6 +1,9 @@
+import json
+import unicodedata
 from datetime import date, datetime, time
 from hashlib import sha256
 from itertools import groupby
+from pathlib import Path
 from typing import Annotated, Literal, Self
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -35,6 +38,51 @@ from app.services.seats import expire_overdue, free_by_slot
 from app.timefmt import format_slot
 
 router = APIRouter(prefix="/api/public", tags=["public"])
+
+_MUNICIPALITIES = json.loads(
+    (Path(__file__).resolve().parents[1] / "assets" / "municipalities.json").read_text(
+        encoding="utf-8"
+    )
+)["municipalities"]
+_COUNTRIES = json.loads(
+    (Path(__file__).resolve().parents[1] / "assets" / "countries.json").read_text(encoding="utf-8")
+)["countries"]
+
+
+def _fold(value: str) -> str:
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value.casefold())
+        if not unicodedata.combining(char)
+    )
+
+
+class MunicipalityOut(BaseModel):
+    name: str
+    province: str
+    region: str
+    istat_code: str
+
+
+class CountryOut(BaseModel):
+    code: str
+    name: str
+
+
+@router.get("/countries", response_model=list[CountryOut])
+def list_countries() -> list[dict]:
+    return _COUNTRIES
+
+
+@router.get("/municipalities", response_model=list[MunicipalityOut])
+def search_municipalities(q: Annotated[str, Query(min_length=2, max_length=100)]) -> list[dict]:
+    query = _fold(q.strip())
+    if not query:
+        return []
+    matches = [item for item in _MUNICIPALITIES if query in _fold(item["name"])]
+    matches.sort(key=lambda item: (_fold(item["name"]), item["province"]))
+    return matches[:20]
+
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 
@@ -107,6 +155,23 @@ class RegistrationIn(BaseModel):
     last_name: Name
     email: EmailStr
     phone: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+    telegram: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    linkedin: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+    city: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    province: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+    region: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+    country: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    istat_code: Annotated[str, StringConstraints(strip_whitespace=True, max_length=12)] | None = (
+        None
+    )
+    job_title: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)
+    ]
+    company: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    expectations: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)
+    ]
+    attended_previous: bool
     invited_by: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None = (
         None
     )
@@ -135,6 +200,31 @@ class RegistrationIn(BaseModel):
             raise ValueError(t("register.privacy_required"))
         if not self.accept_disclaimer:
             raise ValueError(t("register.disclaimer_required"))
+        telegram = self.telegram.strip().casefold()
+        if telegram not in {"none", "non possiedo", "i don't have it"} and not (
+            self.telegram.strip().startswith("@")
+        ):
+            raise ValueError(t("profile.invalid_telegram"))
+        linkedin = self.linkedin.strip().casefold()
+        if linkedin not in {
+            "none",
+            "non possiedo",
+            "i don't have it",
+        } and not self.linkedin.strip().startswith("https://www.linkedin.com/"):
+            raise ValueError(t("profile.invalid_linkedin"))
+        if self.istat_code:
+            municipality = next(
+                (m for m in _MUNICIPALITIES if m["istat_code"] == self.istat_code), None
+            )
+            if (
+                municipality is None
+                or self.country.casefold() not in {"italia", "italy"}
+                or _fold(municipality["name"]) != _fold(self.city)
+                or municipality["province"] != (self.province or "")
+            ):
+                raise ValueError(t("profile.invalid_municipality"))
+        elif self.country.casefold() in {"italia", "italy"} and not self.province:
+            raise ValueError(t("profile.province_required"))
         return self
 
 

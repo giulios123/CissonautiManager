@@ -22,6 +22,8 @@ import { legalTextForLocale, type LegalDocumentText } from "../legalText";
 import { DayPicker } from "./DayPicker";
 
 type Channel = { code: string; label: string; instructions: string };
+type Municipality = { name: string; province: string; region: string; istat_code: string };
+type Country = { code: string; name: string };
 type Legal = LegalDocumentText & { version: number };
 type OptionalConsentText = { id: number; version: number; texts: Record<"it" | "en", string> };
 type OptionalConsentKind = "attendance" | "media";
@@ -77,6 +79,13 @@ export function Registration() {
   >({ attendance: null, media: null });
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [region, setRegion] = useState("");
+  const [istatCode, setIstatCode] = useState("");
+  const [country, setCountry] = useState("Italia");
+  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -108,6 +117,24 @@ export function Registration() {
       .then(setEdition)
       .catch(() => setLoadError(true));
   }, []);
+
+  useEffect(() => {
+    void api<Country[]>("/api/public/countries")
+      .then((items) => setCountries(Array.isArray(items) ? items : []))
+      .catch(() => setCountries([]));
+  }, []);
+
+  useEffect(() => {
+    if (city.trim().length < 2) {
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      void api<Municipality[]>(`/api/public/municipalities?q=${encodeURIComponent(city)}`)
+        .then((items) => setMunicipalities(Array.isArray(items) ? items : []))
+        .catch(() => setMunicipalities([]));
+    }, 180);
+    return () => window.clearTimeout(timeout);
+  }, [city]);
 
   useEffect(() => {
     if (error) errorRef.current?.focus();
@@ -255,6 +282,17 @@ export function Registration() {
           last_name: text("last_name"),
           email: text("email"),
           phone: text("phone").trim(),
+          telegram: text("telegram").trim(),
+          linkedin: text("linkedin").trim(),
+          city: text("city").trim(),
+          province: text("province").trim() || null,
+          region: region || null,
+          country: text("country").trim(),
+          istat_code: istatCode || null,
+          job_title: text("job_title").trim(),
+          company: text("company").trim(),
+          expectations: text("expectations").trim(),
+          attended_previous: text("attended_previous") === "yes",
           invited_by: text("invited_by") || null,
           can_bring: text("can_bring"),
           locale,
@@ -418,6 +456,110 @@ export function Registration() {
                 pattern=".*\S.*"
                 maxLength={50}
               />
+            </label>
+            <label>
+              {t("profile.telegram")}
+              <input
+                name="telegram"
+                required
+                maxLength={100}
+                placeholder="@username / Non possiedo"
+              />
+            </label>
+            <label>
+              {t("profile.linkedin")}
+              <input
+                name="linkedin"
+                required
+                maxLength={500}
+                placeholder="https://www.linkedin.com/in/... / Non possiedo"
+              />
+            </label>
+            <label>
+              {t("profile.city")}
+              <input
+                name="city"
+                required
+                maxLength={200}
+                list="municipality-options"
+                value={city}
+                onChange={(event) => {
+                  setCity(event.currentTarget.value);
+                  setIstatCode("");
+                  setProvince("");
+                  setRegion("");
+                }}
+                onBlur={() => {
+                  const match = municipalities.find(
+                    (item) => `${item.name} — ${item.province}` === city,
+                  );
+                  if (match) {
+                    setCity(match.name);
+                    setProvince(match.province);
+                    setRegion(match.region);
+                    setIstatCode(match.istat_code);
+                  }
+                }}
+              />
+              <datalist id="municipality-options">
+                {city.trim().length >= 2 &&
+                  municipalities.map((item) => (
+                    <option
+                      key={item.istat_code}
+                      value={`${item.name} — ${item.province}`}
+                      label={item.region}
+                    />
+                  ))}
+              </datalist>
+              <small>{t("profile.cityHint")}</small>
+            </label>
+            <label>
+              {t("profile.province")}
+              <input
+                name="province"
+                maxLength={100}
+                required={["italia", "italy"].includes(country.trim().toLowerCase()) && !istatCode}
+                value={province}
+                onChange={(event) => setProvince(event.currentTarget.value)}
+              />
+            </label>
+            <label>
+              {t("profile.country")}
+              <input
+                name="country"
+                required
+                maxLength={100}
+                list="country-options"
+                value={country}
+                onChange={(event) => setCountry(event.currentTarget.value)}
+              />
+              <datalist id="country-options">
+                {countries.map((item) => (
+                  <option key={item.code} value={item.name} />
+                ))}
+              </datalist>
+            </label>
+            <label>
+              {t("profile.jobTitle")}
+              <input name="job_title" required maxLength={200} />
+            </label>
+            <label>
+              {t("profile.company")}
+              <input name="company" required maxLength={200} placeholder={t("profile.noCompany")} />
+            </label>
+            <label>
+              {t("profile.expectations")}
+              <textarea name="expectations" required maxLength={4000} rows={3} />
+            </label>
+            <label>
+              {t("profile.previous")}
+              <select name="attended_previous" required defaultValue="">
+                <option value="" disabled>
+                  {t("profile.choose")}
+                </option>
+                <option value="yes">{t("common.yes")}</option>
+                <option value="no">{t("common.no")}</option>
+              </select>
             </label>
             <label>
               {t("reg.invitedBy")}

@@ -1,20 +1,29 @@
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.public import ChannelPublic, LegalPublic
+from app.api.public import _MUNICIPALITIES, ChannelPublic, LegalPublic, _fold
 from app.api.schemas import ActivityOffer, BookingView, activity_offers, booking_view
 from app.config import Settings
 from app.db import get_db
 from app.deps import current_user, get_email_sender, get_now, get_settings_dep
 from app.email import EmailSender
 from app.i18n import channel_label, t
-from app.models import DOC_HEALTH, Booking, Contribution, Edition, Participant, WaitlistEntry
+from app.models import (
+    DOC_HEALTH,
+    STATUS_CONFIRMED,
+    Booking,
+    Contribution,
+    Edition,
+    Participant,
+    ParticipantEditionProfile,
+    WaitlistEntry,
+)
 from app.services import activities as activity_service
 from app.services import booking_changes
 from app.services import consents as consent_service
@@ -68,6 +77,7 @@ class MeOut(BaseModel):
     contributions: list[ContributionOut] = []
     # What the person wrote at registration under "cosa puoi portare al camp?".
     can_bring: str | None = None
+    profile_complete: bool = True
 
 
 class LocaleIn(BaseModel):
@@ -158,6 +168,27 @@ def get_me(
             )
             for c in registration_service.enabled_channels(db, edition)
         ]
+    profile = (
+        db.scalar(
+            select(ParticipantEditionProfile).where(
+                ParticipantEditionProfile.participant_id == user.id,
+                ParticipantEditionProfile.edition_id == edition.id,
+            )
+        )
+        if edition
+        else None
+    )
+    profile_complete = edition is None or bool(
+        user.phone
+        and user.telegram
+        and user.linkedin
+        and profile
+        and (
+            profile.country.casefold() not in {"italia", "italy"}
+            or profile.istat_code
+            or profile.province
+        )
+    )
     return MeOut(
         id=user.id,
         first_name=user.first_name,
@@ -176,7 +207,188 @@ def get_me(
         can_bring=user.can_bring,
         lunch_price_cents=edition.lunch_price_cents if edition else None,
         dinner_price_cents=edition.dinner_price_cents if edition else None,
+        profile_complete=profile_complete,
     )
+
+
+class ProfileIn(BaseModel):
+    phone: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+    telegram: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    linkedin: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+    city: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    province: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+    region: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+    country: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    istat_code: Annotated[str, StringConstraints(strip_whitespace=True, max_length=12)] | None = (
+        None
+    )
+    job_title: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)
+    ]
+    company: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    expectations: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)
+    ]
+    attended_previous: bool
+
+
+@router.get("/me/profile")
+def get_my_profile(user: Participant = Depends(current_user), db: Session = Depends(get_db)):
+    edition = edition_service.get_active_edition(db)
+    profile = (
+        db.scalar(
+            select(ParticipantEditionProfile).where(
+                ParticipantEditionProfile.participant_id == user.id,
+                ParticipantEditionProfile.edition_id == edition.id,
+            )
+        )
+        if edition
+        else None
+    )
+    previous = (
+        db.scalar(
+            select(Edition)
+            .where(
+                Edition.end_date < edition.start_date,
+            )
+            .order_by(Edition.end_date.desc())
+        )
+        if edition and edition.start_date
+        else None
+    )
+    values = (
+        {
+            "city": profile.city,
+            "province": profile.province,
+            "region": profile.region,
+            "country": profile.country,
+            "istat_code": profile.istat_code,
+            "job_title": profile.job_title,
+            "company": profile.company,
+            "expectations": profile.expectations,
+            "attended_previous": profile.attended_previous,
+            "attendance_source": profile.attendance_source,
+            "previous_edition_id": profile.previous_edition_id,
+        }
+        if profile
+        else {}
+    )
+    missing = (
+        [
+            key
+            for key, value in {
+                "phone": user.phone,
+                "telegram": user.telegram,
+                "linkedin": user.linkedin,
+                "city": values.get("city"),
+                "country": values.get("country"),
+                "job_title": values.get("job_title"),
+                "company": values.get("company"),
+                "expectations": values.get("expectations"),
+                "attended_previous": values.get("attended_previous"),
+                "province": (
+                    values.get("province")
+                    if values.get("country", "").casefold() in {"italia", "italy"}
+                    and not values.get("istat_code")
+                    else True
+                ),
+            }.items()
+            if value is None or value == ""
+        ]
+        if edition
+        else []
+    )
+    return {
+        "edition_id": edition.id if edition else None,
+        "complete": not missing,
+        "missing_fields": missing,
+        "profile": values or None,
+        "phone": user.phone,
+        "telegram": user.telegram,
+        "linkedin": user.linkedin,
+        "previous_edition_id": previous.id if previous else None,
+    }
+
+
+@router.put("/me/profile", status_code=204)
+def update_my_profile(
+    body: ProfileIn, user: Participant = Depends(current_user), db: Session = Depends(get_db)
+) -> None:
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        raise HTTPException(status_code=409, detail=t("profile.no_active_edition"))
+    if body.telegram.strip().lower() not in {
+        "none",
+        "non possiedo",
+    } and not body.telegram.strip().startswith("@"):
+        raise HTTPException(status_code=422, detail=t("profile.invalid_telegram"))
+    if body.linkedin.strip().lower() not in {
+        "none",
+        "non possiedo",
+        "i don't have it",
+    } and not body.linkedin.startswith("https://www.linkedin.com/"):
+        raise HTTPException(status_code=422, detail=t("profile.invalid_linkedin"))
+    if body.istat_code:
+        municipality = next(
+            (item for item in _MUNICIPALITIES if item["istat_code"] == body.istat_code), None
+        )
+        if (
+            municipality is None
+            or body.country.casefold() not in {"italia", "italy"}
+            or _fold(municipality["name"]) != _fold(body.city)
+            or municipality["province"] != (body.province or "")
+        ):
+            raise HTTPException(status_code=422, detail=t("profile.invalid_municipality"))
+    elif body.country.casefold() in {"italia", "italy"} and not body.province:
+        raise HTTPException(status_code=422, detail=t("profile.province_required"))
+    values = body.model_dump()
+    user.phone = values.pop("phone").strip()
+    user.telegram = values.pop("telegram").strip()
+    user.linkedin = values.pop("linkedin").strip()
+    previous = (
+        db.scalar(
+            select(Edition)
+            .where(Edition.end_date < edition.start_date)
+            .order_by(Edition.end_date.desc())
+        )
+        if edition.start_date
+        else None
+    )
+    confirmed_previous = bool(
+        previous
+        and db.scalar(
+            select(Booking.id)
+            .where(
+                Booking.participant_id == user.id,
+                Booking.edition_id == previous.id,
+                Booking.status == STATUS_CONFIRMED,
+            )
+            .limit(1)
+        )
+    )
+    if confirmed_previous:
+        values["attended_previous"] = True
+    existing = db.scalar(
+        select(ParticipantEditionProfile).where(
+            ParticipantEditionProfile.participant_id == user.id,
+            ParticipantEditionProfile.edition_id == edition.id,
+        )
+    )
+    if existing is None:
+        existing = ParticipantEditionProfile(
+            participant_id=user.id,
+            edition_id=edition.id,
+            attendance_source="derived" if confirmed_previous else "declared",
+            previous_edition_id=previous.id if previous else None,
+            **values,
+        )
+        db.add(existing)
+    else:
+        for key, value in values.items():
+            setattr(existing, key, value)
+        existing.attendance_source = "derived" if confirmed_previous else "declared"
+        existing.previous_edition_id = previous.id if previous else None
+    db.commit()
 
 
 @router.get("/me/consents", response_model=ConsentCollectionView)

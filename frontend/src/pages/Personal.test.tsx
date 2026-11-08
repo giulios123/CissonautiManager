@@ -101,6 +101,19 @@ function openAt(handler: (url: string, init?: RequestInit) => Reply, locale: Loc
   return calls;
 }
 
+describe("profile completion", () => {
+  it("lists the server-reported fields that need an answer", async () => {
+    openAt((url) =>
+      url === "/api/me/profile"
+        ? { body: { complete: false, missing_fields: ["phone", "company"], profile: null } }
+        : { body: me([booking()]) },
+    );
+    expect(
+      await screen.findByText("Dati da completare: Telefono, Azienda (oppure Nessuna azienda)"),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("personal attendance summary", () => {
   it("shows seven complete days in seven rows", async () => {
     const dates = [

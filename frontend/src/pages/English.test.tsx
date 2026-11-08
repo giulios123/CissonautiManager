@@ -125,6 +125,17 @@ describe("the app in English", () => {
     await user.type(screen.getByLabelText("What can you bring to the camp?"), "A talk");
     await user.click(screen.getByLabelText("I have read and accept the privacy notice"));
     await user.click(screen.getByLabelText("I have read and accept the liability waiver"));
+    for (const [name, value] of Object.entries({
+      telegram: "@ada",
+      linkedin: "I don't have it",
+      city: "Turin",
+      country: "Italy",
+      job_title: "Engineer",
+      company: "No company",
+      expectations: "Meet people",
+    }))
+      await user.type(document.querySelector(`[name="${name}"]`)!, value);
+    await user.selectOptions(document.querySelector("[name=attended_previous]")!, "no");
     await user.click(screen.getByRole("button", { name: "Sign up" }));
     await waitFor(() =>
       expect(calls.find((c) => c.url === "/api/public/registrations")?.body).toMatchObject({

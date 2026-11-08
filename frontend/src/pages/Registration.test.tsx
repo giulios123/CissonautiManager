@@ -109,6 +109,27 @@ function renderPage(path = "/register", locale: Locale = "it") {
   );
 }
 
+async function fillProfile(user: ReturnType<typeof userEvent.setup>) {
+  const fields: Record<string, string> = {
+    telegram: "@ada",
+    linkedin: "Non possiedo",
+    city: "Torino",
+    province: "TO",
+    country: "Italia",
+    job_title: "Matematica",
+    company: "Nessuna azienda",
+    expectations: "Conoscere persone",
+  };
+  for (const [name, value] of Object.entries(fields)) {
+    const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+      `[name="${name}"]`,
+    );
+    if (input && !input.value) await user.type(input, value);
+  }
+  const previous = document.querySelector<HTMLSelectElement>('[name="attended_previous"]');
+  if (previous && !previous.value) await user.selectOptions(previous, "no");
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -256,6 +277,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Scegli almeno uno slot");
     expect(calls.filter((c) => c.url.includes("registrations"))).toHaveLength(0);
@@ -310,6 +332,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
 
     expect(await screen.findByRole("heading", { name: "Iscrizione ricevuta" })).toBeInTheDocument();
@@ -363,6 +386,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText("What can you bring to the camp?"), "A talk");
     await user.click(screen.getByLabelText("I have read and accept the privacy notice"));
     await user.click(screen.getByLabelText("I have read and accept the liability waiver"));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Sign up" }));
 
     const sent = calls.find((call) => call.url === "/api/public/registrations")?.body as Record<
@@ -410,6 +434,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
 
     const confirmation = await screen.findByRole("main");
@@ -453,6 +478,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
 
     const confirmation = await screen.findByRole("main");
@@ -492,6 +518,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
 
     expect(
@@ -519,6 +546,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
 
     expect(await screen.findByRole("heading", { name: "Sei già iscritto" })).toBeInTheDocument();
@@ -544,6 +572,7 @@ describe("Registration page", () => {
     await user.type(screen.getByLabelText(/Cosa puoi portare/), "Un talk");
     await user.click(screen.getByLabelText(/informativa privacy$/));
     await user.click(screen.getByLabelText(/scarico di responsabilità$/));
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("al completo"));
   });
@@ -587,6 +616,7 @@ describe("waitlist in the registration form", () => {
     await user.click(full);
     expect(screen.getByText(/Solo lista d'attesa/)).toBeInTheDocument();
     await fillIn(user);
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
     expect(
       await screen.findByRole("heading", { name: "Sei in lista d'attesa" }),
@@ -646,6 +676,7 @@ describe("waitlist in the registration form", () => {
     // The waitlisted slot is not in the fee: only Monday morning is booked.
     expect(screen.getByText(/Quota da versare/)).toHaveTextContent("11,00");
     await fillIn(user);
+    await fillProfile(user);
     await user.click(screen.getByRole("button", { name: "Iscriviti" }));
     expect(await screen.findByRole("heading", { name: "In lista d'attesa" })).toBeInTheDocument();
     expect(screen.getByText(/sei 2° in lista/)).toBeInTheDocument();
