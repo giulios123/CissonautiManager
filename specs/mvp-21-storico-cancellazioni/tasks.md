@@ -1,6 +1,6 @@
 # MVP 21 · Task
 
-- [x] T21-1 Confermare la spec e l'ordine di rilascio; rinviare il criterio di conservazione a prima del rilascio in produzione.
+- [x] T21-1 Confermare la spec e l'ordine di rilascio; il maintainer ha scelto un anno dalla cancellazione.
 - [x] T21-2 Estendere il modello audit con migrazione additiva `0020`; verificare upgrade/downgrade SQLite da zero e da `0019`.
 - [x] T21-3 Registrare atomicamente disdette autonome e admin con persona, edizione, autore, timestamp ed esito; mantenere una sola voce per evento.
 - [x] T21-4 Aggiungere `GET /api/admin/registrations/cancellations`, filtro per nome/email e paginazione stabile protetta da admin.

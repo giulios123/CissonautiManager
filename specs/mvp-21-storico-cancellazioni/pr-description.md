@@ -10,5 +10,5 @@
 ## Collaudo per gli organizzatori
 
 - [x] Collaudo manuale A6 completato dal maintainer.
-- [ ] Prima del merge su `main`, definire e registrare il criterio di conservazione da applicare al registro.
+- [x] Conservazione scelta dal maintainer: un anno dalla cancellazione, applicato dal job orario.
 - [ ] Dopo il deploy, verificare che la vista sia disponibile solo agli admin e che le nuove disdette siano trovabili dopo la rimozione.

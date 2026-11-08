@@ -6,7 +6,7 @@ Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche S
 
 ## MVP 21 e 22 · Implementazione in verifica
 
-Implementati sul branch `feat/mvp-21-storico-cancellazioni`: registro admin delle nuove disdette, modale d'incasso rapido con snapshot e retry idempotente, guide IT/EN e migrazioni `0020`/`0021`. Backend 1105 test, frontend 407 test, Ruff, ESLint/Prettier e build verdi. Il maintainer conferma completati anche SQL Server e collaudi manuali di entrambi gli MVP. Per il type-check, il modulo `presenceSummary.ts` è stato rinominato `presence-summary.ts` per evitare la collisione di maiuscole/minuscole sul filesystem locale. Per il 21 resta da definire il criterio di conservazione prima del rilascio in produzione. Nessun deploy effettuato.
+Implementati sul branch `feat/mvp-21-storico-cancellazioni`: registro admin delle nuove disdette, conservazione per un anno con pulizia nel job orario, modale d'incasso rapido con snapshot e retry idempotente, guide IT/EN e migrazioni `0020`/`0021`. Backend 1105 test prima dell'ultima prova di conservazione, frontend 407 test, Ruff, ESLint/Prettier e build verdi. Il maintainer conferma completati anche SQL Server e collaudi manuali di entrambi gli MVP. Il nuovo test della pulizia e i test reminder passano. Per il type-check, il modulo `presenceSummary.ts` è stato rinominato `presence-summary.ts` per evitare la collisione di maiuscole/minuscole sul filesystem locale. Nessun deploy effettuato.
 
 ## MVP 20 · Nuova accettazione privacy — implementato sul branch
 

@@ -21,4 +21,4 @@ Come organizzatore voglio trovare le disdette anche dopo la rimozione della pren
 
 ## Limiti e accettazione
 
-Si registra solo ciò che serve per persona, edizione, autore, data ed esito. Le voci pregresse restano nelle cronologie già esistenti e non vengono importate nel nuovo elenco. A6 si accetta esclusivamente tramite la procedura manuale del maintainer. Il criterio di conservazione va definito prima del rilascio in produzione; la spec e il collaudo possono essere completati prima.
+Si registra solo ciò che serve per persona, edizione, autore, data ed esito. Le voci pregresse restano nelle cronologie già esistenti e non vengono importate nel nuovo elenco. Le nuove voci si conservano per un anno dalla cancellazione e il job orario rimuove quelle che hanno raggiunto tale data. A6 si accetta esclusivamente tramite la procedura manuale del maintainer.

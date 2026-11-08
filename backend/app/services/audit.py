@@ -1,4 +1,6 @@
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models import AuditLog, Participant
@@ -34,6 +36,22 @@ def cancellation(
     )
     db.add(entry)
     return entry
+
+
+def purge_expired_cancellations(db: Session, now: datetime) -> int:
+    """Remove cancellation history at its one-year anniversary."""
+    try:
+        cutoff = now.replace(year=now.year - 1)
+    except ValueError:
+        cutoff = now.replace(year=now.year - 1, month=2, day=28)
+    result = db.execute(
+        delete(AuditLog).where(
+            AuditLog.outcome.in_(("removed", "requested")),
+            AuditLog.at <= cutoff,
+        )
+    )
+    db.commit()
+    return result.rowcount or 0
 
 
 def history(db: Session, booking_id: int) -> list[tuple[AuditLog, Participant]]:

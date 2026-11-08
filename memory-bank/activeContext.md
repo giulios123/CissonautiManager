@@ -6,7 +6,7 @@
 
 **MVP 19** implementato e ora presente in `main`: profilo annuale e contatti social, cataloghi locali ISTAT/ISO, campi obbligatori anche per sola lista, API personali/admin e richiamo legacy non bloccante; guide IT/EN e spec in `specs/mvp-19-profilo-completo/`. Restano le prove visuali e la verifica SQL Server CI della sessione precedente. Nessun deploy o email reale.
 
-**MVP 21 e 22 · Implementazione sul branch `feat/mvp-21-storico-cancellazioni`.** Storico admin e modale d'incasso rapido implementati; migrazioni `0020`/`0021`, guide IT/EN e test aggiunti. Backend 1105 test e frontend 407 test passati, lint, build, SQL Server e collaudi manuali confermati dal maintainer. Il criterio di conservazione del registro 21 resta da definire prima del rilascio in produzione. Nessun deploy effettuato.
+**MVP 21 e 22 · Implementazione sul branch `feat/mvp-21-storico-cancellazioni`.** Storico admin e modale d'incasso rapido implementati; migrazioni `0020`/`0021`, guide IT/EN e test aggiunti. Backend 1105 test e frontend 407 test passati, lint, build, SQL Server e collaudi manuali confermati dal maintainer. Le voci di cancellazione si conservano un anno dalla disdetta e vengono eliminate dal job orario. Nessun deploy effettuato.
 
 MVP18 resta implementato: backend 1083 test, frontend 394, prove SQL confermate dal maintainer; le procedure manuali e l'attivazione reale sono ancora aperte. Per MVP17 restano collaudo visivo e testi legali definitivi.
 

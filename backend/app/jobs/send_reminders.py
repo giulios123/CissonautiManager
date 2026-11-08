@@ -30,6 +30,7 @@ from app.models import (
     Participant,
     PaymentChannel,
 )
+from app.services import audit as audit_service
 from app.services import edition as edition_service
 from app.services import email_templates as email_templates_service
 from app.services import privacy as privacy_service
@@ -50,6 +51,7 @@ class ReminderSummary:
     promoted: int = 0
     confirmations: int = 0
     privacy_notices: int = 0
+    cancellations_pruned: int = 0
 
 
 def _claim(db: Session, booking: Booking, kind: str, now: datetime) -> bool:
@@ -77,9 +79,10 @@ def _claim(db: Session, booking: Booking, kind: str, now: datetime) -> bool:
 def send_due_reminders(
     db: Session, sender: EmailSender, settings: Settings, now: datetime
 ) -> ReminderSummary:
+    summary = ReminderSummary()
+    summary.cancellations_pruned = audit_service.purge_expired_cancellations(db, now)
     expire_overdue(db, now)
     db.commit()
-    summary = ReminderSummary()
     channels: dict[int, list[PaymentChannel]] = {}
     login_url = f"{settings.app_base_url.rstrip('/')}/login"
 
@@ -247,13 +250,14 @@ def main() -> None:
     engine.dispose()
     logger.info(
         "Reminders: examined=%d mid=%d final=%d; waitlist promotions=%d; confirmations=%d; "
-        "privacy=%d",
+        "privacy=%d; expired cancellations removed=%d",
         summary.examined,
         summary.mid,
         summary.final,
         summary.promoted,
         summary.confirmations,
         summary.privacy_notices,
+        summary.cancellations_pruned,
     )
 
 

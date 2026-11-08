@@ -122,7 +122,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 - **Stato:** implementato sul branch `feat/mvp-21-storico-cancellazioni`; suite locale, migrazione SQL Server CI e collaudo manuale A6 confermati completati dal maintainer. Nessun deploy eseguito.
 - **Contenuto:** registro amministrativo delle nuove disdette, consultabile dopo la rimozione della prenotazione, con autore, edizione, data ed esito; migrazione additiva e prova di accettazione esclusivamente manuale A6.
-- **Prima del rilascio:** definire il criterio di conservazione; completare il collaudo manuale della specifica.
+- **Conservazione:** un anno dalla cancellazione, pulizia automatica nel job orario; collaudo manuale A6 completato.
 
 ## MVP 22 · Altro importo da «Da incassare»
 
