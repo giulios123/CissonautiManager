@@ -284,7 +284,11 @@ export function AdminConsentHistory({ participantId }: { participantId: number }
                     {data.privacy_history!.map((event) => (
                       <li key={event.id}>
                         {t("privacy.version", { version: event.document.version })} ·{" "}
-                        {dateLabel(event.recorded_at, locale)} · {event.source}
+                        {dateLabel(event.recorded_at, locale)} ·{" "}
+                        {event.locale
+                          ? t("privacy.recordedLanguage", { language: event.locale.toUpperCase() })
+                          : t("privacy.languageNotRecorded")}{" "}
+                        · {event.source}
                         <details>
                           <summary>{t("consent.readHistoryText")}</summary>
                           <div className="legal">

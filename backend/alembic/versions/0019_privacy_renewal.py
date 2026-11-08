@@ -91,7 +91,8 @@ def upgrade() -> None:
         sa.column("recorded_at", sa.DateTime()),
         sa.column("source", sa.Unicode(20)),
     )
-    for row in bind.execute(source):
+    legacy_events = bind.execute(source).all()
+    for row in legacy_events:
         bind.execute(
             events.insert().values(
                 edition_id=row.edition_id,

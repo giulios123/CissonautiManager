@@ -268,6 +268,8 @@ export const en: Record<MessageKey, string> = {
   "privacy.accepted": "Accepted",
   "privacy.pending": "Awaiting acceptance",
   "privacy.acceptedVersion": "Most recently accepted version: {version}",
+  "privacy.recordedLanguage": "language {language}",
+  "privacy.languageNotRecorded": "language not recorded",
   "privacy.initialNotice": "Acceptance recorded on the registration form",
   "privacy.blocked": "Read and accept the updated privacy notice to enable this change.",
   "privacy.version": "version {version}",

@@ -190,7 +190,12 @@ def send_due_privacy_notices(
             db.refresh(edition)
             current = edition_service.latest_legal_document(db, edition, DOC_PRIVACY)
             participant = db.get(Participant, participant_id)
-            if current is None or current.id != document.id or participant is None:
+            if (
+                current is None
+                or current.id != document.id
+                or participant is None
+                or not privacy_service.is_active_recipient(db, edition, participant, now)
+            ):
                 db.rollback()
                 continue
             if not privacy_service.claim_notice_attempt(db, edition, participant, current, now):

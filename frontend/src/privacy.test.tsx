@@ -36,12 +36,12 @@ const initial = {
   ],
 };
 
-function renderPanel(onAccepted = vi.fn<() => Promise<void>>()) {
+function renderPanel(onRefresh = vi.fn<() => Promise<void>>()) {
   return {
-    onAccepted,
+    onRefresh,
     ...render(
       <I18nProvider locale="it">
-        <PrivacyAcceptancePanel onAccepted={onAccepted} />
+        <PrivacyAcceptancePanel onRefresh={onRefresh} />
       </I18nProvider>,
     ),
   };
@@ -76,16 +76,17 @@ describe("privacy renewal", () => {
         return new Response(JSON.stringify(body), { status: 200 });
       }),
     );
-    const { onAccepted } = renderPanel();
+    const { onRefresh } = renderPanel();
 
     expect(await screen.findByText("Informativa privacy v2")).toBeInTheDocument();
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
     const checkbox = screen.getByRole("checkbox", { name: /Ho letto e accetto/ });
     expect(checkbox).not.toBeChecked();
     expect(screen.getByRole("button", { name: "Conferma lettura" })).toBeDisabled();
     fireEvent.click(checkbox);
     fireEvent.click(screen.getByRole("button", { name: "Conferma lettura" }));
 
-    await waitFor(() => expect(onAccepted).toHaveBeenCalledOnce());
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(2));
     const accepted = calls.find((call) => call.url === "/api/me/privacy/accept");
     expect(JSON.parse(String(accepted?.init?.body))).toEqual({
       document_id: 8,
@@ -135,5 +136,23 @@ describe("privacy renewal", () => {
     renderPanel();
     expect(await screen.findByText("Testo originale")).toBeInTheDocument();
     expect(screen.queryByText(/non è disponibile in italiano e inglese/)).not.toBeInTheDocument();
+  });
+
+  it("refreshes the parent page when the privacy snapshot changes on focus", async () => {
+    const onRefresh = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(initial), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ...initial, required: false }), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    renderPanel(onRefresh);
+
+    expect(await screen.findByRole("checkbox")).toBeInTheDocument();
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+    fireEvent.focus(window);
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 });

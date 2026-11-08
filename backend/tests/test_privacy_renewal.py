@@ -3,8 +3,16 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.email.templates import privacy_renewal_email
+from app.jobs import send_reminders
 from app.jobs.send_reminders import send_due_privacy_notices
-from app.models import DOC_PRIVACY, Booking, ConsentEvent, Participant, Slot
+from app.models import (
+    DOC_PRIVACY,
+    STATUS_CANCEL_REQUESTED,
+    Booking,
+    ConsentEvent,
+    Participant,
+    Slot,
+)
 from app.services import edition as edition_service
 from app.services import privacy as privacy_service
 from tests.helpers import d, payload
@@ -77,6 +85,7 @@ def test_privacy_api_requires_authenticated_current_version_and_is_idempotent(
     assert admin.status_code == 200
     assert admin.json()["privacy_acceptance_required"] is False
     assert [event["document"]["version"] for event in admin.json()["privacy_history"]] == [1, 2]
+    assert [event["locale"] for event in admin.json()["privacy_history"]] == ["it", "en"]
 
 
 def test_privacy_pending_blocks_edit_apis_but_allows_cancellation(
@@ -210,6 +219,26 @@ def test_failed_privacy_notice_is_not_retried(
     assert len(attempts) == 1
     assert send_due_privacy_notices(db, outbox, settings, clock()) == 0
     assert len(attempts) == 1
+
+
+def test_privacy_notice_rechecks_active_association_under_lock(
+    db, edition, make_participant, make_booking, slot_ids, outbox, settings, clock, monkeypatch
+):
+    participant = make_participant("cancelled@example.com")
+    booking = make_booking(participant, [db.get(Slot, slot_ids[(d(13), "morning")])])
+    publish_privacy_v2(db, edition)
+    db.commit()
+    real_lock = send_reminders.lock_edition
+
+    def cancel_before_eligibility_check(session, edition_id):
+        booking.status = STATUS_CANCEL_REQUESTED
+        session.commit()
+        real_lock(session, edition_id)
+
+    monkeypatch.setattr(send_reminders, "lock_edition", cancel_before_eligibility_check)
+    assert send_due_privacy_notices(db, outbox, settings, clock()) == 0
+    assert outbox.sent == []
+    assert privacy_service.active_recipient_ids(db, edition, clock()) == []
 
 
 def test_privacy_notice_template_is_bilingual_and_requires_login():

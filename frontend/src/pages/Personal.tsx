@@ -593,7 +593,7 @@ export function Personal() {
               privacyRequired={Boolean(me.privacy_acceptance_required)}
             />
           ))}
-      {me.privacy_associated && <PrivacyAcceptancePanel onAccepted={reload} />}
+      {me.privacy_associated && <PrivacyAcceptancePanel onRefresh={reload} />}
       {me.bookings.some((b) => b.editable) && (
         <Contributions
           me={me}

@@ -40,7 +40,7 @@ function dateLabel(value: string, locale: string) {
   }).format(new Date(value));
 }
 
-export function PrivacyAcceptancePanel({ onAccepted }: { onAccepted: () => Promise<void> }) {
+export function PrivacyAcceptancePanel({ onRefresh }: { onRefresh: () => Promise<void> }) {
   const t = useT();
   const { locale } = useI18n();
   const [data, setData] = useState<PrivacyState | null>(null);
@@ -56,7 +56,8 @@ export function PrivacyAcceptancePanel({ onAccepted }: { onAccepted: () => Promi
     if (snapshot.current_document?.id !== currentDocumentId.current) setChecked(false);
     currentDocumentId.current = snapshot.current_document?.id ?? null;
     setError(null);
-  }, []);
+    await onRefresh();
+  }, [onRefresh]);
 
   useEffect(() => {
     const refresh = () => {
@@ -107,7 +108,7 @@ export function PrivacyAcceptancePanel({ onAccepted }: { onAccepted: () => Promi
       });
       setData(snapshot);
       setChecked(false);
-      if (!snapshot.required) await onAccepted();
+      await onRefresh();
     } catch (caught) {
       setError(
         caught instanceof ApiError && caught.status === 409

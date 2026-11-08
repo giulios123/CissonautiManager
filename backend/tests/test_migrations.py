@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
@@ -287,7 +289,10 @@ def test_migration_0019_imports_legacy_privacy_proofs_without_inventing_locale(
 
     assert len(events) == 1
     assert tuple(events[0][:6]) == (1, 1, "privacy", "accepted", 1, None)
-    assert events[0][6] == "2026-07-01 10:00:00.000000"
+    recorded_at = events[0][6]
+    if isinstance(recorded_at, datetime):
+        recorded_at = recorded_at.isoformat(sep=" ", timespec="microseconds")
+    assert recorded_at == "2026-07-01 10:00:00.000000"
     assert events[0][7] == "legacy_import"
     assert {"attempted_at", "participant_id", "document_id"} <= attempt_columns
 

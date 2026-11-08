@@ -268,6 +268,8 @@ export const it = {
   "privacy.accepted": "Accettata",
   "privacy.pending": "In attesa di accettazione",
   "privacy.acceptedVersion": "Ultima versione accettata: {version}",
+  "privacy.recordedLanguage": "lingua {language}",
+  "privacy.languageNotRecorded": "lingua non registrata",
   "privacy.initialNotice": "Accettazione registrata nel modulo al momento dell'iscrizione",
   "privacy.blocked": "Leggi e accetta la nuova informativa per riattivare questa modifica.",
   "privacy.version": "versione {version}",

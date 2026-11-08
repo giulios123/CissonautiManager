@@ -169,6 +169,37 @@ def active_recipient_ids(db: Session, edition: Edition, now: datetime) -> list[i
     return sorted(set(db.scalars(booking_ids).all()) | set(db.scalars(waitlist_ids).all()))
 
 
+def is_active_recipient(
+    db: Session, edition: Edition, participant: Participant, now: datetime
+) -> bool:
+    """Recheck eligibility while holding the edition lock before sending a notice."""
+    active_booking = db.scalar(
+        select(Booking.id)
+        .where(
+            Booking.edition_id == edition.id,
+            Booking.participant_id == participant.id,
+            (Booking.status == STATUS_CONFIRMED)
+            | ((Booking.status == STATUS_PENDING) & (Booking.hold_expires_at > now)),
+        )
+        .limit(1)
+    )
+    if active_booking is not None:
+        return True
+    today = now.astimezone(ZoneInfo("Europe/Rome")).date()
+    active_waitlist = db.scalar(
+        select(WaitlistEntry.id)
+        .join(Slot, Slot.id == WaitlistEntry.slot_id)
+        .where(
+            Slot.edition_id == edition.id,
+            WaitlistEntry.participant_id == participant.id,
+            WaitlistEntry.closed_at.is_(None),
+            Slot.date >= today,
+        )
+        .limit(1)
+    )
+    return active_waitlist is not None
+
+
 def claim_notice_attempt(
     db: Session,
     edition: Edition,
