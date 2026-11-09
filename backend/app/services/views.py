@@ -235,6 +235,7 @@ class MealRow:
     email: str
     day: date
     kind: str
+    included_in_fee: bool
     diet: str | None
     allergies: str | None
 
@@ -268,6 +269,7 @@ def load_meals(db: Session, now: datetime) -> MealData:
                 email=participant.email,
                 day=meal.date,
                 kind=meal.kind,
+                included_in_fee=meal.included_in_fee,
                 diet=booking.diet,
                 allergies=booking.allergies,
             )

@@ -8,11 +8,11 @@ Pubblicare il codice e attivare i pasti compresi per un’edizione sono passaggi
 
 ## Verifiche automatiche
 
-- Backend: 1115 test passati.
-- Frontend: 410 test passati.
+- Backend: 1125 test passati; Ruff e formattazione passati (tre warning di deprecazione nelle dipendenze/runtime).
+- Frontend: 409 test passati nella suite completa.
 - Ruff, formattazione, lint, TypeScript, build e controllo Guide: passati.
-- Migrazione SQLite da zero e dalla revisione precedente: passata.
-- SQL Server: da eseguire; il driver ODBC disponibile su macOS non carica OpenSSL e non consente la connessione al server temporaneo.
+- Migrazioni e test SQL Server: superati dalla CI della PR; la CI valida anche la creazione da zero.
+- Collaudo organizzatori: da eseguire seguendo `test-manuali.md`.
 
 ## Collaudo per gli organizzatori
 

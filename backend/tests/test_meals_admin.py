@@ -50,6 +50,25 @@ def test_admin_sees_diet_and_allergies(admin_client, db, make_participant, make_
     assert (view["diet"], view["allergies"]) == ("vegan", "Arachidi")
 
 
+def test_admin_meal_preview_uses_same_included_meal_calculation(
+    admin_client, db, edition, make_participant, make_booking
+):
+    edition.confirmation_policy = "registration_fee"
+    edition.included_meal_policy = "first_organizer_meal"
+    booking = make_booking(make_participant("preview@example.com"), [slot(db, 13)])
+    db.commit()
+
+    response = admin_client.post(
+        f"/api/admin/registrations/{booking.id}/meals/preview",
+        json={"meals": [{"date": "2026-07-13", "kind": "lunch"}]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["amount_due_cents"] == response.json()["registration_fee_cents"]
+    assert response.json()["included_meals"] == [["2026-07-13", "lunch"]]
+    assert booking.meals == []
+
+
 def test_participants_cannot_use_the_admin_endpoint(
     client, outbox, db, make_participant, make_booking
 ):

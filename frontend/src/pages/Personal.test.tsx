@@ -207,6 +207,16 @@ describe("changing slots", () => {
     (url: string, init?: RequestInit): Reply => {
       if (url === "/api/me") return { body: state.me };
       if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/meals/preview") {
+        const request = JSON.parse(String(init?.body ?? "{}")) as { meals?: unknown[] };
+        return {
+          body: {
+            registration_fee_cents: 1000,
+            amount_due_cents: request.meals?.length ? 2300 : 1100,
+            included_meals: [],
+          },
+        };
+      }
       if (url === "/api/me/booking/slots" && init?.method === "PUT") return { body: booking() };
       return { status: 404, body: {} };
     };
@@ -216,7 +226,7 @@ describe("changing slots", () => {
     const form = await openEditor();
     const [, , tuesday] = form.getAllByRole("group");
     await userEvent.click(within(tuesday).getByRole("checkbox"));
-    expect(form.getByText(/Nuova quota/)).toHaveTextContent(
+    expect(await form.findByText(/Nuova quota/)).toHaveTextContent(
       "Nuova quota: 12,00 € (1,00 € in più di ora)",
     );
     await userEvent.click(within(tuesday).getByRole("checkbox"));
@@ -573,6 +583,16 @@ describe("meals", () => {
     const calls = openAt((url, init) => {
       if (url === "/api/me") return { body: state.me };
       if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/meals/preview") {
+        const request = JSON.parse(String(init?.body ?? "{}")) as { meals?: unknown[] };
+        return {
+          body: {
+            registration_fee_cents: 1000,
+            amount_due_cents: request.meals?.length ? 2300 : 1100,
+            included_meals: [],
+          },
+        };
+      }
       if (url === "/api/me/booking/meals" && init?.method === "PUT") {
         state.me = withMeals([allowed[1]]);
         return { body: state.me.bookings[0] };
@@ -582,9 +602,9 @@ describe("meals", () => {
     expect(await screen.findByText("Nessun pasto scelto.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Scegli pranzi e cene" }));
     const form = within(await screen.findByRole("form", { name: "Scegli pranzi e cene" }));
-    expect(form.getByRole("checkbox", { name: /Pranzo · giorno passato/ })).toBeDisabled();
-    await userEvent.click(form.getByRole("checkbox", { name: "Cena" }));
-    expect(form.getByText(/Nuova quota/)).toHaveTextContent(
+    expect(form.getByRole("checkbox", { name: /Pranzo.*giorno passato/ })).toBeDisabled();
+    await userEvent.click(form.getByRole("checkbox", { name: /^Cena/ }));
+    expect(await form.findByText(/Nuova quota/)).toHaveTextContent(
       "Nuova quota: 23,00 € (12,00 € in più di ora)",
     );
     await userEvent.click(form.getByRole("button", { name: "Salva i pasti" }));
@@ -598,6 +618,10 @@ describe("meals", () => {
     openAt((url, init) => {
       if (url === "/api/me") return { body: withMeals() };
       if (url === "/api/public/edition") return { body: EDITION };
+      if (url === "/api/me/booking/meals/preview")
+        return {
+          body: { registration_fee_cents: 1000, amount_due_cents: 1100, included_meals: [] },
+        };
       if (url === "/api/me/booking/meals" && init?.method === "PUT")
         return {
           status: 422,
@@ -607,8 +631,10 @@ describe("meals", () => {
     });
     await userEvent.click(await screen.findByRole("button", { name: "Scegli pranzi e cene" }));
     const form = within(await screen.findByRole("form", { name: "Scegli pranzi e cene" }));
-    await userEvent.click(form.getByRole("checkbox", { name: /^Pranzo$/ }));
-    await userEvent.click(form.getByRole("button", { name: "Salva i pasti" }));
+    await userEvent.click(form.getAllByRole("checkbox", { name: /^Pranzo/ })[0]);
+    const save = form.getByRole("button", { name: "Salva i pasti" });
+    await waitFor(() => expect(save).toBeEnabled());
+    await userEvent.click(save);
     expect(await form.findByRole("alert")).toHaveTextContent("solo quando sei presente");
   });
 });

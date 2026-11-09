@@ -1,5 +1,7 @@
 """The other emails and the paragraph of the sign-up form that the admin can edit."""
 
+from datetime import date
+
 from sqlalchemy import select
 
 from app.domain.confirmation import POLICY_REGISTRATION_FEE
@@ -12,7 +14,7 @@ from app.email.templates import (
     reminder_email,
     waitlist_promoted_email,
 )
-from app.models import STATUS_CONFIRMED, Edition, EmailTemplate, Slot
+from app.models import STATUS_CONFIRMED, BookingMeal, Edition, EmailTemplate, MealSetting, Slot
 from tests.helpers import payload
 
 KINDS = [
@@ -275,6 +277,34 @@ class TestTemplateFunctions:
         assert "Totale dovuto all'organizzazione: 16,00 €" in email.body
         assert "Resta da saldare all'organizzazione: 4,00 €" in email.body
         assert "Pranzi, cene e attività possono essere pagati dopo." in email.body
+
+    def test_selected_meal_email_explains_organizer_and_provider_collection(
+        self, make_participant, make_booking, db, edition
+    ):
+        booking = self.booking(make_participant, make_booking, db)
+        booking.meals = [
+            BookingMeal(date=date(2026, 7, 13), kind="lunch"),
+            BookingMeal(date=date(2026, 7, 14), kind="dinner"),
+        ]
+        booking.meals[0].included_in_fee = True
+        db.add(
+            MealSetting(
+                edition_id=edition.id,
+                date=date(2026, 7, 14),
+                kind="dinner",
+                payment_mode="provider",
+                price_cents=2400,
+                payment_instructions="Pay the venue by card",
+            )
+        )
+        db.commit()
+        db.refresh(edition)
+
+        email = payment_confirmation_email(booking, 1100)
+
+        assert "Coperto dalla quota di registrazione" in email.body
+        assert "Pagamento in loco al fornitore: 24,00 €" in email.body
+        assert "Pay the venue by card" in email.body
 
     def test_payment_email_does_not_claim_the_fee_is_covered_after_a_price_increase(
         self, make_participant, make_booking, db, edition

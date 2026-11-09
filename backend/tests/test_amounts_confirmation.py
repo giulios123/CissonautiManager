@@ -95,3 +95,70 @@ def test_first_organiser_meal_is_included_and_provider_meal_does_not_consume_it(
     assert total_due == 1000
     assert next(meal for meal in booking.meals if meal.kind == "lunch").included_in_fee is False
     assert next(meal for meal in booking.meals if meal.kind == "dinner").included_in_fee is True
+
+
+def test_free_organizer_meal_is_included_and_later_meal_is_charged(
+    db, edition, make_participant, make_booking
+):
+    edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    edition.included_meal_policy = "first_organizer_meal"
+    booking = make_booking(make_participant(), [], amount_due_cents=0)
+    booking.meals = [
+        BookingMeal(date=date(2026, 7, 13), kind="lunch"),
+        BookingMeal(date=date(2026, 7, 14), kind="dinner"),
+    ]
+    db.add(
+        MealSetting(
+            edition_id=edition.id,
+            date=date(2026, 7, 13),
+            kind="lunch",
+            payment_mode="organizer",
+            price_cents=0,
+        )
+    )
+    db.commit()
+    db.refresh(edition)
+
+    fee, total = calculate_amounts(edition, booking)
+
+    assert fee == 1000
+    assert total == 2200
+    assert next(meal for meal in booking.meals if meal.kind == "lunch").included_in_fee is True
+    assert next(meal for meal in booking.meals if meal.kind == "dinner").included_in_fee is False
+
+
+def test_included_meal_is_reassigned_after_removal_or_recipient_change(
+    db, edition, make_participant, make_booking
+):
+    edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    edition.included_meal_policy = "first_organizer_meal"
+    booking = make_booking(make_participant(), [], amount_due_cents=0)
+    lunch = BookingMeal(date=date(2026, 7, 13), kind="lunch")
+    dinner = BookingMeal(date=date(2026, 7, 13), kind="dinner")
+    booking.meals = [lunch, dinner]
+    db.commit()
+
+    calculate_amounts(edition, booking)
+    assert lunch.included_in_fee and not dinner.included_in_fee
+
+    booking.meals = [dinner]
+    calculate_amounts(edition, booking)
+    assert dinner.included_in_fee
+
+    lunch = BookingMeal(date=date(2026, 7, 13), kind="lunch")
+    booking.meals = [lunch, dinner]
+    db.add(
+        MealSetting(
+            edition_id=edition.id,
+            date=date(2026, 7, 13),
+            kind="lunch",
+            payment_mode="provider",
+            price_cents=500,
+            payment_instructions="Pay on site",
+        )
+    )
+    db.commit()
+    db.refresh(edition)
+
+    calculate_amounts(edition, booking)
+    assert not lunch.included_in_fee and dinner.included_in_fee

@@ -25,7 +25,8 @@ from app.models import (
     slot_sort_key,
 )
 from app.presence_summary import format_presence_summary
-from app.timefmt import format_deadline, format_euro, format_slot
+from app.services.amounts import meal_terms
+from app.timefmt import format_deadline, format_euro, format_meal, format_slot
 
 CARD_CONTENT_ID = "registration-card"
 
@@ -64,10 +65,37 @@ def _slot_lines(slots: list[Slot], loc: str) -> str:
 
 
 def _presence_block(booking: Booking, loc: str) -> str:
-    """Format booked attendance when present; test bookings may have no slots."""
-    if not booking.slots:
-        return ""
-    return format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc) + "\n\n"
+    """Format attendance and collection terms for selected meals."""
+    attendance = (
+        format_presence_summary(booking.slots, booking.slots[0].edition.slots, loc) + "\n\n"
+        if booking.slots
+        else ""
+    )
+    meals = getattr(booking, "meals", [])
+    if not meals:
+        return attendance
+    edition = booking.edition
+    if edition is None:
+        return attendance
+    lines = [t("email.meals.heading", loc)]
+    for meal in sorted(meals, key=lambda item: (item.date, item.kind != "lunch")):
+        terms = meal_terms(edition, meal.date, meal.kind)
+        label = format_meal(meal.date, meal.kind, loc)
+        if meal.included_in_fee:
+            detail = t("email.meals.included", loc)
+        elif terms["payment_mode"] == "provider":
+            detail = t(
+                "email.meals.provider",
+                loc,
+                amount=format_euro(terms["price_cents"], loc),
+                instructions=terms["payment_instructions"] or "",
+            )
+        else:
+            detail = t(
+                "email.meals.organizer", loc, amount=format_euro(terms["collectable_cents"], loc)
+            )
+        lines.append(f"- {label}: {detail}")
+    return attendance + "\n".join(lines) + "\n\n"
 
 
 def _waitlist_section(waitlisted: list[Slot], loc: str) -> str:

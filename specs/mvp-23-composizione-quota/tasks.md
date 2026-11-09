@@ -8,4 +8,4 @@
 - [x] **T23-6** Aggiornare le viste pasti e mostrare il pasto incluso.
 - [x] **T23-7** Aggiornare report e CSV affinché il pasto compreso non sia conteggiato due volte nel dovuto.
 - [x] **T23-8** Aggiornare guide IT/EN.
-- [ ] **T23-9** Suite backend 1115 test, frontend 410 test, Ruff, lint, typecheck, build e controllo Guide verdi; resta il test SQL Server e il collaudo manuale.
+- [x] **T23-9** Suite backend completa, frontend, Ruff, lint, typecheck, build e controllo Guide verdi. SQL Server verificato dalla CI della PR; resta il collaudo manuale degli organizzatori.

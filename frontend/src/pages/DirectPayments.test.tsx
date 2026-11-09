@@ -5,7 +5,7 @@ import type { ActivityOffer, BookingView } from "../auth";
 import { I18nProvider } from "../i18n";
 import { adminMe, renderAt, stubAdminApi } from "../test-utils";
 import { ActivityPicker } from "./ActivityPicker";
-import { MealEditor, mealsPreview } from "./MealEditor";
+import { MealEditor } from "./MealEditor";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -92,17 +92,12 @@ it.each(["it", "en"] as const)(
   },
 );
 
-it("does not add or subtract a delegated meal in the preview", () => {
-  const lunch = { ...direct, date: "2026-07-13", kind: "lunch" as const, label: "Pranzo" };
-  expect(
-    mealsPreview({ ...booking, allowed_meals: [lunch] }, new Set(["2026-07-13:lunch"]), 800, 1200),
-  ).toBe(1100);
-  expect(
-    mealsPreview({ ...booking, meals: [lunch], allowed_meals: [lunch] }, new Set(), 800, 1200),
-  ).toBe(1100);
-});
-
 it("shows a delegated meal's specific cost and instructions before sign-up", () => {
+  stubAdminApi((call) =>
+    call.url.endsWith("/preview")
+      ? { body: { registration_fee_cents: 1000, amount_due_cents: 1100 } }
+      : { status: 404, body: {} },
+  );
   render(
     <MealEditor
       booking={{

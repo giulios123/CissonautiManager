@@ -5,6 +5,7 @@ export type CollectionTerms = {
   price_cents?: number;
   payment_mode?: "organizer" | "provider";
   collectable_cents?: number;
+  included_in_fee?: boolean;
   payment_instructions?: string | null;
 };
 
@@ -13,7 +14,9 @@ export const collectableCents = (terms: CollectionTerms) =>
 
 export function CollectionDetails({ terms }: { terms: CollectionTerms }) {
   const t = useT();
-  if (terms.payment_mode !== "provider") return null;
+  if (terms.included_in_fee) return <span className="legal"> · {t("collection.included")}</span>;
+  if (terms.payment_mode !== "provider")
+    return <span className="legal"> · {t("collection.organizer")}</span>;
   return (
     <span className="legal">
       <br />

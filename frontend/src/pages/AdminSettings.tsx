@@ -432,17 +432,22 @@ function IncludedMealsSection({ edition }: { edition: Edition }) {
               <thead>
                 <tr>
                   <th>{t("set.includedMealPerson")}</th>
+                  <th>{t("set.policyStatusBefore")}</th>
+                  <th>{t("set.policyStatusAfter")}</th>
                   <th>{t("set.includedMealSelected")}</th>
                   <th>{t("money.registrationFee")}</th>
                   <th>{t("set.includedMealTotal")}</th>
                   <th>{t("set.includedMealPaid")}</th>
-                  <th>{t("set.includedMealBalance")}</th>
+                  <th>{t("set.policyBalanceBefore")}</th>
+                  <th>{t("set.policyBalanceAfter")}</th>
                 </tr>
               </thead>
               <tbody>
                 {preview.rows.map((row) => (
                   <tr key={row.booking_id}>
                     <th>{row.name}</th>
+                    <td>{confirmationStatus(row.status_before, t)}</td>
+                    <td>{confirmationStatus(row.status_after, t)}</td>
                     <td>
                       {row.included_meal
                         ? `${row.included_meal[0]} · ${row.included_meal[1]}`
@@ -451,6 +456,7 @@ function IncludedMealsSection({ edition }: { edition: Edition }) {
                     <td>{formatEuro(row.registration_fee_cents)}</td>
                     <td>{formatEuro(row.amount_due_cents)}</td>
                     <td>{formatEuro(row.paid_cents)}</td>
+                    <td>{policyBalance(row.balance_before_cents, t)}</td>
                     <td>{policyBalance(row.balance_after_cents, t)}</td>
                   </tr>
                 ))}
@@ -486,6 +492,7 @@ type BenefitItem = {
 function BenefitsSection() {
   const t = useT();
   const [items, setItems] = useState<BenefitItem[]>([]);
+  const [editing, setEditing] = useState<BenefitItem | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
 
   async function refresh() {
@@ -500,17 +507,19 @@ function BenefitsSection() {
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     try {
-      await api("/api/admin/benefits", {
-        method: "POST",
+      await api(editing ? `/api/admin/benefits/${editing.id}` : "/api/admin/benefits", {
+        method: editing ? "PATCH" : "POST",
         json: {
           name_it: String(data.get("name_it") ?? "").trim(),
           name_en: String(data.get("name_en") ?? "").trim(),
           sort_order: items.length,
         },
       });
-      event.currentTarget.reset();
+      form.reset();
+      setEditing(null);
       await refresh();
     } catch (error) {
       setNotice({ kind: "error", text: errorText(error) });
@@ -531,20 +540,41 @@ function BenefitsSection() {
       <h2 id="benefits-title">{t("set.benefitsTitle")}</h2>
       <p>{t("set.benefitsIntro")}</p>
       <form onSubmit={create}>
+        <h3>{editing ? t("set.benefitEdit") : t("set.benefitAdd")}</h3>
         <label>
           {t("set.benefitIt")}
-          <input name="name_it" required maxLength={200} />
+          <input
+            key={`it-${editing?.id ?? "new"}`}
+            name="name_it"
+            required
+            maxLength={200}
+            defaultValue={editing?.name_it ?? ""}
+          />
         </label>
         <label>
           {t("set.benefitEn")}
-          <input name="name_en" required maxLength={200} />
+          <input
+            key={`en-${editing?.id ?? "new"}`}
+            name="name_en"
+            required
+            maxLength={200}
+            defaultValue={editing?.name_en ?? ""}
+          />
         </label>
-        <button type="submit">{t("set.benefitAdd")}</button>
+        <button type="submit">{editing ? t("set.benefitSave") : t("set.benefitAdd")}</button>
+        {editing && (
+          <button type="button" className="secondary" onClick={() => setEditing(null)}>
+            {t("set.benefitCancel")}
+          </button>
+        )}
       </form>
       <ul>
         {items.map((item) => (
           <li key={item.id}>
             {item.name_it} / {item.name_en}{" "}
+            <button type="button" className="secondary" onClick={() => setEditing(item)}>
+              {t("set.benefitEditAction")}
+            </button>
             {item.retired ? (
               ` · ${t("set.benefitRetired")}`
             ) : (

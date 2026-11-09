@@ -691,6 +691,25 @@ class MealsIn(BaseModel):
     meals: list[MealIn] = Field(max_length=200)
 
 
+@router.post("/{booking_id}/meals/preview")
+def preview_registration_meals(
+    booking_id: int,
+    body: MealsIn,
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> dict:
+    booking = _get_booking(db, booking_id)
+    try:
+        return meals_service.preview_selection(
+            booking, [(meal.date, meal.kind) for meal in body.meals], now, allow_past=True
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(status_code=409, detail=t("booking.not_editable")) from exc
+    except meals_service.MealsRefused as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=t("meals.admin_not_present")) from exc
+
+
 @router.put("/{booking_id}/meals")
 def change_registration_meals(
     booking_id: int,

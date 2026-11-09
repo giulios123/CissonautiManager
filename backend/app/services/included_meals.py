@@ -55,14 +55,20 @@ def preview(db: Session, edition: Edition, policy: str, now: datetime) -> dict:
             None,
         )
         paid = paid_total(booking)
+        registration_fee = booking.registration_fee_cents
+        booking.registration_fee_cents = fee
+        status_after = (
+            STATUS_CONFIRMED
+            if status == STATUS_CONFIRMED or confirmation_covered(edition, booking, paid)
+            else STATUS_PENDING
+        )
+        booking.registration_fee_cents = registration_fee
         rows.append(
             {
                 "booking_id": booking.id,
                 "name": f"{booking.participant.first_name} {booking.participant.last_name}",
                 "status_before": status,
-                "status_after": STATUS_CONFIRMED
-                if status == STATUS_CONFIRMED or confirmation_covered(edition, booking, paid)
-                else STATUS_PENDING,
+                "status_after": status_after,
                 "included_meal": included,
                 "registration_fee_cents": fee,
                 "amount_due_cents": total,
@@ -75,7 +81,7 @@ def preview(db: Session, edition: Edition, policy: str, now: datetime) -> dict:
         for meal in booking.meals:
             meal.included_in_fee = original_flags[booking.id][(meal.date, meal.kind)]
     edition.included_meal_policy = old_policy
-    token = _fingerprint(edition, bookings, policy)
+    token = _fingerprint(edition, bookings, policy, now)
     return {
         "current_policy": old_policy,
         "proposed_policy": policy,
@@ -146,7 +152,7 @@ def _load_bookings(db: Session, edition_id: int) -> list[Booking]:
     )
 
 
-def _fingerprint(edition: Edition, bookings: list[Booking], policy: str) -> str:
+def _fingerprint(edition: Edition, bookings: list[Booking], policy: str, now: datetime) -> str:
     data = [
         policy,
         edition.included_meal_policy,
@@ -170,6 +176,7 @@ def _fingerprint(edition: Edition, bookings: list[Booking], policy: str) -> str:
             [
                 booking.id,
                 booking.status,
+                effective_status(booking.status, booking.hold_expires_at, now),
                 booking.hold_expires_at.isoformat(),
                 booking.amount_due_cents,
                 booking.registration_fee_cents,

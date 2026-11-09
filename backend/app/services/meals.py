@@ -16,7 +16,7 @@ from app.domain.meals import (
 from app.email import EmailSender
 from app.models import STATUS_CONFIRMED, STATUS_PENDING, Booking, BookingMeal, Edition, Participant
 from app.services import audit
-from app.services.amounts import confirmation_covered, recompute_amount
+from app.services.amounts import calculate_meal_selection, confirmation_covered, recompute_amount
 from app.services.booking_changes import ChangeResult, NotEditable
 from app.services.payments import (
     paid_total,
@@ -32,6 +32,31 @@ class MealsRefused(Exception):
         self.reason = reason
         self.meals = meals
         super().__init__(reason)
+
+
+def preview_amounts(edition: Edition, booking: Booking, wanted: Iterable[Meal]) -> dict:
+    """Calculate the same fee and total used by save, without persisting selection changes."""
+    fee, total, included = calculate_meal_selection(edition, booking, list(wanted))
+    return {
+        "registration_fee_cents": fee,
+        "amount_due_cents": total,
+        "included_meals": [included] if included else [],
+    }
+
+
+def preview_selection(
+    booking: Booking, wanted: Iterable[Meal], now: datetime, allow_past=False
+) -> dict:
+    status = effective_status(booking.status, booking.hold_expires_at, now)
+    if not can_edit_slots(status):
+        raise NotEditable()
+    current = meals_of(booking)
+    wanted_set = set(wanted)
+    past_days = {day for day, _ in current | wanted_set if is_past_day(day, now)}
+    check = check_meal_change(current, wanted_set, allowed_for(booking), past_days, allow_past)
+    if not check.ok:
+        raise MealsRefused(check.reason or "not_allowed", check.meals)
+    return preview_amounts(booking.edition, booking, wanted_set)
 
 
 def meals_of(booking: Booking) -> set[Meal]:

@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, vi } from "vitest";
 import { renderAt, stubAdminApi, type Call, type Reply } from "../test-utils";
@@ -39,6 +39,10 @@ const detailFixture = (
 
 function serve(detail: unknown, extra: (call: Call) => Reply | undefined) {
   return stubAdminApi((call) => {
+    if (call.url.endsWith("/meals/preview"))
+      return {
+        body: { registration_fee_cents: 1100, amount_due_cents: 1100, included_meals: [] },
+      };
     const special = extra(call);
     if (special) return special;
     if (call.url === "/api/admin/registrations/7" && call.method === "GET") return { body: detail };
@@ -77,10 +81,12 @@ describe("meals in the admin detail", () => {
     expect(within(section).getByText(/Arachidi \(consenso versione 1\)/)).toBeInTheDocument();
     await userEvent.click(within(section).getByRole("button", { name: "Cambia i pasti" }));
     const form = within(screen.getByRole("form", { name: "Scegli pranzi e cene" }));
-    const lunch = form.getByRole("checkbox", { name: "Pranzo" });
+    const lunch = form.getByRole("checkbox", { name: /^Pranzo/ });
     expect(lunch).toBeEnabled();
     await userEvent.click(lunch);
-    await userEvent.click(form.getByRole("button", { name: "Salva i pasti" }));
+    const save = form.getByRole("button", { name: "Salva i pasti" });
+    await waitFor(() => expect(save).toBeEnabled());
+    await userEvent.click(save);
     expect((await screen.findAllByText("Pasti aggiornati.")).length).toBeGreaterThan(0);
     expect(calls.find((c) => c.method === "PUT")?.body).toEqual({
       meals: [{ date: "2026-07-13", kind: "lunch" }],
