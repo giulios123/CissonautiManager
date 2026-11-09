@@ -146,6 +146,7 @@ def _load_bookings(db: Session, edition_id: int) -> list[Booking]:
                 selectinload(Booking.meals),
                 selectinload(Booking.activities),
                 selectinload(Booking.payments),
+                selectinload(Booking.refunds),
             )
             .execution_options(populate_existing=True)
         )
@@ -195,6 +196,15 @@ def _fingerprint(edition: Edition, bookings: list[Booking], policy: str, now: da
                     )
                     for p in booking.payments
                 ),
+                sorted(
+                    (r.id, r.amount_cents, r.voided_at.isoformat() if r.voided_at else None)
+                    for r in booking.refunds
+                ),
+                [
+                    booking.fee_exempt,
+                    sorted((m.date.isoformat(), m.kind) for m in booking.meals if m.exempt),
+                    sorted(link.activity_id for link in booking.activity_links if link.exempt),
+                ],
             ]
         )
     return hashlib.sha256(json.dumps(data, separators=(",", ":")).encode()).hexdigest()

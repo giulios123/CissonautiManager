@@ -23,6 +23,9 @@ from app.db import Base, UtcDateTime, utcnow
 ROLE_PARTICIPANT = "participant"
 ROLE_ADMIN = "admin"
 
+CATEGORY_ORDINARY = "ordinary"
+CATEGORY_INTERNAL_NON_PAYING = "internal_non_paying"
+
 PAYER_PAYING = "paying"
 PAYER_NON_PAYING = "non_paying"
 PAYERS = (PAYER_PAYING, PAYER_NON_PAYING)
@@ -242,6 +245,11 @@ class Booking(Base):
     confirmation_claimed_cycle: Mapped[int] = mapped_column(Integer, default=0)
     confirmation_notice_due_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     confirmation_notice_payment_id: Mapped[int | None] = mapped_column(Integer)
+    # MVP 25c: a label for the booking, and the fee exempted by an admin. Only the exemptions
+    # change amounts; the category alone changes nothing.
+    category: Mapped[str] = mapped_column(Unicode(24), default=CATEGORY_ORDINARY)
+    fee_exempt: Mapped[bool] = mapped_column(Boolean, default=False)
+    exemption_preview_token: Mapped[str | None] = mapped_column(String(64))
     # Dietary needs. The diet is not health data; allergies are, and need the specific consent.
     diet: Mapped[str | None] = mapped_column(Unicode(16))
     allergies: Mapped[str | None] = mapped_column(UnicodeText)
@@ -269,6 +277,13 @@ class Booking(Base):
     contributions: Mapped[list["Contribution"]] = relationship(
         cascade="all, delete-orphan", order_by="Contribution.id"
     )
+    # Refunds on the active booking (not the one that closes a cancellation, which sits in the
+    # `refund_*` columns above).
+    refunds: Mapped[list["BookingRefund"]] = relationship(
+        back_populates="booking", order_by="BookingRefund.id"
+    )
+    # The association rows of the activities, to read the exemption flag.
+    activity_links: Mapped[list["BookingActivity"]] = relationship(viewonly=True)
 
 
 class BookingSlot(Base):
@@ -287,6 +302,8 @@ class BookingMeal(Base):
     date: Mapped[date] = mapped_column(Date, primary_key=True)
     kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
     included_in_fee: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Exempted by an admin (MVP 25c): worth zero. Lost if the meal is removed and chosen again.
+    exempt: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class MealSetting(Base):
@@ -353,6 +370,7 @@ class BookingActivity(Base):
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
     activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"), primary_key=True)
     joined_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    exempt: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class ExternalGuest(Base):
@@ -515,6 +533,39 @@ class Payment(Base):
     booking: Mapped[Booking] = relationship(back_populates="payments")
 
 
+class BookingRefund(Base):
+    """A refund on a booking that is still active (MVP 25c). Never above the credit; it changes
+    neither the status nor the payments, which stay on record. Voided with a reason, never
+    deleted."""
+
+    __tablename__ = "booking_refund"
+    __table_args__ = (
+        CheckConstraint("amount_cents > 0", name="ck_booking_refund_amount"),
+        Index(
+            "uq_booking_refund_request_key",
+            "request_key",
+            unique=True,
+            mssql_where=text("request_key IS NOT NULL"),
+            sqlite_where=text("request_key IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), index=True)
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    channel: Mapped[str] = mapped_column(Unicode(32))
+    refunded_on: Mapped[date] = mapped_column(Date)
+    note: Mapped[str | None] = mapped_column(UnicodeText)
+    recorded_by_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    voided_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    voided_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
+    void_reason: Mapped[str | None] = mapped_column(UnicodeText)
+    request_key: Mapped[str | None] = mapped_column(Unicode(36))
+
+    booking: Mapped[Booking] = relationship(back_populates="refunds")
+
+
 class MagicLinkToken(Base):
     __tablename__ = "magic_link_token"
 
@@ -597,6 +648,21 @@ class AuditLog(Base):
 def active_payments(booking: Booking) -> list[Payment]:
     """Payments that count: voided ones stay on record but are ignored everywhere."""
     return [p for p in booking.payments if p.voided_at is None]
+
+
+def active_refunds(booking: Booking) -> list[BookingRefund]:
+    """Refunds on the active booking that count (voided ones are left out)."""
+    return [r for r in booking.refunds if r.voided_at is None]
+
+
+def gross_paid_cents(booking: Booking) -> int:
+    """The payments that count, before any refund."""
+    return sum(p.amount_cents for p in active_payments(booking))
+
+
+def net_paid_cents(booking: Booking) -> int:
+    """What counts as paid for balance and confirmation: payments minus refunds (MVP 25c)."""
+    return gross_paid_cents(booking) - sum(r.amount_cents for r in active_refunds(booking))
 
 
 def slot_sort_key(slot: Slot) -> tuple[date, time]:

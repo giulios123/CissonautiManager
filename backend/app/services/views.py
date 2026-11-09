@@ -188,7 +188,11 @@ def collect_rows(db: Session, now: datetime) -> list[CollectRow]:
     bookings = db.scalars(
         select(Booking)
         .where(Booking.edition_id == edition.id)
-        .options(selectinload(Booking.participant), selectinload(Booking.payments))
+        .options(
+            selectinload(Booking.participant),
+            selectinload(Booking.payments),
+            selectinload(Booking.refunds),
+        )
     )
     for booking in bookings:
         status = effective_status(booking.status, booking.hold_expires_at, now)
@@ -401,6 +405,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
     # The report reads five collections of every booking: load them in bulk, not one by one.
     everything = (
         selectinload(Booking.payments),
+        selectinload(Booking.refunds),
         selectinload(Booking.slots),
         selectinload(Booking.meals),
         selectinload(Booking.activities),

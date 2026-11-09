@@ -153,6 +153,8 @@ class RegistrationDetail(BaseModel):
     lunch_price_cents: int = 0
     dinner_price_cents: int = 0
     activity_offers: list[ActivityOffer] = []
+    # MVP 25c: a label that changes no amount. Never shown to the participant.
+    category: str = "ordinary"
 
 
 class RefundIn(BaseModel):
@@ -279,6 +281,7 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
     if warning is None and view.status == STATUS_EXPIRED and view.paid_cents > 0:
         warning = t("warn.expired_with_payments")
     return RegistrationDetail(
+        category=booking.category,
         participant=ParticipantView(
             id=participant.id,
             first_name=participant.first_name,
@@ -906,5 +909,8 @@ def void_registration_payment(
         raise HTTPException(status_code=404, detail=t("payment.not_found")) from exc
     except payment_service.AlreadyVoided as exc:
         raise HTTPException(status_code=409, detail=t("payment.already_voided")) from exc
+    except payment_service.VoidBlockedByRefund as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("payment.void_blocked_by_refund")) from exc
     db.refresh(booking)
     return _detail(db, booking, now)

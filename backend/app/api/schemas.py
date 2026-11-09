@@ -22,9 +22,11 @@ from app.models import (
     Booking,
     Edition,
     active_payments,
+    active_refunds,
+    net_paid_cents,
     slot_sort_key,
 )
-from app.services.amounts import activity_terms, meal_terms
+from app.services.amounts import activity_terms, exemptions_of, meal_terms
 from app.timefmt import format_activity, format_meal, format_slot
 
 
@@ -56,6 +58,8 @@ class MealView(CollectionTerms):
     # The day is over (Europe/Rome): only an admin can change this meal.
     past: bool = False
     included_in_fee: bool = False
+    # Exempted by an organiser (MVP 25c): shown as such, worth zero.
+    exempt: bool = False
 
 
 class ActivityView(CollectionTerms):
@@ -68,6 +72,7 @@ class ActivityView(CollectionTerms):
     time_label: str | None = None
     start_time: time | None = None
     end_time: time | None = None
+    exempt: bool = False
 
 
 class PaymentView(BaseModel):
@@ -75,6 +80,18 @@ class PaymentView(BaseModel):
     amount_cents: int
     channel: str
     paid_on: date
+    note: str | None = None
+    voided: bool = False
+    void_reason: str | None = None
+
+
+class RefundView(BaseModel):
+    """A refund on the active booking (MVP 25c)."""
+
+    id: int
+    amount_cents: int
+    channel: str
+    refunded_on: date
     note: str | None = None
     voided: bool = False
     void_reason: str | None = None
@@ -97,6 +114,9 @@ class BookingView(BaseModel):
     slots: list[SlotView]
     schedule: list[ScheduleSlotView] = []
     payments: list[PaymentView]
+    # Refunds of credit on the active booking; `paid_cents` is already net of them.
+    refunds: list[RefundView] = []
+    fee_exempt: bool = False
     meals: list[MealView] = []
     activities: list[ActivityView] = []
     # Meals the person's presence allows, whether chosen or not.
@@ -112,7 +132,8 @@ class BookingView(BaseModel):
 
 def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -> BookingView:
     edition = booking.edition
-    paid = sum(p.amount_cents for p in active_payments(booking))
+    paid = net_paid_cents(booking)
+    exempt = exemptions_of(booking)
     slots = sorted(booking.slots, key=slot_sort_key)
     booked_dates = {slot.date for slot in slots}
     status = effective_status(booking.status, booking.hold_expires_at, now)
@@ -189,7 +210,13 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
                 end_time=a.ends_at.astimezone(ZoneInfo("Europe/Rome")).time()
                 if a.ends_at
                 else None,
-                **activity_terms(a),
+                **{
+                    **activity_terms(a),
+                    "collectable_cents": 0
+                    if a.id in exempt.activities
+                    else activity_terms(a)["collectable_cents"],
+                },
+                exempt=a.id in exempt.activities,
             )
             for a in booking.activities
         ],
@@ -198,6 +225,7 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             now,
             edition,
             {(m.date, m.kind) for m in booking.meals if m.included_in_fee},
+            exempt.meals,
         ),
         allowed_meals=_meal_views(
             allowed_meals(periods_by_day((s.date, s.period) for s in booking.slots)),
@@ -218,6 +246,19 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             )
             for p in (booking.payments if include_notes else active_payments(booking))
         ],
+        fee_exempt=booking.fee_exempt,
+        refunds=[
+            RefundView(
+                id=r.id,
+                amount_cents=r.amount_cents,
+                channel=r.channel,
+                refunded_on=r.refunded_on,
+                note=r.note if include_notes else None,
+                voided=r.voided_at is not None,
+                void_reason=r.void_reason if include_notes else None,
+            )
+            for r in (booking.refunds if include_notes else active_refunds(booking))
+        ],
     )
 
 
@@ -226,6 +267,7 @@ def _meal_views(
     now: datetime,
     edition: Edition,
     included: set[tuple[date, str]] | None = None,
+    exempt: frozenset[tuple[date, str]] = frozenset(),
 ) -> list[MealView]:
     return [
         MealView(
@@ -234,10 +276,11 @@ def _meal_views(
             label=format_meal(day, kind),
             past=is_past_day(day, now),
             included_in_fee=(day, kind) in (included or set()),
+            exempt=(day, kind) in exempt,
             **{
                 **meal_terms(edition, day, kind),
                 "collectable_cents": 0
-                if (day, kind) in (included or set())
+                if (day, kind) in (included or set()) or (day, kind) in exempt
                 else meal_terms(edition, day, kind)["collectable_cents"],
             },
         )

@@ -13,6 +13,7 @@ from app.domain.booking import (
     status_after_void,
 )
 from app.domain.confirmation import POLICY_REGISTRATION_FEE
+from app.domain.exemptions import can_void_payment
 from app.email import EmailSender
 from app.email.templates import booking_confirmation_email, payment_confirmation_email
 from app.i18n import t
@@ -25,7 +26,10 @@ from app.models import (
     Edition,
     Participant,
     Payment,
-    active_payments,
+    active_payments,  # noqa: F401 (re-exported to the views)
+    active_refunds,
+    gross_paid_cents,
+    net_paid_cents,
 )
 from app.services import audit
 from app.services import edition as edition_service
@@ -67,7 +71,8 @@ class PaymentResult:
 
 
 def paid_total(booking: Booking) -> int:
-    return sum(p.amount_cents for p in active_payments(booking))
+    """What counts as paid: the payments that count minus the refunds on the active booking."""
+    return net_paid_cents(booking)
 
 
 def send_confirmation(
@@ -482,6 +487,10 @@ class AlreadyVoided(Exception):
     pass
 
 
+class VoidBlockedByRefund(Exception):
+    """Voiding this payment would leave more refunded than paid: void the refund first."""
+
+
 def void_payment(
     db: Session,
     admin: Participant,
@@ -504,6 +513,12 @@ def void_payment(
         raise PaymentNotFound()
     if payment.voided_at is not None:
         raise AlreadyVoided()
+    if not can_void_payment(
+        payment.amount_cents,
+        gross_paid_cents(booking),
+        sum(r.amount_cents for r in active_refunds(booking)),
+    ):
+        raise VoidBlockedByRefund()
 
     old_status = booking.status
     payment.voided_at = now

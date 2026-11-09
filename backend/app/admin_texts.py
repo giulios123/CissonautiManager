@@ -168,6 +168,48 @@ LABELS_EN: dict[str, str] = {
 }
 
 ADMIN_MESSAGES: dict[str, dict[str, str]] = {
+    "exemptions.not_active": {
+        "it": "Le esenzioni valgono solo per una prenotazione in attesa o confermata",
+        "en": "Exemptions apply only to a pending or confirmed booking",
+    },
+    "exemptions.invalid": {
+        "it": "Categoria o voci non valide per questa prenotazione",
+        "en": "Category or items not valid for this booking",
+    },
+    "exemptions.preview_changed": {
+        "it": "La prenotazione è cambiata dopo l'anteprima: rifai l'anteprima prima di applicare",
+        "en": "The booking changed after the preview: preview again before applying",
+    },
+    "booking_refund.not_active": {
+        "it": "Si può rimborsare credito solo su una prenotazione in attesa o confermata",
+        "en": "Credit can only be refunded on a pending or confirmed booking",
+    },
+    "booking_refund.too_high": {
+        "it": "Il rimborso non può superare il credito (quanto versato oltre il totale dovuto)",
+        "en": "The refund can't exceed the credit (what was paid beyond the total due)",
+    },
+    "booking_refund.invalid_amount": {
+        "it": "L'importo deve essere maggiore di zero",
+        "en": "The amount must be greater than zero",
+    },
+    "booking_refund.not_found": {
+        "it": "Questo rimborso non esiste",
+        "en": "This refund doesn't exist",
+    },
+    "booking_refund.already_voided": {
+        "it": "Questo rimborso è già stato annullato",
+        "en": "This refund has already been voided",
+    },
+    "payment.void_blocked_by_refund": {
+        "it": (
+            "Non si può annullare questo pagamento: i rimborsi registrati supererebbero "
+            "quanto resta versato. Annulla prima il rimborso"
+        ),
+        "en": (
+            "This payment can't be voided: the refunds on record would exceed what remains "
+            "paid. Void the refund first"
+        ),
+    },
     "guests.has_movements": {
         "it": (
             "Questo esterno ha pagamenti o restituzioni registrati e non si può eliminare: "

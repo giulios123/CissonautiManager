@@ -207,6 +207,7 @@ def send_test(
         registration_fee_cents=registration_fee_cents if fee_policy else None,
         status=(STATUS_CONFIRMED if fee_policy and registration_fee_cents == 0 else STATUS_PENDING),
         payments=[],
+        refunds=[],
         hold_expires_at=now + timedelta(days=edition.hold_days),
     )
     extras = service.registration_extras(db, edition, person)
