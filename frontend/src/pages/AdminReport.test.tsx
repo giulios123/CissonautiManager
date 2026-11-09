@@ -4,10 +4,11 @@ import { renderAt, stubAdminApi } from "../test-utils";
 
 afterEach(() => vi.unstubAllGlobals());
 
-const split = (confirmed: number, pending: number) => ({
+const split = (confirmed: number, pending: number, external = 0) => ({
   confirmed,
   pending,
-  total: confirmed + pending,
+  external,
+  total: confirmed + pending + external,
 });
 
 const report = {
@@ -83,6 +84,33 @@ function serve(body: unknown) {
 }
 
 describe("report page", () => {
+  it("counts external guests in meals and activities, apart from the bookings", async () => {
+    serve({
+      ...report,
+      meals: {
+        ...report.meals,
+        days: [{ day: "2026-07-13", lunches: split(1, 1, 2), dinners: split(1, 0) }],
+      },
+      activities: [{ ...report.activities[0], joined: split(1, 0, 3) }],
+    });
+    renderAt("/admin/report");
+    const meals = await screen.findByRole("table", { name: "Pranzi e cene per giorno" });
+    expect(within(meals).getByRole("columnheader", { name: "Di cui esterni" })).toBeInTheDocument();
+    const lunch = within(meals)
+      .getByText(/, pranzo/)
+      .closest("tr") as HTMLElement;
+    // Confirmed, pending, total (guests included) and the guests apart.
+    expect(
+      within(lunch)
+        .getAllByRole("cell")
+        .map((c) => c.textContent),
+    ).toEqual(["1", "1", "4", "2"]);
+    const trekking = within(screen.getByRole("table", { name: /Adesioni e incasso/ }))
+      .getByText("Trekking")
+      .closest("tr") as HTMLElement;
+    expect(within(trekking).getAllByRole("cell")[5]).toHaveTextContent("3");
+  });
+
   it("shows every section with its numbers", async () => {
     serve(report);
     renderAt("/admin/report");

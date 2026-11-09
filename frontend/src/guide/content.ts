@@ -62,6 +62,7 @@ const ADMIN_PAGES: Record<string, string> = {
   "/admin/week": "week",
   "/admin/meals": "meals",
   "/admin/activities": "activities",
+  "/admin/guests": "guests",
   "/admin/contributions": "contributions",
   "/admin/report": "report",
   "/admin/to-collect": "to-collect",
@@ -75,6 +76,7 @@ export function adminGuideSlug(pathname: string): string | undefined {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   if (/^\/admin\/registrations\/[^/]+$/.test(path)) return "people";
   if (/^\/admin\/activities\/[^/]+$/.test(path)) return "activities";
+  if (/^\/admin\/guests\/[^/]+$/.test(path)) return "guests";
   return ADMIN_PAGES[path];
 }
 

@@ -119,6 +119,7 @@ export const it = {
   "title.days": "Giorni e slot",
   "title.week": "Settimana",
   "title.meals": "Pasti",
+  "title.guests": "Esterni",
   "title.activities": "Attività",
   "title.contributions": "Contributi",
   "title.report": "Report",

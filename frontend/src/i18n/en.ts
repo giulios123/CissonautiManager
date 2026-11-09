@@ -121,6 +121,7 @@ export const en: Record<MessageKey, string> = {
   "title.days": "Days and slots",
   "title.week": "Week",
   "title.meals": "Meals",
+  "title.guests": "Guests",
   "title.activities": "Activities",
   "title.contributions": "Contributions",
   "title.report": "Report",

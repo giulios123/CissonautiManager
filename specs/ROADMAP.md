@@ -142,7 +142,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 25a · Presenze esterne
 
-- **Stato:** [spec pronta per revisione](mvp-25a-presenze-esterne/requirements.md), 9 task; nessuna implementazione.
+- **Stato:** [implementato sul branch](mvp-25a-presenze-esterne/requirements.md) `feat/mvp-25a-presenze-esterne`, 9 task completati; restano CI SQL Server e collaudo organizzatori. Nessun deploy.
 - **Contenuto:** esterni senza account inseriti dall'admin con identità minima, pasti e attività senza coworking, capienza delle attività occupata, regime e allergie (con consenso dichiarato), viste, CSV e report con la colonna «Esterni».
 - **Fatto quando:** una persona conta una volta per voce, nessun account o prenotazione fittizi e importi invariati.
 

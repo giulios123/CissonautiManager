@@ -16,6 +16,7 @@ const TITLES: Record<string, MessageKey> = {
   "/admin/week": "title.week",
   "/admin/meals": "title.meals",
   "/admin/activities": "title.activities",
+  "/admin/guests": "title.guests",
   "/admin/contributions": "title.contributions",
   "/admin/report": "title.report",
   "/admin/to-collect": "title.toCollect",
@@ -35,6 +36,7 @@ export function titleFor(
   let key = TITLES[path];
   if (!key && /^\/admin\/registrations\/[^/]+$/.test(path)) key = "title.registrationDetail";
   if (!key && /^\/admin\/activities\/[^/]+$/.test(path)) key = "title.activities";
+  if (!key && /^\/admin\/guests\/[^/]+$/.test(path)) key = "title.guests";
   return `${translate(locale, key ?? "notFound.title")} · ${eventName}`;
 }
 

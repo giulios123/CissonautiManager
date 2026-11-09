@@ -1,6 +1,6 @@
 # MVP 25a · Presenze esterne
 
-**Stato:** spec pronta per revisione, non implementata. P2, C2. Decisioni di riferimento D-063, D-087, D-088 e D-113–D-116. Dipende dalla base dell'MVP 16 (destinatari di pasti e attività); non dipende da 25b e 25c. Gli incassi degli esterni sono il [25b](../mvp-25b-incassi-esterni/requirements.md): in questo MVP l'esterno è solo una presenza logistica, senza importi.
+**Stato:** implementata sul branch `feat/mvp-25a-presenze-esterne`; restano CI SQL Server e collaudo organizzatori. P2, C2. Decisioni di riferimento D-063, D-087, D-088 e D-113–D-116. Dipende dalla base dell'MVP 16 (destinatari di pasti e attività); non dipende da 25b e 25c. Gli incassi degli esterni sono il [25b](../mvp-25b-incassi-esterni/requirements.md): in questo MVP l'esterno è solo una presenza logistica, senza importi.
 
 ## US-25a.1 · Inserire un esterno
 

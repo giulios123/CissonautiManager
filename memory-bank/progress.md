@@ -1,5 +1,9 @@
 # Progress
 
+## MVP 25a · Presenze esterne — implementato sul branch
+
+Branch `feat/mvp-25a-presenze-esterne` (spec in `specs/mvp-25a-presenze-esterne/`). Esterni senza account inseriti dall'admin, con pasti e attività senza coworking, capienza delle attività occupata, regime e allergie (con consenso dichiarato dall'admin), pagina admin «Esterni», viste pasti/settimana/attività, report e CSV con «Di cui esterni» e colonna «Tipo». Migrazione additiva `0024_external_guests`; guide IT/EN. Backend 1192 test, frontend 420, Ruff, formattazione, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate. Gli importi degli esterni sono il 25b.
+
 ## MVP 23 e 24 · Stato release
 
 - **MVP 23**, PR #26, integrato in `main` il 2026-11-09: policy disattivata di default, ricalcolo condiviso, anteprima/applicazione admin, catalogo benefit e viste/report/CSV/email aggiornati. Correzioni Copilot incluse e thread risolti. Suite backend (1130), frontend (409), lint, typecheck, build, Guide, SQL Server e build immagine verdi; la CI finale era verde sul commit `8c9e38e`. La migrazione `0023_included_meal` segue `0022_activity_details`. Collaudo organizzatori ancora da fare (`specs/mvp-23-composizione-quota/test-manuali.md`).

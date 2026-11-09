@@ -17,3 +17,5 @@ Choose start and end times using hour/minute menus within the selected slot (Rom
 # Activity details and notes
 
 Enter new activity titles and descriptions in both Italian and English. Existing activities remain readable with their saved text while organisers can complete translations. Use the activity page to review operational details and update its internal note. The note and its history are for organisers only. The admin CSV includes the current note even when nobody has signed up.
+
+**Guests** signed up to an activity take seats of the capacity and appear in a separate table on the page and in the CSV (“Type” column). With guests signed up the same limits as for participants apply: capacity, day and part of the day, deletion.

@@ -11,3 +11,5 @@ Il riepilogo dei numeri: iscrizioni, presenze, pasti, attività, contributi, lis
 I numeri coincidono con le altre viste: se qualcosa non torna, controlla prima che le iscrizioni siano aggiornate.
 
 Le adesioni pagate direttamente all’erogatore contano nelle presenze, ma sono escluse dagli incassi attesi e dal dovuto degli organizzatori. Il report delle attività indica chi incassa; i dettagli di pagamento sono nelle viste e nei CSV dei pasti e delle attività.
+
+Nelle sezioni **Pasti** e **Attività** una colonna «Di cui esterni» mostra quanti dei totali sono esterni; il totale li include. Presenze, iscrizioni e incassi non cambiano.

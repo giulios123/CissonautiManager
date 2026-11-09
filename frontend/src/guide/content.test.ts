@@ -78,6 +78,7 @@ describe("admin guide", () => {
       "/admin/week",
       "/admin/meals",
       "/admin/activities",
+      "/admin/guests",
       "/admin/contributions",
       "/admin/report",
       "/admin/to-collect",
