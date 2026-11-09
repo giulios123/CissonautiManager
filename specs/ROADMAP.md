@@ -132,7 +132,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 23 · Composizione della quota e destinatari
 
-- **Stato:** in revisione nella PR #26 `feat/mvp-23-composizione-quota`; suite backend (1130), frontend (409), lint, build e Guide locali verdi. CI GitHub sul nuovo head da completare. Resta il collaudo manuale organizzatori.
+- **Stato:** PR #26 `feat/mvp-23-composizione-quota` pronta al merge: suite backend (1130), frontend (409), lint, build e Guide locali verdi; CI GitHub completa e verde. Resta il collaudo manuale organizzatori.
 - **Contenuto:** primo pasto selezionato con incasso dell’organizzazione, applicato con anteprima dopo l’attivazione della conferma sulla sola quota; catalogo minimo benefit bilingue.
 
 ## MVP 24 · Dettagli e note delle attività

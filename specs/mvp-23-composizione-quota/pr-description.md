@@ -11,7 +11,7 @@ Pubblicare il codice e attivare i pasti compresi per un’edizione sono passaggi
 - Backend: 1130 test passati dopo l'integrazione della PR #25; Ruff e formattazione passati (tre warning di deprecazione nelle dipendenze/runtime).
 - Frontend: 409 test passati nella suite completa.
 - Ruff, formattazione, lint, TypeScript, build e controllo Guide: passati.
-- Migrazioni da zero e sincronizzazione SQLite: superate localmente; CI SQLite, SQL Server e build immagine sul nuovo head in corso.
+- Migrazioni da zero e sincronizzazione SQLite superate localmente; CI SQLite, SQL Server e build immagine superati sul commit `746cf62`.
 - Collaudo organizzatori: da eseguire seguendo `test-manuali.md`.
 
 ## Collaudo per gli organizzatori
