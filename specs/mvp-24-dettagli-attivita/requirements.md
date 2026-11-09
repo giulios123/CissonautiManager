@@ -1,6 +1,6 @@
 # MVP 24 · Dettagli e note delle attività
 
-**Stato:** spec proposta per revisione, non implementata. P2, C1 e C3. Indipendente dall’MVP 23 e basata sul modello attività dell’MVP 16. Decisioni di riferimento D-049 e D-091.
+**Stato:** implementata nel branch `feat/mvp-24-dettagli-attivita`; resta da completare il collaudo SQL Server e manuale. P2, C1 e C3. Indipendente dall’MVP 23 e basata sul modello attività dell’MVP 16. Decisioni di riferimento D-049 e D-091.
 
 ## US-24.1 · Leggere una scheda attività
 
