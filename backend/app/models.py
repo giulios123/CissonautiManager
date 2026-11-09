@@ -2,6 +2,7 @@ from datetime import date, datetime, time
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     ForeignKey,
     Index,
@@ -383,6 +384,9 @@ class ExternalGuest(Base):
         cascade="all, delete-orphan", order_by="ExternalGuestMeal.date"
     )
     activities: Mapped[list["Activity"]] = relationship(secondary="external_guest_activity")
+    movements: Mapped[list["ExternalMovement"]] = relationship(
+        order_by="ExternalMovement.id", viewonly=True
+    )
 
 
 class ExternalGuestMeal(Base):
@@ -403,6 +407,41 @@ class ExternalGuestActivity(Base):
     )
     activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"), primary_key=True)
     joined_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class ExternalMovement(Base):
+    """A payment from or a refund to an external guest (MVP 25b).
+
+    A register apart from the payments of the bookings: the same money never sits in both. Like
+    payments it is voided with a reason, never deleted.
+    """
+
+    __tablename__ = "external_movement"
+    __table_args__ = (
+        CheckConstraint("amount_cents > 0", name="ck_external_movement_amount"),
+        Index(
+            "uq_external_movement_request_key",
+            "request_key",
+            unique=True,
+            mssql_where=text("request_key IS NOT NULL"),
+            sqlite_where=text("request_key IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"), index=True)
+    guest_id: Mapped[int] = mapped_column(ForeignKey("external_guest.id"), index=True)
+    kind: Mapped[str] = mapped_column(Unicode(8))  # "payment" or "refund"
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    channel: Mapped[str] = mapped_column(Unicode(32))
+    paid_on: Mapped[date] = mapped_column(Date)
+    note: Mapped[str | None] = mapped_column(UnicodeText)
+    recorded_by_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    voided_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    voided_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
+    void_reason: Mapped[str | None] = mapped_column(UnicodeText)
+    request_key: Mapped[str | None] = mapped_column(Unicode(36))
 
 
 class ActivityNoteRevision(Base):

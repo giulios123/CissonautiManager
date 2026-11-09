@@ -18,6 +18,7 @@ from app.deps import get_now, require_admin
 from app.i18n import current_locale, t, tr
 from app.models import PAYERS, Activity, Edition, ExternalGuest, Participant
 from app.services import edition as edition_service
+from app.services import guest_payments
 from app.services import guests as guest_service
 from app.services.activities import activity_sort_key
 from app.timefmt import format_day_short, meal_label, period_label
@@ -69,6 +70,24 @@ class ActivityRef(BaseModel):
     period: str
 
 
+class ItemOut(BaseModel):
+    label: str
+    price_cents: int
+    collectable_cents: int
+
+
+class MovementOut(BaseModel):
+    id: int
+    kind: str
+    amount_cents: int
+    channel: str
+    paid_on: date
+    note: str | None
+    created_at: datetime
+    voided_at: datetime | None
+    void_reason: str | None
+
+
 class GuestOut(BaseModel):
     id: int
     first_name: str
@@ -82,6 +101,13 @@ class GuestOut(BaseModel):
     allergies_consent_at: datetime | None
     meals: list[MealRef]
     activities: list[ActivityRef]
+    # Money (MVP 25b): read from the current prices; the movements are the register of the guest.
+    due_cents: int = 0
+    paid_cents: int = 0
+    refunded_cents: int = 0
+    balance_cents: int = 0
+    items: list[ItemOut] = []
+    movements: list[MovementOut] = []
     warning: str | None = None
 
 
@@ -90,8 +116,34 @@ def _title(activity: Activity) -> str:
     return title or activity.title
 
 
-def _out(guest: ExternalGuest, warning: str | None = None) -> GuestOut:
+def _out(
+    db: Session, edition: Edition, guest: ExternalGuest, warning: str | None = None
+) -> GuestOut:
+    movements = guest_payments.movements_of(db, guest)
+    account = guest_payments.account_of(edition, guest, movements)
     return GuestOut(
+        due_cents=account.due_cents,
+        paid_cents=account.paid_cents,
+        refunded_cents=account.refunded_cents,
+        balance_cents=account.balance_cents,
+        items=[
+            ItemOut(label=i.label, price_cents=i.price_cents, collectable_cents=i.collectable_cents)
+            for i in guest_payments.items_of(edition, guest)
+        ],
+        movements=[
+            MovementOut(
+                id=m.id,
+                kind=m.kind,
+                amount_cents=m.amount_cents,
+                channel=m.channel,
+                paid_on=m.paid_on,
+                note=m.note,
+                created_at=m.created_at,
+                voided_at=m.voided_at,
+                void_reason=m.void_reason,
+            )
+            for m in movements
+        ],
         id=guest.id,
         first_name=guest.first_name,
         last_name=guest.last_name,
@@ -185,7 +237,7 @@ def list_guests(
     guests = [] if edition is None else guest_service.list_guests(db, edition)
     if fmt == "csv":
         return csv_response(csv_filename("esterni", now), CSV_HEADER, [_csv_row(g) for g in guests])
-    return [_out(g) for g in guests]
+    return [_out(db, edition, g) for g in guests]
 
 
 @router.post("", status_code=201)
@@ -206,12 +258,13 @@ def create_guest(
     except guest_service.ConsentRequired as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=t("guests.consent_required")) from exc
-    return _out(guest)
+    return _out(db, edition, guest)
 
 
 @router.get("/{guest_id}")
 def get_guest(guest_id: int, db: Session = Depends(get_db)) -> GuestOut:
-    return _out(_guest(db, _edition(db), guest_id))
+    edition = _edition(db)
+    return _out(db, edition, _guest(db, edition, guest_id))
 
 
 @router.patch("/{guest_id}")
@@ -234,7 +287,7 @@ def update_guest(
     except guest_service.ConsentRequired as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=t("guests.consent_required")) from exc
-    return _out(guest)
+    return _out(db, edition, guest)
 
 
 @router.delete("/{guest_id}", status_code=204)
@@ -243,7 +296,11 @@ def delete_guest(
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> None:
-    guest_service.delete(db, admin, _guest(db, _edition(db), guest_id))
+    try:
+        guest_service.delete(db, admin, _guest(db, _edition(db), guest_id))
+    except guest_service.GuestHasMovements as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("guests.has_movements")) from exc
 
 
 @router.put("/{guest_id}/meals")
@@ -261,7 +318,7 @@ def set_guest_meals(
         db.rollback()
         raise HTTPException(status_code=422, detail=t("guests.meals_invalid")) from exc
     db.refresh(guest)
-    return _out(guest)
+    return _out(db, edition, guest)
 
 
 @router.put("/{guest_id}/activities")
@@ -295,4 +352,4 @@ def set_guest_activities(
     if over:
         labels = ", ".join(_title(a) for a in sorted(over, key=activity_sort_key))
         warning = t("warn.over_capacity", labels=labels)
-    return _out(guest, warning)
+    return _out(db, edition, guest, warning)

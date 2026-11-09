@@ -23,7 +23,7 @@ from app.models import (
     ExternalGuestMeal,
     Participant,
 )
-from app.services import audit
+from app.services import audit, guest_payments
 from app.services.activities import activity_sort_key
 from app.services.seats import activities_for_update, free_by_activity
 from app.timefmt import format_activity, format_meal
@@ -50,6 +50,10 @@ class InvalidMeals(Exception):
 
 class InvalidActivities(Exception):
     pass
+
+
+class GuestHasMovements(Exception):
+    """A guest with payments or refunds on record (even voided ones) is not deleted."""
 
 
 class ActivitiesFull(Exception):
@@ -186,6 +190,8 @@ def update(
 
 
 def delete(db: Session, admin: Participant, guest: ExternalGuest) -> None:
+    if guest_payments.has_movements(db, guest):
+        raise GuestHasMovements()
     audit.log(db, admin, "guest_deleted", f"Esterno eliminato: {_describe(guest)}")
     db.delete(guest)
     db.commit()

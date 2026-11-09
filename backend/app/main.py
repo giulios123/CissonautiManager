@@ -13,6 +13,7 @@ from app.api import admin_activities as admin_activities_api
 from app.api import admin_admins as admin_admins_api
 from app.api import admin_edition as admin_edition_api
 from app.api import admin_email as admin_email_api
+from app.api import admin_guest_money as admin_guest_money_api
 from app.api import admin_guests as admin_guests_api
 from app.api import admin_meals as admin_meals_api
 from app.api import admin_participants as admin_participants_api
@@ -96,6 +97,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(me_api.router)
     app.include_router(admin_activities_api.router)
     app.include_router(admin_meals_api.router)
+    app.include_router(admin_guest_money_api.router)
     app.include_router(admin_guests_api.router)
     app.include_router(admin_admins_api.router)
     app.include_router(admin_edition_api.router)

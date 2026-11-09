@@ -25,6 +25,17 @@ LABELS_EN: dict[str, str] = {
     "report": "report",
     # --- CSV headers
     "Di cui esterni": "Of which guests",
+    "movimenti-esterni": "guest-movements",
+    "Data": "Date",
+    "Importo": "Amount",
+    "Canale": "Channel",
+    "Nota": "Note",
+    "Tipo di movimento": "Type of movement",
+    "Motivo dell'annullo": "Reason for voiding",
+    "Pagamento": "Payment",
+    "Restituzione": "Refund",
+    "Annullato": "Voided",
+    "Valido": "Valid",
     "Esterno": "Guest",
     "Iscritto": "Participant",
     "Pagante": "Paying",
@@ -148,6 +159,42 @@ LABELS_EN: dict[str, str] = {
 }
 
 ADMIN_MESSAGES: dict[str, dict[str, str]] = {
+    "guests.has_movements": {
+        "it": (
+            "Questo esterno ha pagamenti o restituzioni registrati e non si può eliminare: "
+            "puoi togliergli pasti e attività"
+        ),
+        "en": (
+            "This guest has payments or refunds on record and can't be deleted: "
+            "you can remove their meals and activities"
+        ),
+    },
+    "guests.refund_too_high": {
+        "it": "La restituzione non può superare il credito dell'esterno",
+        "en": "The refund can't exceed the guest's credit",
+    },
+    "guests.invalid_amount": {
+        "it": "L'importo deve essere maggiore di zero",
+        "en": "The amount must be greater than zero",
+    },
+    "guests.movement_not_found": {
+        "it": "Questo movimento non esiste",
+        "en": "This movement doesn't exist",
+    },
+    "guests.movement_voided": {
+        "it": "Questo movimento è già stato annullato",
+        "en": "This movement has already been voided",
+    },
+    "guests.void_blocked": {
+        "it": (
+            "Non si può annullare questo pagamento: le restituzioni registrate supererebbero "
+            "quanto resta versato. Annulla prima la restituzione"
+        ),
+        "en": (
+            "This payment can't be voided: the refunds on record would exceed what remains paid. "
+            "Void the refund first"
+        ),
+    },
     "guests.not_found": {
         "it": "Questo esterno non esiste",
         "en": "This guest doesn't exist",

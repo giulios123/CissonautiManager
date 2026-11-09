@@ -573,3 +573,16 @@ def test_external_guest_tables_upgrade_and_downgrade(alembic_config, database_ur
     tables = set(inspect(engine).get_table_names())
     assert not {"external_guest", "external_guest_meal", "external_guest_activity"} & tables
     engine.dispose()
+
+
+def test_external_movement_table_upgrade_and_downgrade(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0024_external_guests")
+    engine = make_engine(database_url)
+    assert "external_movement" not in inspect(engine).get_table_names()
+    command.upgrade(alembic_config, "0025_external_movements")
+    assert "external_movement" in inspect(engine).get_table_names()
+    command.downgrade(alembic_config, "0024_external_guests")
+    assert "external_movement" not in inspect(engine).get_table_names()
+    engine.dispose()
