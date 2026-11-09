@@ -1,6 +1,6 @@
 # Impostazioni
 
-Tutto quello che definisce l'edizione, in sezioni.
+Tutto quello che definisce l'edizione, in sezioni. Il menu delle sezioni resta sempre in vista mentre scorri (a sinistra sullo schermo largo, in alto sul telefono): premi una voce per saltare a quella sezione; la voce evidenziata è quella che stai leggendo.
 
 - **Edizione**: nome (compare nell'intestazione, nel titolo della scheda del browser e negli oggetti delle email), date, capienza degli slot, giorni di blocco, percentuale della lista d'attesa, quota base e per giorno, prezzi di pranzo e cena. Salva con «Salva edizione».
 - **Logo**: carica un PNG, JPEG o WebP fino a 5 MB per personalizzare l'intestazione. Puoi sostituirlo e ripristinare il logo originale.

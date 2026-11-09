@@ -1010,50 +1010,54 @@ export function AdminSettings() {
       <h1>{t("set.title")}</h1>
       {edition && <SettingsNav />}
       <div className="settings-content">
-      <EditionSection edition={edition} onSaved={setEdition} />
-      {edition ? (
-        <>
-          <ConfirmationPolicySection />
-          <IncludedMealsSection edition={edition} />
-          <BenefitsSection />
-          <AdminEditionLogo
-            logoUrl={edition.logo_url}
-            onSaved={(logoUrl) =>
-              setEdition((current) => (current ? { ...current, logo_url: logoUrl } : current))
-            }
-          />
-          <ChannelsSection edition={edition} />
-          <AdminRegistrationEmail />
-          <AdminEmailTexts />
-          <section aria-labelledby="legal-title">
-            <h2 id="legal-title">{t("set.legalTitle")}</h2>
-            <p>{t("set.legalIntro")}</p>
-            <LegalSection kind="privacy" title={t("set.privacyTitle")} current={edition.privacy} />
-            <LegalSection
-              kind="disclaimer"
-              title={t("set.disclaimerTitle")}
-              current={edition.disclaimer}
+        <EditionSection edition={edition} onSaved={setEdition} />
+        {edition ? (
+          <>
+            <ConfirmationPolicySection />
+            <IncludedMealsSection edition={edition} />
+            <BenefitsSection />
+            <AdminEditionLogo
+              logoUrl={edition.logo_url}
+              onSaved={(logoUrl) =>
+                setEdition((current) => (current ? { ...current, logo_url: logoUrl } : current))
+              }
             />
-            <LegalSection
-              kind="health"
-              title={t("set.healthTitle")}
-              current={edition.health ?? null}
-            />
-            <LegalSection
-              kind="attendance"
-              title={t("set.attendanceTitle")}
-              current={edition.attendance ?? null}
-            />
-            <LegalSection
-              kind="media"
-              title={t("set.mediaTitle")}
-              current={edition.media ?? null}
-            />
-          </section>
-        </>
-      ) : (
-        <p>{t("set.saveEditionFirst")}</p>
-      )}
+            <ChannelsSection edition={edition} />
+            <AdminRegistrationEmail />
+            <AdminEmailTexts />
+            <section aria-labelledby="legal-title">
+              <h2 id="legal-title">{t("set.legalTitle")}</h2>
+              <p>{t("set.legalIntro")}</p>
+              <LegalSection
+                kind="privacy"
+                title={t("set.privacyTitle")}
+                current={edition.privacy}
+              />
+              <LegalSection
+                kind="disclaimer"
+                title={t("set.disclaimerTitle")}
+                current={edition.disclaimer}
+              />
+              <LegalSection
+                kind="health"
+                title={t("set.healthTitle")}
+                current={edition.health ?? null}
+              />
+              <LegalSection
+                kind="attendance"
+                title={t("set.attendanceTitle")}
+                current={edition.attendance ?? null}
+              />
+              <LegalSection
+                kind="media"
+                title={t("set.mediaTitle")}
+                current={edition.media ?? null}
+              />
+            </section>
+          </>
+        ) : (
+          <p>{t("set.saveEditionFirst")}</p>
+        )}
       </div>
     </main>
   );

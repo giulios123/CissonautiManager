@@ -1339,12 +1339,6 @@ button.icon:hover:not(:disabled) {
     min-height: 2.5rem;
     white-space: normal;
     line-height: 1.3;
-    border-left: 3px solid transparent;
-    border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
-  }
-
-  .settings-nav a[aria-current="location"] {
-    border-left-color: var(--color-primary);
   }
 
   .settings-content {

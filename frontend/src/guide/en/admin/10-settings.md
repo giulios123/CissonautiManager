@@ -1,6 +1,6 @@
 # Settings
 
-Everything that defines the edition, in sections.
+Everything that defines the edition, in sections. The section menu stays in view while you scroll (on the left on a wide screen, at the top on a phone): press an entry to jump to that section; the highlighted entry is the one you are reading.
 
 - **Edition**: name (it appears in the header, in the browser tab title and in the email subjects), dates, slot capacity, days a place is held, waitlist percentage, base fee and per-day fee, lunch and dinner prices. Save with “Save edition”.
 - **Logo**: upload a PNG, JPEG or WebP up to 5 MB to customize the header. You can replace it or restore the original logo.
