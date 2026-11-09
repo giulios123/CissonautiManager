@@ -40,8 +40,37 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_benefit_edition_id", table_name="benefit")
     op.drop_table("benefit")
+    if op.get_bind().dialect.name == "mssql":
+        _drop_default_constraint("booking_meal", "included_in_fee")
     with op.batch_alter_table("booking_meal") as batch:
         batch.drop_column("included_in_fee")
+    if op.get_bind().dialect.name == "mssql":
+        _drop_default_constraint("edition", "included_meal_policy")
     with op.batch_alter_table("edition") as batch:
         batch.drop_column("included_meal_preview_token")
         batch.drop_column("included_meal_policy")
+
+
+def _drop_default_constraint(table_name: str, column_name: str) -> None:
+    qualified_table = f"[dbo].[{table_name}]"
+    op.execute(
+        sa.text(
+            f"""
+            DECLARE @constraint_name sysname;
+            DECLARE @statement nvarchar(max);
+            SELECT @constraint_name = dc.name
+            FROM sys.default_constraints AS dc
+            INNER JOIN sys.columns AS c
+                ON c.object_id = dc.parent_object_id
+                AND c.column_id = dc.parent_column_id
+            WHERE dc.parent_object_id = OBJECT_ID(N'{qualified_table}')
+                AND c.name = N'{column_name}';
+            IF @constraint_name IS NOT NULL
+            BEGIN
+                SET @statement = N'ALTER TABLE {qualified_table} DROP CONSTRAINT '
+                    + QUOTENAME(@constraint_name);
+                EXEC sp_executesql @statement;
+            END;
+            """
+        )
+    )
