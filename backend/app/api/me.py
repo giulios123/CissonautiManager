@@ -749,6 +749,26 @@ MEAL_REFUSALS = {
 }
 
 
+@router.post("/me/booking/meals/preview", dependencies=[Depends(require_privacy_acceptance)])
+def preview_my_meals(
+    body: MealsIn,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> dict:
+    booking = booking_changes.get_current_booking(db, user)
+    if booking is None:
+        raise HTTPException(status_code=404, detail=t("booking.none"))
+    try:
+        return meals_service.preview_selection(
+            booking, [(meal.date, meal.kind) for meal in body.meals], now
+        )
+    except booking_changes.NotEditable as exc:
+        raise HTTPException(status_code=409, detail=t("booking.not_editable")) from exc
+    except meals_service.MealsRefused as exc:
+        raise HTTPException(status_code=422, detail=t(MEAL_REFUSALS[exc.reason])) from exc
+
+
 @router.put("/me/booking/meals", dependencies=[Depends(require_privacy_acceptance)])
 def change_my_meals(
     body: MealsIn,

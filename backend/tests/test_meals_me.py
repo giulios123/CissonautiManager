@@ -3,7 +3,8 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 
-from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING, Slot
+from app.models import STATUS_CONFIRMED, STATUS_EXPIRED, STATUS_PENDING, BookingMeal, Slot
+from app.services.amounts import recompute_amount
 from tests.helpers import d
 from tests.test_auth import login
 from tests.test_change_slots import pay
@@ -47,6 +48,44 @@ def test_me_lists_allowed_meals_and_prices(member):
         ("2026-07-14", "dinner", "cena di mar 14/07"),
     ]
     assert data["bookings"][0]["meals"] == []
+
+
+def test_included_meal_is_reflected_on_selected_and_allowed_views(member, db, booking, edition):
+    edition.confirmation_policy = "registration_fee"
+    edition.included_meal_policy = "first_organizer_meal"
+    booking.meals = [BookingMeal(date=d(13), kind="lunch")]
+    recompute_amount(edition, booking)
+    db.commit()
+
+    response = member.get("/api/me").json()["bookings"][0]
+    selected = response["meals"][0]
+    allowed = response["allowed_meals"][0]
+    assert selected["included_in_fee"] is True
+    assert selected["collectable_cents"] == 0
+    assert allowed["included_in_fee"] is True
+    assert allowed["price_cents"] == 800
+    assert allowed["collectable_cents"] == 0
+
+
+def test_server_preview_uses_included_meal_calculation_without_saving(member, db, booking, edition):
+    edition.confirmation_policy = "registration_fee"
+    edition.included_meal_policy = "first_organizer_meal"
+    booking.meals = [BookingMeal(date=d(13), kind="lunch")]
+    recompute_amount(edition, booking)
+    db.commit()
+
+    response = member.post(
+        "/api/me/booking/meals/preview",
+        json={"meals": [{"date": "2026-07-14", "kind": "dinner"}]},
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "registration_fee_cents": 1200,
+        "amount_due_cents": 1200,
+        "included_meals": [["2026-07-14", "dinner"]],
+    }
+    db.refresh(booking)
+    assert {(meal.date, meal.kind) for meal in booking.meals} == {(d(13), "lunch")}
 
 
 def test_joining_meals_updates_the_amount(member, db, booking):

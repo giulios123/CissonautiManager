@@ -126,6 +126,19 @@ class TestJson:
         assert report["days"][0]["dinners"]["total"] == dinner["count"] == 1
         assert report["lunch_diets"]["vegan"] == lunch["diets"]["vegan"] == 1
 
+    def test_included_meal_still_counts_and_csv_shows_zero_due(self, admin_client, db, camp):
+        lunch = next(meal for meal in camp["ada"].meals if meal.kind == "lunch")
+        lunch.included_in_fee = True
+        db.commit()
+
+        report = get(admin_client).json()
+        rows = parse(admin_client.get("/api/admin/views/meals?format=csv"))
+        ada_lunch = next(row for row in rows[1:] if row[1] == "Pranzo" and row[2] == "Ada")
+
+        assert report["meals"]["days"][0]["lunches"]["total"] == 2
+        assert ada_lunch[9] == "Coperto dalla quota di registrazione"
+        assert ada_lunch[10] == "0,00"
+
     def test_allergies_are_only_a_number(self, admin_client, camp):
         response = get(admin_client)
         assert response.json()["meals"]["people_with_allergies"] == 1

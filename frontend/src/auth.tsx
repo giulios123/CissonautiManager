@@ -11,6 +11,7 @@ export type MealView = CollectionTerms & {
   kind: "lunch" | "dinner";
   label: string;
   past?: boolean;
+  included_in_fee?: boolean;
 };
 
 export type BookingView = {
@@ -111,6 +112,7 @@ export type ActivityOffer = CollectionTerms & {
   free: number | null;
   joined: boolean;
   past: boolean;
+  included_in_fee?: boolean;
 };
 
 type MeState = { status: "loading" } | { status: "anonymous" } | { status: "user"; me: Me };

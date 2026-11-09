@@ -35,6 +35,19 @@ EMAIL_MESSAGES: dict[str, dict[str, str]] = {
         "en": "Sign in and open your personal page: {link}",
     },
     "email.your_slots": {"it": "I tuoi slot:", "en": "Your slots:"},
+    "email.meals.heading": {"it": "I tuoi pasti:", "en": "Your meals:"},
+    "email.meals.included": {
+        "it": "Coperto dalla quota di registrazione",
+        "en": "Covered by the registration fee",
+    },
+    "email.meals.organizer": {
+        "it": "Incasso dell’organizzazione: {amount}",
+        "en": "Collected by the organisation: {amount}",
+    },
+    "email.meals.provider": {
+        "it": "Pagamento in loco al fornitore: {amount}. {instructions}",
+        "en": "Pay the provider on site: {amount}. {instructions}",
+    },
     "email.presence.heading.one": {"it": "1 giorno di presenza:", "en": "1 day of attendance:"},
     "email.presence.heading.other": {
         "it": "{count} giorni di presenza:",

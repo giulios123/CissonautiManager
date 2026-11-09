@@ -190,6 +190,8 @@ class MealPerson(BaseModel):
     email: str
     diet: str | None
     allergies: str | None
+    included_in_fee: bool = False
+    collectable_cents: int
 
 
 class MealOut(CollectionTerms):
@@ -231,6 +233,8 @@ def meals_view(
             "Allergie e intolleranze",
             "Prezzo",
             "Incasso",
+            "Tipo di incasso",
+            "Dovuto",
             "Istruzioni di pagamento",
         ]
         rows = [
@@ -247,6 +251,16 @@ def meals_view(
                     "Erogatore"
                     if meal_terms(edition, r.day, r.kind)["payment_mode"] == "provider"
                     else "Organizzatori"
+                ),
+                tr("Coperto dalla quota di registrazione")
+                if r.included_in_fee
+                else tr("Incasso dell’organizzazione")
+                if meal_terms(edition, r.day, r.kind)["payment_mode"] == "organizer"
+                else tr("Pagamento in loco al fornitore"),
+                Amount(
+                    0
+                    if r.included_in_fee
+                    else meal_terms(edition, r.day, r.kind)["collectable_cents"]
                 ),
                 meal_terms(edition, r.day, r.kind)["payment_instructions"],
             ]
@@ -272,6 +286,10 @@ def meals_view(
                             email=r.email,
                             diet=r.diet,
                             allergies=r.allergies,
+                            included_in_fee=r.included_in_fee,
+                            collectable_cents=0
+                            if r.included_in_fee
+                            else meal_terms(edition, day, kind)["collectable_cents"],
                         )
                         for r in people
                     ],

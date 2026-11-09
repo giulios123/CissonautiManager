@@ -107,6 +107,8 @@ def test_csv_has_a_row_per_person_with_diet_and_allergies(
         "Allergie e intolleranze",
         "Prezzo",
         "Incasso",
+        "Tipo di incasso",
+        "Dovuto",
         "Istruzioni di pagamento",
     ]
     assert rows == [
@@ -120,6 +122,8 @@ def test_csv_has_a_row_per_person_with_diet_and_allergies(
             "Glutine",
             "8,00",
             "Organizzatori",
+            "Incasso dell’organizzazione",
+            "8,00",
             "",
         ],
         [
@@ -132,6 +136,8 @@ def test_csv_has_a_row_per_person_with_diet_and_allergies(
             "Glutine",
             "12,00",
             "Organizzatori",
+            "Incasso dell’organizzazione",
+            "12,00",
             "",
         ],
     ]

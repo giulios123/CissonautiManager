@@ -1,34 +1,20 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { BookingView, MealView } from "../auth";
 import { formatDay } from "../booking";
 import { useT } from "../i18n";
 import { formatEuro } from "../money";
-import { collectableCents, CollectionDetails } from "../collection";
+import { CollectionDetails } from "../collection";
 
 const key = (meal: { date: string; kind: string }) => `${meal.date}:${meal.kind}`;
 const KIND_LABELS = { lunch: "meal.lunch", dinner: "meal.dinner" } as const;
+const NO_MEALS: MealView[] = [];
 
-/** New amount: the current one, minus the meals given up, plus the meals added. */
-export function mealsPreview(
-  booking: BookingView,
-  selected: Set<string>,
-  lunchCents: number,
-  dinnerCents: number,
-): number {
-  const price = (meal: MealView) =>
-    meal.price_cents !== undefined
-      ? collectableCents(meal)
-      : meal.kind === "lunch"
-        ? lunchCents
-        : dinnerCents;
-  const current = booking.meals ?? [];
-  const before = current.reduce((sum, meal) => sum + price(meal), 0);
-  const after = (booking.allowed_meals ?? [])
-    .filter((meal) => selected.has(key(meal)))
-    .reduce((sum, meal) => sum + price(meal), 0);
-  return booking.amount_due_cents - before + after;
-}
+type MealPreview = {
+  registration_fee_cents: number;
+  amount_due_cents: number;
+  included_meals: [string, string][];
+};
 
 export function MealEditor<T = unknown>({
   booking,
@@ -50,17 +36,52 @@ export function MealEditor<T = unknown>({
   const original = new Set((booking.meals ?? []).map(key));
   const [selected, setSelected] = useState<Set<string>>(new Set(original));
   const [error, setError] = useState<string | null>(null);
+  const [previewState, setPreviewState] = useState<{
+    signature: string;
+    value: MealPreview;
+  } | null>(null);
+  const [previewError, setPreviewError] = useState<{ signature: string; value: string } | null>(
+    null,
+  );
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const allowed = booking.allowed_meals ?? [];
+  const allowed = booking.allowed_meals ?? NO_MEALS;
   const days = [...new Set(allowed.map((meal) => meal.date))];
-  const fee = mealsPreview(booking, selected, lunchCents, dinnerCents);
+  const selectedMeals = allowed
+    .filter((meal) => selected.has(key(meal)))
+    .map(({ date, kind }) => ({ date, kind }));
+  const signature = JSON.stringify(selectedMeals);
+  const preview = previewState?.signature === signature ? previewState.value : null;
+  const fee = preview?.amount_due_cents ?? booking.amount_due_cents;
   const delta = fee - booking.amount_due_cents;
   const feePolicy = booking.confirmation_policy === "registration_fee";
+  const included = new Set(preview?.included_meals?.map(([day, kind]) => `${day}:${kind}`) ?? []);
   const changed = selected.size !== original.size || [...selected].some((k) => !original.has(k));
+  const displayedError =
+    error ?? (previewError?.signature === signature ? previewError.value : null);
+
+  useEffect(() => {
+    let current = true;
+    const meals = JSON.parse(signature) as { date: string; kind: string }[];
+    void api<MealPreview>(`${path}/preview`, { method: "POST", json: { meals } })
+      .then((result) => {
+        if (current) setPreviewState({ signature, value: result });
+      })
+      .catch((caught) => {
+        if (current)
+          setPreviewError({
+            signature,
+            value: caught instanceof ApiError ? caught.message : t("common.somethingWrong"),
+          });
+      });
+    return () => {
+      current = false;
+    };
+  }, [path, signature, t]);
 
   function toggle(meal: MealView, checked: boolean) {
     setSaved(false);
+    setError(null);
     setSelected((current) => {
       const next = new Set(current);
       if (checked) next.add(key(meal));
@@ -110,7 +131,12 @@ export function MealEditor<T = unknown>({
                 <span>
                   {t(KIND_LABELS[meal.kind])}
                   {meal.price_cents !== undefined && ` · ${formatEuro(meal.price_cents)}`}
-                  <CollectionDetails terms={meal} />
+                  <CollectionDetails
+                    terms={{
+                      ...meal,
+                      included_in_fee: preview ? included.has(key(meal)) : meal.included_in_fee,
+                    }}
+                  />
                   {meal.past && !allowPast ? ` · ${t("edit.pastDay")}` : ""}
                 </span>
               </label>
@@ -125,7 +151,8 @@ export function MealEditor<T = unknown>({
             <br />
           </>
         )}
-        {feePolicy ? t("edit.newTotal") : t("edit.newFee")} <strong>{formatEuro(fee)}</strong>
+        {feePolicy ? t("edit.newTotal") : t("edit.newFee")}{" "}
+        {preview ? <strong>{formatEuro(fee)}</strong> : t("meal.previewLoading")}
         {delta !== 0 && (
           <>
             {" "}
@@ -135,9 +162,9 @@ export function MealEditor<T = unknown>({
           </>
         )}
       </p>
-      {error && (
+      {displayedError && (
         <p role="alert" className="notice error">
-          {error}
+          {displayedError}
         </p>
       )}
       {saved && (
@@ -145,7 +172,7 @@ export function MealEditor<T = unknown>({
           {t("meal.updated")}
         </p>
       )}
-      <button type="submit" disabled={!changed || saving}>
+      <button type="submit" disabled={!changed || saving || !preview}>
         {t("meal.save")}
       </button>
     </form>

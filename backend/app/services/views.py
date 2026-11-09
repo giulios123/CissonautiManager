@@ -235,6 +235,7 @@ class MealRow:
     email: str
     day: date
     kind: str
+    included_in_fee: bool
     diet: str | None
     allergies: str | None
 
@@ -268,6 +269,7 @@ def load_meals(db: Session, now: datetime) -> MealData:
                 email=participant.email,
                 day=meal.date,
                 kind=meal.kind,
+                included_in_fee=meal.included_in_fee,
                 diet=booking.diet,
                 allergies=booking.allergies,
             )
@@ -377,6 +379,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
                 refund_cents=booking.refund_cents or 0,
                 slots=tuple((s.date, s.period) for s in booking.slots),
                 meals=tuple((m.date, m.kind) for m in booking.meals),
+                included_meals=tuple((m.date, m.kind) for m in booking.meals if m.included_in_fee),
                 activity_ids=tuple(a.id for a in booking.activities),
                 diet=booking.diet,
                 has_allergies=bool((booking.allergies or "").strip()),

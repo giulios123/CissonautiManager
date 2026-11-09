@@ -40,14 +40,42 @@ def recompute_amount(edition: Edition, booking: Booking) -> int:
 
 def calculate_amounts(edition: Edition, booking: Booking) -> tuple[int, int]:
     """Calculate the base-plus-days registration fee and total organiser receivable."""
+    meals = [(meal.date, meal.kind) for meal in booking.meals]
+    registration_fee_cents, total_due_cents, included = calculate_meal_selection(
+        edition, booking, meals
+    )
+    for meal in booking.meals:
+        meal.included_in_fee = (meal.date, meal.kind) == included
+    return registration_fee_cents, total_due_cents
+
+
+def calculate_meal_selection(
+    edition: Edition, booking: Booking, selected: list[tuple[date, str]]
+) -> tuple[int, int, tuple[date, str] | None]:
+    """Calculate fee, total due, and included meal for a proposed selection."""
     registration_fee_cents = compute_fee(
         [s.date for s in booking.slots], edition.base_fee_cents, edition.per_day_fee_cents
     )
+    meals = sorted(selected, key=lambda meal: (meal[0], meal[1] != MEAL_LUNCH))
+    included: tuple[date, str] | None = None
+    if (
+        edition.confirmation_policy == "registration_fee"
+        and edition.included_meal_policy == "first_organizer_meal"
+    ):
+        included = next(
+            (
+                meal
+                for meal in meals
+                if meal_terms(edition, meal[0], meal[1])["payment_mode"] == "organizer"
+            ),
+            None,
+        )
     total_due_cents = registration_fee_cents + sum(
-        meal_terms(edition, m.date, m.kind)["collectable_cents"] for m in booking.meals
+        0 if (day, kind) == included else meal_terms(edition, day, kind)["collectable_cents"]
+        for day, kind in meals
     )
     total_due_cents += sum(collectable(a.price_cents, a.payment_mode) for a in booking.activities)
-    return registration_fee_cents, total_due_cents
+    return registration_fee_cents, total_due_cents, included
 
 
 def confirmation_due(edition: Edition, booking: Booking) -> int | None:

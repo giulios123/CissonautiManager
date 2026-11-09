@@ -307,3 +307,23 @@ class TestMealSettings:
 
     def test_registrations_stay_open_without_the_health_consent(self, client, edition):
         assert client.get("/api/public/edition").json()["registration_open"] is True
+
+
+def test_benefit_catalog_entries_can_be_renamed_and_retired(admin_client, edition):
+    created = admin_client.post(
+        "/api/admin/benefits",
+        json={"name_it": "Tessera", "name_en": "Badge", "sort_order": 0},
+    )
+    assert created.status_code == 201
+    benefit_id = created.json()["id"]
+
+    updated = admin_client.patch(
+        f"/api/admin/benefits/{benefit_id}",
+        json={"name_it": "Tessera aggiornata", "name_en": "Updated badge", "sort_order": 1},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["name_en"] == "Updated badge"
+
+    retired = admin_client.delete(f"/api/admin/benefits/{benefit_id}")
+    assert retired.status_code == 204
+    assert admin_client.get("/api/admin/benefits").json()[0]["retired"] is True

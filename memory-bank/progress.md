@@ -1,20 +1,18 @@
 # Progress
 
-## MVP 23 · Composizione quota
+## MVP 23 e 24 · Stato release
 
-Implementato nel branch `feat/mvp-23-composizione-quota`, commit `433bc89`. La policy `none` / `first_organizer_meal` richiede conferma su quota, applica il primo pasto organizzativo con preview/apply e fingerprint, ed è condivisa da ricalcolo, viste e report. Catalogo benefit IT/EN e guide aggiornati; consegna e ammissibilità restano nel 30. Suite backend 1115, frontend 410, Ruff, lint, typecheck, build e controllo Guide superati. Migrazione 0022 applicata su SQLite; SQL Server e collaudo manuale restano da eseguire. Nessun deploy.
-
-## MVP 24 · Dettagli attività
-
-Implementato nel branch `feat/mvp-24-dettagli-attivita`, commit `ce64510`. Attività localizzate IT/EN con fallback dei testi legacy; note interne admin con cronologia, API admin protette e CSV con nota anche senza iscritti. Suite backend 1114, frontend 410, Ruff, lint, typecheck, build, controllo Guide e sincronizzazione Alembic/modelli superati. Migrazione `0022_activity_details` verificata su SQLite. SQL Server e collaudo manuale restano da eseguire (checklist in `specs/mvp-24-dettagli-attivita/test-manuali.md`). MVP 24 è rilasciabile indipendentemente dal 23. Nessun deploy. Se i due branch vengono combinati, serve una migrazione Alembic di merge delle revisioni `0022` e `0022_activity_details`.
+- **MVP 23**, PR #26, branch `feat/mvp-23-composizione-quota`: implementato con policy disattivata di default, ricalcolo condiviso, anteprima/applicazione admin, catalogo benefit e viste/report/CSV/email aggiornati. Correzioni Copilot incluse. Dopo l’integrazione della PR #25: backend completo 1130 test, frontend 409 test, Ruff, formattazione, lint, TypeScript, build e Guide passati localmente. La migrazione `0023_included_meal` segue `0022_activity_details`; CI GitHub completa e verde sul commit `746cf62`. Collaudo organizzatori ancora da fare.
+- **MVP 24**, PR #25, integrato in `main` il 2026-11-09: contenuti attività IT/EN con fallback, schede, note riservate con cronologia e CSV admin. CI SQLite, SQL Server, frontend, build immagine e Guide verdi sul commit `79e47f2`; collaudo organizzatori ancora da fare (`specs/mvp-24-dettagli-attivita/test-manuali.md`). Rilasciabile senza MVP 23.
+- Nessun deploy o attivazione dei pasti compresi; le modifiche proposte a `domain.md` non sono applicate.
 
 ## Chiusura MVP 20 · T20-8
 
 Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche SQL Server e del collaudo degli organizzatori. Nella sessione corrente la suite backend completa ha superato 1103 test (3 warning di deprecazione). T20-8 è chiusa; la chiusura non dichiara eseguiti deploy o invii email reali.
 
-## MVP 21 e 22 · Implementazione in verifica
+## MVP 21 e 22 · PR #24 unita a main
 
-Implementati sul branch `feat/mvp-21-storico-cancellazioni`: registro admin delle nuove disdette, conservazione per un anno con pulizia nel job orario, modale d'incasso rapido con snapshot e retry idempotente, guide IT/EN e migrazioni `0020`/`0021`. Copilot ha rilevato nove difetti nella PR unica, corretti nel branch: ordine della rotta, outcome strutturato, downgrade, cursore stabile, retry/annullo, warning e aggiornamento immediato dei dati. Verifica locale dopo le correzioni: backend 1112 test, frontend 410 test, Ruff, ESLint/Prettier, TypeScript e build verdi. Il maintainer conferma completati SQL Server e collaudi manuali di entrambi gli MVP. La nuova CI della PR e il controllo dei thread Copilot restano da completare. Per il type-check, `presenceSummary.ts` è stato rinominato `presence-summary.ts` per evitare collisioni di maiuscole/minuscole sul filesystem locale. Nessun deploy effettuato.
+Implementati sul branch `feat/mvp-21-storico-cancellazioni` e uniti a `main` con PR #24 il 2026-11-08. Registro admin delle nuove disdette con conservazione annuale e pulizia oraria; modale d'incasso rapido con snapshot, retry idempotente, annullo ed email differita; guide IT/EN e migrazioni `0020`/`0021`. La PR riporta suite locale, CI, SQL Server e collaudi manuali completati. Nessun deploy dichiarato.
 
 ## MVP 20 · Nuova accettazione privacy — implementato sul branch
 

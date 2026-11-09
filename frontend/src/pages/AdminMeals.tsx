@@ -15,6 +15,8 @@ type MealPerson = {
   last_name: string;
   diet: string | null;
   allergies: string | null;
+  included_in_fee?: boolean;
+  collectable_cents: number;
 };
 type Meal = CollectionTerms & {
   kind: "lunch" | "dinner";
@@ -102,6 +104,9 @@ export function AdminMeals() {
                                   <Link to={adminRegistrationPath(person.booking_id)}>
                                     {person.first_name} {person.last_name}
                                   </Link>
+                                  {person.included_in_fee && (
+                                    <small> · {t("collection.included")}</small>
+                                  )}
                                 </li>
                               ))}
                             </ul>

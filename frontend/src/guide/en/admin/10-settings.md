@@ -14,3 +14,7 @@ Everything that defines the edition, in sections.
 It is better to fix the prices before opening registrations: once people have signed up, for example, the price of an activity can no longer be changed.
 
 If the edition is not saved, channels and legal texts cannot be configured yet.
+
+# Fee composition
+
+Once registration-fee confirmation is active, Settings lets you include no meal or the first selected meal collected by the organisation. The preview shows the covered meal, fee, total, payments, balance or credit, and status before and after. Review it before applying the change; recalculate if data changes. Meals paid directly to a provider remain payable by the participant. The benefits catalogue lets you add, rename and retire Italian/English entries for an edition; it does not grant eligibility or track delivery yet.

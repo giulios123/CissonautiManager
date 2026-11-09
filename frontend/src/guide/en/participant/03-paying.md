@@ -17,4 +17,4 @@ While the booking is awaiting payment, you have a few days to cover the amount n
 
 Changing slots, meals or activities recalculates the amount. If you have already paid, you see the difference to pay or a credit. A confirmed booking stays confirmed.
 
-The camp fee and balance cover payments collected by the organizers. Activities or meals paid directly to a provider show their cost and instructions separately; these costs do not increase the camp balance. The app does not track whether you have paid the provider.
+The camp fee and balance cover amounts collected by the organisation. Activities or meals paid to a provider on site show their cost and instructions separately; these costs do not increase the camp balance. A meal covered by the registration fee still counts as a sign-up and adds no further amount due. The app does not track whether you have paid the provider.

@@ -132,12 +132,12 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 23 · Composizione della quota e destinatari
 
-- **Stato:** implementato su `feat/mvp-23-composizione-quota`, commit `433bc89`; verifiche locali complete, SQL Server e collaudo manuale pendenti.
+- **Stato:** PR #26 `feat/mvp-23-composizione-quota` pronta al merge: suite backend (1130), frontend (409), lint, build e Guide locali verdi; CI GitHub completa e verde. Resta il collaudo manuale organizzatori.
 - **Contenuto:** primo pasto selezionato con incasso dell’organizzazione, applicato con anteprima dopo l’attivazione della conferma sulla sola quota; catalogo minimo benefit bilingue.
 
 ## MVP 24 · Dettagli e note delle attività
 
-- **Stato:** implementato su `feat/mvp-24-dettagli-attivita`; verifiche locali complete, SQL Server e collaudo manuale pendenti.
+- **Stato:** implementato e integrato in `main` tramite PR #25; resta il collaudo manuale organizzatori.
 - **Contenuto:** testi attività IT/EN con fallback legacy, schede localizzate e note admin con cronologia, protette nelle API e nei CSV.
 
 ## Revisione dopo il collaudo del 7 novembre 2026

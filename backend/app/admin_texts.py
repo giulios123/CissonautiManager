@@ -9,6 +9,10 @@ LABELS_EN: dict[str, str] = {
     "Nota interna": "Internal note",
     "Organizzatori": "Organizers",
     "Erogatore": "Provider",
+    "Coperto dalla quota di registrazione": "Covered by the registration fee",
+    "Incasso dell’organizzazione": "Collected by the organisers",
+    "Pagamento in loco al fornitore": "Pay the provider on site",
+    "Tipo di incasso": "Collection type",
     # --- CSV file names
     "persone": "people",
     "giorni-slot": "days-slots",

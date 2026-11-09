@@ -95,6 +95,8 @@ class Edition(Base):
     confirmation_policy: Mapped[str] = mapped_column(Unicode(24), default="legacy_total")
     confirmation_policy_activated_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     confirmation_policy_preview_token: Mapped[str | None] = mapped_column(String(64))
+    included_meal_policy: Mapped[str] = mapped_column(Unicode(32), default="none")
+    included_meal_preview_token: Mapped[str | None] = mapped_column(String(64))
 
     slots: Mapped[list["Slot"]] = relationship(back_populates="edition")
     meal_settings: Mapped[list["MealSetting"]] = relationship(
@@ -279,6 +281,7 @@ class BookingMeal(Base):
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
     date: Mapped[date] = mapped_column(Date, primary_key=True)
     kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
+    included_in_fee: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class MealSetting(Base):
@@ -294,6 +297,19 @@ class MealSetting(Base):
     payment_instructions: Mapped[str | None] = mapped_column(UnicodeText)
 
     edition: Mapped[Edition] = relationship(back_populates="meal_settings")
+
+
+class Benefit(Base):
+    """A bilingual item in the edition's benefit catalogue."""
+
+    __tablename__ = "benefit"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"), index=True)
+    name_it: Mapped[str] = mapped_column(Unicode(200))
+    name_en: Mapped[str] = mapped_column(Unicode(200))
+    retired: Mapped[bool] = mapped_column(Boolean, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class Activity(Base):

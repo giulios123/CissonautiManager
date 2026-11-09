@@ -36,6 +36,7 @@ type Edition = {
   per_day_fee_cents: number;
   lunch_price_cents?: number;
   dinner_price_cents?: number;
+  included_meal_policy?: "none" | "first_organizer_meal";
   slots: unknown[];
   logo_url: string | null;
   payment_channels: Channel[];
@@ -336,6 +337,254 @@ function ConfirmationPolicySection() {
           )}
         </>
       )}
+      <NoticeLine notice={notice} />
+    </section>
+  );
+}
+
+type IncludedMealPreview = {
+  current_policy: "none" | "first_organizer_meal";
+  proposed_policy: "none" | "first_organizer_meal";
+  preview_token: string;
+  rows: {
+    booking_id: number;
+    name: string;
+    status_before: string;
+    status_after: string;
+    included_meal: [string, string] | null;
+    registration_fee_cents: number;
+    amount_due_cents: number;
+    paid_cents: number;
+    balance_before_cents: number;
+    balance_after_cents: number;
+  }[];
+};
+
+function IncludedMealsSection({ edition }: { edition: Edition }) {
+  const t = useT();
+  const [policy, setPolicy] = useState(edition.included_meal_policy ?? "none");
+  const [preview, setPreview] = useState<IncludedMealPreview | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<Notice>(null);
+
+  async function loadPreview() {
+    setBusy(true);
+    setNotice(null);
+    try {
+      setPreview(
+        await api<IncludedMealPreview>("/api/admin/edition/included-meals/preview", {
+          method: "POST",
+          json: { policy },
+        }),
+      );
+    } catch (error) {
+      setNotice({ kind: "error", text: errorText(error) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function apply() {
+    if (!preview) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await api("/api/admin/edition/included-meals/apply", {
+        method: "POST",
+        json: { policy, preview_token: preview.preview_token },
+      });
+      setPreview(null);
+      setNotice({ kind: "ok", text: t("set.includedMealSaved") });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) setPreview(null);
+      setNotice({ kind: "error", text: errorText(error) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section aria-labelledby="included-meal-title">
+      <h2 id="included-meal-title">{t("set.includedMealTitle")}</h2>
+      <p>{t("set.includedMealIntro")}</p>
+      <label>
+        {t("set.includedMealPolicy")}
+        <select
+          value={policy}
+          onChange={(event) => {
+            setPolicy(event.target.value as typeof policy);
+            setPreview(null);
+          }}
+        >
+          <option value="none">{t("set.includedMealNone")}</option>
+          <option value="first_organizer_meal">{t("set.includedMealFirst")}</option>
+        </select>
+      </label>
+      {!preview ? (
+        <button type="button" disabled={busy} onClick={loadPreview}>
+          {t("set.includedMealPreview")}
+        </button>
+      ) : (
+        <>
+          <p>{t("set.includedMealRows", { n: preview.rows.length })}</p>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t("set.includedMealPerson")}</th>
+                  <th>{t("set.policyStatusBefore")}</th>
+                  <th>{t("set.policyStatusAfter")}</th>
+                  <th>{t("set.includedMealSelected")}</th>
+                  <th>{t("money.registrationFee")}</th>
+                  <th>{t("set.includedMealTotal")}</th>
+                  <th>{t("set.includedMealPaid")}</th>
+                  <th>{t("set.policyBalanceBefore")}</th>
+                  <th>{t("set.policyBalanceAfter")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.rows.map((row) => (
+                  <tr key={row.booking_id}>
+                    <th>{row.name}</th>
+                    <td>{confirmationStatus(row.status_before, t)}</td>
+                    <td>{confirmationStatus(row.status_after, t)}</td>
+                    <td>
+                      {row.included_meal
+                        ? `${row.included_meal[0]} · ${row.included_meal[1]}`
+                        : t("set.includedMealNone")}
+                    </td>
+                    <td>{formatEuro(row.registration_fee_cents)}</td>
+                    <td>{formatEuro(row.amount_due_cents)}</td>
+                    <td>{formatEuro(row.paid_cents)}</td>
+                    <td>{policyBalance(row.balance_before_cents, t)}</td>
+                    <td>{policyBalance(row.balance_after_cents, t)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button type="button" disabled={busy} onClick={apply}>
+            {t("set.includedMealApply")}
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy}
+            onClick={() => setPreview(null)}
+          >
+            {t("set.policyCancelPreview")}
+          </button>
+        </>
+      )}
+      <NoticeLine notice={notice} />
+    </section>
+  );
+}
+
+type BenefitItem = {
+  id: number;
+  name_it: string;
+  name_en: string;
+  retired: boolean;
+  sort_order: number;
+};
+
+function BenefitsSection() {
+  const t = useT();
+  const [items, setItems] = useState<BenefitItem[]>([]);
+  const [editing, setEditing] = useState<BenefitItem | null>(null);
+  const [notice, setNotice] = useState<Notice>(null);
+
+  async function refresh() {
+    setItems(await api<BenefitItem[]>("/api/admin/benefits"));
+  }
+
+  useEffect(() => {
+    api<BenefitItem[]>("/api/admin/benefits")
+      .then((result) => setItems(Array.isArray(result) ? result : []))
+      .catch((error) => setNotice({ kind: "error", text: errorText(error) }));
+  }, []);
+
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    try {
+      await api(editing ? `/api/admin/benefits/${editing.id}` : "/api/admin/benefits", {
+        method: editing ? "PATCH" : "POST",
+        json: {
+          name_it: String(data.get("name_it") ?? "").trim(),
+          name_en: String(data.get("name_en") ?? "").trim(),
+          sort_order: items.length,
+        },
+      });
+      form.reset();
+      setEditing(null);
+      await refresh();
+    } catch (error) {
+      setNotice({ kind: "error", text: errorText(error) });
+    }
+  }
+
+  async function retire(item: BenefitItem) {
+    try {
+      await api(`/api/admin/benefits/${item.id}`, { method: "DELETE" });
+      await refresh();
+    } catch (error) {
+      setNotice({ kind: "error", text: errorText(error) });
+    }
+  }
+
+  return (
+    <section aria-labelledby="benefits-title">
+      <h2 id="benefits-title">{t("set.benefitsTitle")}</h2>
+      <p>{t("set.benefitsIntro")}</p>
+      <form onSubmit={create}>
+        <h3>{editing ? t("set.benefitEdit") : t("set.benefitAdd")}</h3>
+        <label>
+          {t("set.benefitIt")}
+          <input
+            key={`it-${editing?.id ?? "new"}`}
+            name="name_it"
+            required
+            maxLength={200}
+            defaultValue={editing?.name_it ?? ""}
+          />
+        </label>
+        <label>
+          {t("set.benefitEn")}
+          <input
+            key={`en-${editing?.id ?? "new"}`}
+            name="name_en"
+            required
+            maxLength={200}
+            defaultValue={editing?.name_en ?? ""}
+          />
+        </label>
+        <button type="submit">{editing ? t("set.benefitSave") : t("set.benefitAdd")}</button>
+        {editing && (
+          <button type="button" className="secondary" onClick={() => setEditing(null)}>
+            {t("set.benefitCancel")}
+          </button>
+        )}
+      </form>
+      <ul>
+        {items.map((item) => (
+          <li key={item.id}>
+            {item.name_it} / {item.name_en}{" "}
+            <button type="button" className="secondary" onClick={() => setEditing(item)}>
+              {t("set.benefitEditAction")}
+            </button>
+            {item.retired ? (
+              ` · ${t("set.benefitRetired")}`
+            ) : (
+              <button type="button" className="secondary" onClick={() => void retire(item)}>
+                {t("set.benefitRetire")}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
       <NoticeLine notice={notice} />
     </section>
   );
@@ -687,6 +936,8 @@ export function AdminSettings() {
       {edition ? (
         <>
           <ConfirmationPolicySection />
+          <IncludedMealsSection edition={edition} />
+          <BenefitsSection />
           <AdminEditionLogo
             logoUrl={edition.logo_url}
             onSaved={(logoUrl) =>

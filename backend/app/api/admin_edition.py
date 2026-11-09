@@ -16,6 +16,7 @@ from app.models import (
     DOC_ATTENDANCE,
     DOC_HEALTH,
     DOC_MEDIA,
+    Benefit,
     Edition,
     LegalDocument,
     Participant,
@@ -24,6 +25,7 @@ from app.models import (
 )
 from app.services import confirmation_policy as confirmation_policy_service
 from app.services import edition as edition_service
+from app.services import included_meals as included_meals_service
 from app.services import payments as payment_service
 from app.services import waitlist as waitlist_service
 from app.services.edition_logo import logo_url
@@ -119,6 +121,7 @@ class EditionOut(EditionIn):
     attendance: LegalOut | None = None
     media: LegalOut | None = None
     logo_url: str | None = None
+    included_meal_policy: str = "none"
 
 
 class ChannelIn(BaseModel):
@@ -187,6 +190,20 @@ class ConfirmationPolicyActivateIn(BaseModel):
     preview_token: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
 
 
+class IncludedMealPreviewIn(BaseModel):
+    policy: Literal["none", "first_organizer_meal"]
+
+
+class IncludedMealApplyIn(IncludedMealPreviewIn):
+    preview_token: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
+
+
+class BenefitIn(BaseModel):
+    name_it: str = Field(min_length=1, max_length=200)
+    name_en: str = Field(min_length=1, max_length=200)
+    sort_order: int = Field(default=0, ge=0)
+
+
 class ConfirmationPolicyActivateOut(BaseModel):
     already_applied: bool
     activated_at: datetime
@@ -230,6 +247,7 @@ def _edition_out(db: Session, edition: Edition) -> EditionOut:
         health=_legal_out(health),
         attendance=_legal_out(attendance),
         media=_legal_out(media),
+        included_meal_policy=edition.included_meal_policy,
     )
 
 
@@ -293,6 +311,103 @@ def activate_confirmation_policy(
         except Exception:
             logger.exception("Confirmation-policy emails failed")
     return ConfirmationPolicyActivateOut(**result)
+
+
+@router.post("/edition/included-meals/preview")
+def preview_included_meals(
+    body: IncludedMealPreviewIn,
+    response: Response,
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> dict:
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return included_meals_service.preview(db, _require_edition(db), body.policy, now)
+    except included_meals_service.PolicyUnavailable as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("included_meals.policy_unavailable")) from exc
+
+
+@router.post("/edition/included-meals/apply")
+def apply_included_meals(
+    body: IncludedMealApplyIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings_dep),
+    now: datetime = Depends(get_now),
+) -> dict:
+    try:
+        result = included_meals_service.apply(
+            db, _require_edition(db), admin, body.policy, body.preview_token, now
+        )
+    except included_meals_service.PreviewChanged as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("included_meals.preview_changed")) from exc
+    except included_meals_service.PolicyUnavailable as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("included_meals.policy_unavailable")) from exc
+    if not result["already_applied"]:
+        try:
+            payment_service.send_due_confirmations(db, sender, now, settings)
+        except Exception:
+            logger.exception("Included-meal policy confirmation emails failed")
+    return result
+
+
+@router.get("/benefits")
+def list_benefits(db: Session = Depends(get_db)) -> list[dict]:
+    edition = _require_edition(db)
+    return [
+        {
+            "id": item.id,
+            "name_it": item.name_it,
+            "name_en": item.name_en,
+            "retired": item.retired,
+            "sort_order": item.sort_order,
+        }
+        for item in db.query(Benefit)
+        .filter_by(edition_id=edition.id)
+        .order_by(Benefit.sort_order, Benefit.id)
+    ]
+
+
+@router.post("/benefits", status_code=201)
+def create_benefit(body: BenefitIn, db: Session = Depends(get_db)) -> dict:
+    edition = _require_edition(db)
+    item = Benefit(edition_id=edition.id, **body.model_dump())
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return {"id": item.id, **body.model_dump(), "retired": False}
+
+
+@router.patch("/benefits/{benefit_id}")
+def update_benefit(benefit_id: int, body: BenefitIn, db: Session = Depends(get_db)) -> dict:
+    edition = _require_edition(db)
+    item = db.get(Benefit, benefit_id)
+    if item is None or item.edition_id != edition.id:
+        raise HTTPException(status_code=404, detail=t("benefit.not_found"))
+    for key, value in body.model_dump().items():
+        setattr(item, key, value)
+    db.commit()
+    return {
+        "id": item.id,
+        "name_it": item.name_it,
+        "name_en": item.name_en,
+        "retired": item.retired,
+        "sort_order": item.sort_order,
+    }
+
+
+@router.delete("/benefits/{benefit_id}", status_code=204)
+def retire_benefit(benefit_id: int, db: Session = Depends(get_db)) -> None:
+    edition = _require_edition(db)
+    item = db.get(Benefit, benefit_id)
+    if item is None or item.edition_id != edition.id:
+        raise HTTPException(status_code=404, detail=t("benefit.not_found"))
+    item.retired = True
+    db.commit()
 
 
 @router.put("/edition")

@@ -2,15 +2,15 @@
 
 ## Ora
 
-**2026-11-09 · MVP 24 implementato su `feat/mvp-24-dettagli-attivita` (`ce64510`).** Schede attività IT/EN con fallback legacy, correzione separata dei dati operativi, note admin con cronologia e CSV riservato. Backend (1114 test), frontend (410), Ruff, lint, TypeScript, build, controllo Guide e migrazione SQLite passati. Rimangono SQL Server e collaudo manuale organizzatori, con checklist in `specs/mvp-24-dettagli-attivita/test-manuali.md`. MVP 24 è rilasciabile indipendentemente dal 23. Nessun deploy; le modifiche proposte a `domain.md` non sono applicate.
+**2026-11-09 · MVP 24 integrato in `main` con la PR #25; MVP 23 pronto al merge nella PR #26.** Dopo l’integrazione della base: backend 1130 test, Ruff/formattazione e frontend 409 test, lint, TypeScript/build passati localmente. La migrazione `0023_included_meal` segue `0022_activity_details`; CI GitHub completa e verde sul commit `746cf62`. Checklist manuale organizzatori ancora da completare (`specs/mvp-23-composizione-quota/test-manuali.md`).
 
-MVP 23 è implementato separatamente su `feat/mvp-23-composizione-quota` (`433bc89`); policy disattivata dalla migrazione, attivabile solo dopo l’MVP 18 tramite preview/apply admin. Entrambi i branch partono da `origin/main` aggiornato dopo il merge della PR #24. Per integrare entrambi in un unico rilascio servirà una migrazione Alembic di merge delle due revisioni; le revisioni funzionano separatamente e non è stata eseguita alcuna migrazione SQL Server o deploy.
+La migrazione MVP 23 (`0023_included_meal`) è collegata a `0022_activity_details` dal merge della PR #25. MVP 24 resta rilasciabile autonomamente. Nessun deploy o attivazione dei pasti compresi; le proposte a `domain.md` restano non applicate.
 
 **2026-11-08 · MVP20 presente in `main`; T20-8 completata come confermato dal maintainer.** Questa sessione ha eseguito la suite backend completa: 1103 test passati con 3 warning di deprecazione. Il maintainer conferma completati anche SQL Server e collaudo organizzatori. Nessun deploy, email reale o testo legale definitivo è stato eseguito in questa sessione.
 
 **MVP 19** implementato e ora presente in `main`: profilo annuale e contatti social, cataloghi locali ISTAT/ISO, campi obbligatori anche per sola lista, API personali/admin e richiamo legacy non bloccante; guide IT/EN e spec in `specs/mvp-19-profilo-completo/`. Restano le prove visuali e la verifica SQL Server CI della sessione precedente. Nessun deploy o email reale.
 
-**MVP 21 e 22 · PR #24 in revisione sul branch `feat/mvp-21-storico-cancellazioni`.** Storico admin e modale d'incasso rapido implementati; migrazioni `0020`/`0021`, guide IT/EN e test aggiunti. Copilot ha segnalato nove difetti, ora corretti nel branch. Verifica locale: backend 1112 test e frontend 410 test passati, Ruff, lint, TypeScript e build verdi; SQL Server e collaudi manuali sono confermati dal maintainer. Le voci di cancellazione si conservano un anno dalla disdetta e vengono eliminate dal job orario. La nuova CI è in attesa; nessun deploy effettuato.
+**MVP 21 e 22 · PR #24 unita a `main` il 2026-11-08.** Storico admin e modale d'incasso rapido; migrazioni `0020`/`0021`, guide IT/EN e test. La PR riporta CI aggiornata e completata, SQL Server e collaudi manuali confermati dal maintainer. Le voci di cancellazione si conservano un anno dalla disdetta e vengono eliminate dal job orario. Resta da verificare il deploy prima delle prove in produzione.
 
 MVP18 resta implementato: backend 1083 test, frontend 394, prove SQL confermate dal maintainer; le procedure manuali e l'attivazione reale sono ancora aperte. Per MVP17 restano collaudo visivo e testi legali definitivi.
 
