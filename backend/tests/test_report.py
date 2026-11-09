@@ -214,6 +214,8 @@ class TestCsv:
             "Contributi",
             "Lista d'attesa",
             "Incassi",
+            "Incassi esterni",
+            "Totale evento",
         }
 
     def test_amounts_use_the_decimal_comma_and_the_split_is_filled(self, admin_client, camp):

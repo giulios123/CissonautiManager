@@ -341,3 +341,73 @@ class TestMovementsCsv:
         assert header[3] == "Type of movement"
         assert rows[0][3] == "Payment"
         assert "guest-movements" in response.headers["content-disposition"]
+
+
+def report(client):
+    return client.get("/api/admin/views/report").json()["revenue"]
+
+
+class TestReport:
+    def test_six_euro_from_a_guest_raise_the_event_total_and_nothing_else(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        from tests.test_report import pay
+
+        booking = make_booking(make_participant("ada@example.com"), [], amount_due_cents=1100)
+        pay(db, booking, 1100)
+        before = report(admin_client)
+        guest_id = make_guest(admin_client, meals=[("13", "lunch")])
+        move(admin_client, guest_id, 600)
+        after = report(admin_client)
+        for key in ("due_cents", "paid_cents", "net_cents", "to_collect_cents", "credits_cents"):
+            assert after[key] == before[key], key
+        assert after["external_due_cents"] == 800
+        assert after["external_paid_cents"] == 600
+        assert after["external_to_collect_cents"] == 200
+        assert after["event_net_cents"] == before["net_cents"] + 600
+        # The payments of the bookings are the same rows as before.
+        assert db.scalar(select(func.count()).select_from(Payment)) == 1
+
+    def test_a_voided_movement_leaves_the_report(self, admin_client, edition):
+        guest_id = make_guest(admin_client, meals=[("13", "lunch")])
+        movement_id = move(admin_client, guest_id, 600).json()["movements"][0]["id"]
+        admin_client.post(f"{URL}/movements/{movement_id}/void", json={"reason": "x"})
+        revenue = report(admin_client)
+        assert (revenue["external_paid_cents"], revenue["event_net_cents"]) == (0, 0)
+
+    def test_provider_costs_are_in_neither_total(self, admin_client, db, edition):
+        db.add(
+            MealSetting(
+                edition_id=edition.id,
+                date=d(13),
+                kind="lunch",
+                payment_mode="provider",
+                price_cents=900,
+                payment_instructions="Paga al ristorante",
+            )
+        )
+        db.commit()
+        make_guest(admin_client, meals=[("13", "lunch")])
+        revenue = report(admin_client)
+        assert (revenue["external_due_cents"], revenue["due_cents"]) == (0, 0)
+
+    def test_a_refund_lowers_the_event_total(self, admin_client, edition):
+        guest_id = make_guest(admin_client, meals=[("13", "lunch")], payer="non_paying")
+        move(admin_client, guest_id, 800)
+        move(admin_client, guest_id, 300, kind="refund")
+        revenue = report(admin_client)
+        assert revenue["external_refunded_cents"] == 300
+        assert revenue["event_net_cents"] == 500
+        assert revenue["external_credit_cents"] == 500
+
+    def test_the_csv_has_the_guest_section_and_the_event_total(self, admin_client, edition):
+        guest_id = make_guest(admin_client, meals=[("13", "lunch")])
+        move(admin_client, guest_id, 600)
+        rows = parse(admin_client.get("/api/admin/views/report?format=csv"))[1:]
+        by_label = {r[1]: r for r in rows}
+        assert by_label["Versato dagli esterni"][4] == "6,00"
+        assert by_label["Ancora da incassare dagli esterni"][4] == "2,00"
+        total = by_label["Incassato dall'evento (quote più esterni)"]
+        assert (total[0], total[4]) == ("Totale evento", "6,00")
+        english = parse(admin_client.get("/api/admin/views/report?format=csv&lang=en"))[1:]
+        assert any(r[0] == "Event total" and r[4] == "6,00" for r in english)

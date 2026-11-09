@@ -36,6 +36,7 @@ from app.models import (
     slot_sort_key,
 )
 from app.services import edition as edition_service
+from app.services import guest_payments
 from app.services.payments import active_payments, paid_total
 from app.services.seats import expire_overdue
 
@@ -372,6 +373,20 @@ class ReportData:
     report: EditionReport
 
 
+def _guest_facts(db: Session, edition: Edition, guest: ExternalGuest) -> GuestFacts:
+    account = guest_payments.account_of(edition, guest, guest_payments.movements_of(db, guest))
+    return GuestFacts(
+        guest_id=guest.id,
+        meals=tuple((m.date, m.kind) for m in guest.meals),
+        activity_ids=tuple(a.id for a in guest.activities),
+        diet=guest.diet,
+        has_allergies=bool((guest.allergies or "").strip()),
+        due_cents=account.due_cents,
+        paid_cents=account.paid_cents,
+        refunded_cents=account.refunded_cents,
+    )
+
+
 def load_report(db: Session, now: datetime) -> ReportData:
     """The numbers of the active edition, read the way the other admin views read them (expiry
     evaluated now, voided payments out), so that the report agrees with them."""
@@ -419,13 +434,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
         for a in db.scalars(select(Activity).where(Activity.edition_id == edition.id))
     ]
     guests = [
-        GuestFacts(
-            guest_id=g.id,
-            meals=tuple((m.date, m.kind) for m in g.meals),
-            activity_ids=tuple(a.id for a in g.activities),
-            diet=g.diet,
-            has_allergies=bool((g.allergies or "").strip()),
-        )
+        _guest_facts(db, edition, g)
         for g in db.scalars(
             select(ExternalGuest)
             .where(ExternalGuest.edition_id == edition.id)

@@ -8,12 +8,13 @@ sure and who is still to pay. Money counts everything that was paid, refunded or
 
 from collections import Counter
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 
 from app.domain.booking import occupies_seats
 from app.domain.collection import collectable
 from app.domain.confirmation import POLICY_LEGACY_TOTAL, confirmation_due_cents
+from app.domain.external import Movement, guest_account
 from app.domain.fees import compute_fee
 from app.domain.meals import NO_DIET
 from app.domain.presence import presences
@@ -74,6 +75,10 @@ class GuestFacts:
     activity_ids: tuple[int, ...]
     diet: str | None
     has_allergies: bool
+    # Money (MVP 25b): what the guest owes, and the movements that count (voided ones left out).
+    due_cents: int = 0
+    paid_cents: int = 0
+    refunded_cents: int = 0
 
 
 @dataclass(frozen=True)
@@ -205,6 +210,16 @@ class RevenueSection:
     to_confirm_cents: int | None
     credits_cents: int
     to_refund_cents: int
+    # External guests (MVP 25b): a register apart from the bookings. Never added to the figures
+    # above; only `event_net_cents` joins the two.
+    external_due_cents: int = 0
+    external_paid_cents: int = 0
+    external_refunded_cents: int = 0
+    external_net_cents: int = 0
+    external_to_collect_cents: int = 0
+    external_credit_cents: int = 0
+    # What the organisation holds for the whole event: net of the bookings plus net of the guests.
+    event_net_cents: int = 0
 
 
 @dataclass(frozen=True)
@@ -443,6 +458,14 @@ def _revenue(
     )
 
 
+def _guest_movements(guest: GuestFacts) -> list[Movement]:
+    """The movements that count, as two totals (the report needs no more)."""
+    return [
+        Movement("payment", guest.paid_cents),
+        Movement("refund", guest.refunded_cents),
+    ]
+
+
 def edition_report(
     edition: EditionFacts,
     bookings: Sequence[BookingFacts],
@@ -453,6 +476,19 @@ def edition_report(
 ) -> EditionReport:
     confirmed, pending = _seated(bookings)
     contributions = Counter(kind for b in [*confirmed, *pending] for kind in b.contributions)
+    revenue = _revenue(bookings, payments, activities, edition)
+    accounts = [guest_account(g.due_cents, _guest_movements(g)) for g in guests]
+    external_net = sum(a.net_cents for a in accounts)
+    revenue = replace(
+        revenue,
+        external_due_cents=sum(a.due_cents for a in accounts),
+        external_paid_cents=sum(a.paid_cents for a in accounts),
+        external_refunded_cents=sum(a.refunded_cents for a in accounts),
+        external_net_cents=external_net,
+        external_to_collect_cents=sum(a.to_collect_cents for a in accounts),
+        external_credit_cents=sum(a.credit_cents for a in accounts),
+        event_net_cents=revenue.net_cents + external_net,
+    )
     return EditionReport(
         enrollment=_enrollment(bookings),
         presence=_presence(confirmed, pending, edition.slots),
@@ -460,6 +496,6 @@ def edition_report(
         activities=_activities(activities, confirmed, pending, guests),
         contributions={kind: contributions.get(kind, 0) for kind in CONTRIBUTION_KINDS},
         waitlist=_waitlist(waitlist),
-        revenue=_revenue(bookings, payments, activities, edition),
+        revenue=revenue,
         days=sorted({day for day, _ in edition.slots}),
     )

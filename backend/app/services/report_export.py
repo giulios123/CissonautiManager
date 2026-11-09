@@ -175,4 +175,23 @@ def report_rows(report: EditionReport) -> list[Row]:
         _plain(section, "Crediti da restituire", Amount(money.credits_cents)),
         _plain(section, "Disdette da rimborsare", Amount(money.to_refund_cents)),
     ]
+
+    section = "Incassi esterni"
+    rows += [
+        _plain(section, "Dovuto dagli esterni", Amount(money.external_due_cents)),
+        _plain(section, "Versato dagli esterni", Amount(money.external_paid_cents)),
+        _plain(section, "Restituito agli esterni", Amount(money.external_refunded_cents)),
+        _plain(
+            section, "Netto esterni (versato meno restituito)", Amount(money.external_net_cents)
+        ),
+        _plain(
+            section, "Ancora da incassare dagli esterni", Amount(money.external_to_collect_cents)
+        ),
+        _plain(section, "Crediti degli esterni da restituire", Amount(money.external_credit_cents)),
+    ]
+
+    section = "Totale evento"
+    rows.append(
+        _plain(section, "Incassato dall'evento (quote più esterni)", Amount(money.event_net_cents))
+    )
     return rows
