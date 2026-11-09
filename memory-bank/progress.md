@@ -8,9 +8,12 @@ Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche S
 
 Implementati sul branch `feat/mvp-21-storico-cancellazioni` e uniti a `main` con PR #24 il 2026-11-08. Registro admin delle nuove disdette con conservazione annuale e pulizia oraria; modale d'incasso rapido con snapshot, retry idempotente, annullo ed email differita; guide IT/EN e migrazioni `0020`/`0021`. La PR riporta suite locale, CI, SQL Server e collaudi manuali completati. Nessun deploy dichiarato.
 
-## MVP 23 e 24 · Spec B1 in attesa di approvazione
+## MVP 23 e 24 · Implementati su branch separati
 
-Il 9 novembre sono state preparate le spec separate per [MVP 23 · Composizione quota](../specs/mvp-23-composizione-quota/requirements.md) e [MVP 24 · Dettagli attività](../specs/mvp-24-dettagli-attivita/requirements.md), con design e 9 task ciascuna. Le modifiche a `domain.md` sono proposte, non applicate. Le scelte del 23 sono nessun pasto/primo pasto, pasto gratuito eleggibile, provider ignorato, e attivazione soltanto dopo MVP 18. Il 24 è indipendente dal 23. Checkout ancora su `feat/mvp-21-storico-cancellazioni`; per B2 si dovrà aggiornare `main` e creare il branch MVP dedicato. Nessun codice, migrazione, test o deploy eseguiti.
+- **MVP 23**, branch `feat/mvp-23-composizione-quota`, commit `433bc89`: policy disattivata dalla migrazione, primo pasto idoneo coperto e riassegnato con il ricalcolo, preview/apply admin con fingerprint e retry idempotente, catalogo benefit minimale, interfacce e guida IT/EN. Task T23-1–8 implementati. Backend 1115 test, frontend 410 test, Ruff, formattazione, lint, typecheck, build, controllo Guide e migrazione SQLite passati. Restano la prova SQL Server e il collaudo manuale organizzatori (`specs/mvp-23-composizione-quota/test-manuali.md`).
+- **MVP 24**, branch separato `feat/mvp-24-dettagli-attivita`, commit `ce64510`: testi IT/EN con fallback legacy, schede attività e note admin con cronologia e CSV admin. Task T24-1–8 implementati. Backend 1114 test, frontend 410 test e gli stessi controlli statici/build e migrazione SQLite passati. Restano la prova SQL Server e il collaudo manuale (`specs/mvp-24-dettagli-attivita/test-manuali.md`).
+
+Le spec B1 restano separate; il 24 è rilasciabile indipendentemente dal 23. Le modifiche proposte a `domain.md` non sono state applicate. Nessun deploy eseguito. La pubblicazione del 23 e l’attivazione della policy per un’edizione sono passaggi distinti.
 
 ## MVP 20 · Nuova accettazione privacy — implementato sul branch
 

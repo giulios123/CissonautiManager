@@ -2,9 +2,9 @@
 
 ## Ora
 
-**2026-11-09 · Spec proposte MVP 23 e 24, in attesa di approvazione.** MVP 23 tratta composizione della quota con un solo pasto incluso e catalogo benefit minimale; si attiva solo dopo la policy di conferma su quota dell’MVP 18 e tramite preview/apply esplicito. MVP 24 tratta schede attività localizzate e note admin con cronologia; è indipendente dal 23. Spec in `specs/mvp-23-composizione-quota/` e `specs/mvp-24-dettagli-attivita/`. Nessun codice o migrazione implementati; le modifiche proposte a `domain.md` attendono consenso.
+**2026-11-09 · MVP 23 implementato su `feat/mvp-23-composizione-quota` (`433bc89`).** Composizione della quota con primo pasto idoneo, anteprima/applicazione admin e catalogo benefit; policy disattivata dalla migrazione e applicabile solo dopo la conferma con quota dell’MVP 18. Backend (1115 test), frontend (410), Ruff, lint, TypeScript, build, controllo Guide e migrazione SQLite passati. Rimangono SQL Server e collaudo manuale organizzatori, con checklist in `specs/mvp-23-composizione-quota/test-manuali.md`. Nessun deploy o attivazione dei pasti compresi; le modifiche proposte a `domain.md` non sono applicate.
 
-La PR #24 degli MVP 21–22 risulta unita a `main` il 2026-11-08. Il checkout di questa sessione è ancora sul branch `feat/mvp-21-storico-cancellazioni` al commit `c729ba0`; per l’implementazione aggiornare e usare `main`, verificando lo stato live prima di creare il branch dedicato. Nessun deploy è dedotto dal merge.
+MVP 24 è implementato separatamente su `feat/mvp-24-dettagli-attivita` (`ce64510`) e rilasciabile senza il 23: testi attività IT/EN, schede e note admin con cronologia. Backend (1114 test), frontend (410), Ruff, lint, TypeScript, build, controllo Guide e migrazione SQLite passati. Rimangono SQL Server e collaudo manuale organizzatori, con checklist in `specs/mvp-24-dettagli-attivita/test-manuali.md`. Entrambi i branch partono da `origin/main` aggiornato dopo il merge della PR #24; nessun deploy è dedotto dai commit.
 
 **2026-11-08 · MVP20 presente in `main`; T20-8 completata come confermato dal maintainer.** Questa sessione ha eseguito la suite backend completa: 1103 test passati con 3 warning di deprecazione. Il maintainer conferma completati anche SQL Server e collaudo organizzatori. Nessun deploy, email reale o testo legale definitivo è stato eseguito in questa sessione.
 
