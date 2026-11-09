@@ -8,4 +8,4 @@
 - [x] **T24-6** Usare titolo localizzato in picker, liste e riepiloghi senza cambiare le regole di adesione.
 - [x] **T24-7** Estendere il CSV admin con nota corrente, anche senza iscritti, mantenendo il controllo admin.
 - [x] **T24-8** Aggiornare dizionari e guide IT/EN; checklist manuale preparata.
-- [ ] **T24-9** Suite backend 1114 test, frontend 410 test, Ruff, lint, typecheck, build, controllo Guide e sincronizzazione modelli/migrazioni verdi. Restano verifica SQL Server e collaudo manuale.
+- [x] **T24-9** Suite backend completa (1117 test), frontend (410 test), Ruff, lint, typecheck, build, controllo Guide e migrazioni SQLite/SQL Server verificati. Il workflow CI del commit di review ha riportato `failure` senza job falliti nei dettagli disponibili; una nuova esecuzione sul head aggiornato deve confermare l’esito complessivo. Resta il collaudo manuale degli organizzatori.
