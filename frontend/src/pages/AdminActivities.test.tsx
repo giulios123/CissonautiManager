@@ -9,10 +9,17 @@ const edition = { start_date: "2026-07-13", end_date: "2026-07-14" };
 const hike = {
   id: 3,
   title: "Escursione",
-  description: null,
+  description: "Sul monte",
+  title_it: "Escursione",
+  title_en: "Hike",
+  description_it: "Sul monte",
+  description_en: "On the mountain",
+  translation_missing: false,
   date: "2026-07-14",
   period: "morning",
   time_label: "9:30-12",
+  start_time: "09:30",
+  end_time: "12:00",
   price_cents: 1500,
   capacity: 2,
   joined: 1,
@@ -41,7 +48,10 @@ describe("activities admin page", () => {
     expect(within(row).getByRole("button", { name: "Elimina" })).toBeDisabled();
 
     const form = within(screen.getByRole("form", { name: "Nuova attività" }));
-    await userEvent.type(form.getByLabelText("Titolo"), "Yoga");
+    await userEvent.type(form.getByLabelText("Titolo · IT"), "Yoga");
+    await userEvent.type(form.getByLabelText("Titolo · EN"), "Yoga");
+    await userEvent.type(form.getByLabelText("Descrizione · IT"), "Una pratica guidata");
+    await userEvent.type(form.getByLabelText("Descrizione · EN"), "A guided practice");
     await userEvent.selectOptions(form.getByLabelText("Fascia"), "evening");
     await userEvent.clear(form.getByLabelText(/Prezzo/));
     await userEvent.type(form.getByLabelText(/Prezzo/), "5");
@@ -49,7 +59,11 @@ describe("activities admin page", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Attività creata.");
     expect(calls.find((c) => c.method === "POST")?.body).toEqual({
       title: "Yoga",
-      description: null,
+      title_it: "Yoga",
+      title_en: "Yoga",
+      description: "Una pratica guidata",
+      description_it: "Una pratica guidata",
+      description_en: "A guided practice",
       date: "2026-07-13",
       period: "evening",
       start_time: "19:00",

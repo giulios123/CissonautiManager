@@ -1,5 +1,13 @@
 # Progress
 
+## MVP 23 · Composizione quota
+
+Implementato nel branch `feat/mvp-23-composizione-quota`, commit `433bc89`. La policy `none` / `first_organizer_meal` richiede conferma su quota, applica il primo pasto organizzativo con preview/apply e fingerprint, ed è condivisa da ricalcolo, viste e report. Catalogo benefit IT/EN e guide aggiornati; consegna e ammissibilità restano nel 30. Suite backend 1115, frontend 410, Ruff, lint, typecheck, build e controllo Guide superati. Migrazione 0022 applicata su SQLite; SQL Server e collaudo manuale restano da eseguire. Nessun deploy.
+
+## MVP 24 · Dettagli attività
+
+Implementato nel branch `feat/mvp-24-dettagli-attivita`, commit `ce64510`. Attività localizzate IT/EN con fallback dei testi legacy; note interne admin con cronologia, API admin protette e CSV con nota anche senza iscritti. Suite backend 1114, frontend 410, Ruff, lint, typecheck, build, controllo Guide e sincronizzazione Alembic/modelli superati. Migrazione `0022_activity_details` verificata su SQLite. SQL Server e collaudo manuale restano da eseguire (checklist in `specs/mvp-24-dettagli-attivita/test-manuali.md`). MVP 24 è rilasciabile indipendentemente dal 23. Nessun deploy. Se i due branch vengono combinati, serve una migrazione Alembic di merge delle revisioni `0022` e `0022_activity_details`.
+
 ## Chiusura MVP 20 · T20-8
 
 Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche SQL Server e del collaudo degli organizzatori. Nella sessione corrente la suite backend completa ha superato 1103 test (3 warning di deprecazione). T20-8 è chiusa; la chiusura non dichiara eseguiti deploy o invii email reali.

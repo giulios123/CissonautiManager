@@ -306,6 +306,11 @@ class Activity(Base):
     edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
     title: Mapped[str] = mapped_column(Unicode(200))
     description: Mapped[str | None] = mapped_column(UnicodeText)
+    title_it: Mapped[str | None] = mapped_column(Unicode(200))
+    title_en: Mapped[str | None] = mapped_column(Unicode(200))
+    description_it: Mapped[str | None] = mapped_column(UnicodeText)
+    description_en: Mapped[str | None] = mapped_column(UnicodeText)
+    internal_note: Mapped[str | None] = mapped_column(UnicodeText)
     date: Mapped[date] = mapped_column(Date)
     period: Mapped[str] = mapped_column(Unicode(12))
     # Generated display label; legacy free text stays until structured times are selected.
@@ -327,6 +332,17 @@ class BookingActivity(Base):
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
     activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"), primary_key=True)
     joined_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class ActivityNoteRevision(Base):
+    __tablename__ = "activity_note_revision"
+    __table_args__ = (Index("ix_activity_note_revision_activity_id", "activity_id", "id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id", ondelete="CASCADE"))
+    actor_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    note: Mapped[str | None] = mapped_column(UnicodeText)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 
 class Contribution(Base):

@@ -42,9 +42,14 @@ export type BookingView = {
   activities?: (CollectionTerms & {
     id: number;
     title: string;
+    description: string | null;
     label: string;
+    date: string;
+    period: string;
     price_cents: number;
     time_label?: string | null;
+    start_time?: string | null;
+    end_time?: string | null;
   })[];
   dropped_meals?: string[];
   dropped_activities?: string[];
@@ -99,6 +104,8 @@ export type ActivityOffer = CollectionTerms & {
   date: string;
   period: string;
   time_label: string | null;
+  start_time: string | null;
+  end_time: string | null;
   price_cents: number;
   capacity: number | null;
   free: number | null;

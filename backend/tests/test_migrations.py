@@ -109,9 +109,22 @@ def test_migration_0015_preserves_legacy_activity_time_and_price(
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         row = connection.execute(
-            text("SELECT time_label, price_cents, payment_mode, starts_at, ends_at FROM activity")
+            text(
+                "SELECT time_label, price_cents, payment_mode, starts_at, ends_at, title_it,"
+                " title_en, description_it, description_en FROM activity"
+            )
         ).one()
-        assert tuple(row) == ("around ten", 1500, "organizer", None, None)
+        assert tuple(row) == (
+            "around ten",
+            1500,
+            "organizer",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
     command.downgrade(alembic_config, "0014")
     with engine.connect() as connection:
         assert (

@@ -82,27 +82,40 @@ export function ActivityPicker<T = unknown>({
         const full = offer.free !== null && offer.free < 1 && !offer.joined;
         const locked = (offer.past || full) && !admin;
         return (
-          <label className="check" key={offer.id}>
-            <input
-              type="checkbox"
-              checked={selected.has(offer.id)}
-              disabled={locked}
-              onChange={(e) => toggle(offer.id, e.target.checked)}
-            />
-            <span>
-              <strong>{offer.title}</strong>, {formatDay(offer.date)}{" "}
-              {periodLabel(offer.period).toLowerCase()}
-              {offer.time_label && ` (${offer.time_label})`} · {priceLabel(offer.price_cents)} ·{" "}
-              {offer.past ? t("edit.pastDay") : seatsText(offer)}
+          <div className="activity-option" key={offer.id}>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={selected.has(offer.id)}
+                disabled={locked}
+                onChange={(e) => toggle(offer.id, e.target.checked)}
+              />
+              <span>
+                <strong>{offer.title}</strong>, {formatDay(offer.date)}{" "}
+                {periodLabel(offer.period).toLowerCase()}
+                {offer.time_label && ` (${offer.time_label})`} · {priceLabel(offer.price_cents)} ·{" "}
+                {offer.past ? t("edit.pastDay") : seatsText(offer)}
+              </span>
+            </label>
+            <details>
+              <summary>{t("act.details")}</summary>
+              {offer.description && <p>{offer.description}</p>}
+              <p>
+                {formatDay(offer.date)} · {periodLabel(offer.period)}
+                {offer.start_time && offer.end_time && ` · ${offer.start_time}–${offer.end_time}`}
+              </p>
+              <p>
+                {priceLabel(offer.price_cents)} · {t("collection.who")}:{" "}
+                {t(
+                  offer.payment_mode === "provider"
+                    ? "collection.provider"
+                    : "collection.organizer",
+                )}
+              </p>
+              {offer.capacity !== null && <p>{seatsText(offer)}</p>}
               <CollectionDetails terms={offer} />
-              {offer.description && (
-                <>
-                  <br />
-                  <small>{offer.description}</small>
-                </>
-              )}
-            </span>
-          </label>
+            </details>
+          </div>
         );
       })}
       {admin && (

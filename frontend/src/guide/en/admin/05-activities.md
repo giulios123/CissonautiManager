@@ -13,3 +13,7 @@ Before that you can delete it and it disappears from the participants' page. Tap
 “Download CSV” exports the activities and who signed up.
 
 Choose start and end times using hour/minute menus within the selected slot (Rome time); evening activities may end at midnight. Select whether the organizers or the provider collects payment. Direct payment requires a cost and instructions including the recipient; that cost is excluded from the camp fee. Cost and recipient can change after sign-ups: saving recalculates affected active bookings while retaining recorded payments and showing any credit.
+
+# Activity details and notes
+
+Enter new activity titles and descriptions in both Italian and English. Existing activities remain readable with their saved text while organisers can complete translations. Use the activity page to review operational details and update its internal note. The note and its history are for organisers only. The admin CSV includes the current note even when nobody has signed up.
