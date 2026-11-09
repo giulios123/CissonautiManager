@@ -2,6 +2,8 @@
 
 ## Ora
 
+**2026-11-09 · MVP 23 e 24 implementati su branch distinti; verifiche locali completate.** MVP 23 su `feat/mvp-23-composizione-quota`, commit `433bc89`: policy del primo pasto organizzativo, anteprima/applicazione admin, catalogo benefit, viste/report/guide IT/EN. Suite backend 1115 test, frontend 410, Ruff, lint, typecheck, build e Guide verdi; resta SQL Server e collaudo manuale. MVP 24 su `feat/mvp-24-dettagli-attivita`: testi bilingui con fallback legacy, note admin con cronologia e CSV admin. Suite backend 1114 test, frontend 410, Ruff, lint, typecheck, build, Guide e sincronizzazione modelli/migrazioni verdi; resta SQL Server e collaudo manuale. Nessun deploy o push effettuato. Le modifiche proposte a `domain.md` attendono approvazione.
+
 **2026-11-08 · MVP20 presente in `main`; T20-8 completata come confermato dal maintainer.** Questa sessione ha eseguito la suite backend completa: 1103 test passati con 3 warning di deprecazione. Il maintainer conferma completati anche SQL Server e collaudo organizzatori. Nessun deploy, email reale o testo legale definitivo è stato eseguito in questa sessione.
 
 **MVP 19** implementato e ora presente in `main`: profilo annuale e contatti social, cataloghi locali ISTAT/ISO, campi obbligatori anche per sola lista, API personali/admin e richiamo legacy non bloccante; guide IT/EN e spec in `specs/mvp-19-profilo-completo/`. Restano le prove visuali e la verifica SQL Server CI della sessione precedente. Nessun deploy o email reale.

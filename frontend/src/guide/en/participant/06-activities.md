@@ -8,3 +8,7 @@ The organizers offer activities (hikes, workshops and more), free or paid. You f
 - If you remove the slot of that time, the activity is dropped and the app lets you know.
 
 Activities show start and end times. Activities paid directly to the provider show their cost, recipient and payment instructions before sign-up and in your summary; their cost is excluded from the camp fee.
+
+# Activity details
+
+Activities show the title and description in your selected language, with schedule, cost, recipient, instructions and available places when applicable. You can join only when your booking covers that time slot.

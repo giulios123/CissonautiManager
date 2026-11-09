@@ -13,6 +13,7 @@ from app.domain.booking import (
 from app.domain.confirmation import confirmation_balance_cents, confirmation_due_cents
 from app.domain.fees import balance_cents
 from app.domain.meals import allowed_meals, meal_sort_key, periods_by_day
+from app.i18n import current_locale
 from app.models import (
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
@@ -162,8 +163,12 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
         activities=[
             ActivityView(
                 id=a.id,
-                title=a.title,
-                label=format_activity(a.title, a.date, a.period),
+                title=(a.title_it if current_locale() == "it" else a.title_en) or a.title,
+                label=format_activity(
+                    (a.title_it if current_locale() == "it" else a.title_en) or a.title,
+                    a.date,
+                    a.period,
+                ),
                 time_label=a.time_label,
                 **activity_terms(a),
             )
@@ -224,8 +229,10 @@ def activity_offers(db: Session, booking: Booking, now: datetime) -> list[Activi
     return [
         ActivityOffer(
             id=a.id,
-            title=a.title,
-            description=a.description,
+            title=(a.title_it if current_locale() == "it" else a.title_en) or a.title,
+            description=(a.description_it if current_locale() == "it" else a.description_en)
+            if a.title_it
+            else a.description,
             date=a.date,
             period=a.period,
             time_label=a.time_label,

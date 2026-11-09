@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import { priceLabel, seatsLabel, type Activity } from "../activities";
@@ -8,6 +8,7 @@ import { useI18n } from "../i18n";
 import { adminRegistrationPath, ROUTES } from "../routes";
 import { CsvButton } from "./CsvButton";
 import { CollectionDetails } from "../collection";
+import { ApiError } from "../api";
 
 type Person = {
   booking_id: number;
@@ -17,22 +18,44 @@ type Person = {
   phone: string | null;
   status: string;
 };
-type Detail = Activity & { people: Person[] };
+type Detail = Activity & {
+  people: Person[];
+  internal_note: string | null;
+  note_history: { note: string | null; author: string; created_at: string }[];
+};
 
 export function AdminActivityDetail() {
   const { t, tn } = useI18n();
   const { id } = useParams();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [failed, setFailed] = useState(false);
+  const [note, setNote] = useState("");
+  const [noteError, setNoteError] = useState("");
 
   useEffect(() => {
     api<Detail>(`/api/admin/activities/${id}`)
-      .then(setDetail)
+      .then((loaded) => {
+        setDetail(loaded);
+        setNote(loaded.internal_note ?? "");
+      })
       .catch(() => setFailed(true));
   }, [id]);
 
   if (failed) return <main role="alert">{t("aact.notFound")}</main>;
   if (!detail) return <main aria-busy="true">{t("common.loading")}</main>;
+
+  async function saveNote(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNoteError("");
+    try {
+      await api(`/api/admin/activities/${id}/note`, { method: "PUT", json: { note } });
+      const loaded = await api<Detail>(`/api/admin/activities/${id}`);
+      setDetail(loaded);
+      setNote(loaded.internal_note ?? "");
+    } catch (error) {
+      setNoteError(error instanceof ApiError ? error.message : t("common.somethingWrong"));
+    }
+  }
 
   return (
     <main className="wide">
@@ -48,13 +71,38 @@ export function AdminActivityDetail() {
       </p>
       {detail.description && <p>{detail.description}</p>}
       <CollectionDetails terms={detail} />
+      <p>
+        <CsvButton path={`/api/admin/activities/${detail.id}`} />
+      </p>
+      <form onSubmit={saveNote}>
+        <label>
+          {t("aact.internalNote")}
+          <textarea
+            value={note}
+            maxLength={5000}
+            rows={4}
+            onChange={(event) => setNote(event.target.value)}
+          />
+        </label>
+        {noteError && <p role="alert">{noteError}</p>}
+        <button type="submit">{t("aact.saveNote")}</button>
+      </form>
+      {(detail.note_history ?? []).length > 0 && (
+        <section aria-labelledby="activity-note-history">
+          <h2 id="activity-note-history">{t("aact.noteHistory")}</h2>
+          <ul>
+            {(detail.note_history ?? []).map((revision, index) => (
+              <li key={`${revision.created_at}-${index}`}>
+                {revision.created_at} · {revision.author} · {revision.note || t("aact.noteCleared")}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {detail.people.length === 0 ? (
         <p>{t("aact.noneSignedUp")}</p>
       ) : (
         <>
-          <p>
-            <CsvButton path={`/api/admin/activities/${detail.id}`} />
-          </p>
           <div className="table-wrap">
             <table>
               <caption>{t("aact.signedUpCaption")}</caption>

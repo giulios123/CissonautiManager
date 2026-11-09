@@ -173,7 +173,8 @@ it("uses selectors for activity start and end, including minutes and midnight", 
   renderAt("/admin/activities");
   const form = within(await screen.findByRole("form", { name: "Nuova attività" }));
   expect(form.queryByRole("textbox", { name: /Orario/ })).not.toBeInTheDocument();
-  await userEvent.type(form.getByLabelText("Titolo"), "Evening yoga");
+  await userEvent.type(form.getByLabelText("Titolo · IT"), "Evening yoga");
+  await userEvent.type(form.getByLabelText("Titolo · EN"), "Evening yoga");
   await userEvent.selectOptions(form.getByLabelText("Fascia"), "evening");
   await userEvent.selectOptions(form.getByLabelText("Inizio: ore"), "21");
   await userEvent.selectOptions(form.getByLabelText("Inizio: minuti"), "35");

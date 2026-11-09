@@ -152,10 +152,46 @@ def test_detail_and_csv_list_the_people(
             "In attesa di pagamento",
             "Organizzatori",
             "",
+            "",
         ]
     ]
     all_rows = parse(admin_client.get("/api/admin/activities?format=csv"))[1:]
     assert all_rows == rows
+
+
+def test_bilingual_content_and_private_note_history(admin_client, hike, db):
+    response = admin_client.patch(
+        f"/api/admin/activities/{hike['id']}",
+        json=dict(
+            HIKE,
+            title_it="Escursione",
+            title_en="Hike",
+            description_it="Sul monte",
+            description_en="In the mountains",
+        ),
+    )
+    assert response.status_code == 200
+    detail = admin_client.get(f"/api/admin/activities/{hike['id']}").json()
+    assert detail["title_it"] == "Escursione"
+    assert detail["title_en"] == "Hike"
+
+    saved = admin_client.put(
+        f"/api/admin/activities/{hike['id']}/note", json={"note": "Portare acqua"}
+    )
+    assert saved.status_code == 200
+    detail = admin_client.get(f"/api/admin/activities/{hike['id']}").json()
+    assert detail["internal_note"] == "Portare acqua"
+    assert detail["note_history"][0]["note"] == "Portare acqua"
+
+    csv_rows = parse(admin_client.get("/api/admin/activities?format=csv"))
+    assert csv_rows[1][-1] == "Portare acqua"
+
+
+def test_empty_activity_csv_contains_note(admin_client, hike):
+    admin_client.put(f"/api/admin/activities/{hike['id']}/note", json={"note": "Solo admin"})
+    rows = parse(admin_client.get("/api/admin/activities?format=csv"))
+    assert rows[1][2] == "Escursione"
+    assert rows[1][-1] == "Solo admin"
 
 
 def test_participants_cannot_manage_activities(client, outbox, make_participant, edition):

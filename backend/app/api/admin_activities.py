@@ -11,8 +11,8 @@ from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_email_sender, get_now, require_admin
 from app.email import EmailSender
-from app.i18n import t
-from app.models import Activity, Edition, Participant
+from app.i18n import current_locale, t
+from app.models import Activity, ActivityNoteRevision, Edition, Participant
 from app.services import activities as activity_service
 from app.services import edition as edition_service
 from app.services.amounts import activity_terms
@@ -37,6 +37,10 @@ REFUSALS = {
 class ActivityIn(BaseModel):
     title: Annotated[Text, Field(min_length=1, max_length=200)]
     description: Annotated[Text, Field(max_length=5000)] | None = None
+    title_it: Annotated[Text, Field(min_length=1, max_length=200)] | None = None
+    title_en: Annotated[Text, Field(min_length=1, max_length=200)] | None = None
+    description_it: Annotated[Text, Field(max_length=5000)] | None = None
+    description_en: Annotated[Text, Field(max_length=5000)] | None = None
     date: date
     period: Literal["morning", "afternoon", "evening"]
     start_time: time | None = None
@@ -48,6 +52,14 @@ class ActivityIn(BaseModel):
 
     @model_validator(mode="after")
     def check_terms(self) -> Self:
+        if (self.title_it is None) != (self.title_en is None):
+            raise ValueError(t("activity.bilingual_required"))
+        if (self.description_it is None) != (self.description_en is None):
+            raise ValueError(t("activity.bilingual_description"))
+        if self.title_it is not None:
+            locale = current_locale()
+            self.title = self.title_it if locale == "it" else self.title_en or self.title_it
+            self.description = self.description_it if locale == "it" else self.description_en
         if self.payment_mode == "provider" and (
             "price_cents" not in self.model_fields_set or not self.payment_instructions
         ):
@@ -71,6 +83,12 @@ class ActivityOut(BaseModel):
     capacity: int | None
     joined: int
     free: int | None
+    title_it: str | None = None
+    title_en: str | None = None
+    description_it: str | None = None
+    description_en: str | None = None
+    translation_missing: bool = False
+    internal_note: str | None = None
 
 
 class ActivityPerson(BaseModel):
@@ -84,6 +102,12 @@ class ActivityPerson(BaseModel):
 
 class ActivityDetailOut(ActivityOut):
     people: list[ActivityPerson]
+    internal_note: str | None = None
+    note_history: list[dict] = []
+
+
+class InternalNoteIn(BaseModel):
+    note: Annotated[Text, Field(max_length=5000)] | None = None
 
 
 def _edition(db: Session) -> Edition:
@@ -94,10 +118,13 @@ def _edition(db: Session) -> Edition:
 
 
 def _out(activity: Activity, free: int | None, joined: int) -> ActivityOut:
+    locale = current_locale()
     return ActivityOut(
         id=activity.id,
-        title=activity.title,
-        description=activity.description,
+        title=(activity.title_it if locale == "it" else activity.title_en) or activity.title,
+        description=(activity.description_it if locale == "it" else activity.description_en)
+        if activity.title_it
+        else activity.description,
         date=activity.date,
         period=activity.period,
         time_label=activity.time_label,
@@ -111,6 +138,12 @@ def _out(activity: Activity, free: int | None, joined: int) -> ActivityOut:
         capacity=activity.capacity,
         joined=joined,
         free=free,
+        title_it=activity.title_it,
+        title_en=activity.title_en,
+        description_it=activity.description_it,
+        description_en=activity.description_en,
+        translation_missing=activity.title_it is None or activity.title_en is None,
+        internal_note=activity.internal_note,
     )
 
 
@@ -140,15 +173,32 @@ CSV_HEADER = [
     "Stato",
     "Incasso",
     "Istruzioni di pagamento",
+    "Nota interna",
 ]
 
 
 def _csv_rows(activity: Activity, people: list[ActivityPerson]):
+    title = (activity.title_it if current_locale() == "it" else activity.title_en) or activity.title
+    if not people:
+        yield [
+            activity.date,
+            period_label(activity.period),
+            title,
+            Amount(activity.price_cents),
+            None,
+            None,
+            None,
+            None,
+            None,
+            t(f"collection.{activity.payment_mode}"),
+            activity.payment_instructions,
+            activity.internal_note,
+        ]
     for person in people:
         yield [
             activity.date,
             period_label(activity.period),
-            activity.title,
+            title,
             Amount(activity.price_cents),
             person.first_name,
             person.last_name,
@@ -157,6 +207,7 @@ def _csv_rows(activity: Activity, people: list[ActivityPerson]):
             status_label(person.status),
             t(f"collection.{activity.payment_mode}"),
             activity.payment_instructions,
+            activity.internal_note,
         ]
 
 
@@ -182,6 +233,11 @@ def _data(
     return activity_service.ActivityData(
         title=body.title,
         description=body.description or None,
+        title_it=body.title_it or body.title,
+        title_en=body.title_en or body.title,
+        description_it=body.description_it if body.description_it is not None else body.description,
+        description_en=body.description_en if body.description_en is not None else body.description,
+        internal_note=existing.internal_note if existing is not None else None,
         date=body.date,
         period=body.period,
         **times,
@@ -246,7 +302,41 @@ def get_activity(
         name = f"attivita-{activity.id}"
         return csv_response(csv_filename(name, now), CSV_HEADER, _csv_rows(activity, people))
     free = activity_service.free_by_activity(db, [activity], now)[activity.id]
-    return ActivityDetailOut(**_out(activity, free, len(people)).model_dump(), people=people)
+    history = (
+        db.query(ActivityNoteRevision)
+        .filter_by(activity_id=activity.id)
+        .order_by(ActivityNoteRevision.id.desc())
+        .all()
+    )
+    return ActivityDetailOut(
+        **_out(activity, free, len(people)).model_dump(),
+        people=people,
+        note_history=[
+            {
+                "note": row.note,
+                "author": db.get(Participant, row.actor_id).email,
+                "created_at": row.created_at,
+            }
+            for row in history
+        ],
+    )
+
+
+@router.put("/{activity_id}/note")
+def update_internal_note(
+    activity_id: int,
+    body: InternalNoteIn,
+    admin: Participant = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict:
+    activity = _get(db, activity_id)
+    note = body.note.strip() if body.note else None
+    activity.internal_note = note
+    revision = ActivityNoteRevision(activity_id=activity.id, actor_id=admin.id, note=note)
+    db.add(revision)
+    db.commit()
+    db.refresh(revision)
+    return {"note": note, "created_at": revision.created_at}
 
 
 @router.patch("/{activity_id}")

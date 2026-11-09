@@ -130,6 +130,16 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 - **Contenuto:** modale per registrare importi parziali, con controllo concorrente del saldo, retry idempotente, annullo entro 10 secondi ed email differita di 30 secondi.
 - **Fatto quando:** un admin aggiorna il saldo dalla lista senza duplicare pagamenti, e il raggiungimento della quota conferma il posto secondo la policy 18 lasciando visibili gli extra dovuti.
 
+## MVP 23 · Composizione della quota e destinatari
+
+- **Stato:** implementato su `feat/mvp-23-composizione-quota`, commit `433bc89`; verifiche locali complete, SQL Server e collaudo manuale pendenti.
+- **Contenuto:** primo pasto selezionato con incasso dell’organizzazione, applicato con anteprima dopo l’attivazione della conferma sulla sola quota; catalogo minimo benefit bilingue.
+
+## MVP 24 · Dettagli e note delle attività
+
+- **Stato:** implementato su `feat/mvp-24-dettagli-attivita`; verifiche locali complete, SQL Server e collaudo manuale pendenti.
+- **Contenuto:** testi attività IT/EN con fallback legacy, schede localizzate e note admin con cronologia, protette nelle API e nei CSV.
+
 ## Revisione dopo il collaudo del 7 novembre 2026
 
 **Pianificazione aggiornata con le risposte del maintainer; nessun MVP avviato.** Il [dossier](revisione-2026-11-07/README.md) contiene spec A–E, valutazione F con stessa base dati scelta, proposta mappa A7 e riscontro promemoria D5. **Calendario D3 accantonato, mockup rimosso.** Decisioni canoniche D-050–D-075 e precisazioni D-076–D-104; [domande residue](revisione-2026-11-07/domande-aperte.md) limitate ai dettagli non risposti.

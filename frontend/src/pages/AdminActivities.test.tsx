@@ -41,7 +41,8 @@ describe("activities admin page", () => {
     expect(within(row).getByRole("button", { name: "Elimina" })).toBeDisabled();
 
     const form = within(screen.getByRole("form", { name: "Nuova attività" }));
-    await userEvent.type(form.getByLabelText("Titolo"), "Yoga");
+    await userEvent.type(form.getByLabelText("Titolo · IT"), "Yoga");
+    await userEvent.type(form.getByLabelText("Titolo · EN"), "Yoga");
     await userEvent.selectOptions(form.getByLabelText("Fascia"), "evening");
     await userEvent.clear(form.getByLabelText(/Prezzo/));
     await userEvent.type(form.getByLabelText(/Prezzo/), "5");
@@ -49,7 +50,11 @@ describe("activities admin page", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Attività creata.");
     expect(calls.find((c) => c.method === "POST")?.body).toEqual({
       title: "Yoga",
+      title_it: "Yoga",
+      title_en: "Yoga",
       description: null,
+      description_it: null,
+      description_en: null,
       date: "2026-07-13",
       period: "evening",
       start_time: "19:00",

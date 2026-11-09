@@ -113,6 +113,14 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Scegli inizio e fine nella fascia; la fine deve seguire l'inizio.",
         "en": "Choose start and end within the time slot; the end must follow the start.",
     },
+    "activity.bilingual_required": {
+        "it": "Inserisci il titolo dell'attività sia in italiano sia in inglese.",
+        "en": "Enter the activity title in both Italian and English.",
+    },
+    "activity.bilingual_description": {
+        "it": "Inserisci la descrizione in entrambe le lingue oppure lasciale entrambe vuote.",
+        "en": "Enter the description in both languages or leave both empty.",
+    },
     # --- edition and settings
     "edition.not_configured_first": {
         "it": "Configura prima l'edizione",

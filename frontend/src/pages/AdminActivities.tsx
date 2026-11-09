@@ -54,8 +54,12 @@ function ActivityForm({
       return;
     }
     const body = {
-      title: text("title"),
-      description: text("description") || null,
+      title: text("title_it"),
+      title_it: text("title_it"),
+      title_en: text("title_en"),
+      description: text("description_it") || null,
+      description_it: text("description_it") || null,
+      description_en: text("description_en") || null,
       date: text("date"),
       period: text("period"),
       start_time: start || null,
@@ -88,12 +92,38 @@ function ActivityForm({
     <form onSubmit={submit} aria-label={title} key={initial?.id ?? "new"}>
       <h2>{title}</h2>
       <label>
-        {t("contrib.title")}
-        <input name="title" required maxLength={200} defaultValue={initial?.title ?? ""} />
+        {t("contrib.title")} · IT
+        <input
+          name="title_it"
+          required
+          maxLength={200}
+          defaultValue={initial?.title_it ?? initial?.title ?? ""}
+        />
       </label>
       <label>
-        {t("contrib.description")}
-        <textarea name="description" rows={3} defaultValue={initial?.description ?? ""} />
+        {t("contrib.title")} · EN
+        <input
+          name="title_en"
+          required
+          maxLength={200}
+          defaultValue={initial?.title_en ?? initial?.title ?? ""}
+        />
+      </label>
+      <label>
+        {t("contrib.description")} · IT
+        <textarea
+          name="description_it"
+          rows={3}
+          defaultValue={initial?.description_it ?? initial?.description ?? ""}
+        />
+      </label>
+      <label>
+        {t("contrib.description")} · EN
+        <textarea
+          name="description_en"
+          rows={3}
+          defaultValue={initial?.description_en ?? initial?.description ?? ""}
+        />
       </label>
       <div className="row">
         <label>
