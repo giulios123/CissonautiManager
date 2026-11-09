@@ -7,6 +7,8 @@ Revises: 0021
 import sqlalchemy as sa
 from alembic import op
 
+from app.db import UtcDateTime
+
 revision = "0022_activity_details"
 down_revision = "0021"
 branch_labels = None
@@ -28,7 +30,7 @@ def upgrade() -> None:
         sa.Column("activity_id", sa.Integer(), nullable=False),
         sa.Column("actor_id", sa.Integer(), nullable=False),
         sa.Column("note", sa.UnicodeText(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", UtcDateTime(), nullable=False),
         sa.ForeignKeyConstraint(["activity_id"], ["activity.id"]),
         sa.ForeignKeyConstraint(["actor_id"], ["participant.id"]),
         sa.PrimaryKeyConstraint("id"),
