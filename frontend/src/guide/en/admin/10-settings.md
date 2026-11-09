@@ -14,3 +14,7 @@ Everything that defines the edition, in sections.
 It is better to fix the prices before opening registrations: once people have signed up, for example, the price of an activity can no longer be changed.
 
 If the edition is not saved, channels and legal texts cannot be configured yet.
+
+# Fee composition
+
+Once registration-fee confirmation is active, Settings lets you include no meal or the first selected meal collected by the organisers. The preview shows the effect on active booking balances. Review it before applying the change. Meals paid directly to a provider remain payable by the participant.

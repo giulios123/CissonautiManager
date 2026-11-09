@@ -109,6 +109,7 @@ export function MealEditor<T = unknown>({
                 />
                 <span>
                   {t(KIND_LABELS[meal.kind])}
+                  {meal.included_in_fee && ` · ${t("collection.included")}`}
                   {meal.price_cents !== undefined && ` · ${formatEuro(meal.price_cents)}`}
                   <CollectionDetails terms={meal} />
                   {meal.past && !allowPast ? ` · ${t("edit.pastDay")}` : ""}

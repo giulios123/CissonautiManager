@@ -2,11 +2,15 @@
 
 ## Ora
 
+**2026-11-09 · Spec proposte MVP 23 e 24, in attesa di approvazione.** MVP 23 tratta composizione della quota con un solo pasto incluso e catalogo benefit minimale; si attiva solo dopo la policy di conferma su quota dell’MVP 18 e tramite preview/apply esplicito. MVP 24 tratta schede attività localizzate e note admin con cronologia; è indipendente dal 23. Spec in `specs/mvp-23-composizione-quota/` e `specs/mvp-24-dettagli-attivita/`. Nessun codice o migrazione implementati; le modifiche proposte a `domain.md` attendono consenso.
+
+La PR #24 degli MVP 21–22 risulta unita a `main` il 2026-11-08. Il checkout di questa sessione è ancora sul branch `feat/mvp-21-storico-cancellazioni` al commit `c729ba0`; per l’implementazione aggiornare e usare `main`, verificando lo stato live prima di creare il branch dedicato. Nessun deploy è dedotto dal merge.
+
 **2026-11-08 · MVP20 presente in `main`; T20-8 completata come confermato dal maintainer.** Questa sessione ha eseguito la suite backend completa: 1103 test passati con 3 warning di deprecazione. Il maintainer conferma completati anche SQL Server e collaudo organizzatori. Nessun deploy, email reale o testo legale definitivo è stato eseguito in questa sessione.
 
 **MVP 19** implementato e ora presente in `main`: profilo annuale e contatti social, cataloghi locali ISTAT/ISO, campi obbligatori anche per sola lista, API personali/admin e richiamo legacy non bloccante; guide IT/EN e spec in `specs/mvp-19-profilo-completo/`. Restano le prove visuali e la verifica SQL Server CI della sessione precedente. Nessun deploy o email reale.
 
-**MVP 21 e 22 · PR #24 in revisione sul branch `feat/mvp-21-storico-cancellazioni`.** Storico admin e modale d'incasso rapido implementati; migrazioni `0020`/`0021`, guide IT/EN e test aggiunti. Copilot ha segnalato nove difetti, ora corretti nel branch. Verifica locale: backend 1112 test e frontend 410 test passati, Ruff, lint, TypeScript e build verdi; SQL Server e collaudi manuali sono confermati dal maintainer. Le voci di cancellazione si conservano un anno dalla disdetta e vengono eliminate dal job orario. La nuova CI è in attesa; nessun deploy effettuato.
+**MVP 21 e 22 · PR #24 unita a `main` il 2026-11-08.** Storico admin e modale d'incasso rapido; migrazioni `0020`/`0021`, guide IT/EN e test. La PR riporta CI aggiornata e completata, SQL Server e collaudi manuali confermati dal maintainer. Le voci di cancellazione si conservano un anno dalla disdetta e vengono eliminate dal job orario. Resta da verificare il deploy prima delle prove in produzione.
 
 MVP18 resta implementato: backend 1083 test, frontend 394, prove SQL confermate dal maintainer; le procedure manuali e l'attivazione reale sono ancora aperte. Per MVP17 restano collaudo visivo e testi legali definitivi.
 

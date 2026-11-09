@@ -4,9 +4,13 @@
 
 Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche SQL Server e del collaudo degli organizzatori. Nella sessione corrente la suite backend completa ha superato 1103 test (3 warning di deprecazione). T20-8 è chiusa; la chiusura non dichiara eseguiti deploy o invii email reali.
 
-## MVP 21 e 22 · Implementazione in verifica
+## MVP 21 e 22 · PR #24 unita a main
 
-Implementati sul branch `feat/mvp-21-storico-cancellazioni`: registro admin delle nuove disdette, conservazione per un anno con pulizia nel job orario, modale d'incasso rapido con snapshot e retry idempotente, guide IT/EN e migrazioni `0020`/`0021`. Copilot ha rilevato nove difetti nella PR unica, corretti nel branch: ordine della rotta, outcome strutturato, downgrade, cursore stabile, retry/annullo, warning e aggiornamento immediato dei dati. Verifica locale dopo le correzioni: backend 1112 test, frontend 410 test, Ruff, ESLint/Prettier, TypeScript e build verdi. Il maintainer conferma completati SQL Server e collaudi manuali di entrambi gli MVP. La nuova CI della PR e il controllo dei thread Copilot restano da completare. Per il type-check, `presenceSummary.ts` è stato rinominato `presence-summary.ts` per evitare collisioni di maiuscole/minuscole sul filesystem locale. Nessun deploy effettuato.
+Implementati sul branch `feat/mvp-21-storico-cancellazioni` e uniti a `main` con PR #24 il 2026-11-08. Registro admin delle nuove disdette con conservazione annuale e pulizia oraria; modale d'incasso rapido con snapshot, retry idempotente, annullo ed email differita; guide IT/EN e migrazioni `0020`/`0021`. La PR riporta suite locale, CI, SQL Server e collaudi manuali completati. Nessun deploy dichiarato.
+
+## MVP 23 e 24 · Spec B1 in attesa di approvazione
+
+Il 9 novembre sono state preparate le spec separate per [MVP 23 · Composizione quota](../specs/mvp-23-composizione-quota/requirements.md) e [MVP 24 · Dettagli attività](../specs/mvp-24-dettagli-attivita/requirements.md), con design e 9 task ciascuna. Le modifiche a `domain.md` sono proposte, non applicate. Le scelte del 23 sono nessun pasto/primo pasto, pasto gratuito eleggibile, provider ignorato, e attivazione soltanto dopo MVP 18. Il 24 è indipendente dal 23. Checkout ancora su `feat/mvp-21-storico-cancellazioni`; per B2 si dovrà aggiornare `main` e creare il branch MVP dedicato. Nessun codice, migrazione, test o deploy eseguiti.
 
 ## MVP 20 · Nuova accettazione privacy — implementato sul branch
 

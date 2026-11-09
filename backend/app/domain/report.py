@@ -62,6 +62,7 @@ class BookingFacts:
     has_allergies: bool
     contributions: tuple[str, ...]  # kinds
     registration_fee_cents: int | None = None
+    included_meals: tuple[tuple[date, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -369,6 +370,7 @@ def _revenue(
         )
         for b in seated
         for day, kind in b.meals
+        if (day, kind) not in b.included_meals
     )
     activity_cents = sum(price_of.get(a, 0) for b in seated for a in b.activity_ids)
     by_channel: Counter[str] = Counter()

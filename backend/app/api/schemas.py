@@ -53,6 +53,7 @@ class MealView(CollectionTerms):
     label: str
     # The day is over (Europe/Rome): only an admin can change this meal.
     past: bool = False
+    included_in_fee: bool = False
 
 
 class ActivityView(CollectionTerms):
@@ -169,7 +170,12 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
             )
             for a in booking.activities
         ],
-        meals=_meal_views(((m.date, m.kind) for m in booking.meals), now, edition),
+        meals=_meal_views(
+            ((m.date, m.kind) for m in booking.meals),
+            now,
+            edition,
+            {(m.date, m.kind) for m in booking.meals if m.included_in_fee},
+        ),
         allowed_meals=_meal_views(
             allowed_meals(periods_by_day((s.date, s.period) for s in booking.slots)), now, edition
         ),
@@ -190,7 +196,10 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
 
 
 def _meal_views(
-    meals: Iterable[tuple[date, str]], now: datetime, edition: Edition
+    meals: Iterable[tuple[date, str]],
+    now: datetime,
+    edition: Edition,
+    included: set[tuple[date, str]] | None = None,
 ) -> list[MealView]:
     return [
         MealView(
@@ -198,6 +207,7 @@ def _meal_views(
             kind=kind,
             label=format_meal(day, kind),
             past=is_past_day(day, now),
+            included_in_fee=(day, kind) in (included or set()),
             **meal_terms(edition, day, kind),
         )
         for day, kind in sorted(meals, key=meal_sort_key)

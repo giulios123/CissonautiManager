@@ -377,6 +377,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
                 refund_cents=booking.refund_cents or 0,
                 slots=tuple((s.date, s.period) for s in booking.slots),
                 meals=tuple((m.date, m.kind) for m in booking.meals),
+                included_meals=tuple((m.date, m.kind) for m in booking.meals if m.included_in_fee),
                 activity_ids=tuple(a.id for a in booking.activities),
                 diet=booking.diet,
                 has_allergies=bool((booking.allergies or "").strip()),

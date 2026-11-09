@@ -152,6 +152,18 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "La nuova regola di conferma è già attiva.",
         "en": "The new confirmation rule is already active.",
     },
+    "included_meals.policy_unavailable": {
+        "it": "Attiva prima la conferma sulla quota per configurare i pasti compresi.",
+        "en": "Activate registration-fee confirmation before configuring included meals.",
+    },
+    "included_meals.preview_changed": {
+        "it": "I dati sono cambiati. Ricarica l'anteprima prima di applicare.",
+        "en": "The data changed. Refresh the preview before applying.",
+    },
+    "benefit.not_found": {
+        "it": "Benefit non trovato per questa edizione.",
+        "en": "Benefit not found for this edition.",
+    },
     # --- activities (admin)
     "activity.outside_edition": {
         "it": "Il giorno deve essere tra le date dell'edizione",

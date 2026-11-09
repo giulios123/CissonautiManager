@@ -43,8 +43,25 @@ def calculate_amounts(edition: Edition, booking: Booking) -> tuple[int, int]:
     registration_fee_cents = compute_fee(
         [s.date for s in booking.slots], edition.base_fee_cents, edition.per_day_fee_cents
     )
+    meals = sorted(booking.meals, key=lambda meal: (meal.date, meal.kind != MEAL_LUNCH))
+    included = None
+    if (
+        edition.confirmation_policy == "registration_fee"
+        and edition.included_meal_policy == "first_organizer_meal"
+    ):
+        included = next(
+            (
+                meal
+                for meal in meals
+                if meal_terms(edition, meal.date, meal.kind)["payment_mode"] == "organizer"
+            ),
+            None,
+        )
+    for meal in meals:
+        meal.included_in_fee = meal is included
     total_due_cents = registration_fee_cents + sum(
-        meal_terms(edition, m.date, m.kind)["collectable_cents"] for m in booking.meals
+        0 if m.included_in_fee else meal_terms(edition, m.date, m.kind)["collectable_cents"]
+        for m in meals
     )
     total_due_cents += sum(collectable(a.price_cents, a.payment_mode) for a in booking.activities)
     return registration_fee_cents, total_due_cents

@@ -64,3 +64,34 @@ def test_confirmation_threshold_and_remaining_amount_differ_from_total_balance()
     assert (
         confirmation_balance_cents("rimborsata", POLICY_REGISTRATION_FEE, 2400, 1200, 500) is None
     )
+
+
+def test_first_organiser_meal_is_included_and_provider_meal_does_not_consume_it(
+    db, edition, make_participant, make_booking
+):
+    edition.confirmation_policy = POLICY_REGISTRATION_FEE
+    edition.included_meal_policy = "first_organizer_meal"
+    booking = make_booking(make_participant(), [], amount_due_cents=0)
+    booking.meals = [
+        BookingMeal(date=date(2026, 7, 13), kind="lunch"),
+        BookingMeal(date=date(2026, 7, 13), kind="dinner"),
+    ]
+    db.add(
+        MealSetting(
+            edition_id=edition.id,
+            date=date(2026, 7, 13),
+            kind="lunch",
+            payment_mode="provider",
+            price_cents=700,
+            payment_instructions="Pay on site",
+        )
+    )
+    db.commit()
+    db.refresh(edition)
+
+    registration_fee, total_due = calculate_amounts(edition, booking)
+
+    assert registration_fee == 1000
+    assert total_due == 1000
+    assert next(meal for meal in booking.meals if meal.kind == "lunch").included_in_fee is False
+    assert next(meal for meal in booking.meals if meal.kind == "dinner").included_in_fee is True

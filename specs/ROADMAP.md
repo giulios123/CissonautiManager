@@ -130,6 +130,18 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 - **Contenuto:** modale per registrare importi parziali, con controllo concorrente del saldo, retry idempotente, annullo entro 10 secondi ed email differita di 30 secondi.
 - **Fatto quando:** un admin aggiorna il saldo dalla lista senza duplicare pagamenti, e il raggiungimento della quota conferma il posto secondo la policy 18 lasciando visibili gli extra dovuti.
 
+## MVP 23 · Composizione della quota e destinatari
+
+- **Stato:** spec B1 proposta per approvazione in [mvp-23-composizione-quota](mvp-23-composizione-quota/requirements.md); 9 task, non implementata.
+- **Contenuto:** scelta per edizione tra nessun pasto compreso e primo pasto selezionato con incasso organizzazione; anteprima/applicazione admin separata dopo l'attivazione della conferma con la sola quota; catalogo minimo benefit e terminologia bilingue per destinatari.
+- **Fatto quando:** ricalcoli, saldi, report e CSV concordano sul pasto incluso senza alterare pagamenti o scadenze; provider esclusi dagli importi organizzazione.
+
+## MVP 24 · Dettagli e note delle attività
+
+- **Stato:** spec B1 proposta per approvazione in [mvp-24-dettagli-attivita](mvp-24-dettagli-attivita/requirements.md); 9 task, indipendente dal 23 e non implementata.
+- **Contenuto:** titolo/descrizione IT/EN con fallback per record legacy; scheda attività per partecipanti/admin; note interne con cronologia admin-only e CSV protetto.
+- **Fatto quando:** schede localizzate mostrano i dettagli esistenti senza cambiare le regole di adesione; note e storico restano accessibili solo agli admin.
+
 ## Revisione dopo il collaudo del 7 novembre 2026
 
 **Pianificazione aggiornata con le risposte del maintainer; nessun MVP avviato.** Il [dossier](revisione-2026-11-07/README.md) contiene spec A–E, valutazione F con stessa base dati scelta, proposta mappa A7 e riscontro promemoria D5. **Calendario D3 accantonato, mockup rimosso.** Decisioni canoniche D-050–D-075 e precisazioni D-076–D-104; [domande residue](revisione-2026-11-07/domande-aperte.md) limitate ai dettagli non risposti.

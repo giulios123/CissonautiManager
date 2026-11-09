@@ -14,3 +14,7 @@ Tutto quello che definisce l'edizione, in sezioni.
 Meglio fissare i prezzi prima di aprire le iscrizioni: con iscrizioni già presenti, per esempio, il prezzo di un'attività non si cambia più.
 
 Se l'edizione non è salvata, canali e testi legali non si possono ancora configurare.
+
+# Composizione della quota
+
+Con la conferma basata sulla sola quota attiva, le Impostazioni consentono di includere nessun pasto oppure il primo pasto selezionato pagato all’organizzazione. L’anteprima mostra l’effetto sui saldi delle iscrizioni attive. Solo dopo averla controllata puoi applicare il cambio. I pasti pagati direttamente al fornitore restano a carico della persona.
