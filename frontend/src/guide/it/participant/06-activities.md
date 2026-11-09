@@ -8,3 +8,7 @@ Gli organizzatori propongono attività (escursioni, laboratori e altro), gratuit
 - Se togli lo slot di quel momento, l'attività cade e l'app te lo segnala.
 
 Le attività mostrano inizio e fine. Per quelle con pagamento diretto trovi costo, destinatario e istruzioni prima dell’adesione e nel riepilogo: l’importo è escluso dalla quota agli organizzatori.
+
+# Scheda attività
+
+Le attività mostrano titolo e descrizione nella lingua selezionata, insieme a orario, costo, destinatario, istruzioni e posti disponibili quando previsti. L’adesione continua a dipendere dalla presenza nella fascia indicata.

@@ -725,7 +725,12 @@ describe("activities", () => {
     date: "2026-07-13",
     period: "morning",
     time_label: "9:30-12",
+    start_time: "09:30",
+    end_time: "12:00",
+    payment_mode: "organizer",
+    payment_instructions: null,
     price_cents: 1500,
+    collectable_cents: 1500,
     capacity: 2,
     free: 1,
     joined: false,
@@ -747,8 +752,17 @@ describe("activities", () => {
                 {
                   id: 1,
                   title: "Escursione",
+                  description: "Sul monte",
                   label: "Escursione (lun 13/07 mattina)",
+                  date: "2026-07-13",
+                  period: "morning",
+                  time_label: "9:30-12",
+                  start_time: "09:30",
+                  end_time: "12:00",
+                  payment_mode: "organizer",
+                  payment_instructions: null,
                   price_cents: 1500,
+                  collectable_cents: 1500,
                 },
               ],
             }),
@@ -766,7 +780,11 @@ describe("activities", () => {
     await userEvent.click(form.getByRole("checkbox", { name: /Escursione/ }));
     expect(form.getByText(/Nuova quota/)).toHaveTextContent("26,00 € (15,00 € in più di ora)");
     await userEvent.click(form.getByRole("button", { name: "Salva le attività" }));
-    expect(await screen.findByText("Escursione (lun 13/07 mattina)")).toBeInTheDocument();
+    const detailSummary = (await screen.findAllByText("Dettagli attività"))[0];
+    const selected = detailSummary.closest("li");
+    expect(selected).toHaveTextContent("Escursione (lun 13/07 mattina)");
+    await userEvent.click(detailSummary);
+    expect(within(selected as HTMLElement).getByText("Sul monte")).toBeInTheDocument();
     expect(calls.find((c) => c.url === "/api/me/booking/activities")?.body).toEqual({
       activity_ids: [1],
     });

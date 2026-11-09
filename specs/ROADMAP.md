@@ -132,15 +132,13 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 23 · Composizione della quota e destinatari
 
-- **Stato:** spec B1 proposta per approvazione in [mvp-23-composizione-quota](mvp-23-composizione-quota/requirements.md); 9 task, non implementata.
-- **Contenuto:** scelta per edizione tra nessun pasto compreso e primo pasto selezionato con incasso organizzazione; anteprima/applicazione admin separata dopo l'attivazione della conferma con la sola quota; catalogo minimo benefit e terminologia bilingue per destinatari.
-- **Fatto quando:** ricalcoli, saldi, report e CSV concordano sul pasto incluso senza alterare pagamenti o scadenze; provider esclusi dagli importi organizzazione.
+- **Stato:** in revisione nella PR #26 `feat/mvp-23-composizione-quota`; suite backend (1130), frontend (409), lint, build e Guide locali verdi. CI GitHub sul nuovo head da completare. Resta il collaudo manuale organizzatori.
+- **Contenuto:** primo pasto selezionato con incasso dell’organizzazione, applicato con anteprima dopo l’attivazione della conferma sulla sola quota; catalogo minimo benefit bilingue.
 
 ## MVP 24 · Dettagli e note delle attività
 
-- **Stato:** spec B1 proposta per approvazione in [mvp-24-dettagli-attivita](mvp-24-dettagli-attivita/requirements.md); 9 task, indipendente dal 23 e non implementata.
-- **Contenuto:** titolo/descrizione IT/EN con fallback per record legacy; scheda attività per partecipanti/admin; note interne con cronologia admin-only e CSV protetto.
-- **Fatto quando:** schede localizzate mostrano i dettagli esistenti senza cambiare le regole di adesione; note e storico restano accessibili solo agli admin.
+- **Stato:** implementato e integrato in `main` tramite PR #25; resta il collaudo manuale organizzatori.
+- **Contenuto:** testi attività IT/EN con fallback legacy, schede localizzate e note admin con cronologia, protette nelle API e nei CSV.
 
 ## Revisione dopo il collaudo del 7 novembre 2026
 

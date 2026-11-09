@@ -48,14 +48,32 @@ function ActivityForm({
     const form = event.currentTarget;
     const data = new FormData(form);
     const text = (name: string) => String(data.get(name) ?? "").trim();
+    const titleIt = text("title_it");
+    const titleEn = text("title_en");
+    const descriptionIt = text("description_it");
+    const descriptionEn = text("description_en");
+    const localizedChanged =
+      !initial ||
+      titleIt !== (initial.title_it ?? "") ||
+      titleEn !== (initial.title_en ?? "") ||
+      descriptionIt !== (initial.description_it ?? "") ||
+      descriptionEn !== (initial.description_en ?? "");
     const price = parseEuroToCents(text("price") || "0");
     if (price === null) {
       setError(t("aact.priceInvalid"));
       return;
     }
     const body = {
-      title: text("title"),
-      description: text("description") || null,
+      title: initial?.title ?? titleIt,
+      description: initial?.description ?? descriptionIt,
+      ...(localizedChanged
+        ? {
+            title_it: titleIt,
+            title_en: titleEn,
+            description_it: descriptionIt,
+            description_en: descriptionEn,
+          }
+        : {}),
       date: text("date"),
       period: text("period"),
       start_time: start || null,
@@ -88,12 +106,44 @@ function ActivityForm({
     <form onSubmit={submit} aria-label={title} key={initial?.id ?? "new"}>
       <h2>{title}</h2>
       <label>
-        {t("contrib.title")}
-        <input name="title" required maxLength={200} defaultValue={initial?.title ?? ""} />
+        {t("contrib.title")} · IT
+        <input
+          name="title_it"
+          required={!initial || !initial.translation_missing}
+          maxLength={200}
+          defaultValue={initial?.title_it ?? ""}
+          placeholder={initial?.title}
+        />
       </label>
       <label>
-        {t("contrib.description")}
-        <textarea name="description" rows={3} defaultValue={initial?.description ?? ""} />
+        {t("contrib.title")} · EN
+        <input
+          name="title_en"
+          required={!initial || !initial.translation_missing}
+          maxLength={200}
+          defaultValue={initial?.title_en ?? ""}
+          placeholder={initial?.title}
+        />
+      </label>
+      <label>
+        {t("aact.description")} · IT
+        <textarea
+          name="description_it"
+          required={!initial || !initial.translation_missing}
+          rows={3}
+          defaultValue={initial?.description_it ?? ""}
+          placeholder={initial?.description ?? undefined}
+        />
+      </label>
+      <label>
+        {t("aact.description")} · EN
+        <textarea
+          name="description_en"
+          required={!initial || !initial.translation_missing}
+          rows={3}
+          defaultValue={initial?.description_en ?? ""}
+          placeholder={initial?.description ?? undefined}
+        />
       </label>
       <div className="row">
         <label>
@@ -163,6 +213,11 @@ function ActivityForm({
         onChange={setMode}
         instructions={initial?.payment_instructions}
       />
+      {initial?.translation_missing && (
+        <p className="notice" role="status">
+          {t("aact.translationMissing")}
+        </p>
+      )}
       {initial && initial.joined > 0 && <p className="legal">{t("aact.locked")}</p>}
       {initial && initial.joined > 0 && <p className="legal">{t("collection.repriceWarning")}</p>}
       {error && (
@@ -304,6 +359,9 @@ export function AdminActivities() {
                   <tr key={activity.id}>
                     <th scope="row">
                       <Link to={adminActivityPath(activity.id)}>{activity.title}</Link>
+                      {activity.translation_missing && (
+                        <small className="legal">{t("aact.translationMissing")}</small>
+                      )}
                     </th>
                     <td>
                       {formatDay(activity.date)}, {periodLabel(activity.period).toLowerCase()}

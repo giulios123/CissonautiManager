@@ -6,6 +6,12 @@ export type Activity = CollectionTerms & {
   id: number;
   title: string;
   description: string | null;
+  title_it?: string | null;
+  title_en?: string | null;
+  description_it?: string | null;
+  description_en?: string | null;
+  translation_missing?: boolean;
+  internal_note?: string | null;
   date: string;
   period: "morning" | "afternoon" | "evening";
   time_label: string | null;

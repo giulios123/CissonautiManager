@@ -2,9 +2,9 @@
 
 ## Ora
 
-**2026-11-09 · MVP 23 e 24 in revisione nelle PR #26 e #25.** Correzioni Copilot implementate; MVP 23: backend 1125 test, Ruff/formattazione e frontend 409 test, lint, TypeScript/build passati localmente. La CI SQL Server di #26 va verificata sul head aggiornato. Per #25 risultano verdi SQLite, SQL Server e Guide, ma l’esito del workflow CI va chiarito prima del merge. Resta il collaudo manuale degli organizzatori per entrambi (`specs/mvp-{23,24}-*/test-manuali.md`).
+**2026-11-09 · MVP 24 integrato in `main` con la PR #25; MVP 23 in revisione nella PR #26.** Dopo l’integrazione della base: backend 1130 test, Ruff/formattazione e frontend 409 test, lint, TypeScript/build passati localmente. La migrazione è `0023_included_meal` dopo `0022_activity_details`; CI GitHub sul nuovo head da completare. Checklist manuale organizzatori ancora da completare (`specs/mvp-23-composizione-quota/test-manuali.md`).
 
-MVP 24 è rilasciabile indipendentemente dal 23. Entrambi i branch originano da `main` successivo alla PR #24; le migrazioni condividono la revisione `0022`, quindi integrare prima #25 e poi riallineare la migrazione del #26 a `0022_activity_details`. Nessun deploy o attivazione dei pasti compresi è autorizzato da queste integrazioni; le proposte a `domain.md` restano non applicate.
+La migrazione MVP 23 (`0023_included_meal`) è collegata a `0022_activity_details` dal merge della PR #25. MVP 24 resta rilasciabile autonomamente. Nessun deploy o attivazione dei pasti compresi; le proposte a `domain.md` restano non applicate.
 
 **2026-11-08 · MVP20 presente in `main`; T20-8 completata come confermato dal maintainer.** Questa sessione ha eseguito la suite backend completa: 1103 test passati con 3 warning di deprecazione. Il maintainer conferma completati anche SQL Server e collaudo organizzatori. Nessun deploy, email reale o testo legale definitivo è stato eseguito in questa sessione.
 

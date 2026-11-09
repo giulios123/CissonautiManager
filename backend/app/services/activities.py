@@ -76,6 +76,11 @@ class ActivityData:
     time_label: str | None
     price_cents: int
     capacity: int | None
+    title_it: str | None = None
+    title_en: str | None = None
+    description_it: str | None = None
+    description_en: str | None = None
+    internal_note: str | None = None
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     payment_mode: str = "organizer"

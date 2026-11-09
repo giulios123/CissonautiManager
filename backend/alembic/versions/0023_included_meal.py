@@ -1,14 +1,14 @@
 """Add optional included meal policy.
 
-Revision ID: 0022
-Revises: 0021
+Revision ID: 0023_included_meal
+Revises: 0022_activity_details
 """
 
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0022"
-down_revision = "0021"
+revision = "0023_included_meal"
+down_revision = "0022_activity_details"
 branch_labels = None
 depends_on = None
 

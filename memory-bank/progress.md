@@ -1,5 +1,11 @@
 # Progress
 
+## MVP 23 e 24 · Stato release
+
+- **MVP 23**, PR #26, branch `feat/mvp-23-composizione-quota`: implementato con policy disattivata di default, ricalcolo condiviso, anteprima/applicazione admin, catalogo benefit e viste/report/CSV/email aggiornati. Correzioni Copilot incluse. Dopo l’integrazione della PR #25: backend completo 1130 test, frontend 409 test, Ruff, formattazione, lint, TypeScript, build e Guide passati localmente. La migrazione è `0023_included_meal` dopo `0022_activity_details`; CI GitHub sul nuovo head da completare. Collaudo organizzatori ancora da fare.
+- **MVP 24**, PR #25, integrato in `main` il 2026-11-09: contenuti attività IT/EN con fallback, schede, note riservate con cronologia e CSV admin. CI SQLite, SQL Server, frontend, build immagine e Guide verdi sul commit `79e47f2`; collaudo organizzatori ancora da fare (`specs/mvp-24-dettagli-attivita/test-manuali.md`). Rilasciabile senza MVP 23.
+- Nessun deploy o attivazione dei pasti compresi; le modifiche proposte a `domain.md` non sono applicate.
+
 ## Chiusura MVP 20 · T20-8
 
 Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche SQL Server e del collaudo degli organizzatori. Nella sessione corrente la suite backend completa ha superato 1103 test (3 warning di deprecazione). T20-8 è chiusa; la chiusura non dichiara eseguiti deploy o invii email reali.
@@ -7,14 +13,6 @@ Il maintainer ha confermato l'8 novembre 2026 il completamento delle verifiche S
 ## MVP 21 e 22 · PR #24 unita a main
 
 Implementati sul branch `feat/mvp-21-storico-cancellazioni` e uniti a `main` con PR #24 il 2026-11-08. Registro admin delle nuove disdette con conservazione annuale e pulizia oraria; modale d'incasso rapido con snapshot, retry idempotente, annullo ed email differita; guide IT/EN e migrazioni `0020`/`0021`. La PR riporta suite locale, CI, SQL Server e collaudi manuali completati. Nessun deploy dichiarato.
-
-## MVP 23 e 24 · Implementati, PR in revisione
-
-- **MVP 23**, branch `feat/mvp-23-composizione-quota`, PR #26: policy disattivata dalla migrazione, primo pasto idoneo coperto e riassegnato con il ricalcolo, anteprima/applicazione admin con fingerprint e retry idempotente, catalogo benefit, interfacce e guida IT/EN. Dopo le correzioni della review: backend completo 1125 test, Ruff e formattazione passati; frontend 409 test, lint, TypeScript e build passati. La CI SQL Server era verde prima delle ultime modifiche; va ricontrollata sul nuovo head. Collaudo manuale organizzatori ancora da fare (`specs/mvp-23-composizione-quota/test-manuali.md`).
-- **MVP 24**, branch `feat/mvp-24-dettagli-attivita`, PR #25: testi IT/EN con fallback legacy, schede attività e note admin con cronologia e CSV admin. CI SQLite, SQL Server e Guide risultano verdi; esaminare l’esito complessivo della workflow CI e le correzioni della review. Collaudo manuale ancora da fare (`specs/mvp-24-dettagli-attivita/test-manuali.md`).
-- Le due migrazioni sono entrambe `0022` e non possono restare revisioni sorelle: integrare prima il 24 (rilasciabile da solo), poi collegare `0022_included_meal` a `0022_activity_details` prima di integrare il 23. Non eseguire deploy né attivare i pasti compresi senza i rispettivi passaggi successivi.
-
-Le spec B1 restano separate; il 24 è rilasciabile indipendentemente dal 23. Le modifiche proposte a `domain.md` non sono state applicate. Nessun deploy eseguito. La pubblicazione del 23 e l’attivazione della policy per un’edizione sono passaggi distinti. Se i due branch vengono combinati, occorre una migrazione Alembic che unisca le revisioni `0022` e `0022_activity_details`.
 
 ## MVP 20 · Nuova accettazione privacy — implementato sul branch
 

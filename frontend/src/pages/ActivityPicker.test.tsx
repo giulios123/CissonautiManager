@@ -27,6 +27,8 @@ const offer = (id: number, title: string, joined: boolean): ActivityOffer => ({
   date: "2026-07-13",
   period: "morning",
   time_label: null,
+  start_time: null,
+  end_time: null,
   price_cents: 1500,
   capacity: null,
   free: null,

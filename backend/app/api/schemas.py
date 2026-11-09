@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.domain.booking import (
 from app.domain.confirmation import confirmation_balance_cents, confirmation_due_cents
 from app.domain.fees import balance_cents
 from app.domain.meals import allowed_meals, meal_sort_key, periods_by_day
+from app.i18n import current_locale
 from app.models import (
     STATUS_CONFIRMED,
     STATUS_EXPIRED,
@@ -59,8 +61,13 @@ class MealView(CollectionTerms):
 class ActivityView(CollectionTerms):
     id: int
     title: str
+    description: str | None
     label: str
+    date: date
+    period: str
     time_label: str | None = None
+    start_time: time | None = None
+    end_time: time | None = None
 
 
 class PaymentView(BaseModel):
@@ -163,9 +170,25 @@ def booking_view(booking: Booking, now: datetime, include_notes: bool = False) -
         activities=[
             ActivityView(
                 id=a.id,
-                title=a.title,
-                label=format_activity(a.title, a.date, a.period),
+                title=(a.title_it if current_locale() == "it" else a.title_en) or a.title,
+                description=(
+                    (a.description_it if current_locale() == "it" else a.description_en)
+                    or a.description
+                ),
+                label=format_activity(
+                    (a.title_it if current_locale() == "it" else a.title_en) or a.title,
+                    a.date,
+                    a.period,
+                ),
+                date=a.date,
+                period=a.period,
                 time_label=a.time_label,
+                start_time=a.starts_at.astimezone(ZoneInfo("Europe/Rome")).time()
+                if a.starts_at
+                else None,
+                end_time=a.ends_at.astimezone(ZoneInfo("Europe/Rome")).time()
+                if a.ends_at
+                else None,
                 **activity_terms(a),
             )
             for a in booking.activities
@@ -229,6 +252,8 @@ class ActivityOffer(CollectionTerms):
     date: date
     period: str
     time_label: str | None
+    start_time: time | None
+    end_time: time | None
     capacity: int | None
     free: int | None
     joined: bool
@@ -242,11 +267,17 @@ def activity_offers(db: Session, booking: Booking, now: datetime) -> list[Activi
     return [
         ActivityOffer(
             id=a.id,
-            title=a.title,
-            description=a.description,
+            title=(a.title_it if current_locale() == "it" else a.title_en) or a.title,
+            description=(a.description_it if current_locale() == "it" else a.description_en)
+            if (a.description_it if current_locale() == "it" else a.description_en)
+            else a.description,
             date=a.date,
             period=a.period,
             time_label=a.time_label,
+            start_time=a.starts_at.astimezone(ZoneInfo("Europe/Rome")).time()
+            if a.starts_at
+            else None,
+            end_time=a.ends_at.astimezone(ZoneInfo("Europe/Rome")).time() if a.ends_at else None,
             **activity_terms(a),
             capacity=a.capacity,
             free=free,

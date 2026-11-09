@@ -6,6 +6,7 @@ Italian label; `ADMIN_MESSAGES` are keyed messages merged into the catalog of ap
 LABELS_EN: dict[str, str] = {
     "Incasso": "Collection",
     "Istruzioni di pagamento": "Payment instructions",
+    "Nota interna": "Internal note",
     "Organizzatori": "Organizers",
     "Erogatore": "Provider",
     "Coperto dalla quota di registrazione": "Covered by the registration fee",
