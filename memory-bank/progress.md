@@ -2,7 +2,7 @@
 
 ## MVP 23 e 24 · Stato release
 
-- **MVP 23**, PR #26, branch `feat/mvp-23-composizione-quota`: implementato con policy disattivata di default, ricalcolo condiviso, anteprima/applicazione admin, catalogo benefit e viste/report/CSV/email aggiornati. Correzioni Copilot incluse. Dopo l’integrazione della PR #25: backend completo 1130 test, frontend 409 test, Ruff, formattazione, lint, TypeScript, build e Guide passati localmente. La migrazione `0023_included_meal` segue `0022_activity_details`; CI GitHub completa e verde sul commit `746cf62`. Collaudo organizzatori ancora da fare.
+- **MVP 23**, PR #26, integrato in `main` il 2026-11-09: policy disattivata di default, ricalcolo condiviso, anteprima/applicazione admin, catalogo benefit e viste/report/CSV/email aggiornati. Correzioni Copilot incluse e thread risolti. Suite backend (1130), frontend (409), lint, typecheck, build, Guide, SQL Server e build immagine verdi; la CI finale era verde sul commit `8c9e38e`. La migrazione `0023_included_meal` segue `0022_activity_details`. Collaudo organizzatori ancora da fare (`specs/mvp-23-composizione-quota/test-manuali.md`).
 - **MVP 24**, PR #25, integrato in `main` il 2026-11-09: contenuti attività IT/EN con fallback, schede, note riservate con cronologia e CSV admin. CI SQLite, SQL Server, frontend, build immagine e Guide verdi sul commit `79e47f2`; collaudo organizzatori ancora da fare (`specs/mvp-24-dettagli-attivita/test-manuali.md`). Rilasciabile senza MVP 23.
 - Nessun deploy o attivazione dei pasti compresi; le modifiche proposte a `domain.md` non sono applicate.
 
