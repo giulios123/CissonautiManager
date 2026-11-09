@@ -43,8 +43,13 @@ it("keeps provider instructions visible on a settled personal page", async () =>
             ...direct,
             id: 4,
             title: "Trekking",
+            description: "Una camminata nella natura",
             label: "Trekking del 13 luglio",
+            date: "2026-07-13",
+            period: "morning",
             time_label: "09:30-12:00",
+            start_time: "09:30",
+            end_time: "12:00",
           },
         ],
       },
@@ -74,6 +79,8 @@ it.each(["it", "en"] as const)(
       date: "2026-07-13",
       period: "morning",
       time_label: "09:30-12:00",
+      start_time: "09:30",
+      end_time: "12:00",
       capacity: null,
       free: null,
       joined: false,
@@ -175,6 +182,8 @@ it("uses selectors for activity start and end, including minutes and midnight", 
   expect(form.queryByRole("textbox", { name: /Orario/ })).not.toBeInTheDocument();
   await userEvent.type(form.getByLabelText("Titolo · IT"), "Evening yoga");
   await userEvent.type(form.getByLabelText("Titolo · EN"), "Evening yoga");
+  await userEvent.type(form.getByLabelText("Descrizione · IT"), "Una pratica serale");
+  await userEvent.type(form.getByLabelText("Descrizione · EN"), "An evening practice");
   await userEvent.selectOptions(form.getByLabelText("Fascia"), "evening");
   await userEvent.selectOptions(form.getByLabelText("Inizio: ore"), "21");
   await userEvent.selectOptions(form.getByLabelText("Inizio: minuti"), "35");

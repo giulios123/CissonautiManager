@@ -114,12 +114,12 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "Choose start and end within the time slot; the end must follow the start.",
     },
     "activity.bilingual_required": {
-        "it": "Inserisci il titolo dell'attività sia in italiano sia in inglese.",
-        "en": "Enter the activity title in both Italian and English.",
+        "it": "Inserisci titolo e descrizione non vuoti sia in italiano sia in inglese.",
+        "en": "Enter a non-empty title and description in both Italian and English.",
     },
     "activity.bilingual_description": {
-        "it": "Inserisci la descrizione in entrambe le lingue oppure lasciale entrambe vuote.",
-        "en": "Enter the description in both languages or leave both empty.",
+        "it": "Inserisci una descrizione non vuota in italiano e in inglese.",
+        "en": "Enter a non-empty description in both Italian and English.",
     },
     # --- edition and settings
     "edition.not_configured_first": {

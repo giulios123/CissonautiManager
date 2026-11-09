@@ -14,6 +14,10 @@ from tests.test_change_slots import pay
 
 HIKE = dict(
     title="Hike",
+    title_it="Escursione",
+    title_en="Hike",
+    description_it="Escursione guidata.",
+    description_en="Guided hike.",
     date="2026-07-13",
     period="morning",
     start_time="09:30",

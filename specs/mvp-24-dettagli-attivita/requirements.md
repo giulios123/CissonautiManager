@@ -11,7 +11,7 @@
 
 ## US-24.2 · Gestire contenuti bilingui
 
-- Quando creo un’attività, allora inserisco titolo e descrizione in italiano e inglese, con descrizione completa facoltativa solo se vuota in entrambe le lingue.
+- Quando creo un’attività o modifico titolo o descrizione, allora inserisco titolo e descrizione non vuoti sia in italiano sia in inglese.
 - Quando modifico titolo o descrizione, allora devo fornire entrambe le lingue; errori di validazione sono spiegati in IT/EN.
 - Quando apro un’attività legacy monolingue, allora il testo originale resta visibile come fallback in entrambe le lingue e l’admin vede che le traduzioni sono da completare.
 - Quando correggo soltanto orari, prezzo, capienza, destinatario o note di un’attività legacy, allora posso salvare senza dover prima riscrivere i testi.

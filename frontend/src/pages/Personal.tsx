@@ -3,6 +3,9 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { type BookingView, type Me } from "../auth";
 import { formatDay, formatDeadline, statusLabel } from "../booking";
+import { periodLabel } from "../booking";
+import { getLocale } from "../i18n/locale";
+import { translatePlural } from "../i18n/messages";
 import { useI18n, type MessageKey } from "../i18n";
 import { formatEuro } from "../money";
 import { ROUTES } from "../routes";
@@ -407,13 +410,41 @@ function BookingCard({
             <p>{t("me.noActivities")}</p>
           ) : (
             <ul>
-              {activities.map((activity) => (
-                <li key={activity.id}>
-                  {activity.label}
-                  {activity.time_label && ` (${activity.time_label})`}
-                  <CollectionDetails terms={activity} />
-                </li>
-              ))}
+              {activities.map((activity) => {
+                const offer = me.activities?.find((item) => item.id === activity.id);
+                return (
+                  <li key={activity.id}>
+                    {activity.label}
+                    {activity.time_label && ` (${activity.time_label})`}
+                    <details>
+                      <summary>{t("act.details")}</summary>
+                      {activity.description && <p>{activity.description}</p>}
+                      <p>
+                        {formatDay(activity.date)} · {periodLabel(activity.period)}
+                        {activity.start_time &&
+                          activity.end_time &&
+                          ` · ${activity.start_time}–${activity.end_time}`}
+                      </p>
+                      <p>
+                        {formatEuro(activity.price_cents)} · {t("collection.who")}:{" "}
+                        {t(
+                          activity.payment_mode === "provider"
+                            ? "collection.provider"
+                            : "collection.organizer",
+                        )}
+                      </p>
+                      {offer?.capacity !== null && offer?.capacity !== undefined && (
+                        <p>
+                          {offer.free === null
+                            ? t("act.unlimited")
+                            : translatePlural(getLocale(), "seats.free", offer.free)}
+                        </p>
+                      )}
+                      <CollectionDetails terms={activity} />
+                    </details>
+                  </li>
+                );
+              })}
             </ul>
           )}
           {booking.editable && (

@@ -35,7 +35,7 @@ REFUSALS = {
 
 
 class ActivityIn(BaseModel):
-    title: Annotated[Text, Field(min_length=1, max_length=200)]
+    title: Annotated[Text, Field(min_length=1, max_length=200)] | None = None
     description: Annotated[Text, Field(max_length=5000)] | None = None
     title_it: Annotated[Text, Field(min_length=1, max_length=200)] | None = None
     title_en: Annotated[Text, Field(min_length=1, max_length=200)] | None = None
@@ -52,13 +52,25 @@ class ActivityIn(BaseModel):
 
     @model_validator(mode="after")
     def check_terms(self) -> Self:
-        if (self.title_it is None) != (self.title_en is None):
+        localized_content = any(
+            value is not None
+            for value in (
+                self.title_it,
+                self.title_en,
+                self.description_it,
+                self.description_en,
+            )
+        )
+        if localized_content and (
+            not self.title_it
+            or not self.title_en
+            or not self.description_it
+            or not self.description_en
+        ):
             raise ValueError(t("activity.bilingual_required"))
-        if (self.description_it is None) != (self.description_en is None):
-            raise ValueError(t("activity.bilingual_description"))
-        if self.title_it is not None:
+        if localized_content:
             locale = current_locale()
-            self.title = self.title_it if locale == "it" else self.title_en or self.title_it
+            self.title = self.title_it
             self.description = self.description_it if locale == "it" else self.description_en
         if self.payment_mode == "provider" and (
             "price_cents" not in self.model_fields_set or not self.payment_instructions
@@ -123,8 +135,7 @@ def _out(activity: Activity, free: int | None, joined: int) -> ActivityOut:
         id=activity.id,
         title=(activity.title_it if locale == "it" else activity.title_en) or activity.title,
         description=(activity.description_it if locale == "it" else activity.description_en)
-        if activity.title_it
-        else activity.description,
+        or activity.description,
         date=activity.date,
         period=activity.period,
         time_label=activity.time_label,
@@ -142,7 +153,15 @@ def _out(activity: Activity, free: int | None, joined: int) -> ActivityOut:
         title_en=activity.title_en,
         description_it=activity.description_it,
         description_en=activity.description_en,
-        translation_missing=activity.title_it is None or activity.title_en is None,
+        translation_missing=any(
+            not value
+            for value in (
+                activity.title_it,
+                activity.title_en,
+                activity.description_it,
+                activity.description_en,
+            )
+        ),
         internal_note=activity.internal_note,
     )
 
@@ -194,7 +213,7 @@ def _csv_rows(activity: Activity, people: list[ActivityPerson]):
             activity.payment_instructions,
             activity.internal_note,
         ]
-    for person in people:
+    for index, person in enumerate(people):
         yield [
             activity.date,
             period_label(activity.period),
@@ -207,7 +226,7 @@ def _csv_rows(activity: Activity, people: list[ActivityPerson]):
             status_label(person.status),
             t(f"collection.{activity.payment_mode}"),
             activity.payment_instructions,
-            activity.internal_note,
+            activity.internal_note if index == 0 else None,
         ]
 
 
@@ -231,12 +250,28 @@ def _data(
             edition, body.date, body.period, body.start_time, body.end_time
         )
     return activity_service.ActivityData(
-        title=body.title,
-        description=body.description or None,
-        title_it=body.title_it or body.title,
-        title_en=body.title_en or body.title,
-        description_it=body.description_it if body.description_it is not None else body.description,
-        description_en=body.description_en if body.description_en is not None else body.description,
+        title=(body.title_it or body.title or "")
+        if existing is None
+        else (body.title_it or existing.title),
+        description=(body.description_it or body.description)
+        if existing is None
+        else (body.description_it if body.title_it is not None else existing.description),
+        title_it=(body.title_it if body.title_it is not None else existing.title_it)
+        if existing is not None
+        else body.title_it,
+        title_en=(body.title_en if body.title_en is not None else existing.title_en)
+        if existing is not None
+        else body.title_en,
+        description_it=(
+            body.description_it if body.title_it is not None else existing.description_it
+        )
+        if existing is not None
+        else body.description_it,
+        description_en=(
+            body.description_en if body.title_it is not None else existing.description_en
+        )
+        if existing is not None
+        else body.description_en,
         internal_note=existing.internal_note if existing is not None else None,
         date=body.date,
         period=body.period,
@@ -274,6 +309,8 @@ def create_activity(
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> ActivityOut:
+    if not all((body.title_it, body.title_en, body.description_it, body.description_en)):
+        raise HTTPException(status_code=422, detail=t("activity.bilingual_required"))
     try:
         edition = _edition(db)
         if (
@@ -349,6 +386,14 @@ def update_activity(
     sender: EmailSender = Depends(get_email_sender),
 ) -> ActivityOut:
     activity = _get(db, activity_id)
+    if body.title_it is None and body.title is not None and body.title != activity.title:
+        raise HTTPException(status_code=422, detail=t("activity.bilingual_required"))
+    if (
+        body.title_it is None
+        and body.description is not None
+        and body.description != activity.description
+    ):
+        raise HTTPException(status_code=422, detail=t("activity.bilingual_required"))
     try:
         edition = _edition(db)
         activity_service.update(

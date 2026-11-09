@@ -339,7 +339,7 @@ class ActivityNoteRevision(Base):
     __table_args__ = (Index("ix_activity_note_revision_activity_id", "activity_id", "id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"))
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id", ondelete="CASCADE"))
     actor_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
     note: Mapped[str | None] = mapped_column(UnicodeText)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)

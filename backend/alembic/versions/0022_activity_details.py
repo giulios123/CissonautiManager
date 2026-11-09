@@ -22,8 +22,6 @@ def upgrade() -> None:
         batch.add_column(sa.Column("description_it", sa.UnicodeText(), nullable=True))
         batch.add_column(sa.Column("description_en", sa.UnicodeText(), nullable=True))
         batch.add_column(sa.Column("internal_note", sa.UnicodeText(), nullable=True))
-    op.execute("UPDATE activity SET title_it = title, title_en = title")
-    op.execute("UPDATE activity SET description_it = description, description_en = description")
     op.create_table(
         "activity_note_revision",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -31,7 +29,7 @@ def upgrade() -> None:
         sa.Column("actor_id", sa.Integer(), nullable=False),
         sa.Column("note", sa.UnicodeText(), nullable=True),
         sa.Column("created_at", UtcDateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["activity_id"], ["activity.id"]),
+        sa.ForeignKeyConstraint(["activity_id"], ["activity.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["actor_id"], ["participant.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
