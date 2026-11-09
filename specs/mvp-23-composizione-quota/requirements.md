@@ -1,6 +1,6 @@
 # MVP 23 · Composizione della quota e destinatari
 
-**Stato:** spec proposta per revisione, non implementata. P2, B4–B5. Dipende dall’attivazione esplicita della policy di conferma su quota introdotta dall’MVP 18. L’attivazione delle inclusioni è un’operazione separata. Decisioni di riferimento D-049, D-057–D-061, D-083–D-086 e D-105.
+**Stato:** implementata nel branch `feat/mvp-23-composizione-quota`; resta da completare il collaudo SQL Server e manuale. P2, B4–B5. Dipende dall’attivazione esplicita della policy di conferma su quota introdotta dall’MVP 18. L’attivazione delle inclusioni è un’operazione separata. Decisioni di riferimento D-049, D-057–D-061, D-083–D-086 e D-105.
 
 ## US-23.1 · Configurare un pasto compreso
 
