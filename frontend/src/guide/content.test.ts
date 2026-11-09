@@ -1,5 +1,5 @@
 import {
-  adminGuideLink,
+  ADMIN_GUIDE_LINK,
   adminGuideSlug,
   loadAdminGuide,
   parseSections,
@@ -34,13 +34,16 @@ describe("admin guide links", () => {
     ["/admin/registrations/12", "people"],
     ["/admin/activities/3", "activities"],
     ["/admin/report/", "report"],
-  ])("%s opens the section %s", (path, slug) => {
+  ])("%s is explained in the section %s", (path, slug) => {
     expect(adminGuideSlug(path)).toBe(slug);
-    expect(adminGuideLink(path)).toBe(`/guide?tab=organizers#${slug}`);
   });
 
-  it("opens the guide without a section for an unknown page", () => {
-    expect(adminGuideLink("/admin/altro")).toBe("/guide?tab=organizers");
+  it("has no section for an unknown page", () => {
+    expect(adminGuideSlug("/admin/altro")).toBeUndefined();
+  });
+
+  it("opens the guide at the top, without a section", () => {
+    expect(ADMIN_GUIDE_LINK).toBe("/guide?tab=organizers");
   });
 });
 

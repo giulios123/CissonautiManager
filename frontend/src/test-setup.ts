@@ -4,3 +4,6 @@ import { setCurrentLocale } from "./i18n/locale";
 
 // A test that renders in English must not leak the language into the next one.
 afterEach(() => setCurrentLocale("it"));
+
+// jsdom has no scrolling: pages that return to the top would only print "Not implemented".
+window.scrollTo = () => {};
