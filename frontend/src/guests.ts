@@ -7,6 +7,19 @@ export type GuestActivity = {
 };
 export type Payer = "paying" | "non_paying";
 
+export type GuestMovement = {
+  id: number;
+  kind: "payment" | "refund";
+  amount_cents: number;
+  channel: string;
+  paid_on: string;
+  note: string | null;
+  created_at: string;
+  voided_at: string | null;
+  void_reason: string | null;
+};
+export type GuestItem = { label: string; price_cents: number; collectable_cents: number };
+
 /** An external guest: a person without an account, added by an admin. */
 export type Guest = {
   id: number;
@@ -21,6 +34,13 @@ export type Guest = {
   allergies_consent_at: string | null;
   meals: GuestMeal[];
   activities: GuestActivity[];
+  // Money: read from the current prices; movements are the register of the guest.
+  due_cents: number;
+  paid_cents: number;
+  refunded_cents: number;
+  balance_cents: number;
+  items: GuestItem[];
+  movements: GuestMovement[];
   warning?: string | null;
 };
 

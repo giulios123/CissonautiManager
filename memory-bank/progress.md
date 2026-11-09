@@ -1,5 +1,9 @@
 # Progress
 
+## MVP 25b · Incassi degli esterni — implementato sul branch
+
+Branch `feat/mvp-25b-incassi-esterni` (sopra `feat/mvp-25a-presenze-esterne`; spec in `specs/mvp-25b-incassi-esterni/`). Dovuto calcolato alla lettura sui prezzi correnti, registro `external_movement` separato dai `Payment` delle prenotazioni (pagamenti e restituzioni con tetto sul credito, annullo con motivo, idempotenza con chiave di richiesta), sezione «Esterni da incassare» in «Da incassare» (endpoint proprio), tabella «Incassi esterni» e «Totale evento» nel report e nel CSV, CSV dei movimenti. Migrazione additiva `0025_external_movements`; guide IT/EN. Backend 1251 test, frontend 430, Ruff, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate.
+
 ## MVP 25a · Presenze esterne — implementato sul branch
 
 Branch `feat/mvp-25a-presenze-esterne` (spec in `specs/mvp-25a-presenze-esterne/`). Esterni senza account inseriti dall'admin, con pasti e attività senza coworking, capienza delle attività occupata, regime e allergie (con consenso dichiarato dall'admin), pagina admin «Esterni», viste pasti/settimana/attività, report e CSV con «Di cui esterni» e colonna «Tipo». Migrazione additiva `0024_external_guests`; guide IT/EN. Backend 1192 test, frontend 420, Ruff, formattazione, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate. Gli importi degli esterni sono il 25b.

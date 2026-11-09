@@ -1,6 +1,6 @@
 # MVP 25b · Incassi degli esterni
 
-**Stato:** spec pronta per revisione, non implementata. P2, C2. Decisioni di riferimento D-087, D-088 e D-113–D-116. Dipende dal [25a](../mvp-25a-presenze-esterne/requirements.md) (anagrafica e adesioni degli esterni). Non dipende dal 25c.
+**Stato:** implementata sul branch `feat/mvp-25b-incassi-esterni` (sopra il 25a); restano CI SQL Server e collaudo organizzatori. P2, C2. Decisioni di riferimento D-087, D-088 e D-113–D-116. Dipende dal [25a](../mvp-25a-presenze-esterne/requirements.md) (anagrafica e adesioni degli esterni). Non dipende dal 25c.
 
 ## US-25b.1 · Dovuto di un esterno pagante
 

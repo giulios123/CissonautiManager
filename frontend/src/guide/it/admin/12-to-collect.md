@@ -23,3 +23,5 @@ Se sul conto è arrivata una cifra diversa, usa «Altro importo»: nella modale 
 Se segni come pagata una iscrizione scaduta e ci sono ancora posti, si riattiva. Se uno slot nel frattempo si è riempito resta scaduta e la pagina te lo dice: decidi come procedere con la persona.
 
 Per i casi anomali (credito, pagamento parziale, disdette) c'è la pagina «Da verificare».
+
+In fondo alla pagina c'è la sezione **Esterni da incassare**: gli esterni paganti con un saldo da versare, con le loro voci e una ricerca per nome. «Registra incasso» propone il saldo intero e permette di cambiare importo, canale e data. Non c'è attesa né annullo a 10 secondi, perché agli esterni non parte nessuna email; un errore si annulla dalla scheda dell'esterno.

@@ -10,4 +10,15 @@ A guest has no account, email, booking or coworking slot: they only get what you
 
 If you add someone with the same name as another guest or as a participant with an active booking, the app asks you to confirm: save only if it is a different person.
 
-In this version guests generate no amounts: they do not appear in “To collect” or in the accounts. They do appear in **Meals**, **Week**, **Activities** and the **Report**, always as separate people (a person counts once per meal or activity). Deleting a guest removes their meals and activities too; the action stays in the history.
+They appear in **Meals**, **Week**, **Activities** and the **Report**, always as separate people (a person counts once per meal or activity).
+
+# Guest accounts
+
+For a **paying** guest the app works out what they owe: the sum of the current prices of their meals and activities that the organisation collects. There is no participation fee and no meal covered by it. Items paid directly to the provider are shown with cost and instructions but do not count in the account. If you change a price or add an item, the amount due updates by itself. A **non-paying** guest owes nothing.
+
+- **Record a payment**: amount, channel, date and note. The payment sits in a register apart from the bookings and changes no fee. If you press twice it is recorded once. No email is sent.
+- **Overpayment**: it becomes credit, which you can give back with **Record a refund** (never more than the credit). Switching a guest to “not paying” after a payment does the same: what was paid becomes credit.
+- **Void**: a wrong movement is not deleted, it is voided with a reason; it stays in the list, struck through, and no longer counts. A payment that a refund relies on is voided after voiding the refund.
+- Guests who still have to pay appear in a separate section of **To collect**; the **Report** has a “Guest payments” table and the “Event total”, which adds fees and guests. The guests page “Download CSV” does not include the movements: they have their own file.
+
+A guest with movements on record, even voided ones, cannot be deleted: you can remove their meals and activities. Deleting a guest with no movements removes their meals and activities too; the action stays in the history.

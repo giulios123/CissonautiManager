@@ -18,6 +18,12 @@ const anna = {
   allergies_consent_at: null,
   meals: [{ date: "2026-07-13", kind: "lunch" }],
   activities: [],
+  due_cents: 800,
+  paid_cents: 0,
+  refunded_cents: 0,
+  balance_cents: 800,
+  items: [{ label: "pranzo di lun 13/07", price_cents: 800, collectable_cents: 800 }],
+  movements: [],
 };
 const mealsView = {
   days: [

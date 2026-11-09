@@ -8,6 +8,7 @@ import { tNow } from "../i18n/messages";
 import { formatEuro } from "../money";
 import { adminRegistrationPath } from "../routes";
 import type { Detail } from "./AdminRegistrationDetail";
+import { CollectGuests } from "./CollectGuests";
 import { QuickPaymentDialog, type CollectRow } from "./QuickPaymentDialog";
 
 type Row = CollectRow;
@@ -345,6 +346,7 @@ export function AdminCollect() {
             </div>
           </>
         )}
+        <CollectGuests />
       </main>
       {quickPaymentRow && (
         <QuickPaymentDialog

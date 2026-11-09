@@ -76,6 +76,13 @@ const report = {
     to_confirm_cents: 700,
     credits_cents: 400,
     to_refund_cents: 0,
+    external_due_cents: 0,
+    external_paid_cents: 0,
+    external_refunded_cents: 0,
+    external_net_cents: 0,
+    external_to_collect_cents: 0,
+    external_credit_cents: 0,
+    event_net_cents: 6500,
   },
 };
 

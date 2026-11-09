@@ -2,6 +2,8 @@
 
 ## Ora
 
+**2026-11-10 · MVP 25b implementato sul branch `feat/mvp-25b-incassi-esterni`** (sopra il 25a, entrambi non ancora in PR). Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: aprire le PR (25a poi 25b) o procedere con il 25c, che è indipendente.
+
 **2026-11-10 · MVP 25a implementato sul branch `feat/mvp-25a-presenze-esterne`** (backend 1192 test, frontend 420, lint e build verdi in locale). Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: 25b (incassi degli esterni) dopo la tua conferma.
 
 **2026-11-09 · MVP 25a, 25b e 25c: spec pronte per la tua revisione (B1), nessuna implementazione.** Richiesta del maintainer di pianificare tutti e tre: [25a presenze esterne](../specs/mvp-25a-presenze-esterne/requirements.md) (9 task), [25b incassi esterni](../specs/mvp-25b-incassi-esterni/requirements.md) (8 task), [25c esenzioni e rettifiche](../specs/mvp-25c-esenzioni-rettifiche/requirements.md) (9 task). Ordine consigliato 25a → 25b → 25c, un branch e una PR ciascuno; il 25c è indipendente. Risposte registrate in D-113–D-116 (dovuto calcolato per gli esterni, categoria + esenzioni, rimborso su iscrizione attiva, allergie degli esterni con consenso dichiarato). Le proposte a `domain.md` sono nelle spec e non applicate. Restano aperte solo le consegne dei benefit (Q-C3, MVP 30). Il collaudo manuale di MVP 23 e 24 resta da fare.

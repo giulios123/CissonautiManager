@@ -148,7 +148,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 25b · Incassi degli esterni
 
-- **Stato:** [spec pronta per revisione](mvp-25b-incassi-esterni/requirements.md), 8 task; dopo il 25a.
+- **Stato:** [implementato sul branch](mvp-25b-incassi-esterni/requirements.md) `feat/mvp-25b-incassi-esterni` (sopra il 25a), 8 task completati; restano CI SQL Server e collaudo organizzatori. Nessun deploy.
 - **Contenuto:** dovuto calcolato sulle sole voci incassate dall'organizzazione, registro di pagamenti e restituzioni separato dalle prenotazioni, sezione «Esterni» in «Da incassare», totale evento nel report.
 - **Fatto quando:** i versamenti degli esterni sono distinti dalle quote ma sommati nel totale evento, senza doppi conteggi.
 

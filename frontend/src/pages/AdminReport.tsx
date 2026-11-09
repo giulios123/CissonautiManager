@@ -60,6 +60,14 @@ type Report = {
     to_confirm_cents: number | null;
     credits_cents: number;
     to_refund_cents: number;
+    // External guests: a register apart from the bookings.
+    external_due_cents: number;
+    external_paid_cents: number;
+    external_refunded_cents: number;
+    external_net_cents: number;
+    external_to_collect_cents: number;
+    external_credit_cents: number;
+    event_net_cents: number;
   };
 };
 
@@ -436,6 +444,20 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
               : money(t("rep.toConfirm"), revenue.to_confirm_cents),
             money(t("rep.credits"), revenue.credits_cents),
             money(t("rep.toRefund"), revenue.to_refund_cents),
+          ]}
+        />
+        <CountTable
+          caption={t("rep.guestMoney")}
+          first={t("rep.colEntry")}
+          second={t("rep.colAmount")}
+          rows={[
+            money(t("rep.guestDue"), revenue.external_due_cents),
+            money(t("rep.guestPaid"), revenue.external_paid_cents),
+            money(t("rep.guestRefunded"), revenue.external_refunded_cents),
+            money(t("rep.net"), revenue.external_net_cents),
+            money(t("rep.guestToCollect"), revenue.external_to_collect_cents),
+            money(t("rep.guestCredit"), revenue.external_credit_cents),
+            money(t("rep.eventTotal"), revenue.event_net_cents),
           ]}
         />
       </Section>

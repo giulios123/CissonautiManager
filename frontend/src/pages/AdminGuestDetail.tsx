@@ -9,6 +9,7 @@ import { guestInput, type Guest, type GuestInput } from "../guests";
 import { useT, type MessageKey } from "../i18n";
 import { ROUTES } from "../routes";
 import { GuestForm } from "./GuestForm";
+import { GuestMoney } from "./GuestMoney";
 
 type MealDay = {
   date: string;
@@ -76,6 +77,7 @@ export function AdminGuestDetail() {
         submitLabel={t("guests.save")}
         onSubmit={saveDetails}
       />
+      <GuestMoney guest={guest} onChange={setGuest} />
       <MealsForm
         guestId={guest.id}
         days={days}

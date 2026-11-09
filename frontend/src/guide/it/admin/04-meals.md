@@ -8,4 +8,4 @@ I prezzi di pranzo e cena si cambiano in Impostazioni.
 
 Da «Configura pagamento», per ogni data e pasto scegli chi incassa. Per il pagamento diretto indica il costo specifico e le istruzioni con il destinatario. Le adesioni e le esigenze alimentari restano nell’app. Il pasto coperto dalla quota resta conteggiato tra le adesioni e ha dovuto zero; il CSV mostra copertura e dovuto. Tornando agli organizzatori si applica il prezzo generale del pasto. Salvando si ricalcolano i saldi degli iscritti attivi interessati: i versamenti restano, le eccedenze diventano credito e le confermate restano confermate. I CSV distinguono incasso dell’organizzazione, pagamento in loco al fornitore e pasto coperto dalla quota.
 
-Nell'elenco compaiono anche gli **esterni**, con l'etichetta «Esterno» e un link alla loro scheda: per loro non c'è dovuto, perché gli esterni non generano importi. Il CSV ha una colonna «Tipo» (Iscritto o Esterno).
+Nell'elenco compaiono anche gli **esterni**, con l'etichetta «Esterno» e un link alla loro scheda: il loro conto è nella pagina dell'esterno. Il CSV ha una colonna «Tipo» (Iscritto o Esterno).
