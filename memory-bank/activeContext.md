@@ -2,6 +2,8 @@
 
 ## Ora
 
+**2026-11-09 · MVP 25a, 25b e 25c: spec pronte per la tua revisione (B1), nessuna implementazione.** Richiesta del maintainer di pianificare tutti e tre: [25a presenze esterne](../specs/mvp-25a-presenze-esterne/requirements.md) (9 task), [25b incassi esterni](../specs/mvp-25b-incassi-esterni/requirements.md) (8 task), [25c esenzioni e rettifiche](../specs/mvp-25c-esenzioni-rettifiche/requirements.md) (9 task). Ordine consigliato 25a → 25b → 25c, un branch e una PR ciascuno; il 25c è indipendente. Risposte registrate in D-113–D-116 (dovuto calcolato per gli esterni, categoria + esenzioni, rimborso su iscrizione attiva, allergie degli esterni con consenso dichiarato). Le proposte a `domain.md` sono nelle spec e non applicate. Restano aperte solo le consegne dei benefit (Q-C3, MVP 30). Il collaudo manuale di MVP 23 e 24 resta da fare.
+
 **2026-11-09 · MVP 24 e 23 integrati in `main` con le PR #25 e #26.** Backend 1130 test, frontend 409 test, Ruff, formattazione, lint, TypeScript, build, Guide, CI SQLite/SQL Server e immagine verdi. La migrazione `0023_included_meal` segue `0022_activity_details`. Checklist manuali organizzatori ancora da completare (`specs/mvp-23-composizione-quota/test-manuali.md` e `specs/mvp-24-dettagli-attivita/test-manuali.md`). Nessun deploy o attivazione dei pasti compresi; le proposte a `domain.md` restano non applicate.
 
 La migrazione MVP 23 (`0023_included_meal`) è collegata a `0022_activity_details` dal merge della PR #25. MVP 24 resta rilasciabile autonomamente. Nessun deploy o attivazione dei pasti compresi; le proposte a `domain.md` restano non applicate.
