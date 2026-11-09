@@ -13,10 +13,6 @@ from typing import Literal
 from app.domain.meals import Meal
 from app.models import MEAL_DINNER, MEAL_LUNCH
 
-PAYER_PAYING = "paying"
-PAYER_NON_PAYING = "non_paying"
-PAYERS = (PAYER_PAYING, PAYER_NON_PAYING)
-
 MealRefusal = Literal["unknown_kind", "outside_edition"]
 
 

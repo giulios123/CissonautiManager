@@ -22,6 +22,10 @@ from app.db import Base, UtcDateTime, utcnow
 ROLE_PARTICIPANT = "participant"
 ROLE_ADMIN = "admin"
 
+PAYER_PAYING = "paying"
+PAYER_NON_PAYING = "non_paying"
+PAYERS = (PAYER_PAYING, PAYER_NON_PAYING)
+
 PERIOD_MORNING = "morning"
 PERIOD_AFTERNOON = "afternoon"
 PERIOD_EVENING = "evening"
@@ -346,6 +350,57 @@ class BookingActivity(Base):
     __tablename__ = "booking_activity"
 
     booking_id: Mapped[int] = mapped_column(ForeignKey("booking.id"), primary_key=True)
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"), primary_key=True)
+    joined_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class ExternalGuest(Base):
+    """A person without an account who takes part in meals and activities (MVP 25a).
+
+    Added by an admin with a minimal identity. There is no booking, no slot and no email.
+    """
+
+    __tablename__ = "external_guest"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"), index=True)
+    first_name: Mapped[str] = mapped_column(Unicode(100))
+    last_name: Mapped[str] = mapped_column(Unicode(100))
+    phone: Mapped[str | None] = mapped_column(Unicode(50))
+    # Free text such as "comes with Maria".
+    reference: Mapped[str | None] = mapped_column(Unicode(200))
+    internal_note: Mapped[str | None] = mapped_column(UnicodeText)
+    payer: Mapped[str] = mapped_column(Unicode(16), default=PAYER_PAYING)
+    diet: Mapped[str | None] = mapped_column(Unicode(16))
+    # Health data: stored only with the consent the admin collected from the person.
+    allergies: Mapped[str | None] = mapped_column(UnicodeText)
+    allergies_consent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    allergies_consent_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    created_by_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+
+    meals: Mapped[list["ExternalGuestMeal"]] = relationship(
+        cascade="all, delete-orphan", order_by="ExternalGuestMeal.date"
+    )
+    activities: Mapped[list["Activity"]] = relationship(secondary="external_guest_activity")
+
+
+class ExternalGuestMeal(Base):
+    __tablename__ = "external_guest_meal"
+
+    guest_id: Mapped[int] = mapped_column(
+        ForeignKey("external_guest.id", ondelete="CASCADE"), primary_key=True
+    )
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    kind: Mapped[str] = mapped_column(Unicode(8), primary_key=True)
+
+
+class ExternalGuestActivity(Base):
+    __tablename__ = "external_guest_activity"
+
+    guest_id: Mapped[int] = mapped_column(
+        ForeignKey("external_guest.id", ondelete="CASCADE"), primary_key=True
+    )
     activity_id: Mapped[int] = mapped_column(ForeignKey("activity.id"), primary_key=True)
     joined_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 

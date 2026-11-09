@@ -560,3 +560,16 @@ def test_migration_0009_marks_existing_promotions_as_not_plus_one(
     engine.dispose()
     assert not flag
     assert "promoted_as_plus_one" not in columns
+
+
+def test_external_guest_tables_upgrade_and_downgrade(alembic_config, database_url, empty_database):
+    command.upgrade(alembic_config, "0023_included_meal")
+    engine = make_engine(database_url)
+    assert "external_guest" not in inspect(engine).get_table_names()
+    command.upgrade(alembic_config, "0024_external_guests")
+    tables = set(inspect(engine).get_table_names())
+    assert {"external_guest", "external_guest_meal", "external_guest_activity"} <= tables
+    command.downgrade(alembic_config, "0023_included_meal")
+    tables = set(inspect(engine).get_table_names())
+    assert not {"external_guest", "external_guest_meal", "external_guest_activity"} & tables
+    engine.dispose()
