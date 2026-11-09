@@ -2,7 +2,9 @@
 
 ## Ora
 
-**2026-11-09 · MVP 23 e 24 implementati su branch distinti; verifiche locali completate.** MVP 23 su `feat/mvp-23-composizione-quota`, commit `433bc89`: policy del primo pasto organizzativo, anteprima/applicazione admin, catalogo benefit, viste/report/guide IT/EN. Suite backend 1115 test, frontend 410, Ruff, lint, typecheck, build e Guide verdi; resta SQL Server e collaudo manuale. MVP 24 su `feat/mvp-24-dettagli-attivita`: testi bilingui con fallback legacy, note admin con cronologia e CSV admin. Suite backend 1114 test, frontend 410, Ruff, lint, typecheck, build, Guide e sincronizzazione modelli/migrazioni verdi; resta SQL Server e collaudo manuale. Nessun deploy o push effettuato. Le modifiche proposte a `domain.md` attendono approvazione.
+**2026-11-09 · MVP 24 implementato su `feat/mvp-24-dettagli-attivita` (`ce64510`).** Schede attività IT/EN con fallback legacy, correzione separata dei dati operativi, note admin con cronologia e CSV riservato. Backend (1114 test), frontend (410), Ruff, lint, TypeScript, build, controllo Guide e migrazione SQLite passati. Rimangono SQL Server e collaudo manuale organizzatori, con checklist in `specs/mvp-24-dettagli-attivita/test-manuali.md`. MVP 24 è rilasciabile indipendentemente dal 23. Nessun deploy; le modifiche proposte a `domain.md` non sono applicate.
+
+MVP 23 è implementato separatamente su `feat/mvp-23-composizione-quota` (`433bc89`); policy disattivata dalla migrazione, attivabile solo dopo l’MVP 18 tramite preview/apply admin. Entrambi i branch partono da `origin/main` aggiornato dopo il merge della PR #24. Per integrare entrambi in un unico rilascio servirà una migrazione Alembic di merge delle due revisioni; le revisioni funzionano separatamente e non è stata eseguita alcuna migrazione SQL Server o deploy.
 
 **2026-11-08 · MVP20 presente in `main`; T20-8 completata come confermato dal maintainer.** Questa sessione ha eseguito la suite backend completa: 1103 test passati con 3 warning di deprecazione. Il maintainer conferma completati anche SQL Server e collaudo organizzatori. Nessun deploy, email reale o testo legale definitivo è stato eseguito in questa sessione.
 

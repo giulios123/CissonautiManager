@@ -6,7 +6,7 @@ Implementato nel branch `feat/mvp-23-composizione-quota`, commit `433bc89`. La p
 
 ## MVP 24 · Dettagli attività
 
-Implementato nel branch `feat/mvp-24-dettagli-attivita`. Attività localizzate IT/EN con fallback dei testi legacy; note interne admin con cronologia, API admin protette e CSV con nota anche senza iscritti. Suite backend 1114, frontend 410, Ruff, lint, typecheck, build, controllo Guide e sincronizzazione Alembic/modelli superati. Migrazione `0022_activity_details` verificata su SQLite. SQL Server e collaudo manuale restano da eseguire. Nessun deploy.
+Implementato nel branch `feat/mvp-24-dettagli-attivita`, commit `ce64510`. Attività localizzate IT/EN con fallback dei testi legacy; note interne admin con cronologia, API admin protette e CSV con nota anche senza iscritti. Suite backend 1114, frontend 410, Ruff, lint, typecheck, build, controllo Guide e sincronizzazione Alembic/modelli superati. Migrazione `0022_activity_details` verificata su SQLite. SQL Server e collaudo manuale restano da eseguire (checklist in `specs/mvp-24-dettagli-attivita/test-manuali.md`). MVP 24 è rilasciabile indipendentemente dal 23. Nessun deploy. Se i due branch vengono combinati, serve una migrazione Alembic di merge delle revisioni `0022` e `0022_activity_details`.
 
 ## Chiusura MVP 20 · T20-8
 
