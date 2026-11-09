@@ -16,6 +16,7 @@ CSV_URLS = [
     "/api/admin/views/payments-review",
     "/api/admin/views/report",
     "/api/admin/activities",
+    "/api/admin/guests",
 ]
 
 

@@ -34,6 +34,7 @@ from app.models import (
     Booking,
     BookingActivity,
     Edition,
+    ExternalGuestActivity,
     Participant,
 )
 from app.services import audit
@@ -145,8 +146,9 @@ def get_activity(db: Session, edition: Edition, activity_id: int) -> Activity:
 
 
 def linked_count(db: Session, activity_id: int) -> int:
-    """Bookings of any status that hold this activity (an expired one may come back)."""
-    return (
+    """Bookings of any status that hold this activity (an expired one may come back), plus the
+    external guests signed up."""
+    bookings = (
         db.scalar(
             select(func.count())
             .select_from(BookingActivity)
@@ -154,6 +156,15 @@ def linked_count(db: Session, activity_id: int) -> int:
         )
         or 0
     )
+    guests = (
+        db.scalar(
+            select(func.count())
+            .select_from(ExternalGuestActivity)
+            .where(ExternalGuestActivity.activity_id == activity_id)
+        )
+        or 0
+    )
+    return bookings + guests
 
 
 def participants(db: Session, activity: Activity, now: datetime) -> list[tuple[Booking, str]]:

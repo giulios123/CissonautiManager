@@ -21,8 +21,11 @@ LABELS_EN: dict[str, str] = {
     "contributi": "contributions",
     "pagamenti-da-verificare": "payments-to-review",
     "attivita": "activities",
+    "esterni": "guests",
     "report": "report",
     # --- CSV headers
+    "Pagante": "Paying",
+    "Riferimento": "Reference",
     "Giorno": "Day",
     "Slot": "Slot",
     "Orario": "Time",
@@ -142,6 +145,28 @@ LABELS_EN: dict[str, str] = {
 }
 
 ADMIN_MESSAGES: dict[str, dict[str, str]] = {
+    "guests.not_found": {
+        "it": "Questo esterno non esiste",
+        "en": "This guest doesn't exist",
+    },
+    "guests.duplicate": {
+        "it": (
+            "C'è già una persona con questo nome in questa edizione: {names}. "
+            "Se è una persona diversa, conferma per salvare comunque."
+        ),
+        "en": (
+            "Someone with this name is already in this edition: {names}. "
+            "If it is a different person, confirm to save anyway."
+        ),
+    },
+    "guests.consent_required": {
+        "it": "Per salvare allergie o intolleranze serve il consenso raccolto dalla persona",
+        "en": "To save allergies or intolerances you need the person's consent",
+    },
+    "guests.meals_invalid": {
+        "it": "I pasti scelti non sono validi: devono cadere nei giorni dell'edizione",
+        "en": "The chosen meals are not valid: they must fall on days of the edition",
+    },
     "warn.over_capacity": {
         "it": "Attenzione: capienza superata in {labels}.",
         "en": "Warning: capacity exceeded in {labels}.",
