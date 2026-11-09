@@ -6,6 +6,7 @@ from app.domain.report import (
     ActivityFacts,
     BookingFacts,
     EditionFacts,
+    GuestFacts,
     PaymentFacts,
     Split,
     WaitlistFacts,
@@ -255,3 +256,51 @@ def test_an_empty_edition_is_all_zeros_and_does_not_fail():
     assert report.revenue.due_cents == 0 and report.revenue.net_cents == 0
     assert report.contributions == {"talk": 0, "topic": 0, "skill": 0}
     assert report.enrollment.people_with_seat == 0
+
+
+class TestExternalGuests:
+    def facts(self):
+        return EditionFacts(
+            slots=((MON, "morning"), (MON, "afternoon"), (MON, "evening")),
+            base_fee_cents=1000,
+            per_day_fee_cents=100,
+            lunch_price_cents=800,
+            dinner_price_cents=1200,
+        )
+
+    def test_guests_are_in_the_meal_totals_and_apart(self):
+        guest = GuestFacts(1, ((MON, "lunch"), (MON, "dinner")), (), "vegan", True)
+        other = GuestFacts(2, ((MON, "lunch"),), (), None, False)
+        report = edition_report(self.facts(), [], [], [], [], [guest, other])
+        monday = report.meals.days[0]
+        assert monday.lunches == Split(0, 0, 2)
+        assert monday.lunches.total == 2
+        assert monday.dinners.external == 1
+        assert report.meals.lunch_diets["vegan"] == 1
+        assert report.meals.people_with_allergies == 1
+
+    def test_a_guest_without_meals_does_not_count_for_allergies(self):
+        guest = GuestFacts(1, (), (), None, True)
+        report = edition_report(self.facts(), [], [], [], [], [guest])
+        assert report.meals.people_with_allergies == 0
+
+    def test_the_same_meal_twice_for_a_guest_counts_once(self):
+        guest = GuestFacts(1, ((MON, "lunch"), (MON, "lunch")), (), None, False)
+        report = edition_report(self.facts(), [], [], [], [], [guest])
+        assert report.meals.lunches.external == 1
+
+    def test_activities_count_guests_but_expect_no_money_from_them(self):
+        hike = ActivityFacts(7, "Trekking", MON, "morning", 1500, 10)
+        guest = GuestFacts(1, (), (7,), None, False)
+        report = edition_report(self.facts(), [], [hike], [], [], [guest])
+        row = report.activities[0]
+        assert row.joined == Split(0, 0, 1)
+        assert row.expected_cents == 0
+
+    def test_guests_change_neither_presence_nor_money(self):
+        guest = GuestFacts(1, ((MON, "lunch"),), (), None, False)
+        base = edition_report(self.facts(), [], [], [], [], [])
+        with_guest = edition_report(self.facts(), [], [], [], [], [guest])
+        assert with_guest.presence == base.presence
+        assert with_guest.enrollment == base.enrollment
+        assert with_guest.revenue == base.revenue

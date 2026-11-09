@@ -110,6 +110,7 @@ def test_csv_has_a_row_per_person_with_diet_and_allergies(
         "Tipo di incasso",
         "Dovuto",
         "Istruzioni di pagamento",
+        "Tipo",
     ]
     assert rows == [
         [
@@ -125,6 +126,7 @@ def test_csv_has_a_row_per_person_with_diet_and_allergies(
             "Incasso dell’organizzazione",
             "8,00",
             "",
+            "Iscritto",
         ],
         [
             "13/07/2026",
@@ -139,6 +141,7 @@ def test_csv_has_a_row_per_person_with_diet_and_allergies(
             "Incasso dell’organizzazione",
             "12,00",
             "",
+            "Iscritto",
         ],
     ]
 

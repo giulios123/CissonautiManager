@@ -111,7 +111,7 @@ class TestJson:
         assert monday["morning"]["total"] == week["morning"] == 2
         assert monday["afternoon"]["total"] == week["afternoon"] == 1
         assert monday["evening"]["total"] == week["evening"] == 1
-        assert monday["morning"] == {"confirmed": 1, "pending": 1, "total": 2}
+        assert monday["morning"] == {"confirmed": 1, "pending": 1, "external": 0, "total": 2}
 
     def test_the_derived_evening_is_flagged(self, admin_client, camp):
         slots = get(admin_client).json()["presence"]["slots"]
@@ -191,13 +191,20 @@ class TestJson:
 
 
 class TestCsv:
-    def test_it_opens_in_italian_excel_and_has_the_five_columns(self, admin_client, camp):
+    def test_it_opens_in_italian_excel_and_has_the_six_columns(self, admin_client, camp):
         response = get(admin_client, "csv")
         assert response.headers["content-type"].startswith("text/csv")
         assert response.content.startswith(b"\xef\xbb\xbf")
         assert response.headers["content-disposition"].startswith('attachment; filename="report-')
         header, *rows = parse(response)
-        assert header == ["Sezione", "Voce", "Confermate", "In attesa di pagamento", "Totale"]
+        assert header == [
+            "Sezione",
+            "Voce",
+            "Confermate",
+            "In attesa di pagamento",
+            "Totale",
+            "Di cui esterni",
+        ]
         sections = {r[0] for r in rows}
         assert sections == {
             "Iscrizioni",
@@ -214,7 +221,7 @@ class TestCsv:
         due = next(r for r in rows if r[1] == "Totale dovuto")
         assert due[4] == "65,00" and due[2] == "" and due[3] == ""
         morning = next(r for r in rows if r[0] == "Presenze" and r[1] == "13/07/2026 mattina")
-        assert morning[2:] == ["1", "1", "2"]
+        assert morning[2:] == ["1", "1", "2", ""]
 
     def test_neither_names_nor_allergy_texts_are_in_the_file(self, admin_client, camp):
         text = get(admin_client, "csv").content.decode("utf-8-sig")
@@ -272,7 +279,7 @@ class TestActivitiesInTheCsv:
     def test_without_activities_the_section_is_still_there_at_zero(self, admin_client, edition):
         _h, *rows = parse(get(admin_client, "csv"))
         assert [r for r in rows if r[0] == "Attività"] == [
-            ["Attività", "Nessuna attività", "", "", "0"]
+            ["Attività", "Nessuna attività", "", "", "0", ""]
         ]
 
 

@@ -34,6 +34,7 @@ from app.models import (
     Booking,
     BookingActivity,
     Edition,
+    ExternalGuest,
     ExternalGuestActivity,
     Participant,
 )
@@ -186,6 +187,16 @@ def participants(db: Session, activity: Activity, now: datetime) -> list[tuple[B
         )
     )
     return result
+
+
+def guests_of(db: Session, activity: Activity) -> list[ExternalGuest]:
+    """External guests signed up to the activity, by name."""
+    guests = db.scalars(
+        select(ExternalGuest)
+        .join(ExternalGuestActivity, ExternalGuestActivity.guest_id == ExternalGuest.id)
+        .where(ExternalGuestActivity.activity_id == activity.id)
+    ).all()
+    return sorted(guests, key=lambda g: (g.last_name.lower(), g.first_name.lower(), g.id))
 
 
 def _check_inside(edition: Edition, day: date) -> None:

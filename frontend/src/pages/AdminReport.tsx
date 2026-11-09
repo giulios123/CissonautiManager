@@ -7,7 +7,7 @@ import { formatEuro } from "../money";
 import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
 
-type Split = { confirmed: number; pending: number; total: number };
+type Split = { confirmed: number; pending: number; external: number; total: number };
 type Report = {
   edition: { name: string; start_date: string | null; end_date: string | null } | null;
   enrollment: { by_status: Record<string, number>; people_with_seat: number };
@@ -98,11 +98,14 @@ function SplitTable({
   first,
   rows,
   footer,
+  guests = false,
 }: {
   caption: string;
   first: string;
   rows: { key: string; label: ReactNode; split: Split }[];
   footer?: { label: string; split: Split };
+  // Meals and activities count external guests too: the total includes them.
+  guests?: boolean;
 }) {
   const t = useT();
   return (
@@ -115,6 +118,7 @@ function SplitTable({
             <th scope="col">{t("rep.confirmed")}</th>
             <th scope="col">{t("rep.pending")}</th>
             <th scope="col">{t("rep.total")}</th>
+            {guests && <th scope="col">{t("rep.guests")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -124,6 +128,7 @@ function SplitTable({
               <td>{row.split.confirmed}</td>
               <td>{row.split.pending}</td>
               <td>{row.split.total}</td>
+              {guests && <td>{row.split.external}</td>}
             </tr>
           ))}
         </tbody>
@@ -266,6 +271,7 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
         <SplitTable
           caption={t("rep.mealsCaption")}
           first={t("rep.dayAndMeal")}
+          guests
           rows={meals.days.flatMap((day) => [
             {
               key: `${day.day}-l`,
@@ -328,6 +334,7 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
                   <th scope="col">{t("rep.confirmed")}</th>
                   <th scope="col">{t("rep.pending")}</th>
                   <th scope="col">{t("rep.total")}</th>
+                  <th scope="col">{t("rep.guests")}</th>
                   <th scope="col">{t("rep.colExpected")}</th>
                 </tr>
               </thead>
@@ -356,6 +363,7 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
                     <td>{activity.joined.confirmed}</td>
                     <td>{activity.joined.pending}</td>
                     <td>{activity.joined.total}</td>
+                    <td>{activity.joined.external}</td>
                     <td>{formatEuro(activity.expected_cents)}</td>
                   </tr>
                 ))}

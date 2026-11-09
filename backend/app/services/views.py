@@ -20,6 +20,7 @@ from app.domain.report import (
     BookingFacts,
     EditionFacts,
     EditionReport,
+    GuestFacts,
     PaymentFacts,
     WaitlistFacts,
     edition_report,
@@ -29,6 +30,7 @@ from app.models import (
     Activity,
     Booking,
     Edition,
+    ExternalGuest,
     Slot,
     WaitlistEntry,
     slot_sort_key,
@@ -229,7 +231,8 @@ def collect_rows(db: Session, now: datetime) -> list[CollectRow]:
 
 @dataclass(frozen=True)
 class MealRow:
-    booking_id: int
+    # Exactly one of the two is set: a participant has a booking, an external guest does not.
+    booking_id: int | None
     first_name: str
     last_name: str
     email: str
@@ -238,6 +241,11 @@ class MealRow:
     included_in_fee: bool
     diet: str | None
     allergies: str | None
+    guest_id: int | None = None
+
+    @property
+    def external(self) -> bool:
+        return self.guest_id is not None
 
 
 @dataclass
@@ -274,6 +282,22 @@ def load_meals(db: Session, now: datetime) -> MealData:
                 allergies=booking.allergies,
             )
             for meal in booking.meals
+        )
+    for guest in db.scalars(select(ExternalGuest).where(ExternalGuest.edition_id == edition.id)):
+        rows.extend(
+            MealRow(
+                booking_id=None,
+                guest_id=guest.id,
+                first_name=guest.first_name,
+                last_name=guest.last_name,
+                email="",
+                day=meal.date,
+                kind=meal.kind,
+                included_in_fee=False,
+                diet=guest.diet,
+                allergies=guest.allergies,
+            )
+            for meal in guest.meals
         )
     rows.sort(key=lambda r: (r.day, r.kind != "lunch", r.last_name.lower(), r.first_name.lower()))
     return MealData(days=sorted({s.date for s in edition.slots}), rows=rows)
@@ -329,7 +353,7 @@ def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> li
 
 
 def activity_signup_days(db: Session, now: datetime) -> list[date]:
-    """One day per sign-up to an activity, for bookings that occupy seats."""
+    """One day per sign-up to an activity: bookings that occupy seats and external guests."""
     edition = edition_service.get_active_edition(db)
     if edition is None:
         return []
@@ -337,6 +361,8 @@ def activity_signup_days(db: Session, now: datetime) -> list[date]:
     for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
         if occupies_seats(effective_status(booking.status, booking.hold_expires_at, now)):
             days.extend(activity.date for activity in booking.activities)
+    for guest in db.scalars(select(ExternalGuest).where(ExternalGuest.edition_id == edition.id)):
+        days.extend(activity.date for activity in guest.activities)
     return days
 
 
@@ -392,6 +418,20 @@ def load_report(db: Session, now: datetime) -> ReportData:
         ActivityFacts(a.id, a.title, a.date, a.period, a.price_cents, a.capacity, a.payment_mode)
         for a in db.scalars(select(Activity).where(Activity.edition_id == edition.id))
     ]
+    guests = [
+        GuestFacts(
+            guest_id=g.id,
+            meals=tuple((m.date, m.kind) for m in g.meals),
+            activity_ids=tuple(a.id for a in g.activities),
+            diet=g.diet,
+            has_allergies=bool((g.allergies or "").strip()),
+        )
+        for g in db.scalars(
+            select(ExternalGuest)
+            .where(ExternalGuest.edition_id == edition.id)
+            .options(selectinload(ExternalGuest.meals), selectinload(ExternalGuest.activities))
+        )
+    ]
     waitlist = [
         WaitlistFacts(entry.close_reason, entry.promoted_as_plus_one)
         for entry in db.scalars(
@@ -419,4 +459,6 @@ def load_report(db: Session, now: datetime) -> ReportData:
         },
         confirmation_policy=edition.confirmation_policy,
     )
-    return ReportData(edition, edition_report(facts, bookings, activities, waitlist, payments))
+    return ReportData(
+        edition, edition_report(facts, bookings, activities, waitlist, payments, guests)
+    )

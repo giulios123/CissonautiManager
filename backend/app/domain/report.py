@@ -66,6 +66,17 @@ class BookingFacts:
 
 
 @dataclass(frozen=True)
+class GuestFacts:
+    """An external guest: counted in meals and activities, never in bookings or money."""
+
+    guest_id: int
+    meals: tuple[tuple[date, str], ...]  # (day, kind)
+    activity_ids: tuple[int, ...]
+    diet: str | None
+    has_allergies: bool
+
+
+@dataclass(frozen=True)
 class ActivityFacts:
     id: int
     title: str
@@ -101,15 +112,17 @@ class EditionFacts:
 
 @dataclass(frozen=True)
 class Split:
-    """A count split by how sure the booking is."""
+    """A count split by how sure the booking is, plus the external guests (who have no booking
+    and are always sure)."""
 
     confirmed: int = 0
     pending: int = 0
+    external: int = 0
     # A field and not a property, so that it travels with the others when the report is sent.
     total: int = field(init=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "total", self.confirmed + self.pending)
+        object.__setattr__(self, "total", self.confirmed + self.pending + self.external)
 
 
 @dataclass(frozen=True)
@@ -260,40 +273,53 @@ def _presence(
     )
 
 
-def _diet_counts(bookings: Iterable[BookingFacts]) -> dict[str, int]:
+def _diet_counts(bookings: Iterable[BookingFacts | GuestFacts]) -> dict[str, int]:
     counted = Counter(b.diet if b.diet in DIETS else NO_DIET for b in bookings)
     return {key: counted.get(key, 0) for key in (*DIETS, NO_DIET)}
 
 
 def _meals(
-    confirmed: Sequence[BookingFacts], pending: Sequence[BookingFacts], slots
+    confirmed: Sequence[BookingFacts],
+    pending: Sequence[BookingFacts],
+    slots,
+    guests: Sequence[GuestFacts] = (),
 ) -> MealsSection:
     days = sorted({day for day, _ in slots})
 
-    def per_meal(group: Sequence[BookingFacts]) -> Counter[tuple[date, str]]:
-        return Counter(meal for b in group for meal in b.meals)
+    def per_meal(group: Sequence[BookingFacts | GuestFacts]) -> Counter[tuple[date, str]]:
+        return Counter(meal for b in group for meal in set(b.meals))
 
-    sure, waiting = per_meal(confirmed), per_meal(pending)
+    sure, waiting, outside = per_meal(confirmed), per_meal(pending), per_meal(guests)
     day_rows = [
         MealDay(
             day=day,
-            lunches=_split(sure[(day, MEAL_LUNCH)], waiting[(day, MEAL_LUNCH)]),
-            dinners=_split(sure[(day, MEAL_DINNER)], waiting[(day, MEAL_DINNER)]),
+            lunches=Split(
+                sure[(day, MEAL_LUNCH)], waiting[(day, MEAL_LUNCH)], outside[(day, MEAL_LUNCH)]
+            ),
+            dinners=Split(
+                sure[(day, MEAL_DINNER)], waiting[(day, MEAL_DINNER)], outside[(day, MEAL_DINNER)]
+            ),
         )
         for day in days
     ]
 
-    def total(kind: str, group: Sequence[BookingFacts]) -> int:
-        return sum(1 for b in group for _, k in b.meals if k == kind)
+    def total(kind: str, group: Sequence[BookingFacts | GuestFacts]) -> int:
+        return sum(1 for b in group for _, k in set(b.meals) if k == kind)
 
     seated = [*confirmed, *pending]
+    eating = [*seated, *guests]
     return MealsSection(
         days=day_rows,
-        lunches=_split(total(MEAL_LUNCH, confirmed), total(MEAL_LUNCH, pending)),
-        dinners=_split(total(MEAL_DINNER, confirmed), total(MEAL_DINNER, pending)),
-        lunch_diets=_diet_counts(b for b in seated if any(k == MEAL_LUNCH for _, k in b.meals)),
-        dinner_diets=_diet_counts(b for b in seated if any(k == MEAL_DINNER for _, k in b.meals)),
-        people_with_allergies=sum(1 for b in seated if b.has_allergies),
+        lunches=Split(
+            total(MEAL_LUNCH, confirmed), total(MEAL_LUNCH, pending), total(MEAL_LUNCH, guests)
+        ),
+        dinners=Split(
+            total(MEAL_DINNER, confirmed), total(MEAL_DINNER, pending), total(MEAL_DINNER, guests)
+        ),
+        lunch_diets=_diet_counts(b for b in eating if any(k == MEAL_LUNCH for _, k in b.meals)),
+        dinner_diets=_diet_counts(b for b in eating if any(k == MEAL_DINNER for _, k in b.meals)),
+        people_with_allergies=sum(1 for b in seated if b.has_allergies)
+        + sum(1 for g in guests if g.has_allergies and g.meals),
     )
 
 
@@ -301,12 +327,14 @@ def _activities(
     activities: Sequence[ActivityFacts],
     confirmed: Sequence[BookingFacts],
     pending: Sequence[BookingFacts],
+    guests: Sequence[GuestFacts] = (),
 ) -> list[ActivityRow]:
     rows = []
     for activity in sorted(activities, key=lambda a: (a.day, PERIODS.index(a.period), a.id)):
-        joined = _split(
+        joined = Split(
             sum(1 for b in confirmed if activity.id in b.activity_ids),
             sum(1 for b in pending if activity.id in b.activity_ids),
+            sum(1 for g in guests if activity.id in g.activity_ids),
         )
         rows.append(
             ActivityRow(
@@ -317,8 +345,9 @@ def _activities(
                 price_cents=activity.price_cents,
                 capacity=activity.capacity,
                 joined=joined,
+                # Guests owe nothing in the app until MVP 25b.
                 expected_cents=collectable(activity.price_cents, activity.payment_mode)
-                * joined.total,
+                * (joined.confirmed + joined.pending),
                 payment_mode=activity.payment_mode,
             )
         )
@@ -420,14 +449,15 @@ def edition_report(
     activities: Sequence[ActivityFacts],
     waitlist: Iterable[WaitlistFacts],
     payments: Iterable[PaymentFacts],
+    guests: Sequence[GuestFacts] = (),
 ) -> EditionReport:
     confirmed, pending = _seated(bookings)
     contributions = Counter(kind for b in [*confirmed, *pending] for kind in b.contributions)
     return EditionReport(
         enrollment=_enrollment(bookings),
         presence=_presence(confirmed, pending, edition.slots),
-        meals=_meals(confirmed, pending, edition.slots),
-        activities=_activities(activities, confirmed, pending),
+        meals=_meals(confirmed, pending, edition.slots, guests),
+        activities=_activities(activities, confirmed, pending, guests),
         contributions={kind: contributions.get(kind, 0) for kind in CONTRIBUTION_KINDS},
         waitlist=_waitlist(waitlist),
         revenue=_revenue(bookings, payments, activities, edition),

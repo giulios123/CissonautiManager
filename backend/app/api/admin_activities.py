@@ -11,7 +11,7 @@ from app.csv_export import Amount, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_email_sender, get_now, require_admin
 from app.email import EmailSender
-from app.i18n import current_locale, t
+from app.i18n import current_locale, t, tr
 from app.models import Activity, ActivityNoteRevision, Edition, Participant
 from app.services import activities as activity_service
 from app.services import edition as edition_service
@@ -112,8 +112,17 @@ class ActivityPerson(BaseModel):
     status: str
 
 
+class ActivityGuest(BaseModel):
+    guest_id: int
+    first_name: str
+    last_name: str
+    phone: str | None
+    payer: str
+
+
 class ActivityDetailOut(ActivityOut):
     people: list[ActivityPerson]
+    guests: list[ActivityGuest] = []
     internal_note: str | None = None
     note_history: list[dict] = []
 
@@ -192,42 +201,57 @@ CSV_HEADER = [
     "Stato",
     "Incasso",
     "Istruzioni di pagamento",
+    "Tipo",
     "Nota interna",
 ]
 
 
-def _csv_rows(activity: Activity, people: list[ActivityPerson]):
+def _guests(db: Session, activity: Activity) -> list[ActivityGuest]:
+    return [
+        ActivityGuest(
+            guest_id=g.id,
+            first_name=g.first_name,
+            last_name=g.last_name,
+            phone=g.phone,
+            payer=g.payer,
+        )
+        for g in activity_service.guests_of(db, activity)
+    ]
+
+
+def _csv_rows(activity: Activity, people: list[ActivityPerson], guests: list[ActivityGuest]):
     title = (activity.title_it if current_locale() == "it" else activity.title_en) or activity.title
-    if not people:
+    head = [activity.date, period_label(activity.period), title, Amount(activity.price_cents)]
+    terms = [t(f"collection.{activity.payment_mode}"), activity.payment_instructions]
+    if not people and not guests:
+        yield [*head, None, None, None, None, None, *terms, None, activity.internal_note]
+    first = True
+    for person in people:
         yield [
-            activity.date,
-            period_label(activity.period),
-            title,
-            Amount(activity.price_cents),
-            None,
-            None,
-            None,
-            None,
-            None,
-            t(f"collection.{activity.payment_mode}"),
-            activity.payment_instructions,
-            activity.internal_note,
-        ]
-    for index, person in enumerate(people):
-        yield [
-            activity.date,
-            period_label(activity.period),
-            title,
-            Amount(activity.price_cents),
+            *head,
             person.first_name,
             person.last_name,
             person.email,
             person.phone,
             status_label(person.status),
-            t(f"collection.{activity.payment_mode}"),
-            activity.payment_instructions,
-            activity.internal_note if index == 0 else None,
+            *terms,
+            tr("Iscritto"),
+            activity.internal_note if first else None,
         ]
+        first = False
+    for guest in guests:
+        yield [
+            *head,
+            guest.first_name,
+            guest.last_name,
+            None,
+            guest.phone,
+            None,
+            *terms,
+            tr("Esterno"),
+            activity.internal_note if first else None,
+        ]
+        first = False
 
 
 def _data(
@@ -295,7 +319,7 @@ def list_activities(
         rows = [
             row
             for activity in activities
-            for row in _csv_rows(activity, _people(db, activity, now))
+            for row in _csv_rows(activity, _people(db, activity, now), _guests(db, activity))
         ]
         return csv_response(csv_filename("attivita", now), CSV_HEADER, rows)
     free = activity_service.free_by_activity(db, activities, now)
@@ -335,9 +359,12 @@ def get_activity(
 ) -> ActivityDetailOut | Response:
     activity = _get(db, activity_id)
     people = _people(db, activity, now)
+    guests = _guests(db, activity)
     if fmt == "csv":
         name = f"attivita-{activity.id}"
-        return csv_response(csv_filename(name, now), CSV_HEADER, _csv_rows(activity, people))
+        return csv_response(
+            csv_filename(name, now), CSV_HEADER, _csv_rows(activity, people, guests)
+        )
     free = activity_service.free_by_activity(db, [activity], now)[activity.id]
     history = (
         db.query(ActivityNoteRevision)
@@ -346,8 +373,9 @@ def get_activity(
         .all()
     )
     return ActivityDetailOut(
-        **_out(activity, free, len(people)).model_dump(),
+        **_out(activity, free, len(people) + len(guests)).model_dump(),
         people=people,
+        guests=guests,
         note_history=[
             {
                 "note": row.note,

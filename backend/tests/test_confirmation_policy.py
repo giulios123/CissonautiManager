@@ -102,4 +102,4 @@ def test_report_keeps_confirmation_remainder_separate_from_total_balance(
     report_csv = admin_client.get("/api/admin/views/report?format=csv")
     rows = list(csv.reader(io.StringIO(report_csv.text.lstrip("\ufeff")), delimiter=";"))
     confirmation = next(row for row in rows if row[1] == "Residuo per confermare")
-    assert confirmation[-1] == "6,00"
+    assert confirmation[4] == "6,00"

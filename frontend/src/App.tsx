@@ -3,6 +3,8 @@ import { RequireLogin } from "./auth";
 import { AdminAdmins } from "./pages/AdminAdmins";
 import { AdminActivities } from "./pages/AdminActivities";
 import { AdminActivityDetail } from "./pages/AdminActivityDetail";
+import { AdminGuestDetail } from "./pages/AdminGuestDetail";
+import { AdminGuests } from "./pages/AdminGuests";
 import { AdminContributions } from "./pages/AdminContributions";
 import { AdminMeals } from "./pages/AdminMeals";
 import { AdminLayout } from "./pages/AdminLayout";
@@ -95,6 +97,8 @@ function AppRoutes() {
           <Route path="meals" element={<AdminMeals />} />
           <Route path="activities" element={<AdminActivities />} />
           <Route path="activities/:id" element={<AdminActivityDetail />} />
+          <Route path="guests" element={<AdminGuests />} />
+          <Route path="guests/:id" element={<AdminGuestDetail />} />
           <Route path="contributions" element={<AdminContributions />} />
           <Route path="report" element={<AdminReport />} />
           <Route path="to-collect" element={<AdminCollect />} />

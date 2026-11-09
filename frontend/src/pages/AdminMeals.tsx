@@ -4,13 +4,16 @@ import { api, ApiError } from "../api";
 import { formatDay } from "../booking";
 import { useT, type MessageKey } from "../i18n";
 import { tNow } from "../i18n/messages";
-import { adminRegistrationPath } from "../routes";
+import { adminGuestPath, adminRegistrationPath } from "../routes";
 import { CsvButton } from "./CsvButton";
 import { CollectionDetails, CollectionFields, type CollectionTerms } from "../collection";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 
 type MealPerson = {
-  booking_id: number;
+  // A participant has a booking; an external guest has a guest id.
+  booking_id: number | null;
+  guest_id?: number | null;
+  external?: boolean;
   first_name: string;
   last_name: string;
   diet: string | null;
@@ -33,6 +36,11 @@ const DIETS: [string, MessageKey][] = [
   ["vegan", "meals.dietVegan"],
   ["none", "meals.dietNone"],
 ];
+
+const personKey = (person: MealPerson) =>
+  person.external ? `g${person.guest_id}` : `b${person.booking_id}`;
+const personPath = (person: MealPerson) =>
+  person.external ? adminGuestPath(person.guest_id!) : adminRegistrationPath(person.booking_id!);
 
 export const healthDataWarning = () => tNow("meals.healthWarning");
 
@@ -100,10 +108,11 @@ export function AdminMeals() {
                           ) : (
                             <ul className="plain">
                               {meal.people.map((person) => (
-                                <li key={person.booking_id}>
-                                  <Link to={adminRegistrationPath(person.booking_id)}>
+                                <li key={personKey(person)}>
+                                  <Link to={personPath(person)}>
                                     {person.first_name} {person.last_name}
                                   </Link>
+                                  {person.external && <small> · {t("guests.badge")}</small>}
                                   {person.included_in_fee && (
                                     <small> · {t("collection.included")}</small>
                                   )}
@@ -118,7 +127,7 @@ export function AdminMeals() {
                           ) : (
                             <ul className="plain">
                               {allergic.map((person) => (
-                                <li key={person.booking_id}>
+                                <li key={personKey(person)}>
                                   {person.first_name} {person.last_name}: {person.allergies}
                                 </li>
                               ))}

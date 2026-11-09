@@ -24,6 +24,9 @@ LABELS_EN: dict[str, str] = {
     "esterni": "guests",
     "report": "report",
     # --- CSV headers
+    "Di cui esterni": "Of which guests",
+    "Esterno": "Guest",
+    "Iscritto": "Participant",
     "Pagante": "Paying",
     "Riferimento": "Reference",
     "Giorno": "Day",
