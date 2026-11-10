@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { formatDay } from "../booking";
 import { useT } from "../i18n";
 import { CsvButton } from "./CsvButton";
+import { METRIC_LABELS, WeekDetailDialog, type WeekMetric } from "./WeekDetailDialog";
 
 type DayRow = {
   date: string;
@@ -27,12 +28,39 @@ export function AdminWeek() {
   const t = useT();
   const [week, setWeek] = useState<Week | null>(null);
   const [failed, setFailed] = useState(false);
+  const [open, setOpen] = useState<{ metric: WeekMetric; date: string | null; n: number } | null>(
+    null,
+  );
+  const clickedRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api<Week>("/api/admin/views/week")
       .then(setWeek)
       .catch(() => setFailed(true));
   }, []);
+
+  useEffect(load, [load]);
+
+  /** A number of the table: a real button that opens the list behind it. */
+  function number(metric: WeekMetric, date: string | null, n: number) {
+    const what = t(METRIC_LABELS[metric]);
+    const label = date
+      ? t("week.detailLabel", { metric: what, day: formatDay(date), n })
+      : t("week.detailLabelWeek", { metric: what, n });
+    return (
+      <button
+        type="button"
+        className="number"
+        aria-label={label}
+        onClick={(event) => {
+          clickedRef.current = event.currentTarget;
+          setOpen({ metric, date, n });
+        }}
+      >
+        {n}
+      </button>
+    );
+  }
 
   return (
     <main className="wide">
@@ -67,18 +95,18 @@ export function AdminWeek() {
                 {week.days.map((day) => (
                   <tr key={day.date}>
                     <th scope="row">{formatDay(day.date)}</th>
-                    <td>{day.morning}</td>
-                    <td>{day.afternoon}</td>
+                    <td>{number("morning", day.date, day.morning)}</td>
+                    <td>{number("afternoon", day.date, day.afternoon)}</td>
                     <td>
-                      {day.evening}
+                      {number("evening", day.date, day.evening)}
                       {day.evening_derived > 0 && (
                         <small>{t("week.derived", { n: day.evening_derived })}</small>
                       )}
                     </td>
-                    <td>{day.people}</td>
-                    <td>{day.lunches ?? 0}</td>
-                    <td>{day.dinners ?? 0}</td>
-                    <td>{day.activities ?? 0}</td>
+                    <td>{number("people", day.date, day.people)}</td>
+                    <td>{number("lunch", day.date, day.lunches ?? 0)}</td>
+                    <td>{number("dinner", day.date, day.dinners ?? 0)}</td>
+                    <td>{number("activities", day.date, day.activities ?? 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -87,15 +115,25 @@ export function AdminWeek() {
                   <th scope="row" colSpan={4}>
                     {t("week.totals")}
                   </th>
-                  <td>{week.total_people}</td>
-                  <td>{week.total_lunches ?? 0}</td>
-                  <td>{week.total_dinners ?? 0}</td>
-                  <td>{week.total_activities ?? 0}</td>
+                  <td>{number("people", null, week.total_people)}</td>
+                  <td>{number("lunch", null, week.total_lunches ?? 0)}</td>
+                  <td>{number("dinner", null, week.total_dinners ?? 0)}</td>
+                  <td>{number("activities", null, week.total_activities ?? 0)}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
         </>
+      )}
+      {open && (
+        <WeekDetailDialog
+          metric={open.metric}
+          date={open.date}
+          shown={open.n}
+          onClose={() => setOpen(null)}
+          onStale={load}
+          returnFocusTo={clickedRef}
+        />
       )}
     </main>
   );

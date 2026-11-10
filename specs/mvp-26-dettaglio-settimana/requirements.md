@@ -1,6 +1,6 @@
 # MVP 26 · Dettaglio dei numeri settimanali
 
-**Stato:** spec pronta (B1), in attesa di conferma; nessuna implementazione. P2, D1. Origine: [US-D1](../revisione-2026-11-07/d-admin-comunicazioni/requirements.md), risposta Q-D1 («dettagli per i numeri, inclusi totali e fasce»). Nessuna dipendenza bloccante: usa gli esterni del 25a perché sono già nei conteggi di pasti e attività. Solo admin, nessuna migrazione.
+**Stato:** confermata il 2026-11-10 e implementata sul branch `feat/mvp-26-dettaglio-settimana` (6 task); restano CI SQL Server e collaudo organizzatori. P2, D1. Origine: [US-D1](../revisione-2026-11-07/d-admin-comunicazioni/requirements.md), risposta Q-D1 («dettagli per i numeri, inclusi totali e fasce»). Nessuna dipendenza bloccante: usa gli esterni del 25a perché sono già nei conteggi di pasti e attività. Solo admin, nessuna migrazione.
 
 ## US-26.1 · Aprire il dettaglio da un numero
 
