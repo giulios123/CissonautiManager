@@ -290,6 +290,7 @@ function BookingCard({
           <>
             {t("money.registrationFee")}{" "}
             <strong>{formatEuro(booking.registration_fee_cents)}</strong>
+            {booking.fee_exempt && <> · {t("collection.exempt")}</>}
             <br />
           </>
         )}
@@ -468,7 +469,7 @@ function BookingCard({
         </section>
       )}
       {booking.editable && <DietaryForm booking={booking} me={me} onSaved={reload} />}
-      {booking.payments.length > 0 && (
+      {(booking.payments.length > 0 || (booking.refunds ?? []).length > 0) && (
         <details>
           <summary>{t("me.payments")}</summary>
           <ul>
@@ -478,6 +479,15 @@ function BookingCard({
                   amount: formatEuro(payment.amount_cents),
                   date: formatDay(payment.paid_on),
                   channel: payment.channel,
+                })}
+              </li>
+            ))}
+            {(booking.refunds ?? []).map((refund) => (
+              <li key={`refund-${refund.id}`}>
+                {t("me.refundLine", {
+                  amount: formatEuro(refund.amount_cents),
+                  date: formatDay(refund.refunded_on),
+                  channel: refund.channel,
                 })}
               </li>
             ))}

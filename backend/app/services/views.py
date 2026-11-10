@@ -33,6 +33,8 @@ from app.models import (
     ExternalGuest,
     Slot,
     WaitlistEntry,
+    active_refunds,
+    gross_paid_cents,
     slot_sort_key,
 )
 from app.services import edition as edition_service
@@ -409,6 +411,7 @@ def load_report(db: Session, now: datetime) -> ReportData:
         selectinload(Booking.slots),
         selectinload(Booking.meals),
         selectinload(Booking.activities),
+        selectinload(Booking.activity_links),
         selectinload(Booking.contributions),
     )
     for booking in db.scalars(
@@ -421,8 +424,15 @@ def load_report(db: Session, now: datetime) -> ReportData:
                 person_id=booking.participant_id,
                 status=status,
                 amount_due_cents=booking.amount_due_cents,
-                paid_cents=paid_total(booking),
+                paid_cents=gross_paid_cents(booking),
                 refund_cents=booking.refund_cents or 0,
+                active_refund_cents=sum(r.amount_cents for r in active_refunds(booking)),
+                category=booking.category,
+                fee_exempt=booking.fee_exempt,
+                exempt_meals=tuple((m.date, m.kind) for m in booking.meals if m.exempt),
+                exempt_activity_ids=tuple(
+                    link.activity_id for link in booking.activity_links if link.exempt
+                ),
                 slots=tuple((s.date, s.period) for s in booking.slots),
                 meals=tuple((m.date, m.kind) for m in booking.meals),
                 included_meals=tuple((m.date, m.kind) for m in booking.meals if m.included_in_fee),

@@ -15,3 +15,5 @@ Sign-ups paid directly to a provider count toward attendance but are excluded fr
 In the **Meals** and **Activities** sections an “Of which guests” column shows how many of the totals are guests; the total includes them. Presences, registrations and fees do not change.
 
 The **Guest payments** table shows what guests owe, paid, were refunded, still have to pay and their credits, apart from the participants' fees. The **Event total** is the net of the fees plus the net of the guests; the same amount never appears in both. Costs paid to the provider are in neither.
+
+The **Revenue** section also shows the **refunds on active bookings** (included in “Refunded”), the **value exempted** by exemptions and the number of **internal, not paying** bookings. Net and credits use what was paid net of those refunds.

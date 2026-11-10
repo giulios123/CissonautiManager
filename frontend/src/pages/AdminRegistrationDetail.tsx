@@ -9,7 +9,9 @@ import { useT, type MessageKey } from "../i18n";
 import { adminActivityPath, ROUTES } from "../routes";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
+import { AdminCreditRefunds } from "./AdminCreditRefunds";
 import { AdminEditDetails } from "./AdminEditDetails";
+import { AdminExemptions } from "./AdminExemptions";
 import { AdminHistory, type HistoryEntry } from "./AdminHistory";
 import { AdminHoldActions } from "./AdminHoldActions";
 import { AdminPayments } from "./AdminPayments";
@@ -47,6 +49,8 @@ export type Detail = {
   lunch_price_cents?: number;
   dinner_price_cents?: number;
   activity_offers?: ActivityOffer[];
+  // An admin label of the booking; it changes no amount and the participant never sees it.
+  category?: "ordinary" | "internal_non_paying";
 };
 
 const DIET_LABELS: Record<string, MessageKey> = {
@@ -267,7 +271,17 @@ export function AdminRegistrationDetail() {
         </p>
         <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
         <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
+        <AdminCreditRefunds booking={booking} onDone={showUpdated} />
       </section>
+
+      {booking.editable && (
+        <AdminExemptions
+          key={`${booking.id}:${booking.amount_due_cents}:${booking.fee_exempt}:${booking.paid_cents}:${detail.category ?? "ordinary"}`}
+          booking={booking}
+          category={detail.category ?? "ordinary"}
+          onDone={showUpdated}
+        />
+      )}
 
       <section aria-labelledby="meals-title">
         <h2 id="meals-title">{t("det.mealsTitle")}</h2>

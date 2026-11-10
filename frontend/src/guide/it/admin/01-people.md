@@ -30,3 +30,14 @@ Ricorda che per dare un pasto o un'attività a qualcuno servono prima gli slot g
 # Consensi facoltativi
 
 Nella scheda di una persona trovi lo storico dei consensi facoltativi. È una consultazione in sola lettura: l'organizzatore non può concedere o revocare una scelta per conto della persona. Lo storico è disponibile anche per chi compare soltanto nelle liste d'attesa.
+
+# Categoria, esenzioni e rimborsi del credito
+
+Nella scheda di una prenotazione in attesa o confermata trovi **Categoria ed esenzioni**.
+
+- **Categoria**: «ordinaria» oppure «interno non pagante» (per esempio uno speaker). È solo un'etichetta, visibile a te, nell'elenco Persone (con filtro) e nel CSV: **non cambia nessun importo** e il partecipante non la vede.
+- **Esenzioni**: puoi esentare la **quota di partecipazione** e/o singoli **pasti** e **attività** (quelli incassati dall'organizzazione). Una voce esentata vale zero; le altre restano dovute. Se esenti il primo pasto compreso nella quota, la copertura passa al pasto successivo.
+- **Anteprima e applica**: premi «Mostra l'anteprima» per vedere quota, totale, versato, saldo e stato prima e dopo; solo allora puoi «Applicare». Se nel frattempo la prenotazione cambia, l'app chiede di rifare l'anteprima. I pagamenti non si toccano. Una prenotazione in attesa che risulta coperta diventa confermata (senza inventare un pagamento) e la persona riceve la solita email; una confermata resta confermata anche se togli un'esenzione e compare un saldo.
+- Se la persona toglie un pasto o un'attività esenti e poi li sceglie di nuovo, l'esenzione cade.
+
+**Credito e rimborsi.** Se ha versato più del totale dovuto, la scheda mostra il **credito** e «Registra un rimborso»: importo (mai oltre il credito), canale, data e nota. Il rimborso non cambia il posto, non cancella i pagamenti e non manda email; se premi due volte viene registrato una volta sola. Uno sbagliato si annulla con un motivo e resta in elenco, barrato. Il saldo e la conferma usano il **versato netto** (pagamenti meno rimborsi): un pagamento su cui si appoggia un rimborso si annulla dopo aver annullato il rimborso. Il rimborso di una disdetta resta quello di sempre, con tetto sul versato netto.

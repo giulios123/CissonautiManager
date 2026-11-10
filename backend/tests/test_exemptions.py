@@ -370,3 +370,101 @@ class TestParticipantView:
             0,
         )
         assert mine["amount_due_cents"] == 1200
+
+
+class TestPeopleList:
+    def test_the_list_shows_category_and_exempt_fee_and_filters_by_category(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        first, _ = make(db, edition, make_participant, make_booking)
+        second, _ = make(db, edition, make_participant, make_booking, email="bob@example.com")
+        admin_client.put(f"{REG}/{second.id}/category", json={"category": "internal_non_paying"})
+        rows = {r["id"]: r for r in admin_client.get(REG).json()}
+        assert (rows[first.id]["category"], rows[second.id]["category"]) == (
+            "ordinary",
+            "internal_non_paying",
+        )
+        only = admin_client.get(REG, params={"category": "internal_non_paying"}).json()
+        assert [r["id"] for r in only] == [second.id]
+
+    def test_the_csv_has_the_category_and_the_exempt_fee_in_both_languages(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        import csv
+        import io
+
+        booking, _ = make(db, edition, make_participant, make_booking)
+        token = preview(admin_client, booking, category="internal_non_paying", fee_exempt=True)[
+            "preview_token"
+        ]
+        apply(admin_client, booking, token, category="internal_non_paying", fee_exempt=True)
+
+        def rows(url):
+            text = admin_client.get(url).content.decode("utf-8-sig")
+            return list(csv.reader(io.StringIO(text), delimiter=";"))
+
+        italian = rows(f"{REG}?format=csv")
+        assert italian[0][-2:] == ["Categoria", "Quota esente"]
+        assert italian[1][-2:] == ["Interno non pagante", "sì"]
+        english = rows(f"{REG}?format=csv&lang=en")
+        assert english[0][-2:] == ["Category", "Fee exempt"]
+        assert english[1][-2:] == ["Internal, not paying", "yes"]
+
+
+class TestReport:
+    def revenue(self, client):
+        return client.get("/api/admin/views/report").json()["revenue"]
+
+    def test_exempt_value_internal_count_and_refunds_are_reported_apart(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        booking, hike = make(db, edition, make_participant, make_booking, status=STATUS_CONFIRMED)
+        pay(db, booking, 4600)
+        before = self.revenue(admin_client)
+        assert (before["exempt_value_cents"], before["internal_non_paying"]) == (0, 0)
+        meal = {"date": "2026-07-13", "kind": "lunch"}
+        token = preview(
+            admin_client,
+            booking,
+            category="internal_non_paying",
+            fee_exempt=True,
+            meals=[meal],
+            activity_ids=[hike.id],
+        )["preview_token"]
+        apply(
+            admin_client,
+            booking,
+            token,
+            category="internal_non_paying",
+            fee_exempt=True,
+            meals=[meal],
+            activity_ids=[hike.id],
+        )
+        after = self.revenue(admin_client)
+        assert after["exempt_value_cents"] == 1100 + 800 + 1500
+        assert after["internal_non_paying"] == 1
+        # Dovuto: only the dinner is left; the payments are what they were.
+        assert (after["due_cents"], after["paid_cents"]) == (1200, 4600)
+        assert after["credits_cents"] == 4600 - 1200
+        refund_response = admin_client.post(
+            f"{REG}/{booking.id}/refunds", json={"amount_cents": 3000, "channel": "revolut"}
+        )
+        assert refund_response.status_code == 201
+        refunded = self.revenue(admin_client)
+        assert refunded["credit_refunded_cents"] == 3000
+        assert refunded["refunded_cents"] == 3000
+        assert (refunded["paid_cents"], refunded["net_cents"]) == (4600, 1600)
+        assert refunded["credits_cents"] == 400
+        assert refunded["to_collect_cents"] == 0
+
+    def test_the_csv_has_the_new_rows(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        make(db, edition, make_participant, make_booking)
+        text = admin_client.get("/api/admin/views/report?format=csv&lang=en").text
+        for label in (
+            "Value exempted",
+            "Internal, not paying bookings",
+            "Refunds on active bookings (included in Refunded)",
+        ):
+            assert label in text

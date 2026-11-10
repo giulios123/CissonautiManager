@@ -60,6 +60,9 @@ type Report = {
     to_confirm_cents: number | null;
     credits_cents: number;
     to_refund_cents: number;
+    credit_refunded_cents: number;
+    exempt_value_cents: number;
+    internal_non_paying: number;
     // External guests: a register apart from the bookings.
     external_due_cents: number;
     external_paid_cents: number;
@@ -444,6 +447,9 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
               : money(t("rep.toConfirm"), revenue.to_confirm_cents),
             money(t("rep.credits"), revenue.credits_cents),
             money(t("rep.toRefund"), revenue.to_refund_cents),
+            money(t("rep.creditRefunded"), revenue.credit_refunded_cents, true),
+            money(t("rep.exemptValue"), revenue.exempt_value_cents),
+            { key: "internal", label: t("rep.internalCount"), value: revenue.internal_non_paying },
           ]}
         />
         <CountTable

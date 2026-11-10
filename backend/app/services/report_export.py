@@ -174,6 +174,13 @@ def report_rows(report: EditionReport) -> list[Row]:
         ),
         _plain(section, "Crediti da restituire", Amount(money.credits_cents)),
         _plain(section, "Disdette da rimborsare", Amount(money.to_refund_cents)),
+        _plain(
+            section,
+            "Rimborsi su iscrizioni attive (compresi in Rimborsato)",
+            Amount(money.credit_refunded_cents),
+        ),
+        _plain(section, "Valore esentato", Amount(money.exempt_value_cents)),
+        _plain(section, "Iscrizioni interne non paganti", money.internal_non_paying),
     ]
 
     section = "Incassi esterni"

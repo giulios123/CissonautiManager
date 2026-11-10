@@ -1,6 +1,6 @@
 # MVP 25c · Esenzioni e rettifiche degli iscritti
 
-**Stato:** spec pronta per revisione, non implementata. P2, C2/C3. Decisioni di riferimento D-087, D-089 e D-113–D-116. Dipende dalla conferma su quota dell'MVP 18 e dalla composizione dell'MVP 23; **non dipende da 25a e 25b** e si può rilasciare prima o dopo. Il diritto ai benefit per categoria è l'MVP 30: qui si registra soltanto la categoria.
+**Stato:** implementata sul branch `feat/mvp-25c-esenzioni-rettifiche` (sopra il 25b per la catena delle migrazioni, ma indipendente nel codice); restano CI SQL Server e collaudo organizzatori. P2, C2/C3. Decisioni di riferimento D-087, D-089 e D-113–D-116. Dipende dalla conferma su quota dell'MVP 18 e dalla composizione dell'MVP 23; **non dipende da 25a e 25b** e si può rilasciare prima o dopo. Il diritto ai benefit per categoria è l'MVP 30: qui si registra soltanto la categoria.
 
 ## US-25c.1 · Categoria dell'iscrizione
 

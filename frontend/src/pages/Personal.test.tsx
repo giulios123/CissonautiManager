@@ -968,3 +968,50 @@ describe("slot preview with meals and activities", () => {
     );
   });
 });
+
+describe("exemptions and refunds on the personal page", () => {
+  const exempt = booking({
+    status: "confermata",
+    confirmation_policy: "registration_fee",
+    registration_fee_cents: 0,
+    fee_exempt: true,
+    amount_due_cents: 1200,
+    paid_cents: 1200,
+    balance_cents: 0,
+    meals: [
+      {
+        date: "2026-07-13",
+        kind: "lunch",
+        label: "pranzo di lun 13/07",
+        price_cents: 800,
+        payment_mode: "organizer",
+        collectable_cents: 0,
+        exempt: true,
+      },
+      {
+        date: "2026-07-13",
+        kind: "dinner",
+        label: "cena di lun 13/07",
+        price_cents: 1200,
+        payment_mode: "organizer",
+        collectable_cents: 1200,
+      },
+    ],
+    refunds: [
+      { id: 5, amount_cents: 300, channel: "revolut", refunded_on: "2026-07-14", note: null },
+    ],
+  });
+
+  it("marks exempt items and the fee, and lists the refund; never the category", async () => {
+    openAt((url) => (url === "/api/me/profile" ? { body: {} } : { body: me([exempt]) }));
+    expect(await screen.findByText(/pranzo di lun 13\/07/)).toBeInTheDocument();
+    const lunch = screen.getByText(/pranzo di lun 13\/07/).closest("li") as HTMLElement;
+    expect(within(lunch).getByText(/Esente/)).toBeInTheDocument();
+    const dinner = screen.getByText(/cena di lun 13\/07/).closest("li") as HTMLElement;
+    expect(within(dinner).queryByText(/Esente/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Quota di partecipazione/).closest("p")).toHaveTextContent("Esente");
+    await userEvent.click(screen.getByText("Pagamenti registrati"));
+    expect(screen.getByText(/Rimborso di 3,00 € il/)).toBeInTheDocument();
+    expect(screen.queryByText(/interno non pagante/i)).not.toBeInTheDocument();
+  });
+});

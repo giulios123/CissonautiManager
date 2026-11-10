@@ -154,7 +154,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 25c · Esenzioni e rettifiche degli iscritti
 
-- **Stato:** [spec pronta per revisione](mvp-25c-esenzioni-rettifiche/requirements.md), 9 task; indipendente da 25a/25b.
+- **Stato:** [implementato sul branch](mvp-25c-esenzioni-rettifiche/requirements.md) `feat/mvp-25c-esenzioni-rettifiche`, 9 task completati; migrazione 0026 sopra la 0025, codice indipendente da 25a/25b. Restano CI SQL Server e collaudo organizzatori. Nessun deploy.
 - **Contenuto:** categoria «ordinaria / interno non pagante», esenzioni esplicite di quota e singole voci con anteprima e applicazione, rimborso tracciato su iscrizione attiva al massimo pari al credito, versato netto.
 - **Fatto quando:** un'esenzione cambia solo le voci scelte, i pagamenti restano intatti e il rimborso non altera lo stato del posto.
 

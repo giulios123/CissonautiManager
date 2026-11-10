@@ -54,8 +54,8 @@ def test_payment_confirms_on_registration_fee_and_void_reverses_it(
 
     people_csv = admin_client.get("/api/admin/registrations?format=csv")
     header, row = list(csv.reader(io.StringIO(people_csv.text.lstrip("\ufeff")), delimiter=";"))
-    assert header[-2:] == ["Quota di partecipazione", "Residuo per confermare"]
-    assert row[-2:] == ["12,00", "0,01"]
+    assert header[-4:-2] == ["Quota di partecipazione", "Residuo per confermare"]
+    assert row[-4:-2] == ["12,00", "0,01"]
 
 
 def test_zero_registration_fee_creates_confirmed_booking_without_payment(

@@ -2,6 +2,8 @@
 
 ## Ora
 
+**2026-11-10 · MVP 25c implementato sul branch `feat/mvp-25c-esenzioni-rettifiche`** (sopra il 25b; 25a, 25b e 25c non ancora in PR). Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: aprire le PR in ordine 25a → 25b → 25c.
+
 **2026-11-10 · MVP 25b implementato sul branch `feat/mvp-25b-incassi-esterni`** (sopra il 25a, entrambi non ancora in PR). Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: aprire le PR (25a poi 25b) o procedere con il 25c, che è indipendente.
 
 **2026-11-10 · MVP 25a implementato sul branch `feat/mvp-25a-presenze-esterne`** (backend 1192 test, frontend 420, lint e build verdi in locale). Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: 25b (incassi degli esterni) dopo la tua conferma.

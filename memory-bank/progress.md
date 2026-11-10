@@ -1,5 +1,9 @@
 # Progress
 
+## MVP 25c · Esenzioni e rettifiche degli iscritti — implementato sul branch
+
+Branch `feat/mvp-25c-esenzioni-rettifiche` (sopra `feat/mvp-25b-incassi-esterni`; spec in `specs/mvp-25c-esenzioni-rettifiche/`). Categoria dell'iscrizione, esenzioni di quota e singole voci con anteprima/applicazione (token, lock, idempotenza, conferma con email), rimborso del credito su prenotazioni attive (tetto sul credito, annullo con motivo, idempotenza), «versato» ovunque al netto dei rimborsi, blocco dell'annullo di un pagamento sotto un rimborso, report/CSV (valore esentato, interni non paganti, rimborsi su iscrizioni attive), pagina personale con «Esente» e rimborsi. Migrazione additiva `0026_exemptions_refunds`; guide IT/EN. Backend 1322 test, frontend 447, Ruff, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate.
+
 ## MVP 25b · Incassi degli esterni — implementato sul branch
 
 Branch `feat/mvp-25b-incassi-esterni` (sopra `feat/mvp-25a-presenze-esterne`; spec in `specs/mvp-25b-incassi-esterni/`). Dovuto calcolato alla lettura sui prezzi correnti, registro `external_movement` separato dai `Payment` delle prenotazioni (pagamenti e restituzioni con tetto sul credito, annullo con motivo, idempotenza con chiave di richiesta), sezione «Esterni da incassare» in «Da incassare» (endpoint proprio), tabella «Incassi esterni» e «Totale evento» nel report e nel CSV, CSV dei movimenti. Migrazione additiva `0025_external_movements`; guide IT/EN. Backend 1251 test, frontend 430, Ruff, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate.

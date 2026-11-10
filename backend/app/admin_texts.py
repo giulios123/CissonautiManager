@@ -25,6 +25,15 @@ LABELS_EN: dict[str, str] = {
     "report": "report",
     # --- CSV headers
     "Di cui esterni": "Of which guests",
+    "Rimborsi su iscrizioni attive (compresi in Rimborsato)": (
+        "Refunds on active bookings (included in Refunded)"
+    ),
+    "Valore esentato": "Value exempted",
+    "Iscrizioni interne non paganti": "Internal, not paying bookings",
+    "Categoria": "Category",
+    "Quota esente": "Fee exempt",
+    "Ordinaria": "Ordinary",
+    "Interno non pagante": "Internal, not paying",
     "Incassi esterni": "Guest payments",
     "Dovuto dagli esterni": "Due from guests",
     "Versato dagli esterni": "Paid by guests",

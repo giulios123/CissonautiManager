@@ -27,6 +27,8 @@ type Row = {
   balance_cents: number;
   hold_expires_at: string | null;
   waitlist_slots?: number;
+  category?: "ordinary" | "internal_non_paying" | null;
+  fee_exempt?: boolean;
 };
 
 const STATUSES = [
@@ -38,9 +40,10 @@ const STATUSES = [
   "in_lista",
 ];
 
-function filterParams(status: string, query: string) {
+function filterParams(status: string, query: string, category = "") {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
+  if (category) params.set("category", category);
   if (query.trim()) params.set("q", query.trim());
   return params;
 }
@@ -52,11 +55,12 @@ export function AdminRegistrations() {
   const [failed, setFailed] = useState(false);
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
   const feePolicy = rows?.some((row) => row.confirmation_policy === "registration_fee") ?? false;
 
   useEffect(() => {
     let cancelled = false;
-    api<Row[]>(`/api/admin/registrations?${filterParams(status, query)}`)
+    api<Row[]>(`/api/admin/registrations?${filterParams(status, query, category)}`)
       .then((loaded) => {
         if (!cancelled) {
           setRows(loaded);
@@ -69,7 +73,7 @@ export function AdminRegistrations() {
     return () => {
       cancelled = true;
     };
-  }, [status, query]);
+  }, [status, query, category]);
 
   return (
     <main className="wide">
@@ -98,6 +102,14 @@ export function AdminRegistrations() {
             ))}
           </select>
         </label>
+        <label>
+          {t("exempt.category")}
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">{t("adm.all")}</option>
+            <option value="ordinary">{t("exempt.categoryOrdinary")}</option>
+            <option value="internal_non_paying">{t("exempt.categoryInternal")}</option>
+          </select>
+        </label>
       </div>
       {failed && <p role="alert">{t("people.loadError")}</p>}
       {rows === null ? (
@@ -108,7 +120,10 @@ export function AdminRegistrations() {
         <>
           <p aria-live="polite">{tn("people.count", rows.length)}</p>
           <p>
-            <CsvButton path="/api/admin/registrations" params={filterParams(status, query)} />
+            <CsvButton
+              path="/api/admin/registrations"
+              params={filterParams(status, query, category)}
+            />
           </p>
           <div className="table-wrap">
             <table>
@@ -154,6 +169,9 @@ export function AdminRegistrations() {
                     <td>{row.evenings}</td>
                     <td>
                       <StatusBadge status={row.status} />
+                      {row.category === "internal_non_paying" && (
+                        <small> · {t("exempt.categoryInternal")}</small>
+                      )}
                     </td>
                     {feePolicy && (
                       <>

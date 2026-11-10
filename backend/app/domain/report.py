@@ -64,6 +64,17 @@ class BookingFacts:
     contributions: tuple[str, ...]  # kinds
     registration_fee_cents: int | None = None
     included_meals: tuple[tuple[date, str], ...] = ()
+    # MVP 25c. `paid_cents` stays the payments that count; the refunds of credit on the active
+    # booking come off it in `net_paid_cents`, which every balance uses.
+    active_refund_cents: int = 0
+    category: str = "ordinary"
+    fee_exempt: bool = False
+    exempt_meals: tuple[tuple[date, str], ...] = ()
+    exempt_activity_ids: tuple[int, ...] = ()
+
+    @property
+    def net_paid_cents(self) -> int:
+        return self.paid_cents - self.active_refund_cents
 
 
 @dataclass(frozen=True)
@@ -212,6 +223,12 @@ class RevenueSection:
     to_refund_cents: int
     # External guests (MVP 25b): a register apart from the bookings. Never added to the figures
     # above; only `event_net_cents` joins the two.
+    # Of `refunded_cents`: the refunds of credit on bookings that stayed active (MVP 25c).
+    credit_refunded_cents: int = 0
+    # What the exemptions took off the amounts due, and how many bookings are internal and not
+    # paying.
+    exempt_value_cents: int = 0
+    internal_non_paying: int = 0
     external_due_cents: int = 0
     external_paid_cents: int = 0
     external_refunded_cents: int = 0
@@ -421,7 +438,34 @@ def _revenue(
     for payment in payments:
         by_channel[payment.channel] += payment.amount_cents
     paid = sum(b.paid_cents for b in bookings)
-    refunded = sum(b.refund_cents for b in bookings)
+    credit_refunded = sum(b.active_refund_cents for b in bookings)
+    refunded = sum(b.refund_cents for b in bookings) + credit_refunded
+    exempt_value = sum(
+        (
+            compute_fee(
+                {day for day, _ in b.slots}, edition.base_fee_cents, edition.per_day_fee_cents
+            )
+            if b.fee_exempt
+            else 0
+        )
+        + sum(
+            collectable(
+                *edition.meal_terms.get(
+                    (day, kind),
+                    (
+                        edition.lunch_price_cents
+                        if kind == MEAL_LUNCH
+                        else edition.dinner_price_cents,
+                        "organizer",
+                    ),
+                )
+            )
+            for day, kind in b.exempt_meals
+            if (day, kind) not in b.included_meals
+        )
+        + sum(price_of.get(a, 0) for a in b.exempt_activity_ids)
+        for b in seated
+    )
     pending = [b for b in bookings if b.status == STATUS_PENDING]
     pending_confirmation_dues = [
         confirmation_due_cents(
@@ -433,7 +477,7 @@ def _revenue(
         None
         if any(due is None for due in pending_confirmation_dues)
         else sum(
-            max(0, due - b.paid_cents)
+            max(0, due - b.net_paid_cents)
             for b, due in zip(pending, pending_confirmation_dues, strict=True)
         )
     )
@@ -447,11 +491,14 @@ def _revenue(
         paid_by_channel=dict(sorted(by_channel.items())),
         refunded_cents=refunded,
         net_cents=paid - refunded,
-        to_collect_cents=sum(max(b.amount_due_cents - b.paid_cents, 0) for b in seated),
+        to_collect_cents=sum(max(b.amount_due_cents - b.net_paid_cents, 0) for b in seated),
         to_confirm_cents=to_confirm,
-        credits_cents=sum(max(b.paid_cents - b.amount_due_cents, 0) for b in seated),
+        credits_cents=sum(max(b.net_paid_cents - b.amount_due_cents, 0) for b in seated),
+        credit_refunded_cents=credit_refunded,
+        exempt_value_cents=exempt_value,
+        internal_non_paying=sum(1 for b in seated if b.category == "internal_non_paying"),
         to_refund_cents=sum(
-            max(b.paid_cents - b.refund_cents, 0)
+            max(b.net_paid_cents - b.refund_cents, 0)
             for b in bookings
             if b.status == STATUS_CANCEL_REQUESTED
         ),

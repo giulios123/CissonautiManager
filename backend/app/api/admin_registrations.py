@@ -19,7 +19,7 @@ from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.domain.booking import occupies_seats
 from app.domain.presence import has_evening
 from app.email import EmailSender
-from app.i18n import t
+from app.i18n import t, tr
 from app.models import (
     STATUS_EXPIRED,
     Activity,
@@ -78,6 +78,9 @@ class RegistrationRow(BaseModel):
     hold_expires_at: datetime | None
     created_at: datetime
     waitlist_slots: int = 0
+    # MVP 25c: admin label of the booking, and whether its fee is exempted.
+    category: str | None = None
+    fee_exempt: bool = False
 
 
 class ParticipantView(BaseModel):
@@ -232,6 +235,8 @@ def _row(booking: Booking, now: datetime, waitlist_slots: int = 0) -> Registrati
         hold_expires_at=booking.hold_expires_at,
         created_at=booking.created_at,
         waitlist_slots=waitlist_slots,
+        category=booking.category,
+        fee_exempt=booking.fee_exempt,
     )
 
 
@@ -347,6 +352,9 @@ def _get_booking(db: Session, booking_id: int) -> Booking:
     return booking
 
 
+CATEGORY_LABELS = {"ordinary": "Ordinaria", "internal_non_paying": "Interno non pagante"}
+
+
 def _csv_rows(rows: list[RegistrationRow]):
     for row in rows:
         yield [
@@ -368,6 +376,8 @@ def _csv_rows(rows: list[RegistrationRow]):
             Amount(row.confirmation_balance_cents)
             if row.confirmation_balance_cents is not None
             else None,
+            tr(CATEGORY_LABELS[row.category]) if row.category else None,
+            row.fee_exempt if row.category else None,
         ]
 
 
@@ -388,12 +398,15 @@ CSV_HEADER = [
     "Slot in lista d'attesa",
     "Quota di partecipazione",
     "Residuo per confermare",
+    "Categoria",
+    "Quota esente",
 ]
 
 
 @router.get("", response_model=None)
 def list_registrations(
     status: Status | None = None,
+    category: Literal["ordinary", "internal_non_paying"] | None = None,
     q: str | None = Query(default=None, max_length=100),
     fmt: Literal["json", "csv"] = Query(default="json", alias="format"),
     db: Session = Depends(get_db),
@@ -413,6 +426,8 @@ def list_registrations(
         )
         if status:
             query = query.where(Booking.status == status)
+        if category:
+            query = query.where(Booking.category == category)
         needle = q.strip().lower() if q and q.strip() else None
         if needle:
             query = query.where(
