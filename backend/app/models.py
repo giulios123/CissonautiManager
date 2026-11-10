@@ -486,6 +486,12 @@ class Contribution(Base):
     description: Mapped[str | None] = mapped_column(UnicodeText)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    # An admin can hide a proposal from the other participants (MVP 27). The author still sees it.
+    hidden_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    hidden_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("participant.id", name="fk_contribution_hidden_by")
+    )
+    hidden_reason: Mapped[str | None] = mapped_column(Unicode(200))
 
 
 class PaymentChannel(Base):

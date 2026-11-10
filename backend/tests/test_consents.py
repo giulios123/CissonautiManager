@@ -206,3 +206,55 @@ def test_unknown_purpose_is_rejected(db, edition, make_participant, clock):
         pass
     else:
         raise AssertionError("mandatory purpose should not be accepted here")
+
+
+def _event(db, edition, participant, document, action, clock):
+    db.add(
+        ConsentEvent(
+            edition_id=edition.id,
+            participant_id=participant.id,
+            kind="attendance",
+            action=action,
+            document_id=document.id,
+            locale="it",
+            recorded_at=clock(),
+            source="self_service",
+        )
+    )
+    db.commit()
+
+
+def test_attendance_authorized_only_for_a_valid_current_grant(db, edition, make_participant, clock):
+    old = add_optional_document(db, edition, version=1)
+    granted = make_participant("granted@example.com")
+    revoked = make_participant("revoked@example.com")
+    declined = make_participant("declined@example.com")
+    silent = make_participant("silent@example.com")
+    renewed = make_participant("renewed@example.com")
+    _event(db, edition, granted, old, "granted", clock)
+    _event(db, edition, revoked, old, "granted", clock)
+    _event(db, edition, revoked, old, "withdrawn", clock)
+    _event(db, edition, declined, old, "declined", clock)
+    _event(db, edition, renewed, old, "granted", clock)
+    people = [granted, revoked, declined, silent, renewed]
+    ids = [p.id for p in people]
+    assert consent_service.attendance_authorized(db, edition, ids) == {
+        granted.id,
+        renewed.id,
+    }
+    # A new document makes the old grants stale: nobody is shown until they accept again.
+    new = add_optional_document(db, edition, version=2)
+    assert consent_service.attendance_authorized(db, edition, ids) == set()
+    _event(db, edition, granted, new, "granted", clock)
+    assert consent_service.attendance_authorized(db, edition, ids) == {granted.id}
+    assert consent_service.attendance_authorized(db, edition, []) == set()
+
+
+def test_attendance_authorized_ignores_other_editions(db, edition, make_participant, clock):
+    document = add_optional_document(db, edition)
+    ada = make_participant("ada@example.com")
+    _event(db, edition, ada, document, "granted", clock)
+    other = Edition(name="Other", start_date=edition.start_date, end_date=edition.end_date)
+    db.add(other)
+    db.commit()
+    assert consent_service.attendance_authorized(db, other, [ada.id]) == set()
