@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.domain.activities import check_join
 from app.domain.booking import effective_status, has_free_seat, occupies_seats
@@ -89,7 +89,11 @@ def get_guest(db: Session, edition: Edition, guest_id: int) -> ExternalGuest:
 
 
 def list_guests(db: Session, edition: Edition) -> list[ExternalGuest]:
-    guests = db.scalars(select(ExternalGuest).where(ExternalGuest.edition_id == edition.id)).all()
+    guests = db.scalars(
+        select(ExternalGuest)
+        .where(ExternalGuest.edition_id == edition.id)
+        .options(selectinload(ExternalGuest.meals), selectinload(ExternalGuest.activities))
+    ).all()
     return sorted(guests, key=lambda g: (g.last_name.lower(), g.first_name.lower(), g.id))
 
 

@@ -468,3 +468,101 @@ class TestReport:
             "Refunds on active bookings (included in Refunded)",
         ):
             assert label in text
+
+
+class TestReviewFindings:
+    """Exemptions must show up the same way in every view and export."""
+
+    def exempt_lunch_and_hike(
+        self, admin_client, db, edition, make_participant, make_booking, **kw
+    ):
+        booking, hike = make(db, edition, make_participant, make_booking, **kw)
+        meal = {"date": "2026-07-13", "kind": "lunch"}
+        token = preview(admin_client, booking, meals=[meal], activity_ids=[hike.id])[
+            "preview_token"
+        ]
+        apply(admin_client, booking, token, meals=[meal], activity_ids=[hike.id])
+        return booking, hike
+
+    def test_the_meals_view_and_csv_count_an_exempt_meal_as_zero_and_say_so(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        import csv
+        import io
+
+        self.exempt_lunch_and_hike(admin_client, db, edition, make_participant, make_booking)
+        view = admin_client.get("/api/admin/views/meals").json()
+        lunch = next(m for m in view["days"][0]["meals"] if m["kind"] == "lunch")
+        person = lunch["people"][0]
+        assert (person["exempt"], person["collectable_cents"]) == (True, 0)
+        dinner = next(m for m in view["days"][0]["meals"] if m["kind"] == "dinner")
+        assert (dinner["people"][0]["exempt"], dinner["people"][0]["collectable_cents"]) == (
+            False,
+            1200,
+        )
+        text = admin_client.get("/api/admin/views/meals?format=csv").content.decode("utf-8-sig")
+        rows = list(csv.reader(io.StringIO(text), delimiter=";"))
+        header, lunch_row = rows[0], next(r for r in rows[1:] if r[1] == "Pranzo")
+        assert lunch_row[header.index("Dovuto")] == "0,00"
+        assert lunch_row[header.index("Tipo di incasso")] == "Esente"
+        dinner_row = next(r for r in rows[1:] if r[1] == "Cena")
+        assert dinner_row[header.index("Dovuto")] == "12,00"
+
+    def test_the_report_money_leaves_out_exempt_meals_and_activities(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        self.exempt_lunch_and_hike(admin_client, db, edition, make_participant, make_booking)
+        report = admin_client.get("/api/admin/views/report").json()
+        revenue = report["revenue"]
+        # fee 11 + dinner 12 remain; the lunch and the hike are worth zero.
+        assert revenue["due_cents"] == 2300
+        assert revenue["due_meals_cents"] == 1200
+        assert revenue["due_activities_cents"] == 0
+        assert revenue["due_difference_cents"] == 0
+        # People are still counted: attendance is not money.
+        assert report["meals"]["lunches"]["total"] == 1
+        assert report["activities"][0]["joined"]["total"] == 1
+        assert report["activities"][0]["expected_cents"] == 0
+
+    def test_the_expected_income_of_an_activity_counts_only_the_non_exempt(
+        self, admin_client, db, edition, make_participant, make_booking
+    ):
+        _, hike = self.exempt_lunch_and_hike(
+            admin_client, db, edition, make_participant, make_booking
+        )
+        other = make_booking(
+            make_participant("bob@example.com"), [slot(db, 13)], status=STATUS_CONFIRMED
+        )
+        other.activities = [hike]
+        db.commit()
+        row = admin_client.get("/api/admin/views/report").json()["activities"][0]
+        assert row["joined"]["total"] == 2
+        assert row["expected_cents"] == 1500  # only Bob's seat is collected
+
+    def test_the_category_filter_leaves_out_people_only_on_a_waitlist(
+        self, admin_client, db, edition, make_participant, make_booking, add_entry, clock
+    ):
+        booking, _ = make(db, edition, make_participant, make_booking)
+        admin_client.put(f"{REG}/{booking.id}/category", json={"category": "internal_non_paying"})
+        waiting = make_participant("wait@example.com", first_name="Wanda")
+        add_entry(slot(db, 13, "evening"), waiting, clock())
+        everyone = {r["email"] for r in admin_client.get(REG).json()}
+        assert "wait@example.com" in everyone
+        internal = admin_client.get(REG, params={"category": "internal_non_paying"}).json()
+        assert [r["email"] for r in internal] == ["ada@example.com"]
+        ordinary_csv = admin_client.get(f"{REG}?format=csv&category=ordinary").content.decode(
+            "utf-8-sig"
+        )
+        assert "wait@example.com" not in ordinary_csv
+
+    def test_the_activity_offers_charge_nothing_for_an_exempt_activity(
+        self, admin_client, db, edition, make_participant, make_booking, client, outbox
+    ):
+        booking, _ = self.exempt_lunch_and_hike(
+            admin_client, db, edition, make_participant, make_booking
+        )
+        login(client, outbox)
+        offer = client.get("/api/me").json()["activities"][0]
+        assert (offer["joined"], offer["exempt"], offer["collectable_cents"]) == (True, True, 0)
+        detail = admin_client.get(f"{REG}/{booking.id}").json()
+        assert detail["activity_offers"][0]["collectable_cents"] == 0

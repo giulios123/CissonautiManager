@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { GuestItem } from "../guests";
-import { useT } from "../i18n";
+import { useI18n } from "../i18n";
 import { formatEuro } from "../money";
 import { adminGuestPath } from "../routes";
 import { GuestMovementDialog } from "./GuestMovementDialog";
@@ -23,27 +23,34 @@ type Row = {
  * own register and no email goes out, so there is nothing to wait for or to undo here.
  */
 export function CollectGuests() {
-  const t = useT();
+  const { t, locale } = useI18n();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [query, setQuery] = useState("");
   const [failed, setFailed] = useState(false);
   const [paying, setPaying] = useState<Row | null>(null);
   const [message, setMessage] = useState("");
 
-  const load = useCallback(
-    (search: string) =>
-      api<Row[]>(`/api/admin/guests/to-collect?q=${encodeURIComponent(search)}`)
-        .then((loaded) => {
-          if (!Array.isArray(loaded)) throw new Error("unexpected answer");
-          setRows(loaded);
-          setFailed(false);
-        })
-        .catch(() => setFailed(true)),
-    [],
-  );
+  // Only the answer to the latest request counts: an older, slower one (a previous search, or
+  // the list before a payment) must not put old rows back.
+  const latest = useRef(0);
+  const load = useCallback((search: string) => {
+    const request = ++latest.current;
+    return api<Row[]>(`/api/admin/guests/to-collect?q=${encodeURIComponent(search)}`)
+      .then((loaded) => {
+        if (request !== latest.current) return;
+        if (!Array.isArray(loaded)) throw new Error("unexpected answer");
+        setRows(loaded);
+        setFailed(false);
+      })
+      .catch(() => {
+        if (request === latest.current) setFailed(true);
+      });
+  }, []);
+  // The item labels come from the server in the language of the request: a new language means
+  // asking again (this page is not remounted when the language changes).
   useEffect(() => {
     void load(query);
-  }, [load, query]);
+  }, [load, query, locale]);
 
   // Nothing to show and nothing searched: the section stays out of the way.
   // Not an alert: the bookings above stay usable when only this list fails.

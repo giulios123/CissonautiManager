@@ -322,3 +322,43 @@ def test_the_report_does_not_run_more_queries_when_there_are_more_bookings(
     add(8)
     many = count_selects(db, lambda: views_service.load_report(db, clock()))
     assert many == few
+
+
+def test_the_report_does_not_ask_once_per_external_guest(
+    db, edition, make_participant, make_booking, clock, admin_client
+):
+    from app.models import ExternalGuest, ExternalGuestMeal, ExternalMovement
+
+    boss = make_participant("someone@x.example")
+
+    def add_guests(n):
+        for _ in range(n):
+            guest = ExternalGuest(
+                edition_id=edition.id,
+                first_name=f"G{db.query(ExternalGuest).count()}",
+                last_name="Test",
+                payer="paying",
+                created_by_id=boss.id,
+            )
+            guest.meals = [ExternalGuestMeal(date=d(13), kind="lunch")]
+            db.add(guest)
+            db.flush()
+            db.add(
+                ExternalMovement(
+                    edition_id=edition.id,
+                    guest_id=guest.id,
+                    kind="payment",
+                    amount_cents=100,
+                    channel="revolut",
+                    paid_on=d(13),
+                    recorded_by_id=boss.id,
+                )
+            )
+        db.commit()
+
+    add_guests(2)
+    few = count_selects(db, lambda: views_service.load_report(db, clock()))
+    db.expire_all()
+    add_guests(8)
+    many = count_selects(db, lambda: views_service.load_report(db, clock()))
+    assert many == few

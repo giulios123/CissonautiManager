@@ -31,6 +31,7 @@ from app.models import (
     Booking,
     Edition,
     ExternalGuest,
+    ExternalMovement,
     Slot,
     WaitlistEntry,
     active_refunds,
@@ -249,6 +250,8 @@ class MealRow:
     diet: str | None
     allergies: str | None
     guest_id: int | None = None
+    # Exempted by an admin (MVP 25c): worth zero.
+    exempt: bool = False
 
     @property
     def external(self) -> bool:
@@ -287,6 +290,7 @@ def load_meals(db: Session, now: datetime) -> MealData:
                 included_in_fee=meal.included_in_fee,
                 diet=booking.diet,
                 allergies=booking.allergies,
+                exempt=meal.exempt,
             )
             for meal in booking.meals
         )
@@ -379,8 +383,10 @@ class ReportData:
     report: EditionReport
 
 
-def _guest_facts(db: Session, edition: Edition, guest: ExternalGuest) -> GuestFacts:
-    account = guest_payments.account_of(edition, guest, guest_payments.movements_of(db, guest))
+def _guest_facts(
+    edition: Edition, guest: ExternalGuest, movements: list[ExternalMovement]
+) -> GuestFacts:
+    account = guest_payments.account_of(edition, guest, movements)
     return GuestFacts(
         guest_id=guest.id,
         meals=tuple((m.date, m.kind) for m in guest.meals),
@@ -448,8 +454,9 @@ def load_report(db: Session, now: datetime) -> ReportData:
         ActivityFacts(a.id, a.title, a.date, a.period, a.price_cents, a.capacity, a.payment_mode)
         for a in db.scalars(select(Activity).where(Activity.edition_id == edition.id))
     ]
+    movements = guest_payments.movements_by_guest(db, edition)
     guests = [
-        _guest_facts(db, edition, g)
+        _guest_facts(edition, g, movements.get(g.id, []))
         for g in db.scalars(
             select(ExternalGuest)
             .where(ExternalGuest.edition_id == edition.id)

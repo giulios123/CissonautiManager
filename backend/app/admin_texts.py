@@ -30,6 +30,7 @@ LABELS_EN: dict[str, str] = {
     ),
     "Valore esentato": "Value exempted",
     "Iscrizioni interne non paganti": "Internal, not paying bookings",
+    "Esente": "Exempt",
     "Categoria": "Category",
     "Quota esente": "Fee exempt",
     "Ordinaria": "Ordinary",

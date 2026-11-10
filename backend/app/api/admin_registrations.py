@@ -449,7 +449,9 @@ def list_registrations(
                 waiting[entry.participant_id].append(entry)
         bookings = [] if status == WAITLIST_ONLY else list(db.scalars(query))
         rows = [_row(b, now, len(waiting.get(b.participant_id, []))) for b in bookings]
-        if status in (None, WAITLIST_ONLY):
+        # People only on a waitlist have no booking and so no category: a category filter
+        # leaves them out.
+        if status in (None, WAITLIST_ONLY) and not category:
             with_booking = set(
                 db.scalars(select(Booking.participant_id).where(Booking.edition_id == edition.id))
             )

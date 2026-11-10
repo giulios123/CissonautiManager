@@ -207,12 +207,13 @@ def guests_to_collect(
         return []
     needle = " ".join(q.split()).casefold()
     rows: list[CollectGuestOut] = []
+    by_guest = guest_payments.movements_by_guest(db, edition)
     for guest in guest_service.list_guests(db, edition):
         if guest.payer != PAYER_PAYING:
             continue
         if needle and needle not in f"{guest.first_name} {guest.last_name}".casefold():
             continue
-        account = guest_payments.account_of(edition, guest, guest_payments.movements_of(db, guest))
+        account = guest_payments.account_of(edition, guest, by_guest.get(guest.id, []))
         if account.to_collect_cents <= 0:
             continue
         rows.append(

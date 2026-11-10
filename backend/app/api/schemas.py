@@ -301,11 +301,21 @@ class ActivityOffer(CollectionTerms):
     free: int | None
     joined: bool
     past: bool
+    # Exempted on this booking: worth zero, so the picker must not charge it (MVP 25c).
+    exempt: bool = False
 
 
 def activity_offers(db: Session, booking: Booking, now: datetime) -> list[ActivityOffer]:
     """Activities the booking holds or that its presence allows, with free seats."""
     from app.services.activities import offers_for
+
+    exempt = exemptions_of(booking).activities
+
+    def terms(a):
+        data = activity_terms(a)
+        if a.id in exempt:
+            data["collectable_cents"] = 0
+        return data
 
     return [
         ActivityOffer(
@@ -321,11 +331,12 @@ def activity_offers(db: Session, booking: Booking, now: datetime) -> list[Activi
             if a.starts_at
             else None,
             end_time=a.ends_at.astimezone(ZoneInfo("Europe/Rome")).time() if a.ends_at else None,
-            **activity_terms(a),
+            **terms(a),
             capacity=a.capacity,
             free=free,
             joined=joined,
             past=past,
+            exempt=a.id in exempt,
         )
         for a, free, joined, past in offers_for(db, booking, now)
     ]

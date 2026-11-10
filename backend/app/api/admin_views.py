@@ -194,6 +194,7 @@ class MealPerson(BaseModel):
     diet: str | None
     allergies: str | None
     included_in_fee: bool = False
+    exempt: bool = False
     collectable_cents: int
 
 
@@ -258,12 +259,14 @@ def meals_view(
                 ),
                 tr("Coperto dalla quota di registrazione")
                 if r.included_in_fee
+                else tr("Esente")
+                if r.exempt
                 else tr("Incasso dell’organizzazione")
                 if meal_terms(edition, r.day, r.kind)["payment_mode"] == "organizer"
                 else tr("Pagamento in loco al fornitore"),
                 Amount(
                     0
-                    if r.included_in_fee or r.external
+                    if r.included_in_fee or r.external or r.exempt
                     else meal_terms(edition, r.day, r.kind)["collectable_cents"]
                 ),
                 meal_terms(edition, r.day, r.kind)["payment_instructions"],
@@ -294,9 +297,10 @@ def meals_view(
                             diet=r.diet,
                             allergies=r.allergies,
                             included_in_fee=r.included_in_fee,
-                            # Guests owe nothing in the app until MVP 25b.
+                            exempt=r.exempt,
+                            # A guest's money is in the guests pages, not here.
                             collectable_cents=0
-                            if r.included_in_fee or r.external
+                            if r.included_in_fee or r.external or r.exempt
                             else meal_terms(edition, day, kind)["collectable_cents"],
                         )
                         for r in people

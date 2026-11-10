@@ -90,6 +90,19 @@ def movements_of(db: Session, guest: ExternalGuest) -> list[ExternalMovement]:
     )
 
 
+def movements_by_guest(db: Session, edition: Edition) -> dict[int, list[ExternalMovement]]:
+    """Every movement of the edition grouped by guest, in one query: lists and the report would
+    otherwise ask once per guest."""
+    grouped: dict[int, list[ExternalMovement]] = {}
+    for movement in db.scalars(
+        select(ExternalMovement)
+        .where(ExternalMovement.edition_id == edition.id)
+        .order_by(ExternalMovement.id)
+    ):
+        grouped.setdefault(movement.guest_id, []).append(movement)
+    return grouped
+
+
 def account_of(
     edition: Edition, guest: ExternalGuest, movements: list[ExternalMovement]
 ) -> GuestAccount:

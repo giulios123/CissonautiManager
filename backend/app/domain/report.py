@@ -377,9 +377,14 @@ def _activities(
                 price_cents=activity.price_cents,
                 capacity=activity.capacity,
                 joined=joined,
-                # Guests owe nothing in the app until MVP 25b.
+                # What the organisation collects: not from guests (their money is apart) and not
+                # for the bookings that were exempted from this activity.
                 expected_cents=collectable(activity.price_cents, activity.payment_mode)
-                * (joined.confirmed + joined.pending),
+                * sum(
+                    1
+                    for b in [*confirmed, *pending]
+                    if activity.id in b.activity_ids and activity.id not in b.exempt_activity_ids
+                ),
                 payment_mode=activity.payment_mode,
             )
         )
@@ -431,9 +436,11 @@ def _revenue(
         )
         for b in seated
         for day, kind in b.meals
-        if (day, kind) not in b.included_meals
+        if (day, kind) not in b.included_meals and (day, kind) not in b.exempt_meals
     )
-    activity_cents = sum(price_of.get(a, 0) for b in seated for a in b.activity_ids)
+    activity_cents = sum(
+        price_of.get(a, 0) for b in seated for a in b.activity_ids if a not in b.exempt_activity_ids
+    )
     by_channel: Counter[str] = Counter()
     for payment in payments:
         by_channel[payment.channel] += payment.amount_cents

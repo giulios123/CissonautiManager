@@ -53,6 +53,19 @@ export type Detail = {
   category?: "ordinary" | "internal_non_paying";
 };
 
+/** A key that changes whenever what the exemptions panel shows does: its choices start over. */
+export function exemptionsKey(booking: BookingView, category: string | undefined): string {
+  return [
+    booking.id,
+    booking.amount_due_cents,
+    booking.paid_cents,
+    booking.fee_exempt ?? false,
+    category ?? "ordinary",
+    (booking.meals ?? []).map((m) => `${m.date}:${m.kind}:${m.exempt ?? false}`).join(","),
+    (booking.activities ?? []).map((a) => `${a.id}:${a.exempt ?? false}`).join(","),
+  ].join("|");
+}
+
 const DIET_LABELS: Record<string, MessageKey> = {
   omnivore: "det.dietOmnivore",
   vegetarian: "det.dietVegetarian",
@@ -276,7 +289,7 @@ export function AdminRegistrationDetail() {
 
       {booking.editable && (
         <AdminExemptions
-          key={`${booking.id}:${booking.amount_due_cents}:${booking.fee_exempt}:${booking.paid_cents}:${detail.category ?? "ordinary"}`}
+          key={exemptionsKey(booking, detail.category)}
           booking={booking}
           category={detail.category ?? "ordinary"}
           onDone={showUpdated}

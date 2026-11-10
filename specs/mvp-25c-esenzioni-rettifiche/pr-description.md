@@ -12,8 +12,8 @@ Migrazione additiva `0026_exemptions_refunds` (colonne con valori di default e u
 
 ## Verifiche automatiche
 
-- Backend: 1322 test passati; Ruff e formattazione passati.
-- Frontend: 447 test passati; lint, TypeScript e build passati.
+- Backend: 1328 test passati; Ruff e formattazione passati.
+- Frontend: 451 test passati; lint, TypeScript e build passati.
 - Migrazione da zero e downgrade a `0025` provati su SQLite; CI SQL Server da verificare sulla PR.
 
 ## Collaudo per gli organizzatori

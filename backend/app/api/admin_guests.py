@@ -117,9 +117,14 @@ def _title(activity: Activity) -> str:
 
 
 def _out(
-    db: Session, edition: Edition, guest: ExternalGuest, warning: str | None = None
+    db: Session,
+    edition: Edition,
+    guest: ExternalGuest,
+    warning: str | None = None,
+    movements: list | None = None,
 ) -> GuestOut:
-    movements = guest_payments.movements_of(db, guest)
+    if movements is None:
+        movements = guest_payments.movements_of(db, guest)
     account = guest_payments.account_of(edition, guest, movements)
     return GuestOut(
         due_cents=account.due_cents,
@@ -237,7 +242,8 @@ def list_guests(
     guests = [] if edition is None else guest_service.list_guests(db, edition)
     if fmt == "csv":
         return csv_response(csv_filename("esterni", now), CSV_HEADER, [_csv_row(g) for g in guests])
-    return [_out(db, edition, g) for g in guests]
+    by_guest = guest_payments.movements_by_guest(db, edition) if edition else {}
+    return [_out(db, edition, g, movements=by_guest.get(g.id, [])) for g in guests]
 
 
 @router.post("", status_code=201)

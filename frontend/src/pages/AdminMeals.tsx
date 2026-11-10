@@ -19,6 +19,7 @@ type MealPerson = {
   diet: string | null;
   allergies: string | null;
   included_in_fee?: boolean;
+  exempt?: boolean;
   collectable_cents: number;
 };
 type Meal = CollectionTerms & {
@@ -113,6 +114,7 @@ export function AdminMeals() {
                                     {person.first_name} {person.last_name}
                                   </Link>
                                   {person.external && <small> · {t("guests.badge")}</small>}
+                                  {person.exempt && <small> · {t("collection.exempt")}</small>}
                                   {person.included_in_fee && (
                                     <small> · {t("collection.included")}</small>
                                   )}
