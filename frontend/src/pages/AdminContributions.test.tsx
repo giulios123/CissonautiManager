@@ -30,7 +30,7 @@ const row = (id: number, title: string, hidden: boolean) => ({
   hidden,
 });
 
-function setup(rows: ReturnType<typeof row>[]) {
+function setup(rows: ReturnType<typeof row>[], gate?: Promise<void>) {
   const state = { rows };
   const calls: { url: string; body?: unknown }[] = [];
   vi.stubGlobal(
@@ -40,6 +40,7 @@ function setup(rows: ReturnType<typeof row>[]) {
       if (url === "/api/me") return new Response(JSON.stringify(admin), { status: 200 });
       const match = url.match(/^\/api\/admin\/contributions\/(\d+)\/(hide|unhide)$/);
       if (match) {
+        await gate;
         state.rows = state.rows.map((r) =>
           r.id === Number(match[1]) ? { ...r, hidden: match[2] === "hide" } : r,
         );
@@ -85,5 +86,23 @@ describe("hiding proposals", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(calls.some((c) => c.url.includes("/hide"))).toBe(false);
     expect(button).toHaveFocus();
+  });
+});
+
+describe("while a change is being saved", () => {
+  it("blocks the other buttons and the cancel, so a pending request cannot close a new dialog", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    setup([row(1, "Macchine", false), row(2, "Open source", false)], gate);
+    const buttons = await screen.findAllByRole("button", { name: "Nascondi agli altri" });
+    await userEvent.click(buttons[0]);
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Nascondi" }));
+    expect(within(dialog).getByRole("button", { name: "No, torno indietro" })).toBeDisabled();
+    for (const button of screen.getAllByRole("button", { name: "Nascondi agli altri" })) {
+      expect(button).toBeDisabled();
+    }
+    release();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });

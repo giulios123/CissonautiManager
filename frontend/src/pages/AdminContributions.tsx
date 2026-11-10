@@ -43,6 +43,7 @@ export function AdminContributions() {
   useEffect(load, [load]);
 
   async function setHidden(row: Row, hidden: boolean) {
+    if (working) return;
     setWorking(true);
     setProblem(null);
     try {
@@ -143,6 +144,7 @@ export function AdminContributions() {
                         <button
                           type="button"
                           className="secondary"
+                          disabled={working}
                           onClick={(event) => {
                             clickedRef.current = event.currentTarget;
                             setProblem(null);
@@ -165,6 +167,7 @@ export function AdminContributions() {
           title={t("contrib.hideTitle", { title: hiding.title })}
           confirmLabel={t("contrib.hideConfirm")}
           working={working}
+          cancelDisabled={working}
           error={problem}
           onConfirm={() => setHidden(hiding, true)}
           onCancel={() => {

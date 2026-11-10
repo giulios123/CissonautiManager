@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.domain.activities import validate_contribution
 from app.domain.booking import can_edit_slots, effective_status, occupies_seats
@@ -121,7 +121,12 @@ def proposals_for(
         ):
             raise ProposalsNotAllowed()
     shown: list[tuple[Booking, Contribution]] = []
-    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+    bookings = db.scalars(
+        select(Booking)
+        .where(Booking.edition_id == edition.id)
+        .options(selectinload(Booking.contributions), selectinload(Booking.participant))
+    )
+    for booking in bookings:
         if booking.participant_id == viewer.id:
             continue
         if not occupies_seats(effective_status(booking.status, booking.hold_expires_at, now)):

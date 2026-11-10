@@ -204,5 +204,9 @@ describe("week detail", () => {
     expect(await screen.findByText("Non riesco a caricare l'elenco.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Riprova" }));
     expect(await screen.findByText("Totale: 1")).toBeInTheDocument();
+    // The retry button is gone: the focus must stay inside the dialog, and Escape must close it.
+    expect(screen.getByRole("dialog")).toContainElement(document.activeElement as HTMLElement);
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });

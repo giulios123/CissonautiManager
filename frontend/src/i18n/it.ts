@@ -589,7 +589,7 @@ export const it = {
   "week.detailEmpty": "Nessuna persona per questo numero.",
   "week.detailError": "Non riesco a caricare l'elenco.",
   "week.detailRetry": "Riprova",
-  "week.detailChanged": "Il numero è cambiato da {from} a {to}: la tabella è stata aggiornata.",
+  "week.detailChanged": "Il numero è cambiato da {from} a {to}.",
   "week.detailExternal": "esterno",
   "week.detailDerived": "sera derivata",
   "week.totals": "Persone diverse in tutta la settimana, pasti e adesioni totali",
