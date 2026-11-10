@@ -37,6 +37,12 @@ export function InfoDialog({
     return () => target?.focus();
   }, [returnFocusTo]);
 
+  // A content update can remove the focused control (the retry button): bring the focus back to
+  // the dialog, so Tab stays trapped and Escape still closes it. Focus inside is left alone.
+  useEffect(() => {
+    if (!dialogRef.current?.contains(document.activeElement)) closeRef.current?.focus();
+  });
+
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
       event.stopPropagation();

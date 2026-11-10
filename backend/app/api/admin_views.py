@@ -454,11 +454,14 @@ def week_detail(
     It reads the same loaders as `/week`, so a count and its list cannot disagree.
     """
     data = views_service.load_presence(db, now)
-    if day is not None and day not in {slot.date for slot in data.slots}:
+    slot_days = {slot.date for slot in data.slots}
+    if day is not None and day not in slot_days:
         raise HTTPException(status_code=422, detail=t("week.detail_bad_date"))
 
     def wanted(value: date) -> bool:
-        return day is None or value == day
+        # Only the edition's current days, like the table: a shortened edition can leave guest
+        # meals or sign-ups on days that no longer exist, and the table does not count them.
+        return value in slot_days and (day is None or value == day)
 
     rows: list[WeekDetailRow] = []
     distinct: int | None = None

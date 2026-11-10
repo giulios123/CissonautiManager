@@ -168,3 +168,30 @@ def test_signups_of_the_week_use_the_same_list_as_the_count(
     now = clock()
     signups = views_service.activity_signups(db, now)
     assert sorted(views_service.activity_signup_days(db, now)) == sorted(s.day for s in signups)
+
+
+def test_days_that_left_the_edition_are_not_in_the_totals_either(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    from app.models import ExternalGuest, ExternalGuestActivity, ExternalGuestMeal
+
+    hike = activity(db, edition, "Escursione", 13, "morning")
+    guest = ExternalGuest(
+        edition_id=edition.id,
+        first_name="Anna",
+        last_name="Rossi",
+        created_by_id=make_participant("staff@example.com").id,
+    )
+    db.add(guest)
+    db.commit()
+    # A shortened edition can leave sign-ups on a day that no longer exists.
+    db.add(ExternalGuestMeal(guest_id=guest.id, date=d(30), kind="lunch"))
+    db.add(ExternalGuestMeal(guest_id=guest.id, date=d(13), kind="lunch"))
+    stray = activity(db, edition, "Fuori edizione", 30, "morning")
+    db.add(ExternalGuestActivity(guest_id=guest.id, activity_id=stray.id))
+    db.add(ExternalGuestActivity(guest_id=guest.id, activity_id=hike.id))
+    db.commit()
+    week = admin_client.get("/api/admin/views/week").json()
+    assert (week["total_lunches"], week["total_activities"]) == (1, 1)
+    assert detail(admin_client, "lunch")["count"] == week["total_lunches"]
+    assert detail(admin_client, "activities")["count"] == week["total_activities"]
