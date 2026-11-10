@@ -887,6 +887,46 @@ CONTRIBUTION_REFUSALS = {
 }
 
 
+class ProposalAuthor(BaseModel):
+    display_name: str
+
+
+class ProposalOut(BaseModel):
+    """A proposal of another participant. The author is null unless they consented to the name."""
+
+    id: int
+    kind: str
+    title: str
+    description: str | None
+    author: ProposalAuthor | None
+
+
+@router.get("/me/proposals")
+def list_proposals(
+    response: Response,
+    kind: Literal["talk", "topic", "skill", "wanted_skill"] | None = None,
+    user: Participant = Depends(current_user),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> list[ProposalOut]:
+    # A read: allowed while the privacy notice is pending, like the other readings.
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        proposals = contributions_service.proposals_for(db, user, now, kind)
+    except contributions_service.ProposalsNotAllowed as exc:
+        raise HTTPException(status_code=403, detail=t("proposals.not_allowed")) from exc
+    return [
+        ProposalOut(
+            id=p.id,
+            kind=p.kind,
+            title=p.title,
+            description=p.description,
+            author=None if p.author_name is None else ProposalAuthor(display_name=p.author_name),
+        )
+        for p in proposals
+    ]
+
+
 @router.post(
     "/me/contributions", status_code=201, dependencies=[Depends(require_privacy_acceptance)]
 )

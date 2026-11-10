@@ -442,6 +442,10 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Scegli se è un talk, un tema, una competenza offerta o una cercata",
         "en": "Choose whether it is a talk, a topic, a skill you offer or one you look for",
     },
+    "proposals.not_allowed": {
+        "it": "Le proposte degli altri sono visibili a chi ha un'iscrizione attiva.",
+        "en": "Other participants' proposals are visible to people with an active registration.",
+    },
     "contribution.not_found": {"it": "Contributo non trovato", "en": "Contribution not found"},
     # --- waitlist (participant)
     "waitlist.register_first": {
