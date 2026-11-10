@@ -178,6 +178,14 @@ describe("Registration page", () => {
     expect(within(toolbar as HTMLElement).getByText(/Quota da versare/)).toHaveTextContent("11,00");
   });
 
+  it("publishes the bar height on the form so focused fields keep clear of it", async () => {
+    mockFetch({ "/api/public/edition": { body: edition } });
+    renderPage();
+    const form = (await screen.findByText(/Quota da versare/)).closest("form")!;
+    expect(form.style.getPropertyValue("--registration-bar-height")).toMatch(/^\d+(\.\d+)?px$/);
+    expect(form.style.getPropertyValue("--registration-sticky-offset")).toMatch(/px$/);
+  });
+
   it("tells people when registrations are closed", async () => {
     mockFetch({
       "/api/public/edition": { body: { registration_open: false, name: null, days: [] } },

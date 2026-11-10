@@ -92,20 +92,25 @@ export function Registration() {
 
   useEffect(() => {
     const toolbar = toolbarRef.current;
+    if (!toolbar) return;
     const header = document.querySelector<HTMLElement>(".site-header");
-    if (!toolbar || !header) return;
+    // The variables live on the form, so the fields can keep clear of the bar when they scroll.
+    const host = toolbar.parentElement ?? toolbar;
 
     const updateOffset = () => {
-      const position = window.getComputedStyle(header).position;
-      const offset = position === "sticky" || position === "fixed" ? header.offsetHeight : 0;
-      toolbar.style.setProperty("--registration-sticky-offset", `${offset}px`);
+      const position = header ? window.getComputedStyle(header).position : "static";
+      const offset =
+        header && (position === "sticky" || position === "fixed") ? header.offsetHeight : 0;
+      host.style.setProperty("--registration-sticky-offset", `${offset}px`);
+      host.style.setProperty("--registration-bar-height", `${toolbar.offsetHeight}px`);
     };
 
     updateOffset();
     window.addEventListener("resize", updateOffset);
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateOffset);
-    observer?.observe(header);
+    observer?.observe(toolbar);
+    if (header) observer?.observe(header);
     return () => {
       window.removeEventListener("resize", updateOffset);
       observer?.disconnect();
