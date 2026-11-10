@@ -201,7 +201,7 @@ class TestActivities:
 
 
 def test_contributions_count_only_bookings_with_a_seat(report):
-    assert report.contributions == {"talk": 1, "topic": 0, "skill": 1}
+    assert report.contributions == {"talk": 1, "topic": 0, "skill": 1, "wanted_skill": 0}
 
 
 def test_waitlist_counts_each_way_out_and_the_plus_ones_among_the_promoted(report):
@@ -254,7 +254,7 @@ def test_an_empty_edition_is_all_zeros_and_does_not_fail():
     assert report.activities == [] and report.days == []
     assert report.waitlist.waiting == 0
     assert report.revenue.due_cents == 0 and report.revenue.net_cents == 0
-    assert report.contributions == {"talk": 0, "topic": 0, "skill": 0}
+    assert report.contributions == {"talk": 0, "topic": 0, "skill": 0, "wanted_skill": 0}
     assert report.enrollment.people_with_seat == 0
 
 
