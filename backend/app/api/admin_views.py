@@ -550,6 +550,7 @@ class ContributionOut(BaseModel):
     status: str
     active: bool
     created_at: datetime
+    hidden: bool = False
 
 
 KIND_LABELS = {
@@ -578,6 +579,7 @@ def contributions_view(
             "Email",
             "Stato",
             "Proposto il",
+            "Nascosta agli altri",
         ]
         csv_rows = [
             [
@@ -589,6 +591,7 @@ def contributions_view(
                 r.email,
                 status_label(r.status),
                 r.created_at,
+                tr("Sì" if r.hidden else "No"),
             ]
             for r in rows
         ]

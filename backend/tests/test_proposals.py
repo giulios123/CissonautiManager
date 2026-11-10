@@ -215,3 +215,76 @@ def test_editions_do_not_mix(client, outbox, db, edition, make_participant, make
     login(client, outbox, "cara@example.com")
     assert client.get(URL).json() == []
     assert cara_booking.id  # the viewer is active in the current edition
+
+
+class TestHide:
+    def hide(self, client, contribution, **body):
+        return client.post(f"/api/admin/contributions/{contribution.id}/hide", json=body)
+
+    def test_a_hidden_proposal_disappears_for_the_others_but_not_for_its_author(
+        self, admin_client, client, outbox, db, edition, make_participant, make_booking, clock
+    ):
+        _, ada_booking = person(make_participant, make_booking, db, "ada@example.com", "Ada", "L")
+        person(make_participant, make_booking, db, "cara@example.com", "Cara", "C")
+        contribution = offer(db, ada_booking, "talk", "Macchine", clock())
+        assert self.hide(admin_client, contribution, reason="Contiene un nome").json() == {
+            "id": contribution.id,
+            "hidden": True,
+        }
+        login(client, outbox, "cara@example.com")
+        assert client.get(URL).json() == []
+        client.post("/api/auth/logout")
+        login(client, outbox, "ada@example.com")
+        mine = client.get("/api/me").json()["contributions"]
+        assert [c["title"] for c in mine] == ["Macchine"]
+
+    def test_hiding_twice_leaves_one_trace_and_showing_again_restores_it(
+        self, admin_client, client, outbox, db, edition, make_participant, make_booking, clock
+    ):
+        from app.models import AuditLog
+
+        _, ada_booking = person(make_participant, make_booking, db, "ada@example.com", "Ada", "L")
+        person(make_participant, make_booking, db, "cara@example.com", "Cara", "C")
+        contribution = offer(db, ada_booking, "talk", "Macchine", clock())
+        self.hide(admin_client, contribution, reason="Nome")
+        self.hide(admin_client, contribution)
+        entries = list(db.scalars(select(AuditLog).where(AuditLog.action == "contribution_hidden")))
+        assert len(entries) == 1
+        assert "Nome" in entries[0].detail and entries[0].booking_id == ada_booking.id
+        shown = admin_client.post(f"/api/admin/contributions/{contribution.id}/unhide")
+        assert shown.json()["hidden"] is False
+        admin_client.post(f"/api/admin/contributions/{contribution.id}/unhide")
+        assert (
+            len(list(db.scalars(select(AuditLog).where(AuditLog.action == "contribution_shown"))))
+            == 1
+        )
+        login(client, outbox, "cara@example.com")
+        assert [p["title"] for p in client.get(URL).json()] == ["Macchine"]
+
+    def test_the_admin_view_and_csv_mark_hidden_proposals(
+        self, admin_client, db, edition, make_participant, make_booking, clock
+    ):
+        _, ada_booking = person(make_participant, make_booking, db, "ada@example.com", "Ada", "L")
+        contribution = offer(db, ada_booking, "talk", "Macchine", clock())
+        offer(db, ada_booking, "topic", "Open source", clock() + timedelta(seconds=1))
+        self.hide(admin_client, contribution)
+        rows = admin_client.get("/api/admin/views/contributions").json()
+        assert {r["title"]: r["hidden"] for r in rows} == {"Macchine": True, "Open source": False}
+        response = admin_client.get("/api/admin/views/contributions?format=csv")
+        lines = response.content.decode("utf-8-sig").splitlines()
+        assert lines[0].split(";")[-1] == "Nascosta agli altri"
+        assert sorted(line.split(";")[-1] for line in lines[1:]) == ["No", "Sì"]
+
+    def test_only_admins_hide_and_unknown_ones_are_404(
+        self, admin_client, client, outbox, db, edition, make_participant, make_booking, clock
+    ):
+        _, ada_booking = person(make_participant, make_booking, db, "ada@example.com", "Ada", "L")
+        contribution = offer(db, ada_booking, "talk", "Macchine", clock())
+        assert admin_client.post("/api/admin/contributions/9999/hide").status_code == 404
+        anonymous = client.post(f"/api/admin/contributions/{contribution.id}/hide")
+        assert anonymous.status_code == 401
+        login(client, outbox, "ada@example.com")
+        assert client.post(f"/api/admin/contributions/{contribution.id}/hide").status_code == 403
+        assert client.post(f"/api/admin/contributions/{contribution.id}/unhide").status_code == 403
+        db.refresh(contribution)
+        assert contribution.hidden_at is None

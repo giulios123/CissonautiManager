@@ -98,6 +98,8 @@ LABELS_EN: dict[str, str] = {
     "Titolo": "Title",
     "Descrizione": "Description",
     "Proposto il": "Proposed on",
+    "Nascosta agli altri": "Hidden from the others",
+    "Sì": "Yes",
     "Motivo": "Reason",
     "Fascia": "Time slot",
     "Attività": "Activity",

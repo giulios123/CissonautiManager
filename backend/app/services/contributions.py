@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.domain.activities import validate_contribution
 from app.domain.booking import can_edit_slots, effective_status, occupies_seats
 from app.models import CONTRIBUTION_KINDS, ROLE_ADMIN, Booking, Contribution, Participant
+from app.services import audit
 from app.services import consents as consent_service
 from app.services import edition as edition_service
 from app.services.booking_changes import NotEditable, get_current_booking
@@ -150,3 +151,39 @@ def proposals_for(
         )
         for b, c in shown
     ]
+
+
+def set_hidden(
+    db: Session,
+    admin: Participant,
+    contribution_id: int,
+    hidden: bool,
+    reason: str | None,
+    now: datetime,
+) -> bool:
+    """Hide a proposal from the other participants, or show it again. Idempotent.
+
+    The proposal is not deleted or changed: its author still sees it. Returns whether something
+    changed, so a repeated request leaves no second trace in the history.
+    """
+    contribution = db.get(Contribution, contribution_id)
+    if contribution is None:
+        raise ContributionNotFound()
+    if (contribution.hidden_at is not None) == hidden:
+        return False
+    if hidden:
+        contribution.hidden_at = now
+        contribution.hidden_by_id = admin.id
+        contribution.hidden_reason = (reason or "").strip() or None
+        note = f" Motivo: {contribution.hidden_reason}." if contribution.hidden_reason else ""
+        text = f"Proposta nascosta agli altri partecipanti: «{contribution.title}».{note}"
+        action = "contribution_hidden"
+    else:
+        contribution.hidden_at = None
+        contribution.hidden_by_id = None
+        contribution.hidden_reason = None
+        text = f"Proposta di nuovo visibile agli altri partecipanti: «{contribution.title}»."
+        action = "contribution_shown"
+    audit.log(db, admin, action, text, contribution.booking_id)
+    db.commit()
+    return True

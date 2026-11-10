@@ -327,6 +327,7 @@ class ContributionRow:
     status: str
     active: bool
     created_at: datetime
+    hidden: bool = False
 
 
 def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> list[ContributionRow]:
@@ -357,6 +358,7 @@ def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> li
                     status=status,
                     active=occupies_seats(status),
                     created_at=contribution.created_at,
+                    hidden=contribution.hidden_at is not None,
                 )
             )
     rows.sort(key=lambda r: (not r.active, r.created_at, r.id))

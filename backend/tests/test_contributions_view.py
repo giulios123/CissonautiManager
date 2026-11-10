@@ -55,6 +55,7 @@ def test_lists_and_filters_contributions(admin_client, db, make_participant, mak
         "Email",
         "Stato",
         "Proposto il",
+        "Nascosta agli altri",
     ]
     assert [r[1] for r in csv_rows] == ["Macchine", "Vecchio talk"]
     assert csv_rows[1][6] == "Scaduta"
