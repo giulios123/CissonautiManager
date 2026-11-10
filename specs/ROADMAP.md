@@ -154,9 +154,27 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 25c · Esenzioni e rettifiche degli iscritti
 
-- **Stato:** [implementato sul branch](mvp-25c-esenzioni-rettifiche/requirements.md) `feat/mvp-25c-esenzioni-rettifiche`, 9 task completati; migrazione 0026 sopra la 0025, codice indipendente da 25a/25b. Restano CI SQL Server e collaudo organizzatori. Nessun deploy.
+- **Stato:** [integrato in `main`](mvp-25c-esenzioni-rettifiche/requirements.md) con la PR #28 (insieme a 25a e 25b), 9 task completati; migrazione 0026 sopra la 0025. Restano CI SQL Server e collaudo organizzatori. Nessun deploy.
 - **Contenuto:** categoria «ordinaria / interno non pagante», esenzioni esplicite di quota e singole voci con anteprima e applicazione, rimborso tracciato su iscrizione attiva al massimo pari al credito, versato netto.
 - **Fatto quando:** un'esenzione cambia solo le voci scelte, i pagamenti restano intatti e il rimborso non altera lo stato del posto.
+
+## MVP 26 · Dettaglio dei numeri settimanali
+
+- **Stato:** [spec pronta](mvp-26-dettaglio-settimana/requirements.md), in attesa di conferma; 6 task, nessuna migrazione.
+- **Contenuto:** ogni numero della vista settimanale (celle e totali) apre una modale admin con l'elenco che lo spiega: persone, pasti con esterni, adesioni alle attività; coerente con la tabella, solo admin, accessibile.
+- **Fatto quando:** per ogni metrica il dettaglio ha tanti elementi quanto la cella e non espone dati sanitari né di contatto.
+
+## MVP 27 · Proposte tra partecipanti
+
+- **Stato:** [spec pronta](mvp-27-proposte-partecipanti/requirements.md), in attesa di conferma; 8 task, migrazione 0027.
+- **Contenuto:** modale «Proposte degli altri» per iscritti attivi e admin, autore mostrato solo con consenso presenza, quarto tipo «Competenze che cerco», avviso sul testo libero e proposte nascondibili dall'admin (D-117, D-118).
+- **Fatto quando:** senza consenso la proposta è anonima e il payload non contiene dati dell'autore.
+
+## MVP 28 · Barra e recap più leggibili
+
+- **Stato:** [spec pronta](mvp-28-barra-recap/requirements.md), in attesa di conferma; 4 task, solo CSS e test.
+- **Contenuto:** barra superiore con fondo pieno e striscia d'enfasi, recap laterale con fondo bianco che scorre con la pagina.
+- **Fatto quando:** importo e pulsante restano leggibili in alto (telefono, iframe, zoom 200%, inglese) e il recap non è sticky.
 
 ## Revisione dopo il collaudo del 7 novembre 2026
 

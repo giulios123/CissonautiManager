@@ -1,5 +1,7 @@
 # Progress
 
+**Aggiornamento 2026-11-10:** MVP 25a, 25b e 25c sono integrati in `main` con la PR #28 (le voci «implementato sul branch» qui sotto restano come storico); i collaudi di MVP 23 e 24 sono conclusi. Spec 26–28 pronte, non implementate.
+
 ## MVP 25c · Esenzioni e rettifiche degli iscritti — implementato sul branch
 
 Branch `feat/mvp-25c-esenzioni-rettifiche` (sopra `feat/mvp-25b-incassi-esterni`; spec in `specs/mvp-25c-esenzioni-rettifiche/`). Categoria dell'iscrizione, esenzioni di quota e singole voci con anteprima/applicazione (token, lock, idempotenza, conferma con email), rimborso del credito su prenotazioni attive (tetto sul credito, annullo con motivo, idempotenza), «versato» ovunque al netto dei rimborsi, blocco dell'annullo di un pagamento sotto un rimborso, report/CSV (valore esentato, interni non paganti, rimborsi su iscrizioni attive), pagina personale con «Esente» e rimborsi. Migrazione additiva `0026_exemptions_refunds`; guide IT/EN. Backend 1328 test, frontend 451, Ruff, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate.

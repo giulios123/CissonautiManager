@@ -1,0 +1,8 @@
+# MVP 26 · Task
+
+- [ ] **T26-1** Servizio: `activity_signups` in `services/views.py` con `activity_signup_days` riscritta sopra di esso. Test: gli stessi conteggi di prima su iscritti ed esterni, esclusi scaduti e lista d'attesa.
+- [ ] **T26-2** Endpoint `GET /api/admin/views/week/detail` per le sette metriche, giorno e totale, solo campi minimi. Test: per ogni metrica la somma del dettaglio è uguale alla cella di `week_view`; sera derivata; esterni in pasti e attività e non nel coworking; zero righe.
+- [ ] **T26-3** Permessi e validazione. Test: 401/403 per non admin; 422 per metrica o data non valide; nessuna email, allergia o importo nella risposta.
+- [ ] **T26-4** `InfoDialog` riusabile da `ConfirmDialog`, classe larga e test: focus dentro, Tab trattenuto, Esc, ritorno del focus.
+- [ ] **T26-5** `AdminWeek.tsx`: celle e totali come pulsanti, `WeekDetailDialog` con caricamento, errore, vuoto, adesioni vs persone, avviso «numero cambiato». Chiavi i18n IT/EN. Test frontend.
+- [ ] **T26-6** Guida `admin/03-week.md` IT/EN, `test-manuali.md` pronto, suite completa, Ruff, lint, TypeScript e build verdi.

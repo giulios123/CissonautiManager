@@ -2,6 +2,10 @@
 
 ## Ora
 
+**2026-11-10 · MVP 26, 27 e 28: spec pronte per la tua revisione (B1), nessuna implementazione.** [26 dettaglio settimana](../specs/mvp-26-dettaglio-settimana/requirements.md) (6 task), [27 proposte tra partecipanti](../specs/mvp-27-proposte-partecipanti/requirements.md) (8 task, migrazione 0027), [28 barra e recap](../specs/mvp-28-barra-recap/requirements.md) (4 task). Ordine consigliato 28 → 26 → 27: il 26 introduce `InfoDialog`, che il 27 riusa. Risposte registrate in D-117 e D-118. Le proposte a `domain.md` sono nelle spec e non applicate. Nessuna domanda aperta bloccante.
+
+**2026-11-10 · MVP 25a, 25b e 25c integrati in `main` con la PR #28; collaudi di MVP 23 e 24 conclusi (conferma del maintainer).** Restano la CI SQL Server e il collaudo organizzatori del pacchetto 25; nessun deploy.
+
 **2026-11-10 · MVP 25c implementato sul branch `feat/mvp-25c-esenzioni-rettifiche`** (sopra il 25b; 25a, 25b e 25c non ancora in PR). Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: aprire le PR in ordine 25a → 25b → 25c.
 
 **2026-11-10 · MVP 25b implementato sul branch `feat/mvp-25b-incassi-esterni`** (sopra il 25a, entrambi non ancora in PR). Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: aprire le PR (25a poi 25b) o procedere con il 25c, che è indipendente.
