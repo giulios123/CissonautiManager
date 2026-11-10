@@ -178,12 +178,57 @@ describe("Registration page", () => {
     expect(within(toolbar as HTMLElement).getByText(/Quota da versare/)).toHaveTextContent("11,00");
   });
 
-  it("publishes the bar height on the form so focused fields keep clear of it", async () => {
-    mockFetch({ "/api/public/edition": { body: edition } });
-    renderPage();
-    const form = (await screen.findByText(/Quota da versare/)).closest("form")!;
-    expect(form.style.getPropertyValue("--registration-bar-height")).toMatch(/^\d+(\.\d+)?px$/);
-    expect(form.style.getPropertyValue("--registration-sticky-offset")).toMatch(/px$/);
+  it("measures the bar and the sticky header, and follows them when they change", async () => {
+    const heights = { toolbar: 64, header: 56 };
+    const observers: { callback: () => void; targets: Element[] }[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        entry = { callback: () => {}, targets: [] as Element[] };
+        constructor(callback: () => void) {
+          this.entry.callback = callback;
+          observers.push(this.entry);
+        }
+        observe(target: Element) {
+          this.entry.targets.push(target);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      if (this.classList.contains("registration-toolbar")) return heights.toolbar;
+      if (this.classList.contains("site-header")) return heights.header;
+      return 0;
+    });
+    const realStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudo) =>
+      element.classList.contains("site-header")
+        ? ({ position: "sticky" } as CSSStyleDeclaration)
+        : realStyle(element, pseudo),
+    );
+    try {
+      mockFetch({ "/api/public/edition": { body: edition } });
+      renderPage();
+      const form = (await screen.findByText(/Quota da versare/)).closest("form")!;
+      const bar = () => form.style.getPropertyValue("--registration-bar-height");
+      const offset = () => form.style.getPropertyValue("--registration-sticky-offset");
+      expect([bar(), offset()]).toEqual(["64px", "56px"]);
+
+      // The bar and the header are both watched: the bar wraps on a narrow screen or in English.
+      const watched = new Set(observers.flatMap((o) => o.targets));
+      expect(watched).toContain(form.querySelector(".registration-toolbar"));
+      expect(watched).toContain(document.querySelector(".site-header"));
+
+      heights.toolbar = 112;
+      heights.header = 72;
+      observers.forEach((o) => o.callback());
+      expect([bar(), offset()]).toEqual(["112px", "72px"]);
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 
   it("tells people when registrations are closed", async () => {
