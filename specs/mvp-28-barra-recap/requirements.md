@@ -1,6 +1,6 @@
 # MVP 28 · Barra e recap più leggibili
 
-**Stato:** spec pronta (B1), in attesa di conferma; nessuna implementazione. P3, E1–E2. Origine: [US-E1 e US-E2](../revisione-2026-11-07/e-interfaccia-partecipante/requirements.md), D-071–D-073 e D-095/D-096. Solo presentazione: nessuna migrazione, nessun cambiamento di quota, flusso o logo. Compatibile con la quota di conferma dell'MVP 18 (la barra mostra le grandezze già calcolate).
+**Stato:** confermata il 2026-11-10 e implementata sul branch `feat/mvp-28-barra-recap` (sopra il 27, PR #30); 4 task completati. Restano le prove visive complete e il collaudo organizzatori. P3, E1–E2. Origine: [US-E1 e US-E2](../revisione-2026-11-07/e-interfaccia-partecipante/requirements.md), D-071–D-073 e D-095/D-096. Solo presentazione: nessuna migrazione, nessun cambiamento di quota, flusso o logo. Compatibile con la quota di conferma dell'MVP 18 (la barra mostra le grandezze già calcolate).
 
 ## US-28.1 · Riconoscere importo e iscrizione (E1)
 
