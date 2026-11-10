@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { Contribution, Me } from "../auth";
 import { useT, type MessageKey } from "../i18n";
 import { tNow } from "../i18n/messages";
+import { ProposalsDialog } from "./ProposalsDialog";
 
 export const KIND_KEYS: Record<Contribution["kind"], MessageKey> = {
   talk: "contrib.talk",
@@ -57,6 +58,7 @@ function ContributionForm({
         initial ? t("contrib.editAria", { title: initial.title }) : t("contrib.proposeAria")
       }
     >
+      <p className="legal">{t("contrib.visibleNotice")}</p>
       <label>
         {t("contrib.type")}
         <select name="kind" defaultValue={initial?.kind ?? "talk"}>
@@ -112,6 +114,8 @@ export function Contributions({
   const t = useT();
   const [editing, setEditing] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showProposals, setShowProposals] = useState(false);
+  const proposalsButton = useRef<HTMLButtonElement | null>(null);
   const items = me.contributions ?? [];
 
   async function saved(text: string) {
@@ -129,6 +133,16 @@ export function Contributions({
     <section className="card" aria-labelledby="contributions-title">
       <h2 id="contributions-title">{t("contrib.heading")}</h2>
       <p>{t("contrib.intro")}</p>
+      <p>
+        <button
+          type="button"
+          className="secondary"
+          ref={proposalsButton}
+          onClick={() => setShowProposals(true)}
+        >
+          {t("contrib.proposals")}
+        </button>
+      </p>
       {readOnly && <p className="notice">{t("privacy.blocked")}</p>}
       {me.can_bring && (
         <p className="legal">{t("contrib.wroteAtSignup", { text: me.can_bring })}</p>
@@ -171,6 +185,9 @@ export function Contributions({
         </p>
       )}
       {editable && <ContributionForm onSaved={() => saved(t("contrib.added"))} />}
+      {showProposals && (
+        <ProposalsDialog onClose={() => setShowProposals(false)} returnFocusTo={proposalsButton} />
+      )}
     </section>
   );
 }
