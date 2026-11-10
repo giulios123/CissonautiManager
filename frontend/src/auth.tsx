@@ -104,7 +104,7 @@ export type Me = {
 
 export type Contribution = {
   id: number;
-  kind: "talk" | "topic" | "skill";
+  kind: "talk" | "topic" | "skill" | "wanted_skill";
   title: string;
   description: string | null;
 };

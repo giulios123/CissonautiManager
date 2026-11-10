@@ -60,7 +60,8 @@ DIETS = (DIET_OMNIVORE, DIET_VEGETARIAN, DIET_VEGAN)
 CONTRIB_TALK = "talk"
 CONTRIB_TOPIC = "topic"  # a theme for the unconference
 CONTRIB_SKILL = "skill"
-CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL)
+CONTRIB_WANTED_SKILL = "wanted_skill"  # a skill the person is looking for
+CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL, CONTRIB_WANTED_SKILL)
 
 # Why a waitlist entry was closed. Entries are never deleted: the history stays.
 CLOSE_PROMOTED = "promoted"  # the seat went to this person
@@ -485,6 +486,12 @@ class Contribution(Base):
     description: Mapped[str | None] = mapped_column(UnicodeText)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    # An admin can hide a proposal from the other participants (MVP 27). The author still sees it.
+    hidden_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    hidden_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("participant.id", name="fk_contribution_hidden_by")
+    )
+    hidden_reason: Mapped[str | None] = mapped_column(Unicode(200))
 
 
 class PaymentChannel(Base):

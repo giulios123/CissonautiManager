@@ -606,3 +606,17 @@ def test_exemptions_and_refunds_upgrade_keeps_existing_bookings_ordinary(
     assert "booking_refund" not in inspector.get_table_names()
     assert "category" not in {c["name"] for c in inspector.get_columns("booking")}
     engine.dispose()
+
+
+def test_hidden_contributions_upgrade_keeps_existing_ones_visible(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0026_exemptions_refunds")
+    engine = make_engine(database_url)
+    command.upgrade(alembic_config, "0027_contribution_hidden")
+    columns = {c["name"] for c in inspect(engine).get_columns("contribution")}
+    assert {"hidden_at", "hidden_by_id", "hidden_reason"} <= columns
+    command.downgrade(alembic_config, "0026_exemptions_refunds")
+    columns = {c["name"] for c in inspect(engine).get_columns("contribution")}
+    assert not {"hidden_at", "hidden_by_id", "hidden_reason"} & columns
+    engine.dispose()

@@ -166,7 +166,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 27 · Proposte tra partecipanti
 
-- **Stato:** [spec pronta](mvp-27-proposte-partecipanti/requirements.md), confermata, da implementare; 8 task, migrazione 0027.
+- **Stato:** [implementato sul branch](mvp-27-proposte-partecipanti/requirements.md) `feat/mvp-27-proposte-partecipanti` (sopra il 26), 8 task completati, migrazione 0027 sopra la 0026. Restano CI SQL Server e collaudo organizzatori. Nessun deploy.
 - **Contenuto:** modale «Proposte degli altri» per iscritti attivi e admin, autore mostrato solo con consenso presenza, quarto tipo «Competenze che cerco», avviso sul testo libero e proposte nascondibili dall'admin (D-117, D-118).
 - **Fatto quando:** senza consenso la proposta è anonima e il payload non contiene dati dell'autore.
 

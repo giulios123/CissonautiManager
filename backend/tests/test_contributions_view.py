@@ -55,6 +55,7 @@ def test_lists_and_filters_contributions(admin_client, db, make_participant, mak
         "Email",
         "Stato",
         "Proposto il",
+        "Nascosta agli altri",
     ]
     assert [r[1] for r in csv_rows] == ["Macchine", "Vecchio talk"]
     assert csv_rows[1][6] == "Scaduta"
@@ -90,3 +91,17 @@ def test_week_counts_activity_signups(
     assert week["total_activities"] == 2
     header, *rows = parse(admin_client.get("/api/admin/views/week?format=csv"))
     assert dict(zip(header, rows[-1], strict=True))["Adesioni alle attività"] == "2"
+
+
+def test_the_wanted_skill_is_listed_filtered_exported_and_reported(
+    admin_client, db, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    offer(db, ada, "skill", "Saldatura", clock())
+    offer(db, ada, "wanted_skill", "Montaggio video", clock())
+    rows = admin_client.get("/api/admin/views/contributions?kind=wanted_skill").json()
+    assert [r["title"] for r in rows] == ["Montaggio video"]
+    _, *csv_rows = parse(admin_client.get("/api/admin/views/contributions?format=csv"))
+    assert sorted(r[0] for r in csv_rows) == ["Competenza", "Competenza cercata"]
+    report = admin_client.get("/api/admin/views/report").json()
+    assert report["contributions"]["wanted_skill"] == 1

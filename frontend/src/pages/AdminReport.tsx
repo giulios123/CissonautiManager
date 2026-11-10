@@ -84,6 +84,7 @@ const CONTRIBUTION_LABELS: Record<string, MessageKey> = {
   talk: "rep.contribTalk",
   topic: "rep.contribTopic",
   skill: "rep.contribSkill",
+  wanted_skill: "rep.contribWanted",
 };
 const CHANNEL_LABELS: Record<string, MessageKey> = {
   revolut: "channel.revolut",

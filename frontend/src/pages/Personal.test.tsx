@@ -836,6 +836,76 @@ describe("contributions", () => {
   });
 });
 
+describe("proposals of the others", () => {
+  const proposals = [
+    {
+      id: 1,
+      kind: "talk",
+      title: "Macchine analitiche",
+      description: "Venti minuti",
+      author: { display_name: "Grace Hopper" },
+    },
+    { id: 2, kind: "wanted_skill", title: "Montaggio video", description: null, author: null },
+  ];
+
+  function open(handler?: (url: string) => Reply) {
+    return openAt((url) => {
+      if (url === "/api/me") return { body: { ...me([booking()]), contributions: [] } };
+      if (url === "/api/public/edition") return { body: EDITION };
+      if (url.startsWith("/api/me/proposals")) {
+        return handler ? handler(url) : { body: proposals };
+      }
+      return { status: 404, body: {} };
+    });
+  }
+
+  it("lists them, naming only the authors who agreed, and gives the focus back", async () => {
+    const calls = open();
+    const button = await screen.findByRole("button", { name: "Proposte degli altri" });
+    await userEvent.click(button);
+    const dialog = await screen.findByRole("dialog", { name: "Proposte degli altri partecipanti" });
+    expect(await within(dialog).findByText(/Macchine analitiche/)).toBeInTheDocument();
+    expect(within(dialog).getByText("di Grace Hopper")).toBeInTheDocument();
+    expect(within(dialog).getByText("Autore non mostrato")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Competenza che cerco", { selector: "strong" }),
+    ).toBeInTheDocument();
+    expect(calls.some((c) => c.url === "/api/me/proposals?")).toBe(true);
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(button).toHaveFocus();
+  });
+
+  it("filters by kind through the server", async () => {
+    const calls = open();
+    await userEvent.click(await screen.findByRole("button", { name: "Proposte degli altri" }));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.selectOptions(within(dialog).getByLabelText("Tipo"), "wanted_skill");
+    await waitFor(() =>
+      expect(calls.some((c) => c.url === "/api/me/proposals?kind=wanted_skill")).toBe(true),
+    );
+  });
+
+  it("says so when there is nothing, and offers a retry after an error", async () => {
+    let attempts = 0;
+    open(() => {
+      attempts += 1;
+      return attempts === 1 ? { status: 500, body: { detail: "x" } } : { body: [] };
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Proposte degli altri" }));
+    expect(await screen.findByText("Non riesco a caricare le proposte.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Riprova" }));
+    expect(await screen.findByText("Nessuna proposta da mostrare.")).toBeInTheDocument();
+  });
+
+  it("warns the author that the text is visible to the others", async () => {
+    open();
+    const form = await screen.findByRole("form", { name: "Proponi un contributo" });
+    expect(within(form).getByText(/visibili agli altri iscritti/)).toBeInTheDocument();
+    expect(within(form).getByRole("option", { name: "Competenza che cerco" })).toBeInTheDocument();
+  });
+});
+
 describe("dietary needs after review", () => {
   const consent = { version: 2, body: "Testo del consenso v2" };
   const withAllergy = (version: number) =>

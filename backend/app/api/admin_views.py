@@ -553,14 +553,20 @@ class ContributionOut(BaseModel):
     status: str
     active: bool
     created_at: datetime
+    hidden: bool = False
 
 
-KIND_LABELS = {"talk": "Talk", "topic": "Tema per l'unconference", "skill": "Competenza"}
+KIND_LABELS = {
+    "talk": "Talk",
+    "topic": "Tema per l'unconference",
+    "skill": "Competenza",
+    "wanted_skill": "Competenza cercata",
+}
 
 
 @router.get("/contributions", response_model=None)
 def contributions_view(
-    kind: Literal["talk", "topic", "skill"] | None = None,
+    kind: Literal["talk", "topic", "skill", "wanted_skill"] | None = None,
     fmt: Format = Query(default="json", alias="format"),
     db: Session = Depends(get_db),
     now: datetime = Depends(get_now),
@@ -576,6 +582,7 @@ def contributions_view(
             "Email",
             "Stato",
             "Proposto il",
+            "Nascosta agli altri",
         ]
         csv_rows = [
             [
@@ -587,6 +594,7 @@ def contributions_view(
                 r.email,
                 status_label(r.status),
                 r.created_at,
+                tr("Sì" if r.hidden else "No"),
             ]
             for r in rows
         ]
