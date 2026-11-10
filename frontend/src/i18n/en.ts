@@ -566,7 +566,7 @@ export const en: Record<MessageKey, string> = {
   "week.detailEmpty": "Nobody for this number.",
   "week.detailError": "I can't load the list.",
   "week.detailRetry": "Try again",
-  "week.detailChanged": "The number changed from {from} to {to}: the table has been refreshed.",
+  "week.detailChanged": "The number changed from {from} to {to}.",
   "week.detailExternal": "external",
   "week.detailDerived": "derived evening",
   "week.totals": "Different people over the whole week, total meals and sign-ups",

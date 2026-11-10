@@ -386,7 +386,12 @@ def activity_signups(db: Session, now: datetime) -> list[ActivitySignup]:
     if edition is None:
         return []
     signups: list[ActivitySignup] = []
-    for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
+    bookings = db.scalars(
+        select(Booking)
+        .where(Booking.edition_id == edition.id)
+        .options(selectinload(Booking.participant), selectinload(Booking.activities))
+    )
+    for booking in bookings:
         status = effective_status(booking.status, booking.hold_expires_at, now)
         if not occupies_seats(status):
             continue
@@ -403,7 +408,12 @@ def activity_signups(db: Session, now: datetime) -> list[ActivitySignup]:
             )
             for activity in booking.activities
         )
-    for guest in db.scalars(select(ExternalGuest).where(ExternalGuest.edition_id == edition.id)):
+    guests = db.scalars(
+        select(ExternalGuest)
+        .where(ExternalGuest.edition_id == edition.id)
+        .options(selectinload(ExternalGuest.activities))
+    )
+    for guest in guests:
         signups.extend(
             ActivitySignup(
                 day=activity.date,
