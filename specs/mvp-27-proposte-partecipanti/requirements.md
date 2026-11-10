@@ -1,6 +1,6 @@
 # MVP 27 · Proposte tra partecipanti
 
-**Stato:** spec pronta (B1), in attesa di conferma; nessuna implementazione. P2, E3. Origine: [US-E3](../revisione-2026-11-07/e-interfaccia-partecipante/requirements.md), Q-E1/E2 e le due risposte del 2026-11-10 (D-117, D-118). Dipende dal consenso «presenza» dell'MVP 17 (già in `main`). Indipendente dai lavori economici. Una migrazione additiva.
+**Stato:** confermata il 2026-11-10 e implementata sul branch `feat/mvp-27-proposte-partecipanti` (sopra il branch del 26, PR #29); 8 task completati. Restano CI SQL Server e collaudo organizzatori. P2, E3. Origine: [US-E3](../revisione-2026-11-07/e-interfaccia-partecipante/requirements.md), Q-E1/E2 e le due risposte del 2026-11-10 (D-117, D-118). Dipende dal consenso «presenza» dell'MVP 17 (già in `main`). Indipendente dai lavori economici. Una migrazione additiva.
 
 ## US-27.1 · Consultare le proposte degli altri
 
@@ -8,7 +8,7 @@
 - Quando apro la modale, allora vedo le proposte (tipo, titolo, descrizione) delle **sole prenotazioni attive** dell'edizione corrente, senza le mie e senza quelle nascoste dall'admin.
 - Quando la mia prenotazione è scaduta, disdetta, rimborsata o sono solo in lista d'attesa, allora il comando non compare e l'API risponde 403.
 - Quando non sono autenticato, allora l'API risponde 401: né proposte né nomi.
-- Quando un admin è autenticato, allora può aprire la stessa consultazione dal proprio profilo (stessa proiezione, senza dati in più).
+- Quando un admin è autenticato, allora l'API gli risponde con la stessa proiezione, senza dati in più (nessun comando dedicato nell'interfaccia: gli admin hanno già la vista completa).
 - Quando la persona ha prenotazioni in due edizioni, allora le proposte delle edizioni non si mescolano.
 
 ## US-27.2 · Autore solo con consenso

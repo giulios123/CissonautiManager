@@ -2,6 +2,8 @@
 
 ## Ora
 
+**2026-11-10 · MVP 27 implementato sul branch `feat/mvp-27-proposte-partecipanti`** (sopra `feat/mvp-26-dettaglio-settimana`, PR #29 per il 26; il 27 non è ancora in PR). Migrazione `0027_contribution_hidden` sopra la 0026. Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: 28 (barra e recap). Le proposte a `domain.md` restano non applicate.
+
 **2026-11-10 · MVP 26 implementato sul branch `feat/mvp-26-dettaglio-settimana`** (sopra il branch delle spec `docs/spec-mvp-26-28`, non ancora in PR). Spec 26, 27 e 28 confermate dal maintainer, che ha chiesto di partire dal 26. Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimi: 28 e 27 (il 27 riusa `InfoDialog`, ora in `frontend/src/InfoDialog.tsx`).
 
 **2026-11-10 · MVP 26, 27 e 28: spec pronte per la tua revisione (B1), nessuna implementazione.** [26 dettaglio settimana](../specs/mvp-26-dettaglio-settimana/requirements.md) (6 task), [27 proposte tra partecipanti](../specs/mvp-27-proposte-partecipanti/requirements.md) (8 task, migrazione 0027), [28 barra e recap](../specs/mvp-28-barra-recap/requirements.md) (4 task). Ordine consigliato 28 → 26 → 27: il 26 introduce `InfoDialog`, che il 27 riusa. Risposte registrate in D-117 e D-118. Le proposte a `domain.md` sono nelle spec e non applicate. Nessuna domanda aperta bloccante.
