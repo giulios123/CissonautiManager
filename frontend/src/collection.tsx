@@ -6,6 +6,8 @@ export type CollectionTerms = {
   payment_mode?: "organizer" | "provider";
   collectable_cents?: number;
   included_in_fee?: boolean;
+  // Exempted by an organiser: worth zero.
+  exempt?: boolean;
   payment_instructions?: string | null;
 };
 
@@ -14,6 +16,7 @@ export const collectableCents = (terms: CollectionTerms) =>
 
 export function CollectionDetails({ terms }: { terms: CollectionTerms }) {
   const t = useT();
+  if (terms.exempt) return <span className="legal"> · {t("collection.exempt")}</span>;
   if (terms.included_in_fee) return <span className="legal"> · {t("collection.included")}</span>;
   if (terms.payment_mode !== "provider")
     return <span className="legal"> · {t("collection.organizer")}</span>;

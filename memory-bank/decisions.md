@@ -491,3 +491,16 @@ La decisione sull'override è arrivata su `main` dopo la registrazione D-050–D
 - **Decisione del maintainer**: conservare ogni nuova voce di rinuncia per un anno dalla data della disdetta; rimuoverla nel job orario quando raggiunge l'anniversario.
 - **Motivo**: mantenere una finestra annuale di consultazione amministrativa limitando la durata del collegamento identificativo.
 - **Ambito**: si eliminano soltanto gli eventi di cancellazione strutturati; le altre voci audit seguono la loro policy.
+
+## D-113–D-116 · Presenze esterne, incassi ed esenzioni (MVP 25a, 25b, 25c)
+
+- **Data**: 2026-11-09. **Fonte**: risposte dirette del maintainer alla preparazione delle spec 25a/25b/25c. Chiudono i dettagli Q-C2 e la parte rimborsi di Q-C3; nessun codice implementato.
+
+| ID | Decisione | Motivo / alternativa scartata |
+|---|---|---|
+| D-113 | Per gli esterni paganti il dovuto è calcolato ai prezzi correnti sulle sole voci incassate dall'organizzazione (niente quota né pasto compreso); dovuto, versato e saldo per esterno, sezione separata in «Da incassare». Il dovuto non è salvato: si legge dai prezzi correnti. | Evita ricalcoli e segue D-029. Scartato: solo incassi liberi senza dovuto. [Spec 25b](../specs/mvp-25b-incassi-esterni/design.md). |
+| D-114 | Le iscrizioni hanno una categoria (`ordinary`, `internal_non_paying`) più esenzioni esplicite di quota e singole voci. La categoria è un'etichetta e non cambia importi da sola; si applica con anteprima e conferma. | Nessun azzeramento implicito (D-087). Scartato: solo voci esentate senza categoria. [Spec 25c](../specs/mvp-25c-esenzioni-rettifiche/design.md). |
+| D-115 | Rimborso tracciato anche su prenotazione attiva, al massimo pari al credito (`versato netto − totale dovuto`), annullabile con motivo, senza cambio di stato né email. Il versato usato per saldo e conferma è il netto dei rimborsi attivi. | Il tetto sul credito impedisce che un rimborso faccia perdere il posto. Scartato: solo credito visibile con restituzione fuori dall'app. |
+| D-116 | Le allergie di un esterno si salvano solo con una spunta dell'admin «consenso raccolto dalla persona» (data e admin registrati); togliere la spunta o eliminare l'esterno le cancella; visibili solo agli admin. | Sono dati sanitari e l'esterno non ha un account per dare il consenso (D-030). Scartato: solo regime alimentare. |
+
+Scelte tecniche proposte nelle spec, da rivedere: registro esterni separato da `Payment` e `booking_refund` separato per evitare di toccare i pagamenti esistenti; omonimi dell'esterno bloccati con conferma esplicita; esenzione legata alla riga della voce (cade se la voce viene tolta).

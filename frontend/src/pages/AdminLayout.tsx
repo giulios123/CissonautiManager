@@ -1,7 +1,7 @@
 import { Fragment, useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
-import { adminGuideLink } from "../guide/content";
+import { ADMIN_GUIDE_LINK } from "../guide/content";
 import { useI18n } from "../i18n";
 import { ROUTES } from "../routes";
 
@@ -32,6 +32,7 @@ export function AdminLayout() {
           <NavLink to="/admin/week">{t("adm.navWeek")}</NavLink>
           <NavLink to="/admin/meals">{t("adm.navMeals")}</NavLink>
           <NavLink to="/admin/activities">{t("adm.navActivities")}</NavLink>
+          <NavLink to="/admin/guests">{t("adm.navGuests")}</NavLink>
           <NavLink to="/admin/contributions">{t("adm.navContributions")}</NavLink>
           <NavLink to="/admin/report">{t("adm.navReport")}</NavLink>
           <NavLink to="/admin/to-collect">{t("adm.navToCollect")}</NavLink>
@@ -39,7 +40,7 @@ export function AdminLayout() {
           <NavLink to="/admin/admins">{t("adm.navAdmins")}</NavLink>
           <NavLink to="/admin/settings">{t("adm.navSettings")}</NavLink>
           <Link to={ROUTES.me}>{t("adm.navMine")}</Link>
-          <Link to={adminGuideLink(pathname)}>{t("adm.navGuide")}</Link>
+          <Link to={ADMIN_GUIDE_LINK}>{t("adm.navGuide")}</Link>
           <button type="button" className="link" onClick={logout}>
             {t("me.logout")}
           </button>

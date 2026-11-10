@@ -111,7 +111,7 @@ class TestJson:
         assert monday["morning"]["total"] == week["morning"] == 2
         assert monday["afternoon"]["total"] == week["afternoon"] == 1
         assert monday["evening"]["total"] == week["evening"] == 1
-        assert monday["morning"] == {"confirmed": 1, "pending": 1, "total": 2}
+        assert monday["morning"] == {"confirmed": 1, "pending": 1, "external": 0, "total": 2}
 
     def test_the_derived_evening_is_flagged(self, admin_client, camp):
         slots = get(admin_client).json()["presence"]["slots"]
@@ -191,13 +191,20 @@ class TestJson:
 
 
 class TestCsv:
-    def test_it_opens_in_italian_excel_and_has_the_five_columns(self, admin_client, camp):
+    def test_it_opens_in_italian_excel_and_has_the_six_columns(self, admin_client, camp):
         response = get(admin_client, "csv")
         assert response.headers["content-type"].startswith("text/csv")
         assert response.content.startswith(b"\xef\xbb\xbf")
         assert response.headers["content-disposition"].startswith('attachment; filename="report-')
         header, *rows = parse(response)
-        assert header == ["Sezione", "Voce", "Confermate", "In attesa di pagamento", "Totale"]
+        assert header == [
+            "Sezione",
+            "Voce",
+            "Confermate",
+            "In attesa di pagamento",
+            "Totale",
+            "Di cui esterni",
+        ]
         sections = {r[0] for r in rows}
         assert sections == {
             "Iscrizioni",
@@ -207,6 +214,8 @@ class TestCsv:
             "Contributi",
             "Lista d'attesa",
             "Incassi",
+            "Incassi esterni",
+            "Totale evento",
         }
 
     def test_amounts_use_the_decimal_comma_and_the_split_is_filled(self, admin_client, camp):
@@ -214,7 +223,7 @@ class TestCsv:
         due = next(r for r in rows if r[1] == "Totale dovuto")
         assert due[4] == "65,00" and due[2] == "" and due[3] == ""
         morning = next(r for r in rows if r[0] == "Presenze" and r[1] == "13/07/2026 mattina")
-        assert morning[2:] == ["1", "1", "2"]
+        assert morning[2:] == ["1", "1", "2", ""]
 
     def test_neither_names_nor_allergy_texts_are_in_the_file(self, admin_client, camp):
         text = get(admin_client, "csv").content.decode("utf-8-sig")
@@ -272,7 +281,7 @@ class TestActivitiesInTheCsv:
     def test_without_activities_the_section_is_still_there_at_zero(self, admin_client, edition):
         _h, *rows = parse(get(admin_client, "csv"))
         assert [r for r in rows if r[0] == "Attività"] == [
-            ["Attività", "Nessuna attività", "", "", "0"]
+            ["Attività", "Nessuna attività", "", "", "0", ""]
         ]
 
 
@@ -311,5 +320,45 @@ def test_the_report_does_not_run_more_queries_when_there_are_more_bookings(
     few = count_selects(db, lambda: views_service.load_report(db, clock()))
     db.expire_all()
     add(8)
+    many = count_selects(db, lambda: views_service.load_report(db, clock()))
+    assert many == few
+
+
+def test_the_report_does_not_ask_once_per_external_guest(
+    db, edition, make_participant, make_booking, clock, admin_client
+):
+    from app.models import ExternalGuest, ExternalGuestMeal, ExternalMovement
+
+    boss = make_participant("someone@x.example")
+
+    def add_guests(n):
+        for _ in range(n):
+            guest = ExternalGuest(
+                edition_id=edition.id,
+                first_name=f"G{db.query(ExternalGuest).count()}",
+                last_name="Test",
+                payer="paying",
+                created_by_id=boss.id,
+            )
+            guest.meals = [ExternalGuestMeal(date=d(13), kind="lunch")]
+            db.add(guest)
+            db.flush()
+            db.add(
+                ExternalMovement(
+                    edition_id=edition.id,
+                    guest_id=guest.id,
+                    kind="payment",
+                    amount_cents=100,
+                    channel="revolut",
+                    paid_on=d(13),
+                    recorded_by_id=boss.id,
+                )
+            )
+        db.commit()
+
+    add_guests(2)
+    few = count_selects(db, lambda: views_service.load_report(db, clock()))
+    db.expire_all()
+    add_guests(8)
     many = count_selects(db, lambda: views_service.load_report(db, clock()))
     assert many == few

@@ -62,6 +62,7 @@ const ADMIN_PAGES: Record<string, string> = {
   "/admin/week": "week",
   "/admin/meals": "meals",
   "/admin/activities": "activities",
+  "/admin/guests": "guests",
   "/admin/contributions": "contributions",
   "/admin/report": "report",
   "/admin/to-collect": "to-collect",
@@ -70,16 +71,15 @@ const ADMIN_PAGES: Record<string, string> = {
   "/admin/settings": "settings",
 };
 
-/** The guide section that explains an admin page, so the help link opens the right place. */
+/** The guide section that explains an admin page: the tests use it to check that every page
+ * of the panel has its section. */
 export function adminGuideSlug(pathname: string): string | undefined {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   if (/^\/admin\/registrations\/[^/]+$/.test(path)) return "people";
   if (/^\/admin\/activities\/[^/]+$/.test(path)) return "activities";
+  if (/^\/admin\/guests\/[^/]+$/.test(path)) return "guests";
   return ADMIN_PAGES[path];
 }
 
-/** Link to the admin guide, at the section of the current page when there is one. */
-export function adminGuideLink(pathname: string): string {
-  const slug = adminGuideSlug(pathname);
-  return `${ROUTES.guide}?tab=organizers${slug ? `#${slug}` : ""}`;
-}
+/** Link to the admin guide from the panel menu: it opens at the top, with the index in view. */
+export const ADMIN_GUIDE_LINK = `${ROUTES.guide}?tab=organizers`;

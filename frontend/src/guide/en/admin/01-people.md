@@ -30,3 +30,14 @@ Remember that to give someone a meal or an activity you first need the right slo
 # Optional consents
 
 On a person's details page, you can read the history of optional consents. This is read-only: an organizer cannot grant or withdraw a choice on someone's behalf. The history is also available for people who only appear on waitlists.
+
+# Category, exemptions and refunds of credit
+
+On the page of a pending or confirmed booking you find **Category and exemptions**.
+
+- **Category**: “ordinary” or “internal, not paying” (for example a speaker). It is only a label, visible to you, in the People list (with a filter) and in the CSV: it **changes no amount** and the participant does not see it.
+- **Exemptions**: you can exempt the **participation fee** and/or single **meals** and **activities** (the ones the organisation collects). An exempt item is worth zero; the others stay due. If you exempt the meal covered by the fee, the coverage moves to the next meal.
+- **Preview and apply**: press “Show the preview” to see fee, total, paid, balance and status before and after; only then can you “Apply”. If the booking changes in the meantime, the app asks you to preview again. Payments are never touched. A pending booking that ends up covered becomes confirmed (without inventing a payment) and the person gets the usual email; a confirmed one stays confirmed even if you remove an exemption and a balance appears.
+- If the person removes an exempt meal or activity and then chooses it again, the exemption is lost.
+
+**Credit and refunds.** If they paid more than the total due, the page shows the **credit** and “Record a refund”: amount (never above the credit), channel, date and note. A refund does not change the place, does not delete payments and sends no email; if you press twice it is recorded once. A wrong one is voided with a reason and stays in the list, struck through. Balance and confirmation use the **net paid** (payments minus refunds): a payment that a refund relies on is voided after voiding the refund. The refund that closes a cancellation stays as it was, capped at the net paid.

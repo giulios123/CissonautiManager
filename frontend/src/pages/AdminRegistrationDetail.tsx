@@ -9,7 +9,9 @@ import { useT, type MessageKey } from "../i18n";
 import { adminActivityPath, ROUTES } from "../routes";
 import { centsToInput, formatEuro, parseEuroToCents } from "../money";
 import { AdminCancelBooking, type AdminCancelResult } from "./AdminCancelBooking";
+import { AdminCreditRefunds } from "./AdminCreditRefunds";
 import { AdminEditDetails } from "./AdminEditDetails";
+import { AdminExemptions } from "./AdminExemptions";
 import { AdminHistory, type HistoryEntry } from "./AdminHistory";
 import { AdminHoldActions } from "./AdminHoldActions";
 import { AdminPayments } from "./AdminPayments";
@@ -47,7 +49,22 @@ export type Detail = {
   lunch_price_cents?: number;
   dinner_price_cents?: number;
   activity_offers?: ActivityOffer[];
+  // An admin label of the booking; it changes no amount and the participant never sees it.
+  category?: "ordinary" | "internal_non_paying";
 };
+
+/** A key that changes whenever what the exemptions panel shows does: its choices start over. */
+export function exemptionsKey(booking: BookingView, category: string | undefined): string {
+  return [
+    booking.id,
+    booking.amount_due_cents,
+    booking.paid_cents,
+    booking.fee_exempt ?? false,
+    category ?? "ordinary",
+    (booking.meals ?? []).map((m) => `${m.date}:${m.kind}:${m.exempt ?? false}`).join(","),
+    (booking.activities ?? []).map((a) => `${a.id}:${a.exempt ?? false}`).join(","),
+  ].join("|");
+}
 
 const DIET_LABELS: Record<string, MessageKey> = {
   omnivore: "det.dietOmnivore",
@@ -267,7 +284,17 @@ export function AdminRegistrationDetail() {
         </p>
         <PresenceSummary slots={booking.slots} schedule={booking.schedule} />
         <AdminPayments bookingId={booking.id} payments={booking.payments} onDone={showUpdated} />
+        <AdminCreditRefunds booking={booking} onDone={showUpdated} />
       </section>
+
+      {booking.editable && (
+        <AdminExemptions
+          key={exemptionsKey(booking, detail.category)}
+          booking={booking}
+          category={detail.category ?? "ordinary"}
+          onDone={showUpdated}
+        />
+      )}
 
       <section aria-labelledby="meals-title">
         <h2 id="meals-title">{t("det.mealsTitle")}</h2>

@@ -21,8 +21,44 @@ LABELS_EN: dict[str, str] = {
     "contributi": "contributions",
     "pagamenti-da-verificare": "payments-to-review",
     "attivita": "activities",
+    "esterni": "guests",
     "report": "report",
     # --- CSV headers
+    "Di cui esterni": "Of which guests",
+    "Rimborsi su iscrizioni attive (compresi in Rimborsato)": (
+        "Refunds on active bookings (included in Refunded)"
+    ),
+    "Valore esentato": "Value exempted",
+    "Iscrizioni interne non paganti": "Internal, not paying bookings",
+    "Esente": "Exempt",
+    "Categoria": "Category",
+    "Quota esente": "Fee exempt",
+    "Ordinaria": "Ordinary",
+    "Interno non pagante": "Internal, not paying",
+    "Incassi esterni": "Guest payments",
+    "Dovuto dagli esterni": "Due from guests",
+    "Versato dagli esterni": "Paid by guests",
+    "Restituito agli esterni": "Refunded to guests",
+    "Netto esterni (versato meno restituito)": "Guests net (paid minus refunded)",
+    "Ancora da incassare dagli esterni": "Still to collect from guests",
+    "Crediti degli esterni da restituire": "Guest credits to return",
+    "Totale evento": "Event total",
+    "Incassato dall'evento (quote più esterni)": "Collected by the event (fees plus guests)",
+    "movimenti-esterni": "guest-movements",
+    "Data": "Date",
+    "Importo": "Amount",
+    "Canale": "Channel",
+    "Nota": "Note",
+    "Tipo di movimento": "Type of movement",
+    "Motivo dell'annullo": "Reason for voiding",
+    "Pagamento": "Payment",
+    "Restituzione": "Refund",
+    "Annullato": "Voided",
+    "Valido": "Valid",
+    "Esterno": "Guest",
+    "Iscritto": "Participant",
+    "Pagante": "Paying",
+    "Riferimento": "Reference",
     "Giorno": "Day",
     "Slot": "Slot",
     "Orario": "Time",
@@ -142,6 +178,106 @@ LABELS_EN: dict[str, str] = {
 }
 
 ADMIN_MESSAGES: dict[str, dict[str, str]] = {
+    "exemptions.not_active": {
+        "it": "Le esenzioni valgono solo per una prenotazione in attesa o confermata",
+        "en": "Exemptions apply only to a pending or confirmed booking",
+    },
+    "exemptions.invalid": {
+        "it": "Categoria o voci non valide per questa prenotazione",
+        "en": "Category or items not valid for this booking",
+    },
+    "exemptions.preview_changed": {
+        "it": "La prenotazione è cambiata dopo l'anteprima: rifai l'anteprima prima di applicare",
+        "en": "The booking changed after the preview: preview again before applying",
+    },
+    "booking_refund.not_active": {
+        "it": "Si può rimborsare credito solo su una prenotazione in attesa o confermata",
+        "en": "Credit can only be refunded on a pending or confirmed booking",
+    },
+    "booking_refund.too_high": {
+        "it": "Il rimborso non può superare il credito (quanto versato oltre il totale dovuto)",
+        "en": "The refund can't exceed the credit (what was paid beyond the total due)",
+    },
+    "booking_refund.invalid_amount": {
+        "it": "L'importo deve essere maggiore di zero",
+        "en": "The amount must be greater than zero",
+    },
+    "booking_refund.not_found": {
+        "it": "Questo rimborso non esiste",
+        "en": "This refund doesn't exist",
+    },
+    "booking_refund.already_voided": {
+        "it": "Questo rimborso è già stato annullato",
+        "en": "This refund has already been voided",
+    },
+    "payment.void_blocked_by_refund": {
+        "it": (
+            "Non si può annullare questo pagamento: i rimborsi registrati supererebbero "
+            "quanto resta versato. Annulla prima il rimborso"
+        ),
+        "en": (
+            "This payment can't be voided: the refunds on record would exceed what remains "
+            "paid. Void the refund first"
+        ),
+    },
+    "guests.has_movements": {
+        "it": (
+            "Questo esterno ha pagamenti o restituzioni registrati e non si può eliminare: "
+            "puoi togliergli pasti e attività"
+        ),
+        "en": (
+            "This guest has payments or refunds on record and can't be deleted: "
+            "you can remove their meals and activities"
+        ),
+    },
+    "guests.refund_too_high": {
+        "it": "La restituzione non può superare il credito dell'esterno",
+        "en": "The refund can't exceed the guest's credit",
+    },
+    "guests.invalid_amount": {
+        "it": "L'importo deve essere maggiore di zero",
+        "en": "The amount must be greater than zero",
+    },
+    "guests.movement_not_found": {
+        "it": "Questo movimento non esiste",
+        "en": "This movement doesn't exist",
+    },
+    "guests.movement_voided": {
+        "it": "Questo movimento è già stato annullato",
+        "en": "This movement has already been voided",
+    },
+    "guests.void_blocked": {
+        "it": (
+            "Non si può annullare questo pagamento: le restituzioni registrate supererebbero "
+            "quanto resta versato. Annulla prima la restituzione"
+        ),
+        "en": (
+            "This payment can't be voided: the refunds on record would exceed what remains paid. "
+            "Void the refund first"
+        ),
+    },
+    "guests.not_found": {
+        "it": "Questo esterno non esiste",
+        "en": "This guest doesn't exist",
+    },
+    "guests.duplicate": {
+        "it": (
+            "C'è già una persona con questo nome in questa edizione: {names}. "
+            "Se è una persona diversa, conferma per salvare comunque."
+        ),
+        "en": (
+            "Someone with this name is already in this edition: {names}. "
+            "If it is a different person, confirm to save anyway."
+        ),
+    },
+    "guests.consent_required": {
+        "it": "Per salvare allergie o intolleranze serve il consenso raccolto dalla persona",
+        "en": "To save allergies or intolerances you need the person's consent",
+    },
+    "guests.meals_invalid": {
+        "it": "I pasti scelti non sono validi: devono cadere nei giorni dell'edizione",
+        "en": "The chosen meals are not valid: they must fall on days of the edition",
+    },
     "warn.over_capacity": {
         "it": "Attenzione: capienza superata in {labels}.",
         "en": "Warning: capacity exceeded in {labels}.",

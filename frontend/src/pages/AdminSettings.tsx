@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api";
 import { useRefreshEventName } from "../eventName";
-import { useT } from "../i18n";
+import { useT, type MessageKey } from "../i18n";
 import { hasMessage, tNow } from "../i18n/messages";
 import { AdminEmailTexts } from "./AdminEmailTexts";
 import { AdminRegistrationEmail } from "./AdminRegistrationEmail";
@@ -910,6 +910,82 @@ function LegalSection({
   );
 }
 
+/** The headings the side menu jumps to, in the order of the page. */
+const SETTINGS_SECTIONS: readonly { id: string; label: MessageKey }[] = [
+  { id: "edition-title", label: "set.edition" },
+  { id: "confirmation-policy-title", label: "set.policyTitle" },
+  { id: "included-meal-title", label: "set.includedMealTitle" },
+  { id: "benefits-title", label: "set.benefitsTitle" },
+  { id: "edition-logo-title", label: "set.logoTitle" },
+  { id: "channels-title", label: "set.channelsTitle" },
+  { id: "regemail-title", label: "emt.title" },
+  { id: "emails-title", label: "emx.title" },
+  { id: "legal-title", label: "set.legalTitle" },
+];
+
+/** A menu that stays in view while the page scrolls, to jump between the sections. */
+function SettingsNav() {
+  const t = useT();
+  const navRef = useRef<HTMLElement>(null);
+  const [current, setCurrent] = useState<string>(SETTINGS_SECTIONS[0].id);
+
+  // The site header is sticky on wide screens: the menu stops just below it.
+  useEffect(() => {
+    const nav = navRef.current;
+    const header = document.querySelector<HTMLElement>(".site-header");
+    if (!nav || !header) return;
+    const page = nav.closest<HTMLElement>(".settings-page");
+    const updateOffset = () => {
+      const position = window.getComputedStyle(header).position;
+      const offset = position === "sticky" || position === "fixed" ? header.offsetHeight : 0;
+      page?.style.setProperty("--settings-sticky-offset", `${offset}px`);
+    };
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+    return () => window.removeEventListener("resize", updateOffset);
+  }, []);
+
+  // Highlights the section being read: the last heading that has passed the top of the screen.
+  useEffect(() => {
+    const onScroll = () => {
+      const limit = (navRef.current?.getBoundingClientRect().bottom ?? 0) + 80;
+      let reached = SETTINGS_SECTIONS[0].id;
+      for (const { id } of SETTINGS_SECTIONS) {
+        const heading = document.getElementById(id);
+        if (heading && heading.getBoundingClientRect().top <= limit) reached = id;
+      }
+      setCurrent(reached);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // On a phone the menu scrolls sideways: keep the current section in view.
+  useEffect(() => {
+    navRef.current
+      ?.querySelector<HTMLElement>('a[aria-current="location"]')
+      ?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+  }, [current]);
+
+  return (
+    <nav ref={navRef} aria-label={t("set.title")} className="settings-nav no-print">
+      <ul>
+        {SETTINGS_SECTIONS.map(({ id, label }) => (
+          <li key={id}>
+            <a
+              href={`#${id}`}
+              aria-current={current === id ? "location" : undefined}
+              onClick={() => setCurrent(id)}
+            >
+              {t(label)}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 export function AdminSettings() {
   const t = useT();
   const [edition, setEdition] = useState<Edition | null>(null);
@@ -930,52 +1006,59 @@ export function AdminSettings() {
   if (state === "error") return <main role="alert">{t("set.loadError")}</main>;
 
   return (
-    <main>
+    <main className="wide settings-page">
       <h1>{t("set.title")}</h1>
-      <EditionSection edition={edition} onSaved={setEdition} />
-      {edition ? (
-        <>
-          <ConfirmationPolicySection />
-          <IncludedMealsSection edition={edition} />
-          <BenefitsSection />
-          <AdminEditionLogo
-            logoUrl={edition.logo_url}
-            onSaved={(logoUrl) =>
-              setEdition((current) => (current ? { ...current, logo_url: logoUrl } : current))
-            }
-          />
-          <ChannelsSection edition={edition} />
-          <AdminRegistrationEmail />
-          <AdminEmailTexts />
-          <section aria-labelledby="legal-title">
-            <h2 id="legal-title">{t("set.legalTitle")}</h2>
-            <p>{t("set.legalIntro")}</p>
-            <LegalSection kind="privacy" title={t("set.privacyTitle")} current={edition.privacy} />
-            <LegalSection
-              kind="disclaimer"
-              title={t("set.disclaimerTitle")}
-              current={edition.disclaimer}
+      {edition && <SettingsNav />}
+      <div className="settings-content">
+        <EditionSection edition={edition} onSaved={setEdition} />
+        {edition ? (
+          <>
+            <ConfirmationPolicySection />
+            <IncludedMealsSection edition={edition} />
+            <BenefitsSection />
+            <AdminEditionLogo
+              logoUrl={edition.logo_url}
+              onSaved={(logoUrl) =>
+                setEdition((current) => (current ? { ...current, logo_url: logoUrl } : current))
+              }
             />
-            <LegalSection
-              kind="health"
-              title={t("set.healthTitle")}
-              current={edition.health ?? null}
-            />
-            <LegalSection
-              kind="attendance"
-              title={t("set.attendanceTitle")}
-              current={edition.attendance ?? null}
-            />
-            <LegalSection
-              kind="media"
-              title={t("set.mediaTitle")}
-              current={edition.media ?? null}
-            />
-          </section>
-        </>
-      ) : (
-        <p>{t("set.saveEditionFirst")}</p>
-      )}
+            <ChannelsSection edition={edition} />
+            <AdminRegistrationEmail />
+            <AdminEmailTexts />
+            <section aria-labelledby="legal-title">
+              <h2 id="legal-title">{t("set.legalTitle")}</h2>
+              <p>{t("set.legalIntro")}</p>
+              <LegalSection
+                kind="privacy"
+                title={t("set.privacyTitle")}
+                current={edition.privacy}
+              />
+              <LegalSection
+                kind="disclaimer"
+                title={t("set.disclaimerTitle")}
+                current={edition.disclaimer}
+              />
+              <LegalSection
+                kind="health"
+                title={t("set.healthTitle")}
+                current={edition.health ?? null}
+              />
+              <LegalSection
+                kind="attendance"
+                title={t("set.attendanceTitle")}
+                current={edition.attendance ?? null}
+              />
+              <LegalSection
+                kind="media"
+                title={t("set.mediaTitle")}
+                current={edition.media ?? null}
+              />
+            </section>
+          </>
+        ) : (
+          <p>{t("set.saveEditionFirst")}</p>
+        )}
+      </div>
     </main>
   );
 }

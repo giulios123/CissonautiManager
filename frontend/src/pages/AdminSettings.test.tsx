@@ -113,6 +113,40 @@ describe("settings", () => {
     ).toBe(true);
   });
 
+  it("has a section menu whose entries point at the headings of the page", async () => {
+    stubAdminApi((call) => (call.url === "/api/admin/edition" ? { body: edition } : undefined));
+    renderAt("/admin/settings");
+    const menu = await screen.findByRole("navigation", { name: "Impostazioni" });
+    const edition_ = within(menu).getByRole("link", { name: "Edizione" });
+    expect(edition_).toHaveAttribute("href", "#edition-title");
+    expect(edition_).toHaveAttribute("aria-current", "location");
+    expect(document.getElementById("edition-title")).toHaveTextContent("Edizione");
+    await userEvent.click(within(menu).getByRole("link", { name: "Canali di pagamento" }));
+    expect(within(menu).getByRole("link", { name: "Canali di pagamento" })).toHaveAttribute(
+      "aria-current",
+      "location",
+    );
+    // The email sections load their own data (not stubbed here): the others are always drawn.
+    const targets = within(menu)
+      .getAllByRole("link")
+      .map((link) => link.getAttribute("href")!.slice(1))
+      .filter((id) => id !== "regemail-title" && id !== "emails-title");
+    await waitFor(() => {
+      for (const id of targets) expect(document.getElementById(id)).not.toBeNull();
+    });
+  });
+
+  it("shows no section menu before the edition is saved", async () => {
+    stubAdminApi((call) =>
+      call.url === "/api/admin/edition"
+        ? { status: 404, body: { detail: "No edition" } }
+        : undefined,
+    );
+    renderAt("/admin/settings");
+    expect(await screen.findByRole("heading", { name: "Edizione", level: 2 })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Impostazioni" })).not.toBeInTheDocument();
+  });
+
   it("edits the waitlist percentage", async () => {
     const calls = stubAdminApi((call) =>
       call.url === "/api/admin/edition" ? { body: edition } : undefined,

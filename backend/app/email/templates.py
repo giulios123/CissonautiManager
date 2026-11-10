@@ -21,7 +21,7 @@ from app.models import (
     Participant,
     PaymentChannel,
     Slot,
-    active_payments,
+    net_paid_cents,
     slot_sort_key,
 )
 from app.presence_summary import format_presence_summary
@@ -205,7 +205,7 @@ def registration_email(
         + t("email.registration.thanks", loc, event=extras.event_name)
     )
     if _uses_confirmation_fee_policy(booking):
-        paid_cents = sum(payment.amount_cents for payment in active_payments(booking))
+        paid_cents = net_paid_cents(booking)
         fee_cents = booking.registration_fee_cents or 0
         confirmed = booking.status == STATUS_CONFIRMED
         if confirmed:

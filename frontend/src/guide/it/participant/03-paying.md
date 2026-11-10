@@ -18,3 +18,5 @@ Finché la prenotazione è in attesa, hai qualche giorno per coprire l'importo r
 Cambiando slot, pasti o attività l'importo si ricalcola. Se hai già pagato, vedi la differenza da versare oppure un credito. La prenotazione confermata resta confermata.
 
 La quota e il saldo riguardano gli importi con incasso dell’organizzazione. Per attività o pasti con pagamento in loco al fornitore, costo e istruzioni sono mostrati separatamente: quei costi non aumentano il saldo. Un pasto coperto dalla quota di registrazione resta tra le adesioni e non genera un ulteriore dovuto. L’app non registra se hai pagato il fornitore.
+
+Se l'organizzazione ha **esentato** la quota o una voce (per esempio perché sei relatore), la vedi segnata come «Esente» e non pesa sul totale: le altre voci restano da pagare. Se avevi versato più del dovuto, l'organizzazione può **rimborsarti il credito**: il rimborso compare nell'elenco dei pagamenti registrati, il tuo posto non cambia e il saldo è già aggiornato.

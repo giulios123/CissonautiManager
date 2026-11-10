@@ -7,7 +7,7 @@ import { formatEuro } from "../money";
 import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
 
-type Split = { confirmed: number; pending: number; total: number };
+type Split = { confirmed: number; pending: number; external: number; total: number };
 type Report = {
   edition: { name: string; start_date: string | null; end_date: string | null } | null;
   enrollment: { by_status: Record<string, number>; people_with_seat: number };
@@ -60,6 +60,17 @@ type Report = {
     to_confirm_cents: number | null;
     credits_cents: number;
     to_refund_cents: number;
+    credit_refunded_cents: number;
+    exempt_value_cents: number;
+    internal_non_paying: number;
+    // External guests: a register apart from the bookings.
+    external_due_cents: number;
+    external_paid_cents: number;
+    external_refunded_cents: number;
+    external_net_cents: number;
+    external_to_collect_cents: number;
+    external_credit_cents: number;
+    event_net_cents: number;
   };
 };
 
@@ -98,11 +109,14 @@ function SplitTable({
   first,
   rows,
   footer,
+  guests = false,
 }: {
   caption: string;
   first: string;
   rows: { key: string; label: ReactNode; split: Split }[];
   footer?: { label: string; split: Split };
+  // Meals and activities count external guests too: the total includes them.
+  guests?: boolean;
 }) {
   const t = useT();
   return (
@@ -115,6 +129,7 @@ function SplitTable({
             <th scope="col">{t("rep.confirmed")}</th>
             <th scope="col">{t("rep.pending")}</th>
             <th scope="col">{t("rep.total")}</th>
+            {guests && <th scope="col">{t("rep.guests")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -124,6 +139,7 @@ function SplitTable({
               <td>{row.split.confirmed}</td>
               <td>{row.split.pending}</td>
               <td>{row.split.total}</td>
+              {guests && <td>{row.split.external}</td>}
             </tr>
           ))}
         </tbody>
@@ -266,6 +282,7 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
         <SplitTable
           caption={t("rep.mealsCaption")}
           first={t("rep.dayAndMeal")}
+          guests
           rows={meals.days.flatMap((day) => [
             {
               key: `${day.day}-l`,
@@ -328,6 +345,7 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
                   <th scope="col">{t("rep.confirmed")}</th>
                   <th scope="col">{t("rep.pending")}</th>
                   <th scope="col">{t("rep.total")}</th>
+                  <th scope="col">{t("rep.guests")}</th>
                   <th scope="col">{t("rep.colExpected")}</th>
                 </tr>
               </thead>
@@ -356,6 +374,7 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
                     <td>{activity.joined.confirmed}</td>
                     <td>{activity.joined.pending}</td>
                     <td>{activity.joined.total}</td>
+                    <td>{activity.joined.external}</td>
                     <td>{formatEuro(activity.expected_cents)}</td>
                   </tr>
                 ))}
@@ -428,6 +447,23 @@ function ReportBody({ report, edition }: { report: Report; edition: string }) {
               : money(t("rep.toConfirm"), revenue.to_confirm_cents),
             money(t("rep.credits"), revenue.credits_cents),
             money(t("rep.toRefund"), revenue.to_refund_cents),
+            money(t("rep.creditRefunded"), revenue.credit_refunded_cents, true),
+            money(t("rep.exemptValue"), revenue.exempt_value_cents),
+            { key: "internal", label: t("rep.internalCount"), value: revenue.internal_non_paying },
+          ]}
+        />
+        <CountTable
+          caption={t("rep.guestMoney")}
+          first={t("rep.colEntry")}
+          second={t("rep.colAmount")}
+          rows={[
+            money(t("rep.guestDue"), revenue.external_due_cents),
+            money(t("rep.guestPaid"), revenue.external_paid_cents),
+            money(t("rep.guestRefunded"), revenue.external_refunded_cents),
+            money(t("rep.net"), revenue.external_net_cents),
+            money(t("rep.guestToCollect"), revenue.external_to_collect_cents),
+            money(t("rep.guestCredit"), revenue.external_credit_cents),
+            money(t("rep.eventTotal"), revenue.event_net_cents),
           ]}
         />
       </Section>

@@ -173,6 +173,7 @@ def test_detail_and_csv_list_the_people(
             "In attesa di pagamento",
             "Organizzatori",
             "",
+            "Iscritto",
             "",
         ]
     ]

@@ -6,6 +6,7 @@ from app.domain.report import (
     ActivityFacts,
     BookingFacts,
     EditionFacts,
+    GuestFacts,
     PaymentFacts,
     Split,
     WaitlistFacts,
@@ -255,3 +256,112 @@ def test_an_empty_edition_is_all_zeros_and_does_not_fail():
     assert report.revenue.due_cents == 0 and report.revenue.net_cents == 0
     assert report.contributions == {"talk": 0, "topic": 0, "skill": 0}
     assert report.enrollment.people_with_seat == 0
+
+
+class TestExternalGuests:
+    def facts(self):
+        return EditionFacts(
+            slots=((MON, "morning"), (MON, "afternoon"), (MON, "evening")),
+            base_fee_cents=1000,
+            per_day_fee_cents=100,
+            lunch_price_cents=800,
+            dinner_price_cents=1200,
+        )
+
+    def test_guests_are_in_the_meal_totals_and_apart(self):
+        guest = GuestFacts(1, ((MON, "lunch"), (MON, "dinner")), (), "vegan", True)
+        other = GuestFacts(2, ((MON, "lunch"),), (), None, False)
+        report = edition_report(self.facts(), [], [], [], [], [guest, other])
+        monday = report.meals.days[0]
+        assert monday.lunches == Split(0, 0, 2)
+        assert monday.lunches.total == 2
+        assert monday.dinners.external == 1
+        assert report.meals.lunch_diets["vegan"] == 1
+        assert report.meals.people_with_allergies == 1
+
+    def test_a_guest_without_meals_does_not_count_for_allergies(self):
+        guest = GuestFacts(1, (), (), None, True)
+        report = edition_report(self.facts(), [], [], [], [], [guest])
+        assert report.meals.people_with_allergies == 0
+
+    def test_the_same_meal_twice_for_a_guest_counts_once(self):
+        guest = GuestFacts(1, ((MON, "lunch"), (MON, "lunch")), (), None, False)
+        report = edition_report(self.facts(), [], [], [], [], [guest])
+        assert report.meals.lunches.external == 1
+
+    def test_activities_count_guests_but_expect_no_money_from_them(self):
+        hike = ActivityFacts(7, "Trekking", MON, "morning", 1500, 10)
+        guest = GuestFacts(1, (), (7,), None, False)
+        report = edition_report(self.facts(), [], [hike], [], [], [guest])
+        row = report.activities[0]
+        assert row.joined == Split(0, 0, 1)
+        assert row.expected_cents == 0
+
+    def test_guests_change_neither_presence_nor_money(self):
+        guest = GuestFacts(1, ((MON, "lunch"),), (), None, False)
+        base = edition_report(self.facts(), [], [], [], [], [])
+        with_guest = edition_report(self.facts(), [], [], [], [], [guest])
+        assert with_guest.presence == base.presence
+        assert with_guest.enrollment == base.enrollment
+        assert with_guest.revenue == base.revenue
+
+
+class TestExternalMoney:
+    def facts(self):
+        return EditionFacts(
+            slots=((MON, "morning"),),
+            base_fee_cents=1000,
+            per_day_fee_cents=100,
+            lunch_price_cents=800,
+            dinner_price_cents=1200,
+        )
+
+    def booking(self, **over):
+        defaults = dict(
+            booking_id=1,
+            person_id=1,
+            status=STATUS_CONFIRMED,
+            amount_due_cents=1100,
+            paid_cents=1100,
+            refund_cents=0,
+            slots=((MON, "morning"),),
+            meals=(),
+            activity_ids=(),
+            diet=None,
+            has_allergies=False,
+            contributions=(),
+        )
+        return BookingFacts(**{**defaults, **over})
+
+    def test_guest_money_is_apart_and_joins_only_in_the_event_total(self):
+        base = edition_report(self.facts(), [self.booking()], [], [], [], [])
+        guest = GuestFacts(1, (), (), None, False, due_cents=800, paid_cents=600)
+        with_guest = edition_report(self.facts(), [self.booking()], [], [], [], [guest])
+        before, after = base.revenue, with_guest.revenue
+        # The figures of the bookings do not move.
+        assert (after.due_cents, after.paid_cents, after.net_cents, after.to_collect_cents) == (
+            before.due_cents,
+            before.paid_cents,
+            before.net_cents,
+            before.to_collect_cents,
+        )
+        assert (after.external_due_cents, after.external_paid_cents) == (800, 600)
+        assert after.external_to_collect_cents == 200
+        assert after.event_net_cents == before.net_cents + 600
+
+    def test_refunds_and_credits_of_guests(self):
+        guests = [
+            GuestFacts(1, (), (), None, False, due_cents=0, paid_cents=800, refunded_cents=300),
+            GuestFacts(2, (), (), None, False, due_cents=500, paid_cents=500),
+        ]
+        revenue = edition_report(self.facts(), [], [], [], [], guests).revenue
+        assert revenue.external_refunded_cents == 300
+        assert revenue.external_net_cents == 500 + 500
+        assert revenue.external_credit_cents == 500  # guest 1 holds 800 - 300 against 0 due
+        assert revenue.external_to_collect_cents == 0
+        assert revenue.event_net_cents == 1000
+
+    def test_no_guests_no_external_money(self):
+        revenue = edition_report(self.facts(), [self.booking()], [], [], [], []).revenue
+        assert revenue.external_due_cents == revenue.external_net_cents == 0
+        assert revenue.event_net_cents == revenue.net_cents

@@ -23,3 +23,5 @@ If a different amount arrived on the account, use “Other amount” to enter th
 If you mark an expired registration as paid and there is still room, it is reactivated. If a slot has filled up in the meantime it stays expired and the page tells you: decide how to proceed with the person.
 
 For unusual cases (credit, partial payment, cancellations) there is the “To review” page.
+
+At the bottom of the page is the **Guests to collect from** section: paying guests with a balance to pay, with their items and a search by name. “Record payment” suggests the whole balance and lets you change amount, channel and date. There is no wait or 10-second undo, because guests get no email; a mistake is voided from the guest's page.

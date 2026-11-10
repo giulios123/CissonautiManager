@@ -20,6 +20,7 @@ from app.domain.report import (
     BookingFacts,
     EditionFacts,
     EditionReport,
+    GuestFacts,
     PaymentFacts,
     WaitlistFacts,
     edition_report,
@@ -29,11 +30,16 @@ from app.models import (
     Activity,
     Booking,
     Edition,
+    ExternalGuest,
+    ExternalMovement,
     Slot,
     WaitlistEntry,
+    active_refunds,
+    gross_paid_cents,
     slot_sort_key,
 )
 from app.services import edition as edition_service
+from app.services import guest_payments
 from app.services.payments import active_payments, paid_total
 from app.services.seats import expire_overdue
 
@@ -185,7 +191,11 @@ def collect_rows(db: Session, now: datetime) -> list[CollectRow]:
     bookings = db.scalars(
         select(Booking)
         .where(Booking.edition_id == edition.id)
-        .options(selectinload(Booking.participant), selectinload(Booking.payments))
+        .options(
+            selectinload(Booking.participant),
+            selectinload(Booking.payments),
+            selectinload(Booking.refunds),
+        )
     )
     for booking in bookings:
         status = effective_status(booking.status, booking.hold_expires_at, now)
@@ -229,7 +239,8 @@ def collect_rows(db: Session, now: datetime) -> list[CollectRow]:
 
 @dataclass(frozen=True)
 class MealRow:
-    booking_id: int
+    # Exactly one of the two is set: a participant has a booking, an external guest does not.
+    booking_id: int | None
     first_name: str
     last_name: str
     email: str
@@ -238,6 +249,13 @@ class MealRow:
     included_in_fee: bool
     diet: str | None
     allergies: str | None
+    guest_id: int | None = None
+    # Exempted by an admin (MVP 25c): worth zero.
+    exempt: bool = False
+
+    @property
+    def external(self) -> bool:
+        return self.guest_id is not None
 
 
 @dataclass
@@ -272,8 +290,25 @@ def load_meals(db: Session, now: datetime) -> MealData:
                 included_in_fee=meal.included_in_fee,
                 diet=booking.diet,
                 allergies=booking.allergies,
+                exempt=meal.exempt,
             )
             for meal in booking.meals
+        )
+    for guest in db.scalars(select(ExternalGuest).where(ExternalGuest.edition_id == edition.id)):
+        rows.extend(
+            MealRow(
+                booking_id=None,
+                guest_id=guest.id,
+                first_name=guest.first_name,
+                last_name=guest.last_name,
+                email="",
+                day=meal.date,
+                kind=meal.kind,
+                included_in_fee=False,
+                diet=guest.diet,
+                allergies=guest.allergies,
+            )
+            for meal in guest.meals
         )
     rows.sort(key=lambda r: (r.day, r.kind != "lunch", r.last_name.lower(), r.first_name.lower()))
     return MealData(days=sorted({s.date for s in edition.slots}), rows=rows)
@@ -329,7 +364,7 @@ def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> li
 
 
 def activity_signup_days(db: Session, now: datetime) -> list[date]:
-    """One day per sign-up to an activity, for bookings that occupy seats."""
+    """One day per sign-up to an activity: bookings that occupy seats and external guests."""
     edition = edition_service.get_active_edition(db)
     if edition is None:
         return []
@@ -337,6 +372,8 @@ def activity_signup_days(db: Session, now: datetime) -> list[date]:
     for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
         if occupies_seats(effective_status(booking.status, booking.hold_expires_at, now)):
             days.extend(activity.date for activity in booking.activities)
+    for guest in db.scalars(select(ExternalGuest).where(ExternalGuest.edition_id == edition.id)):
+        days.extend(activity.date for activity in guest.activities)
     return days
 
 
@@ -344,6 +381,22 @@ def activity_signup_days(db: Session, now: datetime) -> list[date]:
 class ReportData:
     edition: Edition | None
     report: EditionReport
+
+
+def _guest_facts(
+    edition: Edition, guest: ExternalGuest, movements: list[ExternalMovement]
+) -> GuestFacts:
+    account = guest_payments.account_of(edition, guest, movements)
+    return GuestFacts(
+        guest_id=guest.id,
+        meals=tuple((m.date, m.kind) for m in guest.meals),
+        activity_ids=tuple(a.id for a in guest.activities),
+        diet=guest.diet,
+        has_allergies=bool((guest.allergies or "").strip()),
+        due_cents=account.due_cents,
+        paid_cents=account.paid_cents,
+        refunded_cents=account.refunded_cents,
+    )
 
 
 def load_report(db: Session, now: datetime) -> ReportData:
@@ -360,9 +413,11 @@ def load_report(db: Session, now: datetime) -> ReportData:
     # The report reads five collections of every booking: load them in bulk, not one by one.
     everything = (
         selectinload(Booking.payments),
+        selectinload(Booking.refunds),
         selectinload(Booking.slots),
         selectinload(Booking.meals),
         selectinload(Booking.activities),
+        selectinload(Booking.activity_links),
         selectinload(Booking.contributions),
     )
     for booking in db.scalars(
@@ -375,8 +430,15 @@ def load_report(db: Session, now: datetime) -> ReportData:
                 person_id=booking.participant_id,
                 status=status,
                 amount_due_cents=booking.amount_due_cents,
-                paid_cents=paid_total(booking),
+                paid_cents=gross_paid_cents(booking),
                 refund_cents=booking.refund_cents or 0,
+                active_refund_cents=sum(r.amount_cents for r in active_refunds(booking)),
+                category=booking.category,
+                fee_exempt=booking.fee_exempt,
+                exempt_meals=tuple((m.date, m.kind) for m in booking.meals if m.exempt),
+                exempt_activity_ids=tuple(
+                    link.activity_id for link in booking.activity_links if link.exempt
+                ),
                 slots=tuple((s.date, s.period) for s in booking.slots),
                 meals=tuple((m.date, m.kind) for m in booking.meals),
                 included_meals=tuple((m.date, m.kind) for m in booking.meals if m.included_in_fee),
@@ -391,6 +453,15 @@ def load_report(db: Session, now: datetime) -> ReportData:
     activities = [
         ActivityFacts(a.id, a.title, a.date, a.period, a.price_cents, a.capacity, a.payment_mode)
         for a in db.scalars(select(Activity).where(Activity.edition_id == edition.id))
+    ]
+    movements = guest_payments.movements_by_guest(db, edition)
+    guests = [
+        _guest_facts(edition, g, movements.get(g.id, []))
+        for g in db.scalars(
+            select(ExternalGuest)
+            .where(ExternalGuest.edition_id == edition.id)
+            .options(selectinload(ExternalGuest.meals), selectinload(ExternalGuest.activities))
+        )
     ]
     waitlist = [
         WaitlistFacts(entry.close_reason, entry.promoted_as_plus_one)
@@ -419,4 +490,6 @@ def load_report(db: Session, now: datetime) -> ReportData:
         },
         confirmation_policy=edition.confirmation_policy,
     )
-    return ReportData(edition, edition_report(facts, bookings, activities, waitlist, payments))
+    return ReportData(
+        edition, edition_report(facts, bookings, activities, waitlist, payments, guests)
+    )

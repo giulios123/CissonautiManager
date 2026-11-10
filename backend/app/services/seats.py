@@ -14,6 +14,7 @@ from app.models import (
     BookingActivity,
     BookingSlot,
     Edition,
+    ExternalGuestActivity,
     Slot,
 )
 
@@ -112,7 +113,8 @@ def free_by_slot(db: Session, slots: Iterable[Slot], now: datetime) -> dict[int,
 
 
 def occupied_by_activity(db: Session, activity_ids: Iterable[int], now: datetime) -> dict[int, int]:
-    """Seats taken per activity: confirmed bookings plus pending ones still within their hold."""
+    """Seats taken per activity: confirmed bookings plus pending ones still within their hold,
+    plus external guests."""
     ids = list(activity_ids)
     rows = db.execute(
         select(BookingActivity.activity_id, func.count())
@@ -127,6 +129,14 @@ def occupied_by_activity(db: Session, activity_ids: Iterable[int], now: datetime
         .group_by(BookingActivity.activity_id)
     ).all()
     counts = {activity_id: count for activity_id, count in rows}
+    # External guests have no booking or hold: they always occupy their seat (MVP 25a).
+    guest_rows = db.execute(
+        select(ExternalGuestActivity.activity_id, func.count())
+        .where(ExternalGuestActivity.activity_id.in_(ids))
+        .group_by(ExternalGuestActivity.activity_id)
+    ).all()
+    for activity_id, count in guest_rows:
+        counts[activity_id] = counts.get(activity_id, 0) + count
     return {activity_id: counts.get(activity_id, 0) for activity_id in ids}
 
 

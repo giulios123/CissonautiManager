@@ -12,6 +12,7 @@
    - Quando sono partecipante allora non vedo le schede e non posso ottenere il testo della guida admin né le novità (le API rispondono 403).
 3. **Aiuto nel punto giusto**. Come admin voglio che il link «Guida» del pannello mi porti alla sezione della pagina in cui mi trovo.
    - Quando premo «Guida» da «Giorni e slot» allora si apre la sezione «Giorni e slot» della guida organizzatori.
+   - **Superata il 10 novembre 2026** (richiesta del maintainer): il link «Guida» del pannello apre la guida dall'inizio, con schede e indice in vista; le ancore `#sezione` nei link continuano a funzionare.
 4. **Note di rilascio**. Come admin voglio sapere cosa è cambiato a ogni deploy.
    - Quando si fa un deploy allora «Novità» elenca, per rilascio, le novità e le correzioni dei commit uniti, dal più recente.
    - Quando il file delle note manca (ambiente locale) allora «Novità» dice che saranno disponibili dopo il primo deploy.

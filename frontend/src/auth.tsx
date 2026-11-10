@@ -38,6 +38,17 @@ export type BookingView = {
     voided?: boolean;
     void_reason?: string | null;
   }[];
+  // Refunds of credit on the active booking; `paid_cents` is already net of them.
+  refunds?: {
+    id: number;
+    amount_cents: number;
+    channel: string;
+    refunded_on: string;
+    note?: string | null;
+    voided?: boolean;
+    void_reason?: string | null;
+  }[];
+  fee_exempt?: boolean;
   meals?: MealView[];
   allowed_meals?: MealView[];
   activities?: (CollectionTerms & {

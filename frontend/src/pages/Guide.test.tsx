@@ -141,7 +141,7 @@ describe("Guide", () => {
 });
 
 describe("links to the guide", () => {
-  it("opens the section of the admin page you are on", async () => {
+  it("opens the admin guide from the top, whatever page you are on", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) =>
@@ -152,7 +152,16 @@ describe("links to the guide", () => {
     );
     renderGuide("/admin/days");
     const link = await screen.findByRole("link", { name: "Guida" });
-    expect(link).toHaveAttribute("href", "/guide?tab=organizers#days-and-slots");
+    expect(link).toHaveAttribute("href", "/guide?tab=organizers");
+  });
+
+  it("starts at the top even when the previous page was scrolled down", async () => {
+    stub(adminMe);
+    const scrollTo = vi.fn();
+    vi.stubGlobal("scrollTo", scrollTo);
+    renderGuide("/guide?tab=organizers");
+    await screen.findByRole("heading", { name: "Giorni e slot", level: 2 });
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
   it("is reachable from the personal page", async () => {

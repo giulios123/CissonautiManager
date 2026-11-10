@@ -166,6 +166,7 @@ def _lock_and_load_bookings(db: Session, edition_id: int) -> list[Booking]:
                 selectinload(Booking.meals),
                 selectinload(Booking.activities),
                 selectinload(Booking.payments),
+                selectinload(Booking.refunds),
             )
             .execution_options(populate_existing=True)
         )
@@ -366,6 +367,16 @@ def _booking_fingerprint(booking: Booking, status: str) -> dict:
             )
             for p in booking.payments
         ),
+        "refunds": sorted(
+            (r.id, r.amount_cents, r.voided_at.isoformat() if r.voided_at else None)
+            for r in booking.refunds
+        ),
+        "exemptions": [
+            booking.category,
+            booking.fee_exempt,
+            sorted((m.date.isoformat(), m.kind) for m in booking.meals if m.exempt),
+            sorted(link.activity_id for link in booking.activity_links if link.exempt),
+        ],
         "notice_cycle": booking.confirmation_cycle,
         "claimed_cycle": booking.confirmation_claimed_cycle,
         "notice_due_at": (

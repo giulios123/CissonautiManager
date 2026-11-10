@@ -560,3 +560,49 @@ def test_migration_0009_marks_existing_promotions_as_not_plus_one(
     engine.dispose()
     assert not flag
     assert "promoted_as_plus_one" not in columns
+
+
+def test_external_guest_tables_upgrade_and_downgrade(alembic_config, database_url, empty_database):
+    command.upgrade(alembic_config, "0023_included_meal")
+    engine = make_engine(database_url)
+    assert "external_guest" not in inspect(engine).get_table_names()
+    command.upgrade(alembic_config, "0024_external_guests")
+    tables = set(inspect(engine).get_table_names())
+    assert {"external_guest", "external_guest_meal", "external_guest_activity"} <= tables
+    command.downgrade(alembic_config, "0023_included_meal")
+    tables = set(inspect(engine).get_table_names())
+    assert not {"external_guest", "external_guest_meal", "external_guest_activity"} & tables
+    engine.dispose()
+
+
+def test_external_movement_table_upgrade_and_downgrade(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0024_external_guests")
+    engine = make_engine(database_url)
+    assert "external_movement" not in inspect(engine).get_table_names()
+    command.upgrade(alembic_config, "0025_external_movements")
+    assert "external_movement" in inspect(engine).get_table_names()
+    command.downgrade(alembic_config, "0024_external_guests")
+    assert "external_movement" not in inspect(engine).get_table_names()
+    engine.dispose()
+
+
+def test_exemptions_and_refunds_upgrade_keeps_existing_bookings_ordinary(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0025_external_movements")
+    engine = make_engine(database_url)
+    command.upgrade(alembic_config, "0026_exemptions_refunds")
+    inspector = inspect(engine)
+    assert {"category", "fee_exempt", "exemption_preview_token"} <= {
+        c["name"] for c in inspector.get_columns("booking")
+    }
+    assert "exempt" in {c["name"] for c in inspector.get_columns("booking_meal")}
+    assert "exempt" in {c["name"] for c in inspector.get_columns("booking_activity")}
+    assert "booking_refund" in inspector.get_table_names()
+    command.downgrade(alembic_config, "0025_external_movements")
+    inspector = inspect(engine)
+    assert "booking_refund" not in inspector.get_table_names()
+    assert "category" not in {c["name"] for c in inspector.get_columns("booking")}
+    engine.dispose()

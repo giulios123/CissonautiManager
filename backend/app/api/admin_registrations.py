@@ -19,7 +19,7 @@ from app.deps import get_email_sender, get_now, get_settings_dep, require_admin
 from app.domain.booking import occupies_seats
 from app.domain.presence import has_evening
 from app.email import EmailSender
-from app.i18n import t
+from app.i18n import t, tr
 from app.models import (
     STATUS_EXPIRED,
     Activity,
@@ -78,6 +78,9 @@ class RegistrationRow(BaseModel):
     hold_expires_at: datetime | None
     created_at: datetime
     waitlist_slots: int = 0
+    # MVP 25c: admin label of the booking, and whether its fee is exempted.
+    category: str | None = None
+    fee_exempt: bool = False
 
 
 class ParticipantView(BaseModel):
@@ -153,6 +156,8 @@ class RegistrationDetail(BaseModel):
     lunch_price_cents: int = 0
     dinner_price_cents: int = 0
     activity_offers: list[ActivityOffer] = []
+    # MVP 25c: a label that changes no amount. Never shown to the participant.
+    category: str = "ordinary"
 
 
 class RefundIn(BaseModel):
@@ -230,6 +235,8 @@ def _row(booking: Booking, now: datetime, waitlist_slots: int = 0) -> Registrati
         hold_expires_at=booking.hold_expires_at,
         created_at=booking.created_at,
         waitlist_slots=waitlist_slots,
+        category=booking.category,
+        fee_exempt=booking.fee_exempt,
     )
 
 
@@ -279,6 +286,7 @@ def _detail(db: Session, booking: Booking, now: datetime, warning: str | None = 
     if warning is None and view.status == STATUS_EXPIRED and view.paid_cents > 0:
         warning = t("warn.expired_with_payments")
     return RegistrationDetail(
+        category=booking.category,
         participant=ParticipantView(
             id=participant.id,
             first_name=participant.first_name,
@@ -344,6 +352,9 @@ def _get_booking(db: Session, booking_id: int) -> Booking:
     return booking
 
 
+CATEGORY_LABELS = {"ordinary": "Ordinaria", "internal_non_paying": "Interno non pagante"}
+
+
 def _csv_rows(rows: list[RegistrationRow]):
     for row in rows:
         yield [
@@ -365,6 +376,8 @@ def _csv_rows(rows: list[RegistrationRow]):
             Amount(row.confirmation_balance_cents)
             if row.confirmation_balance_cents is not None
             else None,
+            tr(CATEGORY_LABELS[row.category]) if row.category else None,
+            row.fee_exempt if row.category else None,
         ]
 
 
@@ -385,12 +398,15 @@ CSV_HEADER = [
     "Slot in lista d'attesa",
     "Quota di partecipazione",
     "Residuo per confermare",
+    "Categoria",
+    "Quota esente",
 ]
 
 
 @router.get("", response_model=None)
 def list_registrations(
     status: Status | None = None,
+    category: Literal["ordinary", "internal_non_paying"] | None = None,
     q: str | None = Query(default=None, max_length=100),
     fmt: Literal["json", "csv"] = Query(default="json", alias="format"),
     db: Session = Depends(get_db),
@@ -410,6 +426,8 @@ def list_registrations(
         )
         if status:
             query = query.where(Booking.status == status)
+        if category:
+            query = query.where(Booking.category == category)
         needle = q.strip().lower() if q and q.strip() else None
         if needle:
             query = query.where(
@@ -431,7 +449,9 @@ def list_registrations(
                 waiting[entry.participant_id].append(entry)
         bookings = [] if status == WAITLIST_ONLY else list(db.scalars(query))
         rows = [_row(b, now, len(waiting.get(b.participant_id, []))) for b in bookings]
-        if status in (None, WAITLIST_ONLY):
+        # People only on a waitlist have no booking and so no category: a category filter
+        # leaves them out.
+        if status in (None, WAITLIST_ONLY) and not category:
             with_booking = set(
                 db.scalars(select(Booking.participant_id).where(Booking.edition_id == edition.id))
             )
@@ -906,5 +926,8 @@ def void_registration_payment(
         raise HTTPException(status_code=404, detail=t("payment.not_found")) from exc
     except payment_service.AlreadyVoided as exc:
         raise HTTPException(status_code=409, detail=t("payment.already_voided")) from exc
+    except payment_service.VoidBlockedByRefund as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=t("payment.void_blocked_by_refund")) from exc
     db.refresh(booking)
     return _detail(db, booking, now)

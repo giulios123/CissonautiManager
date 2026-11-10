@@ -140,6 +140,24 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 - **Stato:** implementato e integrato in `main` tramite PR #25; resta il collaudo manuale organizzatori.
 - **Contenuto:** testi attività IT/EN con fallback legacy, schede localizzate e note admin con cronologia, protette nelle API e nei CSV.
 
+## MVP 25a · Presenze esterne
+
+- **Stato:** [implementato sul branch](mvp-25a-presenze-esterne/requirements.md) `feat/mvp-25a-presenze-esterne`, 9 task completati; restano CI SQL Server e collaudo organizzatori. Nessun deploy.
+- **Contenuto:** esterni senza account inseriti dall'admin con identità minima, pasti e attività senza coworking, capienza delle attività occupata, regime e allergie (con consenso dichiarato), viste, CSV e report con la colonna «Esterni».
+- **Fatto quando:** una persona conta una volta per voce, nessun account o prenotazione fittizi e importi invariati.
+
+## MVP 25b · Incassi degli esterni
+
+- **Stato:** [implementato sul branch](mvp-25b-incassi-esterni/requirements.md) `feat/mvp-25b-incassi-esterni` (sopra il 25a), 8 task completati; restano CI SQL Server e collaudo organizzatori. Nessun deploy.
+- **Contenuto:** dovuto calcolato sulle sole voci incassate dall'organizzazione, registro di pagamenti e restituzioni separato dalle prenotazioni, sezione «Esterni» in «Da incassare», totale evento nel report.
+- **Fatto quando:** i versamenti degli esterni sono distinti dalle quote ma sommati nel totale evento, senza doppi conteggi.
+
+## MVP 25c · Esenzioni e rettifiche degli iscritti
+
+- **Stato:** [implementato sul branch](mvp-25c-esenzioni-rettifiche/requirements.md) `feat/mvp-25c-esenzioni-rettifiche`, 9 task completati; migrazione 0026 sopra la 0025, codice indipendente da 25a/25b. Restano CI SQL Server e collaudo organizzatori. Nessun deploy.
+- **Contenuto:** categoria «ordinaria / interno non pagante», esenzioni esplicite di quota e singole voci con anteprima e applicazione, rimborso tracciato su iscrizione attiva al massimo pari al credito, versato netto.
+- **Fatto quando:** un'esenzione cambia solo le voci scelte, i pagamenti restano intatti e il rimborso non altera lo stato del posto.
+
 ## Revisione dopo il collaudo del 7 novembre 2026
 
 **Pianificazione aggiornata con le risposte del maintainer; nessun MVP avviato.** Il [dossier](revisione-2026-11-07/README.md) contiene spec A–E, valutazione F con stessa base dati scelta, proposta mappa A7 e riscontro promemoria D5. **Calendario D3 accantonato, mockup rimosso.** Decisioni canoniche D-050–D-075 e precisazioni D-076–D-104; [domande residue](revisione-2026-11-07/domande-aperte.md) limitate ai dettagli non risposti.

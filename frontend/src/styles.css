@@ -1252,6 +1252,104 @@ button.icon:hover:not(:disabled) {
   }
 }
 
+/* Settings: a section menu that stays in view while the page scrolls. On a phone it is a
+   sideways bar at the top, on a wide screen a column on the left. */
+.settings-page {
+  max-width: 62rem;
+}
+
+.settings-nav {
+  position: sticky;
+  top: var(--settings-sticky-offset, 0px);
+  z-index: 3;
+  margin: 0 -1rem 1rem;
+  padding: 0.25rem 1rem;
+  background: var(--color-bg-glass);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(8px);
+}
+
+.settings-nav ul {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.settings-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  white-space: nowrap;
+  text-decoration: none;
+  border-radius: var(--radius-pill);
+}
+
+.settings-nav a:hover {
+  background: var(--color-primary-soft);
+}
+
+.settings-nav a[aria-current="location"] {
+  color: var(--color-heading);
+  font-weight: 700;
+  background: var(--color-primary-soft);
+}
+
+.settings-content {
+  min-width: 0;
+}
+
+.settings-content h2[id] {
+  scroll-margin-top: calc(var(--settings-sticky-offset, 0px) + 4.5rem);
+}
+
+@media (min-width: 60rem) {
+  .settings-page {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 0 2.5rem;
+    align-items: start;
+  }
+
+  .settings-page > h1 {
+    grid-column: 1 / -1;
+  }
+
+  .settings-nav {
+    top: calc(var(--settings-sticky-offset, 0px) + 1rem);
+    max-height: calc(100vh - var(--settings-sticky-offset, 0px) - 2rem);
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    background: none;
+    border: 0;
+    backdrop-filter: none;
+  }
+
+  .settings-nav ul {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .settings-nav a {
+    min-height: 2.5rem;
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .settings-content {
+    max-width: 44rem;
+  }
+
+  .settings-content h2[id] {
+    scroll-margin-top: calc(var(--settings-sticky-offset, 0px) + 1rem);
+  }
+}
+
 .guide-index ul {
   display: flex;
   flex-wrap: wrap;

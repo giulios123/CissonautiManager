@@ -16,6 +16,8 @@ CSV_URLS = [
     "/api/admin/views/payments-review",
     "/api/admin/views/report",
     "/api/admin/activities",
+    "/api/admin/guests",
+    "/api/admin/guests/movements",
 ]
 
 
@@ -69,7 +71,14 @@ class TestCsvLanguage:
 
     def test_report_in_italian_is_unchanged(self, admin_client, edition):
         rows = parse(admin_client.get("/api/admin/views/report?format=csv"))
-        assert rows[0] == ["Sezione", "Voce", "Confermate", "In attesa di pagamento", "Totale"]
+        assert rows[0] == [
+            "Sezione",
+            "Voce",
+            "Confermate",
+            "In attesa di pagamento",
+            "Totale",
+            "Di cui esterni",
+        ]
         assert "Iscrizioni" in {row[0] for row in rows[1:]}
 
     def test_booleans_follow_the_language(self, admin_client, edition, db, make_participant):

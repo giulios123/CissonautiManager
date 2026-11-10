@@ -11,6 +11,7 @@ export const ROUTES = {
   adminWeek: "/admin/week",
   adminMeals: "/admin/meals",
   adminActivities: "/admin/activities",
+  adminGuests: "/admin/guests",
   adminContributions: "/admin/contributions",
   adminReport: "/admin/report",
   adminToCollect: "/admin/to-collect",
@@ -26,6 +27,10 @@ export function adminRegistrationPath(id: number | string): string {
 
 export function adminActivityPath(id: number | string): string {
   return `/admin/activities/${id}`;
+}
+
+export function adminGuestPath(id: number | string): string {
+  return `/admin/guests/${id}`;
 }
 
 /** Italian address (as someone may type it) -> English address. Only exact, fixed segments. */

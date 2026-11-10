@@ -211,6 +211,12 @@ export function Guide() {
   const state = useMe();
   const { hash } = useLocation();
 
+  // Moving between pages keeps the scroll of the previous one: without an anchor the guide
+  // would open halfway down, so it starts from the top.
+  useEffect(() => {
+    if (!hash) window.scrollTo(0, 0);
+  }, [hash]);
+
   useEffect(() => {
     if (state.status === "user" && state.me.role !== "admin" && hash) {
       document.getElementById(hash.slice(1))?.scrollIntoView?.();

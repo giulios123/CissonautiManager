@@ -5,7 +5,7 @@ import { priceLabel, seatsLabel, type Activity } from "../activities";
 import { formatDay, periodLabel } from "../booking";
 import { StatusBadge } from "../StatusBadge";
 import { useI18n } from "../i18n";
-import { adminRegistrationPath, ROUTES } from "../routes";
+import { adminGuestPath, adminRegistrationPath, ROUTES } from "../routes";
 import { CsvButton } from "./CsvButton";
 import { CollectionDetails } from "../collection";
 import { ApiError } from "../api";
@@ -18,8 +18,16 @@ type Person = {
   phone: string | null;
   status: string;
 };
+type GuestPerson = {
+  guest_id: number;
+  first_name: string;
+  last_name: string;
+  phone: string | null;
+  payer: "paying" | "non_paying";
+};
 type Detail = Activity & {
   people: Person[];
+  guests?: GuestPerson[];
   internal_note: string | null;
   note_history: { note: string | null; author: string; created_at: string }[];
 };
@@ -99,9 +107,40 @@ export function AdminActivityDetail() {
           </ul>
         </section>
       )}
-      {detail.people.length === 0 ? (
+      {detail.people.length === 0 && (detail.guests ?? []).length === 0 && (
         <p>{t("aact.noneSignedUp")}</p>
-      ) : (
+      )}
+      {(detail.guests ?? []).length > 0 && (
+        <div className="table-wrap">
+          <table>
+            <caption>{t("aact.guestsCaption")}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{t("people.colPerson")}</th>
+                <th scope="col">{t("people.colPhone")}</th>
+                <th scope="col">{t("guests.colPayer")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(detail.guests ?? []).map((guest) => (
+                <tr key={guest.guest_id}>
+                  <th scope="row">
+                    <Link to={adminGuestPath(guest.guest_id)}>
+                      {guest.first_name} {guest.last_name}
+                    </Link>{" "}
+                    <small>({t("guests.badge")})</small>
+                  </th>
+                  <td>{guest.phone ?? "-"}</td>
+                  <td>
+                    {guest.payer === "paying" ? t("guests.payerPaying") : t("guests.payerNon")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {detail.people.length > 0 && (
         <>
           <div className="table-wrap">
             <table>

@@ -1,5 +1,17 @@
 # Progress
 
+## MVP 25c · Esenzioni e rettifiche degli iscritti — implementato sul branch
+
+Branch `feat/mvp-25c-esenzioni-rettifiche` (sopra `feat/mvp-25b-incassi-esterni`; spec in `specs/mvp-25c-esenzioni-rettifiche/`). Categoria dell'iscrizione, esenzioni di quota e singole voci con anteprima/applicazione (token, lock, idempotenza, conferma con email), rimborso del credito su prenotazioni attive (tetto sul credito, annullo con motivo, idempotenza), «versato» ovunque al netto dei rimborsi, blocco dell'annullo di un pagamento sotto un rimborso, report/CSV (valore esentato, interni non paganti, rimborsi su iscrizioni attive), pagina personale con «Esente» e rimborsi. Migrazione additiva `0026_exemptions_refunds`; guide IT/EN. Backend 1328 test, frontend 451, Ruff, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate.
+
+## MVP 25b · Incassi degli esterni — implementato sul branch
+
+Branch `feat/mvp-25b-incassi-esterni` (sopra `feat/mvp-25a-presenze-esterne`; spec in `specs/mvp-25b-incassi-esterni/`). Dovuto calcolato alla lettura sui prezzi correnti, registro `external_movement` separato dai `Payment` delle prenotazioni (pagamenti e restituzioni con tetto sul credito, annullo con motivo, idempotenza con chiave di richiesta), sezione «Esterni da incassare» in «Da incassare» (endpoint proprio), tabella «Incassi esterni» e «Totale evento» nel report e nel CSV, CSV dei movimenti. Migrazione additiva `0025_external_movements`; guide IT/EN. Backend 1251 test, frontend 430, Ruff, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate.
+
+## MVP 25a · Presenze esterne — implementato sul branch
+
+Branch `feat/mvp-25a-presenze-esterne` (spec in `specs/mvp-25a-presenze-esterne/`). Esterni senza account inseriti dall'admin, con pasti e attività senza coworking, capienza delle attività occupata, regime e allergie (con consenso dichiarato dall'admin), pagina admin «Esterni», viste pasti/settimana/attività, report e CSV con «Di cui esterni» e colonna «Tipo». Migrazione additiva `0024_external_guests`; guide IT/EN. Backend 1192 test, frontend 420, Ruff, formattazione, lint, TypeScript e build verdi in locale. **Da verificare:** CI SQL Server, collaudo organizzatori (`test-manuali.md`). Nessun deploy; proposte a `domain.md` non applicate. Gli importi degli esterni sono il 25b.
+
 ## MVP 23 e 24 · Stato release
 
 - **MVP 23**, PR #26, integrato in `main` il 2026-11-09: policy disattivata di default, ricalcolo condiviso, anteprima/applicazione admin, catalogo benefit e viste/report/CSV/email aggiornati. Correzioni Copilot incluse e thread risolti. Suite backend (1130), frontend (409), lint, typecheck, build, Guide, SQL Server e build immagine verdi; la CI finale era verde sul commit `8c9e38e`. La migrazione `0023_included_meal` segue `0022_activity_details`. Collaudo organizzatori ancora da fare (`specs/mvp-23-composizione-quota/test-manuali.md`).
@@ -131,6 +143,7 @@ Preparato il [piano comune](../specs/piano-mvp-17-18.md) con sequenza, dipendenz
 
 ## Bug corretti fuori MVP
 
+- 2026-11-10: la guida si apriva a metà. Il link «Guida» del pannello portava alla sezione della pagina corrente (MVP 09, US 3, ora superata su richiesta del maintainer) e, senza ancora, la guida ereditava lo scroll della pagina precedente. Ora il link apre la guida dall'inizio e la pagina torna in cima quando non c'è un'ancora, con test. Nella stessa occasione, su richiesta: menu delle sezioni sempre in vista in «Impostazioni» (colonna a sinistra su schermo largo, barra in alto sul telefono).
 - 2026-11-07 (D-110): riprodotto con `npm audit` l'avviso `GHSA-g3hv-75wg-m249` / `CVE-2026-118764` su `minimatch@10.2.6`, dipendenza di sviluppo di ESLint e TypeScript ESLint. Override temporaneo alla versione corretta `11.0.1` e lockfile rigenerato: audit completo senza vulnerabilità. Con Node 22: `npm ci`, 378 test frontend, lint e build superati; confronto ESLint prima/dopo sugli stessi 103 file e con gli stessi messaggi (resta l'avviso preesistente in `ConfirmDialog.tsx`). Nessun cambiamento al comportamento dell'app o allo schema dati.
 - 2026-11-06 (review della PR #13, D-046): il downgrade della migrazione 0011 falliva su SQL Server (vincolo di default della colonna `locale`); il modulo pubblico poteva cambiare la lingua salvata di una persona già registrata; i vecchi link alla guida con ancora italiana non portavano alla sezione; cambiando lingua in «Da incassare» si perdeva l'annullo dei pagamenti appena segnati. Corretti, con test (l'ultimo provato rosso senza la correzione). La prova su SQL Server è la CI.
 - 2026-11-04: nel riepilogo e nelle email il pomeriggio compariva prima della mattina (ordinamento per nome del periodo). Corretto ordinando per orario di inizio, con test di regressione.

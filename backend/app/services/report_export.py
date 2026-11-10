@@ -1,7 +1,9 @@
-"""The edition report as rows for a CSV: «sezione; voce; confermate; in attesa; totale».
+"""The edition report as rows for a CSV: «sezione; voce; confermate; in attesa; totale; di cui
+esterni».
 
-Rows without a split (a plain count or an amount) fill only the last column. Allergies are health
-data and appear only as a number, never with names.
+Rows without a split (a plain count or an amount) fill only the «totale» column. The total of
+meals and activities includes the external guests, whose number is repeated in the last column.
+Allergies are health data and appear only as a number, never with names.
 """
 
 from app.csv_export import Amount, Cell
@@ -10,7 +12,7 @@ from app.i18n import channel_label, t, tr
 from app.services.edition import PAYMENT_CHANNELS
 from app.timefmt import format_activity, meal_label, period_label, status_label
 
-HEADER = ["Sezione", "Voce", "Confermate", "In attesa di pagamento", "Totale"]
+HEADER = ["Sezione", "Voce", "Confermate", "In attesa di pagamento", "Totale", "Di cui esterni"]
 DIET_LABELS = {
     "omnivore": "onnivoro",
     "vegetarian": "vegetariano",
@@ -27,12 +29,13 @@ def header() -> list[str]:
 Row = list[Cell]
 
 
-def _split(section: str, label: str, value: Split) -> Row:
-    return [tr(section), tr(label), value.confirmed, value.pending, value.total]
+def _split(section: str, label: str, value: Split, guests: bool = False) -> Row:
+    external = value.external if guests else None
+    return [tr(section), tr(label), value.confirmed, value.pending, value.total, external]
 
 
 def _plain(section: str, label: str, value: Cell) -> Row:
-    return [tr(section), tr(label), None, None, value]
+    return [tr(section), tr(label), None, None, value, None]
 
 
 def _decimal(value: float) -> str:
@@ -67,10 +70,14 @@ def report_rows(report: EditionReport) -> list[Row]:
 
     section = "Pasti"
     for day in report.meals.days:
-        rows.append(_split(section, f"{meal_label('lunch')} {day.day:%d/%m/%Y}", day.lunches))
-        rows.append(_split(section, f"{meal_label('dinner')} {day.day:%d/%m/%Y}", day.dinners))
-    rows.append(_split(section, "Pranzi in totale", report.meals.lunches))
-    rows.append(_split(section, "Cene in totale", report.meals.dinners))
+        rows.append(
+            _split(section, f"{meal_label('lunch')} {day.day:%d/%m/%Y}", day.lunches, guests=True)
+        )
+        rows.append(
+            _split(section, f"{meal_label('dinner')} {day.day:%d/%m/%Y}", day.dinners, guests=True)
+        )
+    rows.append(_split(section, "Pranzi in totale", report.meals.lunches, guests=True))
+    rows.append(_split(section, "Cene in totale", report.meals.dinners, guests=True))
     for key, count in report.meals.lunch_diets.items():
         rows.append(
             _plain(
@@ -96,7 +103,7 @@ def report_rows(report: EditionReport) -> list[Row]:
         rows.append(_plain(section, "Nessuna attività", 0))
     for activity in report.activities:
         title = format_activity(activity.title, activity.day, activity.period)
-        rows.append(_split(section, title, activity.joined))
+        rows.append(_split(section, title, activity.joined, guests=True))
         rows.append(
             _plain(section, f"{tr('Prezzo')}: {activity.title}", Amount(activity.price_cents))
         )
@@ -167,5 +174,31 @@ def report_rows(report: EditionReport) -> list[Row]:
         ),
         _plain(section, "Crediti da restituire", Amount(money.credits_cents)),
         _plain(section, "Disdette da rimborsare", Amount(money.to_refund_cents)),
+        _plain(
+            section,
+            "Rimborsi su iscrizioni attive (compresi in Rimborsato)",
+            Amount(money.credit_refunded_cents),
+        ),
+        _plain(section, "Valore esentato", Amount(money.exempt_value_cents)),
+        _plain(section, "Iscrizioni interne non paganti", money.internal_non_paying),
     ]
+
+    section = "Incassi esterni"
+    rows += [
+        _plain(section, "Dovuto dagli esterni", Amount(money.external_due_cents)),
+        _plain(section, "Versato dagli esterni", Amount(money.external_paid_cents)),
+        _plain(section, "Restituito agli esterni", Amount(money.external_refunded_cents)),
+        _plain(
+            section, "Netto esterni (versato meno restituito)", Amount(money.external_net_cents)
+        ),
+        _plain(
+            section, "Ancora da incassare dagli esterni", Amount(money.external_to_collect_cents)
+        ),
+        _plain(section, "Crediti degli esterni da restituire", Amount(money.external_credit_cents)),
+    ]
+
+    section = "Totale evento"
+    rows.append(
+        _plain(section, "Incassato dall'evento (quote più esterni)", Amount(money.event_net_cents))
+    )
     return rows

@@ -2,10 +2,14 @@
 
 from datetime import date
 
+from sqlalchemy import select
+from sqlalchemy.orm import object_session
+
 from app.domain.collection import collectable
 from app.domain.confirmation import confirmation_due_cents
+from app.domain.exemptions import Exemptions, counted, included_meal
 from app.domain.fees import compute_fee
-from app.models import MEAL_LUNCH, Activity, Booking, Edition
+from app.models import MEAL_LUNCH, Activity, Booking, BookingActivity, Edition
 
 
 def meal_terms(edition: Edition, day: date, kind: str) -> dict:
@@ -49,32 +53,65 @@ def calculate_amounts(edition: Edition, booking: Booking) -> tuple[int, int]:
     return registration_fee_cents, total_due_cents
 
 
+def exemptions_of(booking: Booking) -> Exemptions:
+    """What is exempted on the booking now (MVP 25c)."""
+    return Exemptions(
+        fee=booking.fee_exempt,
+        meals=frozenset((m.date, m.kind) for m in booking.meals if m.exempt),
+        activities=frozenset(link.activity_id for link in _activity_links(booking) if link.exempt),
+    )
+
+
+def _activity_links(booking: Booking):
+    """The association rows of the booking's activities. A booking not saved yet has none."""
+    if booking.id is None:
+        return []
+    session = object_session(booking)
+    if session is None:
+        return []
+    return session.scalars(select(BookingActivity).where(BookingActivity.booking_id == booking.id))
+
+
 def calculate_meal_selection(
-    edition: Edition, booking: Booking, selected: list[tuple[date, str]]
+    edition: Edition,
+    booking: Booking,
+    selected: list[tuple[date, str]],
+    exemptions: Exemptions | None = None,
 ) -> tuple[int, int, tuple[date, str] | None]:
-    """Calculate fee, total due, and included meal for a proposed selection."""
-    registration_fee_cents = compute_fee(
-        [s.date for s in booking.slots], edition.base_fee_cents, edition.per_day_fee_cents
+    """Calculate fee, total due, and included meal for a proposed selection.
+
+    `exemptions` defaults to what is saved on the booking; the preview of an exemption change
+    passes the proposed ones. An exempt item is worth zero and the others stay due.
+    """
+    exempt = exemptions if exemptions is not None else exemptions_of(booking)
+    registration_fee_cents = counted(
+        compute_fee(
+            [s.date for s in booking.slots], edition.base_fee_cents, edition.per_day_fee_cents
+        ),
+        exempt.fee,
     )
     meals = sorted(selected, key=lambda meal: (meal[0], meal[1] != MEAL_LUNCH))
-    included: tuple[date, str] | None = None
-    if (
-        edition.confirmation_policy == "registration_fee"
-        and edition.included_meal_policy == "first_organizer_meal"
-    ):
-        included = next(
-            (
-                meal
-                for meal in meals
-                if meal_terms(edition, meal[0], meal[1])["payment_mode"] == "organizer"
-            ),
-            None,
-        )
+    included = included_meal(
+        meals,
+        {m: meal_terms(edition, m[0], m[1])["payment_mode"] == "organizer" for m in meals},
+        exempt.meals,
+        enabled=(
+            edition.confirmation_policy == "registration_fee"
+            and edition.included_meal_policy == "first_organizer_meal"
+        ),
+    )
     total_due_cents = registration_fee_cents + sum(
-        0 if (day, kind) == included else meal_terms(edition, day, kind)["collectable_cents"]
+        0
+        if (day, kind) == included
+        else counted(
+            meal_terms(edition, day, kind)["collectable_cents"], (day, kind) in exempt.meals
+        )
         for day, kind in meals
     )
-    total_due_cents += sum(collectable(a.price_cents, a.payment_mode) for a in booking.activities)
+    total_due_cents += sum(
+        counted(collectable(a.price_cents, a.payment_mode), a.id in exempt.activities)
+        for a in booking.activities
+    )
     return registration_fee_cents, total_due_cents, included
 
 
