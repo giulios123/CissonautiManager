@@ -363,18 +363,65 @@ def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> li
     return rows
 
 
-def activity_signup_days(db: Session, now: datetime) -> list[date]:
-    """One day per sign-up to an activity: bookings that occupy seats and external guests."""
+@dataclass(frozen=True)
+class ActivitySignup:
+    """One sign-up to an activity: a participant with a booking, or an external guest."""
+
+    day: date
+    activity: Activity
+    booking_id: int | None
+    guest_id: int | None
+    first_name: str
+    last_name: str
+    status: str | None
+
+    @property
+    def external(self) -> bool:
+        return self.guest_id is not None
+
+
+def activity_signups(db: Session, now: datetime) -> list[ActivitySignup]:
+    """Every sign-up to an activity: bookings that occupy seats and external guests."""
     edition = edition_service.get_active_edition(db)
     if edition is None:
         return []
-    days: list[date] = []
+    signups: list[ActivitySignup] = []
     for booking in db.scalars(select(Booking).where(Booking.edition_id == edition.id)):
-        if occupies_seats(effective_status(booking.status, booking.hold_expires_at, now)):
-            days.extend(activity.date for activity in booking.activities)
+        status = effective_status(booking.status, booking.hold_expires_at, now)
+        if not occupies_seats(status):
+            continue
+        participant = booking.participant
+        signups.extend(
+            ActivitySignup(
+                day=activity.date,
+                activity=activity,
+                booking_id=booking.id,
+                guest_id=None,
+                first_name=participant.first_name,
+                last_name=participant.last_name,
+                status=status,
+            )
+            for activity in booking.activities
+        )
     for guest in db.scalars(select(ExternalGuest).where(ExternalGuest.edition_id == edition.id)):
-        days.extend(activity.date for activity in guest.activities)
-    return days
+        signups.extend(
+            ActivitySignup(
+                day=activity.date,
+                activity=activity,
+                booking_id=None,
+                guest_id=guest.id,
+                first_name=guest.first_name,
+                last_name=guest.last_name,
+                status=None,
+            )
+            for activity in guest.activities
+        )
+    return signups
+
+
+def activity_signup_days(db: Session, now: datetime) -> list[date]:
+    """One day per sign-up to an activity, from the same list as the week detail."""
+    return [signup.day for signup in activity_signups(db, now)]
 
 
 @dataclass

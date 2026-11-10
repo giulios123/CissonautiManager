@@ -434,6 +434,10 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Scrivi un titolo per il tuo contributo",
         "en": "Write a title for your contribution",
     },
+    "week.detail_bad_date": {
+        "it": "Questa data non fa parte dell'edizione.",
+        "en": "This date is not part of the edition.",
+    },
     "contribution.invalid_kind": {
         "it": "Scegli se è un talk, un tema o una competenza",
         "en": "Choose whether it is a talk, a topic or a skill",

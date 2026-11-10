@@ -4,7 +4,7 @@ from datetime import date, datetime, time
 from itertools import groupby
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ from app.db import get_db
 from app.deps import get_now, require_admin
 from app.domain.meals import diet_counts, meal_counts_by_day
 from app.domain.presence import presence_by_slot, week_summary
-from app.i18n import tr
+from app.i18n import current_locale, t, tr
 from app.models import MEAL_DINNER, MEAL_LUNCH
 from app.services import edition as edition_service
 from app.services import report_export
@@ -408,6 +408,133 @@ def week_view(
         total_lunches=lunches,
         total_dinners=dinners,
         total_activities=activities,
+    )
+
+
+Day = date  # a field called `date` hides the type inside its own class
+WeekMetric = Literal["morning", "afternoon", "evening", "people", "lunch", "dinner", "activities"]
+
+
+class WeekDetailRow(BaseModel):
+    """One line behind a number of the week view. No contact data, diet, allergies or amounts."""
+
+    date: Day | None = None
+    booking_id: int | None = None
+    guest_id: int | None = None
+    external: bool = False
+    name: str
+    status: str | None = None
+    derived: bool = False
+    activity_id: int | None = None
+    activity_title: str | None = None
+
+
+class WeekDetailOut(BaseModel):
+    metric: WeekMetric
+    date: Day | None
+    count: int
+    # Only for the activities: sign-ups are counted, people may sign up more than once.
+    distinct_people: int | None = None
+    rows: list[WeekDetailRow]
+
+
+def _full_name(first: str, last: str) -> str:
+    return f"{first} {last}".strip()
+
+
+@router.get("/week/detail", response_model=WeekDetailOut)
+def week_detail(
+    metric: WeekMetric,
+    day: date | None = Query(default=None, alias="date"),
+    db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
+) -> WeekDetailOut:
+    """The people or sign-ups that make up one number of the week view (D1).
+
+    It reads the same loaders as `/week`, so a count and its list cannot disagree.
+    """
+    data = views_service.load_presence(db, now)
+    if day is not None and day not in {slot.date for slot in data.slots}:
+        raise HTTPException(status_code=422, detail=t("week.detail_bad_date"))
+
+    def wanted(value: date) -> bool:
+        return day is None or value == day
+
+    rows: list[WeekDetailRow] = []
+    distinct: int | None = None
+    if metric in ("morning", "afternoon", "evening"):
+        rows = [
+            WeekDetailRow(
+                date=r.day,
+                booking_id=data.people[r.person_id].booking_id,
+                name=_full_name(
+                    data.people[r.person_id].first_name, data.people[r.person_id].last_name
+                ),
+                status=data.people[r.person_id].status,
+                derived=r.derived,
+            )
+            for r in data.rows
+            if r.period == metric and wanted(r.day)
+        ]
+    elif metric == "people":
+        # Distinct people: once per day for a day, once in all for the whole week.
+        seen: set[tuple[date | None, int]] = set()
+        for r in data.rows:
+            if not wanted(r.day):
+                continue
+            key = (r.day if day is not None else None, r.person_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            person = data.people[r.person_id]
+            rows.append(
+                WeekDetailRow(
+                    date=day,
+                    booking_id=person.booking_id,
+                    name=_full_name(person.first_name, person.last_name),
+                    status=person.status,
+                )
+            )
+    elif metric in ("lunch", "dinner"):
+        kind = MEAL_LUNCH if metric == "lunch" else MEAL_DINNER
+        rows = [
+            WeekDetailRow(
+                date=r.day,
+                booking_id=r.booking_id,
+                guest_id=r.guest_id,
+                external=r.external,
+                name=_full_name(r.first_name, r.last_name),
+            )
+            for r in views_service.load_meals(db, now).rows
+            if r.kind == kind and wanted(r.day)
+        ]
+    else:
+        locale = current_locale()
+        signups = [s for s in views_service.activity_signups(db, now) if wanted(s.day)]
+        rows = [
+            WeekDetailRow(
+                date=s.day,
+                booking_id=s.booking_id,
+                guest_id=s.guest_id,
+                external=s.external,
+                name=_full_name(s.first_name, s.last_name),
+                status=s.status,
+                activity_id=s.activity.id,
+                activity_title=(s.activity.title_it if locale == "it" else s.activity.title_en)
+                or s.activity.title,
+            )
+            for s in signups
+        ]
+        distinct = len({(s.booking_id, s.guest_id) for s in signups})
+    rows.sort(
+        key=lambda r: (
+            r.date or date.min,
+            r.name.lower(),
+            r.activity_title or "",
+        )
+    )
+    return WeekDetailOut(
+        metric=metric, date=day, count=len(rows), distinct_people=distinct, rows=rows
     )
 
 
