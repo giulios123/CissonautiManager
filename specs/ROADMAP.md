@@ -172,7 +172,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 28 · Barra e recap più leggibili
 
-- **Stato:** [spec pronta](mvp-28-barra-recap/requirements.md), confermata, da implementare; 4 task, solo CSS e test.
+- **Stato:** [implementato sul branch](mvp-28-barra-recap/requirements.md) `feat/mvp-28-barra-recap` (sopra il 27), 4 task completati, solo CSS, un effetto in `Registration.tsx` e test. Restano le prove visive complete (scorrimento, iframe, zoom 200%) e il collaudo organizzatori. Nessun deploy.
 - **Contenuto:** barra superiore con fondo pieno e striscia d'enfasi, recap laterale con fondo bianco che scorre con la pagina.
 - **Fatto quando:** importo e pulsante restano leggibili in alto (telefono, iframe, zoom 200%, inglese) e il recap non è sticky.
 

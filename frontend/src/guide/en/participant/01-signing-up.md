@@ -8,7 +8,7 @@ If you have already signed up, use the “Sign in” link above the form to open
 2. **Enter your details.** First name, last name, email, phone (required), who invited you (optional) and what you can bring to the camp.
 3. **Consents.** The privacy notice and the liability waiver are required: you can read both before ticking.
 
-While you choose, the summary has one row per day: full days show only the date, while partial days list their periods beside it. Evening attendance is included when you book both morning and afternoon. The top bar keeps the fee and sign-up button visible while you scroll. Use “Edit attendance” to return to the calendar.
+While you choose, the summary has one row per day: full days show only the date, while partial days list their periods beside it. Evening attendance is included when you book both morning and afternoon. The top bar, solid white with a yellow line below, keeps the fee and sign-up button visible while you scroll; the summary box (white, with a yellow line above) scrolls with the page instead. If a field has an error, it is brought into view below the bar. Use “Edit attendance” to return to the calendar.
 
 When you send the form you see the “Registration received” page with the amount and deadline first, followed by your attendance summary, payment reference and instructions. You also get an email with the same day-by-day summary and a link to your page. If the organizers set it up, the email also includes a picture with your name that you can share.
 

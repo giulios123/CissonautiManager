@@ -2,6 +2,8 @@
 
 ## Ora
 
+**2026-11-10 · MVP 28 implementato sul branch `feat/mvp-28-barra-recap`** (sopra il 27; PR #29 per il 26 e #30 per il 27, il 28 non è ancora in PR). Barra con fondo pieno e striscia gialla, recap bianco con striscia, campi con errore che non finiscono sotto la barra. Restano prove visive complete e collaudo organizzatori; nessun deploy. Con questo le spec 26–28 sono tutte implementate; prossimi nel piano: 29, 30 e 31.
+
 **2026-11-10 · MVP 27 implementato sul branch `feat/mvp-27-proposte-partecipanti`** (sopra `feat/mvp-26-dettaglio-settimana`, PR #29 per il 26; il 27 non è ancora in PR). Migrazione `0027_contribution_hidden` sopra la 0026. Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimo: 28 (barra e recap). Le proposte a `domain.md` restano non applicate.
 
 **2026-11-10 · MVP 26 implementato sul branch `feat/mvp-26-dettaglio-settimana`** (sopra il branch delle spec `docs/spec-mvp-26-28`, non ancora in PR). Spec 26, 27 e 28 confermate dal maintainer, che ha chiesto di partire dal 26. Restano CI SQL Server e collaudo organizzatori; nessun deploy. Prossimi: 28 e 27 (il 27 riusa `InfoDialog`, ora in `frontend/src/InfoDialog.tsx`).
