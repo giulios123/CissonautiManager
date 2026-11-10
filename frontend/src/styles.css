@@ -611,6 +611,29 @@ button:disabled {
   box-shadow: var(--shadow-overlay);
 }
 
+[role="dialog"].dialog-wide {
+  width: min(100%, 40rem);
+  max-width: none;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* A count in a table that opens the list behind it: looks like a link, works as a button. */
+button.number {
+  min-width: 2.75rem;
+  padding: 0.25rem 0.5rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+  background: transparent;
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+button.number:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+  transform: none;
+}
+
 a.button {
   display: inline-flex;
   align-items: center;
