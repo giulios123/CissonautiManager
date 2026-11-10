@@ -42,6 +42,16 @@ def test_add_edit_and_remove(member, db):
     assert member.get("/api/me").json()["contributions"] == []
 
 
+def test_a_skill_i_look_for_is_a_fourth_kind(member):
+    created = member.post(
+        "/api/me/contributions", json={"kind": "wanted_skill", "title": "Chi sa fare video?"}
+    )
+    assert created.status_code == 201
+    assert created.json()["kind"] == "wanted_skill"
+    kinds = [c["kind"] for c in member.get("/api/me").json()["contributions"]]
+    assert kinds == ["wanted_skill"]
+
+
 def test_many_contributions_are_allowed(member):
     for title in ("Uno", "Due", "Tre"):
         member.post("/api/me/contributions", json=dict(TALK, title=title))

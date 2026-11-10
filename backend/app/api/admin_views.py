@@ -552,12 +552,17 @@ class ContributionOut(BaseModel):
     created_at: datetime
 
 
-KIND_LABELS = {"talk": "Talk", "topic": "Tema per l'unconference", "skill": "Competenza"}
+KIND_LABELS = {
+    "talk": "Talk",
+    "topic": "Tema per l'unconference",
+    "skill": "Competenza",
+    "wanted_skill": "Competenza cercata",
+}
 
 
 @router.get("/contributions", response_model=None)
 def contributions_view(
-    kind: Literal["talk", "topic", "skill"] | None = None,
+    kind: Literal["talk", "topic", "skill", "wanted_skill"] | None = None,
     fmt: Format = Query(default="json", alias="format"),
     db: Session = Depends(get_db),
     now: datetime = Depends(get_now),

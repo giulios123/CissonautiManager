@@ -113,6 +113,7 @@ LABELS_EN: dict[str, str] = {
     "Talk": "Talk",
     "Tema per l'unconference": "Unconference topic",
     "Competenza": "Skill",
+    "Competenza cercata": "Skill wanted",
     # --- payments to review
     "Scaduta con pagamenti registrati": "Expired with recorded payments",
     "Confermata con una differenza da versare": "Confirmed with a difference to pay",
@@ -154,6 +155,7 @@ LABELS_EN: dict[str, str] = {
     "Contributi": "Contributions",
     "Temi per l'unconference": "Unconference topics",
     "Competenze": "Skills",
+    "Competenze cercate": "Skills wanted",
     "Lista d'attesa": "Waitlist",
     "Ancora in lista": "Still waiting",
     "Promossi": "Promoted",

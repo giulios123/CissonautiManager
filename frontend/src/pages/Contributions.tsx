@@ -8,6 +8,7 @@ export const KIND_KEYS: Record<Contribution["kind"], MessageKey> = {
   talk: "contrib.talk",
   topic: "contrib.topic",
   skill: "contrib.skill",
+  wanted_skill: "contrib.wantedSkill",
 };
 export const kindLabel = (kind: Contribution["kind"]) => tNow(KIND_KEYS[kind]);
 

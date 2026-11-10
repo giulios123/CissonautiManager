@@ -9,7 +9,7 @@ import { CsvButton } from "./CsvButton";
 
 type Row = {
   id: number;
-  kind: "talk" | "topic" | "skill";
+  kind: "talk" | "topic" | "skill" | "wanted_skill";
   title: string;
   description: string | null;
   booking_id: number;

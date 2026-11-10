@@ -19,7 +19,12 @@ DIET_LABELS = {
     "vegan": "vegano",
     "none": "non indicato",
 }
-CONTRIBUTION_LABELS = {"talk": "Talk", "topic": "Temi per l'unconference", "skill": "Competenze"}
+CONTRIBUTION_LABELS = {
+    "talk": "Talk",
+    "topic": "Temi per l'unconference",
+    "skill": "Competenze",
+    "wanted_skill": "Competenze cercate",
+}
 
 
 def header() -> list[str]:

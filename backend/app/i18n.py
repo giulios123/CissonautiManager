@@ -439,8 +439,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "This date is not part of the edition.",
     },
     "contribution.invalid_kind": {
-        "it": "Scegli se è un talk, un tema o una competenza",
-        "en": "Choose whether it is a talk, a topic or a skill",
+        "it": "Scegli se è un talk, un tema, una competenza offerta o una cercata",
+        "en": "Choose whether it is a talk, a topic, a skill you offer or one you look for",
     },
     "contribution.not_found": {"it": "Contributo non trovato", "en": "Contribution not found"},
     # --- waitlist (participant)

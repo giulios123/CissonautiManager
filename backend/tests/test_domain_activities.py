@@ -104,6 +104,8 @@ def test_an_activity_with_people_cannot_be_deleted():
         ("talk", "Macchine", None),
         ("topic", "x", None),
         ("skill", "  ", "title_required"),
+        ("wanted_skill", "Saldatura", None),
+        ("wanted_skill", "  ", "title_required"),
         ("song", "x", "invalid_kind"),
     ],
 )

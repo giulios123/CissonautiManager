@@ -60,7 +60,8 @@ DIETS = (DIET_OMNIVORE, DIET_VEGETARIAN, DIET_VEGAN)
 CONTRIB_TALK = "talk"
 CONTRIB_TOPIC = "topic"  # a theme for the unconference
 CONTRIB_SKILL = "skill"
-CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL)
+CONTRIB_WANTED_SKILL = "wanted_skill"  # a skill the person is looking for
+CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL, CONTRIB_WANTED_SKILL)
 
 # Why a waitlist entry was closed. Entries are never deleted: the history stays.
 CLOSE_PROMOTED = "promoted"  # the seat went to this person
