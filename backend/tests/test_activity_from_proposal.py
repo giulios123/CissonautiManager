@@ -293,3 +293,106 @@ def test_other_proposals_keep_their_activities(
     db.expire_all()
     assert db.get(Activity, ids[0]).source_contribution_id is None
     assert db.get(Activity, ids[1]).source_contribution_id == ids[2]
+
+
+def test_the_contributions_view_lists_the_activities_created(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    talk = proposal(db, ada, now=clock())
+    proposal(db, ada, title="Senza attività", now=clock())
+    admin_client.post(URL, json={**FORM, "source_contribution_id": talk.id})
+    admin_client.post(
+        URL,
+        json={
+            **FORM,
+            "date": "2026-07-13",
+            "title_it": "Prima",
+            "title_en": "First",
+            "source_contribution_id": talk.id,
+        },
+    )
+    rows = {r["title"]: r for r in admin_client.get("/api/admin/views/contributions").json()}
+    assert [
+        (a["title"], a["date"], a["period"]) for a in rows["Macchine analitiche"]["activities"]
+    ] == [
+        ("Prima", "2026-07-13", "morning"),
+        ("Escursione", "2026-07-14", "morning"),
+    ]
+    assert rows["Senza attività"]["activities"] == []
+
+
+def test_the_contributions_view_uses_the_title_of_the_language_in_use(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    talk = proposal(db, ada, now=clock())
+    admin_client.post(URL, json={**FORM, "source_contribution_id": talk.id})
+    english = admin_client.get("/api/admin/views/contributions", headers={"Accept-Language": "en"})
+    assert english.json()[0]["activities"][0]["title"] == "Hike"
+
+
+def test_the_contributions_csv_has_a_column_with_the_activities(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    import csv
+    import io
+
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    talk = proposal(db, ada, now=clock())
+    proposal(db, ada, title="Senza attività", now=clock())
+    admin_client.post(URL, json={**FORM, "source_contribution_id": talk.id})
+    admin_client.post(
+        URL,
+        json={
+            **FORM,
+            "date": "2026-07-13",
+            "title_it": "Prima",
+            "title_en": "First",
+            "source_contribution_id": talk.id,
+        },
+    )
+    response = admin_client.get("/api/admin/views/contributions?format=csv")
+    rows = list(csv.reader(io.StringIO(response.content.decode("utf-8-sig")), delimiter=";"))
+    assert rows[0][-1] == "Attività create"
+    by_title = {r[1]: r[-1] for r in rows[1:]}
+    assert by_title == {"Macchine analitiche": "Prima; Escursione", "Senza attività": ""}
+
+
+def test_the_links_are_read_with_a_single_query(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    for number in range(4):
+        source = proposal(db, ada, title=f"Proposta {number}", now=clock())
+        admin_client.post(URL, json={**FORM, "source_contribution_id": source.id})
+    statements: list[str] = []
+
+    def record(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    event.listen(Engine, "before_cursor_execute", record)
+    try:
+        admin_client.get("/api/admin/views/contributions")
+    finally:
+        event.remove(Engine, "before_cursor_execute", record)
+    on_activity = [s for s in statements if "FROM activity" in s and "source_contribution_id" in s]
+    assert len(on_activity) == 1
+
+
+def test_participants_never_receive_the_source(
+    admin_client, client, outbox, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 14)])
+    talk = proposal(db, ada, now=clock())
+    admin_client.post(URL, json={**FORM, "source_contribution_id": talk.id})
+    login(client, outbox, "ada@example.com")
+    for path in ("/api/me", "/api/me/proposals"):
+        response = client.get(path)
+        assert response.status_code in (200, 403), path
+        text = response.text
+        assert "source_title" not in text and "source_contribution" not in text, path
+        assert "Macchine analitiche" not in text.replace('"title":"Macchine analitiche"', ""), path

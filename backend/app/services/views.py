@@ -1,6 +1,6 @@
 """Read models behind the admin views: who is present, and what needs a look."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 
 from sqlalchemy import select
@@ -40,6 +40,7 @@ from app.models import (
 )
 from app.services import edition as edition_service
 from app.services import guest_payments
+from app.services.activities import activity_sort_key
 from app.services.payments import active_payments, paid_total
 from app.services.seats import expire_overdue
 
@@ -328,6 +329,8 @@ class ContributionRow:
     active: bool
     created_at: datetime
     hidden: bool = False
+    # Activities created from this proposal (MVP 29), in programme order.
+    activities: tuple[Activity, ...] = ()
 
 
 def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> list[ContributionRow]:
@@ -362,7 +365,20 @@ def contribution_rows(db: Session, now: datetime, kind: str | None = None) -> li
                 )
             )
     rows.sort(key=lambda r: (not r.active, r.created_at, r.id))
-    return rows
+    # One query for all the links, not one per proposal.
+    linked: dict[int, list[Activity]] = {}
+    if rows:
+        for activity in db.scalars(
+            select(Activity).where(
+                Activity.edition_id == edition.id,
+                Activity.source_contribution_id.in_([r.id for r in rows]),
+            )
+        ):
+            linked.setdefault(activity.source_contribution_id, []).append(activity)
+    return [
+        replace(r, activities=tuple(sorted(linked.get(r.id, []), key=activity_sort_key)))
+        for r in rows
+    ]
 
 
 @dataclass(frozen=True)

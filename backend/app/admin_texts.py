@@ -99,6 +99,7 @@ LABELS_EN: dict[str, str] = {
     "Descrizione": "Description",
     "Proposto il": "Proposed on",
     "Nascosta agli altri": "Hidden from the others",
+    "Attività create": "Activities created",
     "Sì": "Yes",
     "Motivo": "Reason",
     "Fascia": "Time slot",

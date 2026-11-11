@@ -16,7 +16,7 @@ from app.deps import get_now, require_admin
 from app.domain.meals import diet_counts, meal_counts_by_day
 from app.domain.presence import presence_by_slot, week_summary
 from app.i18n import current_locale, t, tr
-from app.models import MEAL_DINNER, MEAL_LUNCH
+from app.models import MEAL_DINNER, MEAL_LUNCH, Activity
 from app.services import edition as edition_service
 from app.services import report_export
 from app.services import views as views_service
@@ -541,6 +541,15 @@ def week_detail(
     )
 
 
+class LinkedActivityOut(BaseModel):
+    """An activity created from a proposal (MVP 29)."""
+
+    id: int
+    title: str
+    date: date
+    period: str
+
+
 class ContributionOut(BaseModel):
     id: int
     kind: str
@@ -554,6 +563,7 @@ class ContributionOut(BaseModel):
     active: bool
     created_at: datetime
     hidden: bool = False
+    activities: list[LinkedActivityOut] = []
 
 
 KIND_LABELS = {
@@ -583,6 +593,7 @@ def contributions_view(
             "Stato",
             "Proposto il",
             "Nascosta agli altri",
+            "Attività create",
         ]
         csv_rows = [
             [
@@ -595,11 +606,30 @@ def contributions_view(
                 status_label(r.status),
                 r.created_at,
                 tr("Sì" if r.hidden else "No"),
+                "; ".join(_activity_title(a) for a in r.activities),
             ]
             for r in rows
         ]
         return csv_response(csv_filename("contributi", now), header, csv_rows)
-    return [ContributionOut(**vars(r)) for r in rows]
+    return [
+        ContributionOut(
+            **{
+                **vars(r),
+                "activities": [
+                    LinkedActivityOut(
+                        id=a.id, title=_activity_title(a), date=a.date, period=a.period
+                    )
+                    for a in r.activities
+                ],
+            }
+        )
+        for r in rows
+    ]
+
+
+def _activity_title(activity: Activity) -> str:
+    locale = current_locale()
+    return (activity.title_it if locale == "it" else activity.title_en) or activity.title
 
 
 class ReviewRowOut(BaseModel):
