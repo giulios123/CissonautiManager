@@ -237,3 +237,59 @@ def test_a_race_between_two_saves_returns_the_winner(admin_client, db, edition, 
     assert again.status_code == 200
     assert again.json()["id"] == first.json()["id"]
     assert count(db) == 1
+
+
+def _converted(admin_client, db, source):
+    created = admin_client.post(URL, json={**FORM, "source_contribution_id": source.id}).json()
+    return db.get(Activity, created["id"])
+
+
+def test_the_activity_stays_when_the_author_deletes_the_proposal(
+    admin_client, client, outbox, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    activity = _converted(admin_client, db, source)
+    login(client, outbox, "ada@example.com")
+    assert client.delete(f"/api/me/contributions/{source.id}").status_code == 204
+    db.expire_all()
+    activity = db.get(Activity, activity.id)
+    assert activity.source_contribution_id is None
+    assert activity.source_title == "Macchine analitiche"
+    detail = admin_client.get(f"{URL}/{activity.id}").json()
+    assert detail["source"] == {"contribution_id": None, "title": "Macchine analitiche"}
+
+
+def test_the_activity_stays_when_the_booking_is_removed(
+    admin_client, client, outbox, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    other = proposal(db, ada, title="Altro", now=clock())
+    activity = _converted(admin_client, db, source)
+    ids = (source.id, other.id, activity.id)
+    login(client, outbox, "ada@example.com")
+    assert client.post("/api/me/booking/cancel").json() == {"outcome": "removed"}
+    db.expire_all()
+    assert db.get(Contribution, ids[0]) is None
+    assert db.get(Contribution, ids[1]) is None
+    activity = db.get(Activity, ids[2])
+    assert activity.source_contribution_id is None
+    assert activity.source_title == "Macchine analitiche"
+
+
+def test_other_proposals_keep_their_activities(
+    admin_client, client, outbox, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    bob = make_booking(make_participant("bob@example.com", first_name="Bob"), [slot(db, 13)])
+    ada_proposal = proposal(db, ada, now=clock())
+    bob_proposal = proposal(db, bob, title="Saldatura", now=clock())
+    ada_activity = _converted(admin_client, db, ada_proposal)
+    bob_activity = _converted(admin_client, db, bob_proposal)
+    ids = (ada_activity.id, bob_activity.id, bob_proposal.id)
+    login(client, outbox, "ada@example.com")
+    client.post("/api/me/booking/cancel")
+    db.expire_all()
+    assert db.get(Activity, ids[0]).source_contribution_id is None
+    assert db.get(Activity, ids[1]).source_contribution_id == ids[2]

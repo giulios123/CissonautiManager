@@ -12,7 +12,7 @@ from app.models import CONTRIBUTION_KINDS, ROLE_ADMIN, Booking, Contribution, Pa
 from app.services import audit
 from app.services import consents as consent_service
 from app.services import edition as edition_service
-from app.services.booking_changes import NotEditable, get_current_booking
+from app.services.booking_changes import NotEditable, detach_activities, get_current_booking
 from app.services.seats import expire_overdue
 
 
@@ -82,7 +82,9 @@ def update(
 
 
 def remove(db: Session, participant: Participant, contribution_id: int) -> None:
-    db.delete(_own(db, participant, contribution_id))
+    contribution = _own(db, participant, contribution_id)
+    detach_activities(db, [contribution.id])
+    db.delete(contribution)
     db.commit()
 
 
