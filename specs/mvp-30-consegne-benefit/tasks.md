@@ -1,7 +1,7 @@
 # MVP 30 · Task
 
 - [x] **T30-1** Regola `is_entitled` in `domain/benefits.py`. Test (tabella): interno non pagante; ordinario con quota esentata; versato netto uguale, superiore e inferiore alla quota base; quota base 0 senza esenzione; rimborso che porta il netto sotto la base; prenotazione in attesa, scaduta, disdetta, rimborsata.
-- [ ] **T30-2** Migrazione `0029_benefit_delivery` e modello. Test: upgrade/downgrade su SQLite, indici filtrati (una sola consegna attiva, ma ammessa una nuova dopo l'annullo), SQL compilato per SQL Server.
+- [x] **T30-2** Migrazione `0029_benefit_delivery` e modello. Test: upgrade/downgrade su SQLite, indici filtrati (una sola consegna attiva, ma ammessa una nuova dopo l'annullo), SQL compilato per SQL Server.
 - [ ] **T30-3** Servizio `benefit_deliveries`: elenco, `deliver`, `annul`, cronologia. Test: consegna e doppio invio con stessa chiave, due admin in corsa (una sola attiva), persona senza diritto 422, benefit ritirato 422, annullo con motivo e riconsegna, annullo ripetuto senza nuove voci, diritto perso dopo la consegna (resta, «senza diritto attuale»), consegna che sopravvive alla rimozione della prenotazione, un benefit di un'altra edizione.
 - [ ] **T30-4** API admin e CSV. Test: 401/403, ricerca, filtri di stato, contatori, payload senza email/telefono/allergie/importi, CSV uguale all'elenco e intestazioni per lingua, nessuna consegna fittizia per un'edizione senza catalogo.
 - [ ] **T30-5** Frontend `AdminDeliveries` con voce di menu e rotta. Test: scelta del benefit, «Consegna» e doppio clic = una richiesta, annullo con motivo obbligatorio e focus, marcatura «Senza diritto attuale», stato vuoto senza catalogo, errore con «Riprova», ricerca e filtri.
