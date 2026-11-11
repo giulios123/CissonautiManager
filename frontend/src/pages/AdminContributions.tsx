@@ -82,7 +82,10 @@ export function AdminContributions() {
   const [working, setWorking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const clickedRef = useRef<HTMLButtonElement | null>(null);
-  const [converting, setConverting] = useState<Row | null>(null);
+  // Each opening of the form has its own number: a save that completes late must not close a
+  // form opened afterwards.
+  const [converting, setConverting] = useState<{ row: Row; opening: number } | null>(null);
+  const openings = useRef(0);
   const [created, setCreated] = useState(false);
 
   const load = useCallback(() => {
@@ -232,7 +235,8 @@ export function AdminContributions() {
                         onClick={(event) => {
                           clickedRef.current = event.currentTarget;
                           setCreated(false);
-                          setConverting(row);
+                          openings.current += 1;
+                          setConverting({ row, opening: openings.current });
                         }}
                       >
                         {t("contrib.createActivity")}
@@ -252,13 +256,14 @@ export function AdminContributions() {
       )}
       {converting && (
         <CreateActivityDialog
-          row={converting}
+          row={converting.row}
           returnFocusTo={clickedRef}
           onClose={() => setConverting(null)}
           onSaved={async () => {
-            setConverting(null);
+            const { opening } = converting;
             setCreated(true);
             load();
+            setConverting((current) => (current?.opening === opening ? null : current));
           }}
         />
       )}

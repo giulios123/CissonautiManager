@@ -156,6 +156,32 @@ describe("creating an activity from a proposal", () => {
     expect(posts).toHaveLength(1);
   });
 
+  it("does not close a form opened later when an earlier save completes", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const posts = setup({ gate });
+    await open();
+    let dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(within(dialog).getByLabelText("Giorno")).toBeInTheDocument());
+    await fillEnglish(dialog);
+    await save(dialog);
+    expect(posts).toHaveLength(1);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Annulla" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    await open();
+    dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(within(dialog).getByLabelText("Giorno")).toBeInTheDocument());
+    await userEvent.type(within(dialog).getByLabelText("Titolo · EN"), "Second draft");
+    release();
+    await screen.findByText("Attività creata.");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(within(screen.getByRole("dialog")).getByLabelText("Titolo · EN")).toHaveValue(
+      "Second draft",
+    );
+    expect(posts).toHaveLength(1);
+  });
+
   it("retries with the same key after an error, and uses a new key for a new conversion", async () => {
     const posts = setup({ failFirst: true });
     await open();
