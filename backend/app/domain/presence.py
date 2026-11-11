@@ -5,7 +5,7 @@ afternoon of a day is present that evening too, even if they did not book the ev
 """
 
 from collections import Counter, defaultdict
-from collections.abc import Collection, Iterable
+from collections.abc import Callable, Collection, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
 
@@ -78,3 +78,40 @@ def week_summary(rows: Iterable[Presence], days: Iterable[date]) -> list[DaySumm
             )
         )
     return summaries
+
+
+def event_today(today: date, start: date | None, end: date | None) -> date | None:
+    """`today` while the edition is running (both ends included), otherwise None."""
+    if start is None or end is None or not start <= today <= end:
+        return None
+    return today
+
+
+def useful_day_order(
+    days: Iterable[date], today: date, start: date | None, end: date | None
+) -> list[date]:
+    """The days in the order that is useful while the event runs: today, then the days to come,
+    then the past ones, each group in chronological order. Before and after the event, and when
+    the edition has no dates, it is simply chronological. Duplicates collapse."""
+    ordered = sorted(set(days))
+    if event_today(today, start, end) is None:
+        return ordered
+    return (
+        [d for d in ordered if d == today]
+        + [d for d in ordered if d > today]
+        + [d for d in ordered if d < today]
+    )
+
+
+def in_useful_order[T](
+    items: Sequence[T],
+    day_of: Callable[[T], date],
+    today: date,
+    start: date | None,
+    end: date | None,
+) -> list[T]:
+    """`items` (one per day) reordered like `useful_day_order`; the content is not touched."""
+    position = {
+        d: i for i, d in enumerate(useful_day_order([day_of(i) for i in items], today, start, end))
+    }
+    return sorted(items, key=lambda item: position[day_of(item)])

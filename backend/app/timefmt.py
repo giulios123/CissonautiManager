@@ -5,6 +5,12 @@ from app.i18n import current_locale, normalize_locale
 
 ROME = ZoneInfo("Europe/Rome")
 
+
+def rome_today(now: datetime) -> date:
+    """The calendar day in Rome at `now` (UTC), whatever the timezone of the server or browser."""
+    return to_rome(now).date()
+
+
 _WEEKDAYS = {
     "it": ["lun", "mar", "mer", "gio", "ven", "sab", "dom"],
     "en": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
