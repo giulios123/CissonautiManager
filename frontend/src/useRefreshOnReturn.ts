@@ -14,8 +14,15 @@ function interacting(): boolean {
  * Reload a view when the browser tab becomes visible again, so a new day moves to the top without
  * a manual reload. Nothing is reloaded (nor reordered) while a dialog or editor is open, a field
  * has the focus, or `blocked()` says so: the refresh is skipped and the next return tries again.
+ *
+ * `load` receives a `shouldApply()` check: it must call it when the answer arrives and drop the
+ * answer when it is false, because the organiser may have opened a dialog or editor while the
+ * request was slow. A dropped answer is simply retried on the next return.
  */
-export function useRefreshOnReturn(load: () => unknown, blocked?: () => boolean): void {
+export function useRefreshOnReturn(
+  load: (shouldApply: () => boolean) => unknown,
+  blocked?: () => boolean,
+): void {
   const latest = useRef({ load, blocked });
   useEffect(() => {
     latest.current = { load, blocked };
@@ -23,9 +30,9 @@ export function useRefreshOnReturn(load: () => unknown, blocked?: () => boolean)
   useEffect(() => {
     function onChange() {
       if (document.visibilityState !== "visible") return;
-      const { load: reload, blocked: isBlocked } = latest.current;
-      if (isBlocked?.() || interacting()) return;
-      void reload();
+      const free = () => !(latest.current.blocked?.() || interacting());
+      if (!free()) return;
+      void latest.current.load(() => free() && document.visibilityState === "visible");
     }
     document.addEventListener("visibilitychange", onChange);
     return () => document.removeEventListener("visibilitychange", onChange);

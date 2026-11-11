@@ -35,13 +35,17 @@ export function AdminWeek() {
   );
   const clickedRef = useRef<HTMLButtonElement | null>(null);
 
-  const load = useCallback(() => {
+  // `shouldApply` is given by the refresh on return: an answer that arrives while a dialog is
+  // open is dropped, so the days never move under the organiser.
+  const load = useCallback((shouldApply?: () => boolean) => {
     api<Week>("/api/admin/views/week")
-      .then(setWeek)
+      .then((data) => {
+        if (!shouldApply || shouldApply()) setWeek(data);
+      })
       .catch(() => setFailed(true));
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => load(), [load]);
   // A dialog open on a number is never closed or reloaded under the organiser.
   useRefreshOnReturn(load, () => open !== null);
 

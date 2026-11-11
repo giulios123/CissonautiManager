@@ -59,9 +59,10 @@ export function AdminMeals() {
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(
-    () =>
+    (shouldApply?: () => boolean) =>
       api<{ days: MealDay[]; today?: string | null }>("/api/admin/views/meals")
         .then((data) => {
+          if (shouldApply && !shouldApply()) return;
           setDays(data.days);
           setToday(data.today ?? null);
         })

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, hhmm, periodLabel } from "../booking";
@@ -48,9 +48,10 @@ export function AdminSlots() {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = useCallback(
-    () =>
+    (shouldApply?: () => boolean) =>
       api<{ days: DayRow[]; today?: string | null }>("/api/admin/views/slots")
         .then((data) => {
+          if (shouldApply && !shouldApply()) return;
           setDays(data.days);
           setToday(data.today ?? null);
         })
@@ -61,10 +62,13 @@ export function AdminSlots() {
   useEffect(() => {
     void load();
   }, [load]);
-  useRefreshOnReturn(load);
+  // No automatic refresh while a removal is on its way.
+  const removing = useRef(false);
+  useRefreshOnReturn(load, () => removing.current);
 
   async function remove(person: Waiting) {
     setMessage(null);
+    removing.current = true;
     try {
       await api(`/api/admin/waitlist/${person.entry_id}`, { method: "DELETE" });
       setMessage({
@@ -77,6 +81,8 @@ export function AdminSlots() {
         ok: false,
         text: error instanceof ApiError ? error.message : t("common.retryShortly"),
       });
+    } finally {
+      removing.current = false;
     }
   }
 

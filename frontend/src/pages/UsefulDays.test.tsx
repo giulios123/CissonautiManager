@@ -48,6 +48,22 @@ function shownDays() {
     .map((cell) => cell.textContent ?? "");
 }
 
+/** Hold back the answer of the requests that match, until `release()` is called. */
+function holdBack(matches: (url: string, init?: RequestInit) => boolean) {
+  const real = globalThis.fetch;
+  let release: () => void = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const response = await real(url, init);
+      if (matches(url, init)) await gate;
+      return response;
+    }),
+  );
+  return release;
+}
+
 describe("the week in the useful order", () => {
   it("shows the days as the server sent them and marks today with a word", async () => {
     stubAdminApi((call: Call) =>
@@ -114,6 +130,79 @@ describe("the week in the useful order", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     returnToTab();
     await waitFor(() => expect(weekCalls()).toBe(2));
+  });
+});
+
+describe("a slow refresh", () => {
+  it("is dropped when a dialog opens while the answer is on its way", async () => {
+    let body = weekBody(["2026-07-13", "2026-07-14"], "2026-07-13");
+    const calls = stubAdminApi((call: Call) => {
+      if (call.url === "/api/admin/views/week") return { body };
+      if (call.url.startsWith("/api/admin/views/week/detail"))
+        return { body: { metric: "morning", date: "2026-07-13", count: 1, rows: [] } };
+      return undefined;
+    });
+    renderAt("/admin/week");
+    const button = await screen.findByRole("button", { name: /^Mattina, .*13 luglio: 1/ });
+    const weekCalls = () => calls.filter((c) => c.url === "/api/admin/views/week").length;
+    // The refresh starts, and its answer is held back.
+    const release = holdBack((url) => url === "/api/admin/views/week");
+    body = weekBody(["2026-07-14", "2026-07-13"], "2026-07-14");
+    returnToTab();
+    await waitFor(() => expect(weekCalls()).toBe(2));
+    // Meanwhile the organiser opens a dialog; the late answer must not reorder the page.
+    await userEvent.click(button);
+    await screen.findByRole("dialog");
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(shownDays()[0]).toContain("13");
+    expect(screen.queryByText("Oggi")).toBeInTheDocument();
+    expect(shownDays()[0]).toContain("Oggi");
+    // Once the dialog is closed, the next return applies the new order.
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    returnToTab();
+    await waitFor(() => expect(shownDays()[0]).toContain("14"));
+  });
+
+  it("is not started while a waitlist removal is pending", async () => {
+    const waiting = {
+      entry_id: 5,
+      position: 1,
+      first_name: "Ada",
+      last_name: "Lovelace",
+      email: "ada@example.com",
+    };
+    const slot = {
+      id: 1,
+      period: "morning",
+      start_time: "09:00:00",
+      end_time: "13:00:00",
+      capacity: 1,
+      present: 1,
+      free: 0,
+      people: [],
+      waitlist: [waiting],
+    };
+    const calls = stubAdminApi((call: Call) => {
+      if (call.url === "/api/admin/views/slots")
+        return { body: { today: null, days: [{ date: "2026-07-13", slots: [slot] }] } };
+      if (call.method === "DELETE") return { status: 204, body: null };
+      return undefined;
+    });
+    renderAt("/admin/days");
+    const remove = await screen.findByRole("button", { name: /Ada Lovelace/ });
+    const reads = () => calls.filter((c) => c.url === "/api/admin/views/slots").length;
+    const release = holdBack((_, init) => init?.method === "DELETE");
+    await userEvent.click(remove);
+    await waitFor(() => expect(calls.some((c) => c.method === "DELETE")).toBe(true));
+    returnToTab();
+    expect(reads()).toBe(1);
+    release();
+    // The page reloads by itself after the removal, and the next return works again.
+    await waitFor(() => expect(reads()).toBe(2));
+    returnToTab();
+    await waitFor(() => expect(reads()).toBe(3));
   });
 });
 
