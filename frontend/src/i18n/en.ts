@@ -576,6 +576,7 @@ export const en: Record<MessageKey, string> = {
   "slots.toVerify": ", to be verified",
   "slots.removeAria": "Remove {name} from the list",
   "slots.remove": "Remove",
+  "views.today": "Today",
   "week.title": "Week",
   "week.intro":
     "How many people are here each day. The evening includes those who booked the whole day.",

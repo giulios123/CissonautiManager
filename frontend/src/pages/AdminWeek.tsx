@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { formatDay } from "../booking";
 import { useT } from "../i18n";
+import { useRefreshOnReturn } from "../useRefreshOnReturn";
 import { CsvButton } from "./CsvButton";
 import { METRIC_LABELS, WeekDetailDialog, type WeekMetric } from "./WeekDetailDialog";
 
@@ -22,6 +23,7 @@ type Week = {
   total_lunches?: number;
   total_dinners?: number;
   total_activities?: number;
+  today?: string | null;
 };
 
 export function AdminWeek() {
@@ -40,6 +42,8 @@ export function AdminWeek() {
   }, []);
 
   useEffect(load, [load]);
+  // A dialog open on a number is never closed or reloaded under the organiser.
+  useRefreshOnReturn(load, () => open !== null);
 
   /** A number of the table: a real button that opens the list behind it. */
   function number(metric: WeekMetric, date: string | null, n: number) {
@@ -94,7 +98,15 @@ export function AdminWeek() {
               <tbody>
                 {week.days.map((day) => (
                   <tr key={day.date}>
-                    <th scope="row">{formatDay(day.date)}</th>
+                    <th scope="row">
+                      {formatDay(day.date)}
+                      {day.date === week.today && (
+                        <>
+                          {" "}
+                          <span className="tag">{t("views.today")}</span>
+                        </>
+                      )}
+                    </th>
                     <td>{number("morning", day.date, day.morning)}</td>
                     <td>{number("afternoon", day.date, day.afternoon)}</td>
                     <td>

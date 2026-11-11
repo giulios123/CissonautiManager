@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay } from "../booking";
 import { useT, type MessageKey } from "../i18n";
+import { useRefreshOnReturn } from "../useRefreshOnReturn";
 import { tNow } from "../i18n/messages";
 import { adminGuestPath, adminRegistrationPath } from "../routes";
 import { CsvButton } from "./CsvButton";
@@ -54,18 +55,23 @@ function dietSummary(diets: Record<string, number>) {
 export function AdminMeals() {
   const t = useT();
   const [days, setDays] = useState<MealDay[] | null>(null);
+  const [today, setToday] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(
     () =>
-      api<{ days: MealDay[] }>("/api/admin/views/meals")
-        .then((data) => setDays(data.days))
+      api<{ days: MealDay[]; today?: string | null }>("/api/admin/views/meals")
+        .then((data) => {
+          setDays(data.days);
+          setToday(data.today ?? null);
+        })
         .catch(() => setFailed(true)),
     [],
   );
   useEffect(() => {
     void load();
   }, [load]);
+  useRefreshOnReturn(load);
 
   return (
     <main className="wide">
@@ -84,7 +90,15 @@ export function AdminMeals() {
           {days.map((day) => (
             <div className="table-wrap" key={day.date}>
               <table>
-                <caption>{formatDay(day.date)}</caption>
+                <caption>
+                  {formatDay(day.date)}
+                  {day.date === today && (
+                    <>
+                      {" "}
+                      <span className="tag">{t("views.today")}</span>
+                    </>
+                  )}
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">{t("meals.colMeal")}</th>

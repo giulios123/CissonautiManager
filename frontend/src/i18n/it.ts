@@ -575,6 +575,7 @@ export const it = {
   "slots.toVerify": ", da verificare",
   "slots.removeAria": "Togli {name} dalla lista",
   "slots.remove": "Togli",
+  "views.today": "Oggi",
   "week.title": "Settimana",
   "week.intro":
     "Quante persone ci sono ogni giorno. La sera include chi ha prenotato l'intero giorno.",

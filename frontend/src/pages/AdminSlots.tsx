@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, hhmm, periodLabel } from "../booking";
 import { useT } from "../i18n";
+import { useRefreshOnReturn } from "../useRefreshOnReturn";
 import { adminRegistrationPath } from "../routes";
 import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
@@ -42,13 +43,17 @@ type DayRow = { date: string; slots: SlotRow[] };
 export function AdminSlots() {
   const t = useT();
   const [days, setDays] = useState<DayRow[] | null>(null);
+  const [today, setToday] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = useCallback(
     () =>
-      api<{ days: DayRow[] }>("/api/admin/views/slots")
-        .then((data) => setDays(data.days))
+      api<{ days: DayRow[]; today?: string | null }>("/api/admin/views/slots")
+        .then((data) => {
+          setDays(data.days);
+          setToday(data.today ?? null);
+        })
         .catch(() => setFailed(true)),
     [],
   );
@@ -56,6 +61,7 @@ export function AdminSlots() {
   useEffect(() => {
     void load();
   }, [load]);
+  useRefreshOnReturn(load);
 
   async function remove(person: Waiting) {
     setMessage(null);
@@ -99,7 +105,15 @@ export function AdminSlots() {
           {days.map((day) => (
             <div className="table-wrap" key={day.date}>
               <table>
-                <caption>{formatDay(day.date)}</caption>
+                <caption>
+                  {formatDay(day.date)}
+                  {day.date === today && (
+                    <>
+                      {" "}
+                      <span className="tag">{t("views.today")}</span>
+                    </>
+                  )}
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">{t("slots.colSlot")}</th>
