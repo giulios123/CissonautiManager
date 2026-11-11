@@ -620,3 +620,21 @@ def test_hidden_contributions_upgrade_keeps_existing_ones_visible(
     columns = {c["name"] for c in inspect(engine).get_columns("contribution")}
     assert not {"hidden_at", "hidden_by_id", "hidden_reason"} & columns
     engine.dispose()
+
+
+def test_activity_source_upgrade_keeps_existing_activities_unlinked(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0027_contribution_hidden")
+    engine = make_engine(database_url)
+    command.upgrade(alembic_config, "0028_activity_source")
+    inspector = inspect(engine)
+    columns = {c["name"] for c in inspector.get_columns("activity")}
+    assert {"source_contribution_id", "source_title", "request_key"} <= columns
+    assert "uq_activity_request_key" in {i["name"] for i in inspector.get_indexes("activity")}
+    command.downgrade(alembic_config, "0027_contribution_hidden")
+    inspector = inspect(engine)
+    columns = {c["name"] for c in inspector.get_columns("activity")}
+    assert not {"source_contribution_id", "source_title", "request_key"} & columns
+    assert "uq_activity_request_key" not in {i["name"] for i in inspector.get_indexes("activity")}
+    engine.dispose()
