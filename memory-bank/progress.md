@@ -1,5 +1,7 @@
 # Progress
 
+**Aggiornamento 2026-11-11:** spec 29, 30 e 31 pronte per la revisione (B1), nessuna implementazione e nessun test eseguito; D-119–D-122.
+
 **Aggiornamento 2026-11-10:** MVP 25a, 25b e 25c sono integrati in `main` con la PR #28 (le voci «implementato sul branch» qui sotto restano come storico); i collaudi di MVP 23 e 24 sono conclusi. Spec 26–28 pronte, non implementate.
 
 ## MVP 28 · Barra e recap più leggibili — implementato sul branch

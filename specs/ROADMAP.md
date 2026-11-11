@@ -176,6 +176,24 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 - **Contenuto:** barra superiore con fondo pieno e striscia d'enfasi, recap laterale con fondo bianco che scorre con la pagina.
 - **Fatto quando:** importo e pulsante restano leggibili in alto (telefono, iframe, zoom 200%, inglese) e il recap non è sticky.
 
+## MVP 29 · Da proposta ad attività
+
+- **Stato:** [spec pronta per la revisione](mvp-29-proposta-attivita/requirements.md), 6 task, migrazione 0028; nessuna implementazione.
+- **Contenuto:** «Crea attività» da un contributo con modulo precompilato (lingua dell'admin, l'altra da completare), più attività per proposta, creazione idempotente, fonte conservata anche se la proposta sparisce (copia del titolo, D-119).
+- **Fatto quando:** una proposta genera più attività indipendenti, un doppio salvataggio non duplica e modificare o cancellare la proposta non tocca le attività.
+
+## MVP 30 · Consegne dei benefit
+
+- **Stato:** [spec pronta per la revisione](mvp-30-consegne-benefit/requirements.md), 6 task, migrazione 0029; nessuna implementazione.
+- **Contenuto:** pagina admin «Consegne» sul catalogo benefit esistente; diritto per iscritti attivi interni non paganti, con quota esentata o con la base coperta; una consegna attiva per persona e benefit, annullo con motivo, storico conservato (D-120, D-121).
+- **Fatto quando:** un doppio clic non duplica, la consegna sopravvive alla perdita del diritto e nulla è visibile ai partecipanti.
+
+## MVP 31 · Giorni utili per primi
+
+- **Stato:** [spec pronta per la revisione](mvp-31-giorni-utili/requirements.md), 4 task, nessuna migrazione; da rilasciare in un giorno senza demo (da concordare).
+- **Contenuto:** viste Settimana, Giorni e slot e Pasti con oggi, poi i prossimi, poi i passati (data di Roma, aggiornamento al ritorno sulla scheda, mai con una finestra aperta); CSV cronologici (D-122).
+- **Fatto quando:** durante l'edizione il giorno di Roma è in testa e nessun numero si sposta dalla sua data.
+
 ## Revisione dopo il collaudo del 7 novembre 2026
 
 **Pianificazione aggiornata con le risposte del maintainer; nessun MVP avviato.** Il [dossier](revisione-2026-11-07/README.md) contiene spec A–E, valutazione F con stessa base dati scelta, proposta mappa A7 e riscontro promemoria D5. **Calendario D3 accantonato, mockup rimosso.** Decisioni canoniche D-050–D-075 e precisazioni D-076–D-104; [domande residue](revisione-2026-11-07/domande-aperte.md) limitate ai dettagli non risposti.
