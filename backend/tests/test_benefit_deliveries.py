@@ -330,3 +330,30 @@ def test_queries_do_not_grow_with_the_people(db, edition, bottle, people, boss, 
     finally:
         event.remove(Engine, "before_cursor_execute", record)
     assert len(statements) <= 6
+
+
+def test_a_retired_benefit_stays_in_the_catalogue_with_only_annulled_deliveries(
+    db, edition, bottle, people, boss, clock
+):
+    delivery, _ = service.deliver(db, boss, edition, people["a"][0].id, bottle.id, None, clock())
+    service.annul(db, boss, edition, delivery.id, "Errore", clock())
+    bottle.retired = True
+    db.commit()
+    items = service.catalogue(db, edition, clock())
+    assert [(i["benefit"].name_it, i["delivered"]) for i in items] == [("Borraccia", 0)]
+
+
+def test_all_annulled_deliveries_are_listed_once_the_person_has_an_active_one(
+    db, edition, bottle, people, boss, clock
+):
+    person = people["c"][0]
+    first, _ = service.deliver(db, boss, edition, person.id, bottle.id, None, clock())
+    service.annul(db, boss, edition, first.id, "Errore", clock())
+    service.deliver(db, boss, edition, person.id, bottle.id, None, clock())
+    people["c"][1].category = "ordinary"
+    db.commit()
+    row = next(
+        r for r in service.rows_for(db, edition, bottle, clock()) if r.last_name == "Charlie"
+    )
+    assert row.state == "delivered_without_entitlement"
+    assert len(row.annulled) == 1

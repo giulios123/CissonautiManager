@@ -182,6 +182,58 @@ describe("the deliveries page", () => {
     );
   });
 
+  it("exports the CSV with the same search and filter as the list", async () => {
+    setup([row(1, "Alfa")]);
+    await screen.findByRole("link", { name: "Ada Alfa" });
+    await userEvent.type(screen.getByLabelText("Cerca per nome"), " alf ");
+    await userEvent.selectOptions(screen.getByLabelText("Mostra"), "pending");
+    await waitFor(() => {
+      const href = screen.getByRole("link", { name: "Scarica CSV" }).getAttribute("href") ?? "";
+      expect(href).toContain("q=alf&");
+      expect(href).toContain("state=pending");
+    });
+  });
+
+  it("ignores a slow answer for the benefit that is no longer selected", async () => {
+    const flask = { id: 4, name: "Borsa", retired: false, delivered: 0, entitled: 3 };
+    const calls = stubAdminApi((call: Call) => {
+      if (call.url === "/api/admin/deliveries/benefits") return { body: [bottle, flask] };
+      if (call.url.includes("benefit_id=4")) return { body: [row(2, "Bravo")] };
+      if (call.url.startsWith("/api/admin/deliveries?")) return { body: [row(1, "Alfa")] };
+      return undefined;
+    });
+    // Hold back the answer for the first benefit until the second one has been shown.
+    const real = globalThis.fetch;
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let held = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes("benefit_id=3") && !held) {
+          held = true;
+          const response = await real(url, init);
+          await gate;
+          return response;
+        }
+        return real(url, init);
+      }),
+    );
+    renderAt("/admin/deliveries");
+    await screen.findByLabelText("Benefit");
+    await waitFor(() => expect(held).toBe(true));
+    await userEvent.selectOptions(screen.getByLabelText("Benefit"), "4");
+    expect(await screen.findByRole("link", { name: "Ada Bravo" })).toBeInTheDocument();
+    release();
+    await waitFor(() => expect(calls.length).toBeGreaterThan(3));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByRole("link", { name: "Ada Alfa" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ada Bravo" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Consegna «Borsa» a Ada Bravo" }),
+    ).toBeInTheDocument();
+  });
+
   it("does not offer to deliver a retired benefit", async () => {
     setup([row(1, "Alfa")], { benefits: [{ ...bottle, retired: true }] });
     expect(

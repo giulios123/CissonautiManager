@@ -32,7 +32,8 @@ export function AdminDeliveries() {
   const { t, locale } = useI18n();
   const [benefits, setBenefits] = useState<Benefit[] | null>(null);
   const [benefitId, setBenefitId] = useState<number | null>(null);
-  const [rows, setRows] = useState<Row[] | null>(null);
+  // The rows go with the benefit they were loaded for: they are shown only while it is selected.
+  const [loaded, setLoaded] = useState<{ benefitId: number; rows: Row[] } | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [failed, setFailed] = useState(false);
@@ -45,6 +46,9 @@ export function AdminDeliveries() {
   // Read synchronously: a second click can arrive before the page has re-rendered.
   const busy = useRef(false);
   const benefit = benefits?.find((item) => item.id === benefitId) ?? null;
+  const rows = loaded !== null && loaded.benefitId === benefitId ? loaded.rows : null;
+  // Only the latest list request may apply: a slow, older one must not overwrite newer rows.
+  const latest = useRef(0);
 
   const when = (value: string) =>
     new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "it-IT", {
@@ -52,6 +56,10 @@ export function AdminDeliveries() {
       timeStyle: "short",
       timeZone: "Europe/Rome",
     }).format(new Date(value));
+
+  const params = new URLSearchParams({ benefit_id: String(benefitId), state: filter });
+  if (query.trim()) params.set("q", query.trim());
+  const listQuery = params.toString();
 
   const loadBenefits = useCallback(
     () =>
@@ -68,15 +76,17 @@ export function AdminDeliveries() {
 
   const loadRows = useCallback(() => {
     if (benefitId === null) return Promise.resolve();
-    const params = new URLSearchParams({ benefit_id: String(benefitId), state: filter });
-    if (query.trim()) params.set("q", query.trim());
-    return api<Row[]>(`/api/admin/deliveries?${params}`)
-      .then((loaded) => {
-        setRows(loaded);
+    const request = ++latest.current;
+    return api<Row[]>(`/api/admin/deliveries?${listQuery}`)
+      .then((fetched) => {
+        if (request !== latest.current) return;
+        setLoaded({ benefitId, rows: fetched });
         setFailed(false);
       })
-      .catch(() => setFailed(true));
-  }, [benefitId, filter, query]);
+      .catch(() => {
+        if (request === latest.current) setFailed(true);
+      });
+  }, [benefitId, listQuery]);
 
   useEffect(() => {
     void loadBenefits();
@@ -164,10 +174,7 @@ export function AdminDeliveries() {
             {t("deliveries.benefit")}
             <select
               value={benefitId ?? ""}
-              onChange={(event) => {
-                setRows(null);
-                setBenefitId(Number(event.target.value));
-              }}
+              onChange={(event) => setBenefitId(Number(event.target.value))}
             >
               {benefits.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -206,10 +213,7 @@ export function AdminDeliveries() {
           ) : (
             <>
               <p>
-                <CsvButton
-                  path="/api/admin/deliveries"
-                  params={new URLSearchParams({ benefit_id: String(benefitId), state: filter })}
-                />
+                <CsvButton path="/api/admin/deliveries" params={params} />
               </p>
               <div className="table-wrap">
                 <table>

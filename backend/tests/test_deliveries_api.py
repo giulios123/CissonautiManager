@@ -239,3 +239,14 @@ def test_participants_never_see_benefits_or_deliveries(
     for path in ("/api/me", "/api/me/proposals"):
         text = client.get(path).text
         assert "Borraccia" not in text and "benefit_delivery" not in text, path
+
+
+def test_the_csv_filename_does_not_depend_on_the_benefit_name(admin_client, edition, people, db):
+    odd = Benefit(edition_id=edition.id, name_it='Borraccia "🍹" è', name_en="Bottle")
+    db.add(odd)
+    db.commit()
+    response = admin_client.get(f"{URL}?benefit_id={odd.id}&format=csv")
+    assert response.status_code == 200
+    header = response.headers["content-disposition"]
+    assert header.isascii()
+    assert f"-{odd.id}-" in header

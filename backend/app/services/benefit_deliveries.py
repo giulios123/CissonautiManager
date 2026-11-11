@@ -112,22 +112,24 @@ def get_benefit(db: Session, edition: Edition, benefit_id: int) -> Benefit:
 def catalogue(db: Session, edition: Edition, now: datetime) -> list[dict]:
     """The benefits to deliver, with how many are delivered and how many people are entitled.
 
-    A retired benefit shows up only when something was delivered with it."""
+    A retired benefit shows up as long as any delivery of it is on record, even an annulled one,
+    so its history stays readable; the delivered counter counts the active deliveries only."""
     entitled = len(entitled_bookings(db, edition, now))
     active: dict[int, int] = {}
+    recorded: set[int] = set()
     for delivery in db.scalars(
-        select(BenefitDelivery).where(
-            BenefitDelivery.edition_id == edition.id, BenefitDelivery.annulled_at.is_(None)
-        )
+        select(BenefitDelivery).where(BenefitDelivery.edition_id == edition.id)
     ):
-        active[delivery.benefit_id] = active.get(delivery.benefit_id, 0) + 1
+        recorded.add(delivery.benefit_id)
+        if delivery.annulled_at is None:
+            active[delivery.benefit_id] = active.get(delivery.benefit_id, 0) + 1
     result = []
     for benefit in db.scalars(
         select(Benefit)
         .where(Benefit.edition_id == edition.id)
         .order_by(Benefit.sort_order, Benefit.id)
     ):
-        if benefit.retired and not active.get(benefit.id):
+        if benefit.retired and benefit.id not in recorded:
             continue
         result.append(
             {
@@ -149,8 +151,8 @@ def rows_for(
 ) -> list[Row]:
     """The people entitled to the benefit, plus whoever has a delivery of it on record.
 
-    Someone who lost the entitlement keeps appearing while a delivery is active; with only
-    annulled deliveries they are left out."""
+    Someone who lost the entitlement keeps appearing while a delivery is active (and then all
+    their annulled deliveries are listed too); with only annulled deliveries they are left out."""
     rows: dict[int, Row] = {}
     for booking in _bookings(db, edition):
         if _entitled(booking, edition, now):
@@ -173,11 +175,12 @@ def rows_for(
         )
         .order_by(BenefitDelivery.id)
     ).all()
+    with_active = {d.participant_id for d in deliveries if d.annulled_at is None}
     bookings = None
     for delivery in deliveries:
         row = rows.get(delivery.participant_id)
         if row is None:
-            if delivery.annulled_at is not None:
+            if delivery.participant_id not in with_active:
                 continue
             if bookings is None:
                 bookings = {b.participant_id: b for b in _bookings(db, edition)}

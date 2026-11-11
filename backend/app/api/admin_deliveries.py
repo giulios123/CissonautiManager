@@ -177,9 +177,7 @@ def list_deliveries(
             ]
             for r in rows
         ]
-        return csv_response(
-            csv_filename(f"{tr('Consegne')}-{_name(benefit)}", now), header, csv_rows
-        )
+        return csv_response(csv_filename(f"{tr('Consegne')}-{benefit.id}", now), header, csv_rows)
     return [_row(r) for r in rows]
 
 
