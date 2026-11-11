@@ -638,3 +638,18 @@ def test_activity_source_upgrade_keeps_existing_activities_unlinked(
     assert not {"source_contribution_id", "source_title", "request_key"} & columns
     assert "uq_activity_request_key" not in {i["name"] for i in inspector.get_indexes("activity")}
     engine.dispose()
+
+
+def test_benefit_delivery_upgrade_adds_an_empty_register(
+    alembic_config, database_url, empty_database
+):
+    command.upgrade(alembic_config, "0028_activity_source")
+    engine = make_engine(database_url)
+    command.upgrade(alembic_config, "0029_benefit_delivery")
+    inspector = inspect(engine)
+    assert "benefit_delivery" in inspector.get_table_names()
+    indexes = {i["name"] for i in inspector.get_indexes("benefit_delivery")}
+    assert {"uq_benefit_delivery_active", "uq_benefit_delivery_request_key"} <= indexes
+    command.downgrade(alembic_config, "0028_activity_source")
+    assert "benefit_delivery" not in inspect(engine).get_table_names()
+    engine.dispose()
