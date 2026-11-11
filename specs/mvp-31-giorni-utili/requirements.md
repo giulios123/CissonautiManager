@@ -1,6 +1,6 @@
 # MVP 31 · Giorni utili per primi
 
-**Stato:** spec pronta per la revisione (B1), nessuna implementazione. P3, D2. Origine: [US-D2](../revisione-2026-11-07/d-admin-comunicazioni/requirements.md), Q-D2 e la risposta del 2026-11-11 sul perimetro (D-122). Solo presentazione: **nessuna migrazione**. Rilascio separato, in una giornata senza demo (data ancora da concordare, vedi «Domande aperte»).
+**Stato:** spec confermata il 2026-11-11 (B1), nessuna implementazione. P3, D2. Origine: [US-D2](../revisione-2026-11-07/d-admin-comunicazioni/requirements.md), Q-D2 e la risposta del 2026-11-11 sul perimetro (D-122). Solo presentazione: **nessuna migrazione**. Rilascio separato, in una giornata senza demo (data ancora da concordare, vedi «Domande aperte»).
 
 ## US-31.1 · Ordine «oggi, poi i prossimi, poi i passati»
 
