@@ -1,0 +1,239 @@
+from datetime import timedelta
+
+from sqlalchemy import func, select
+
+from app.models import (
+    STATUS_CONFIRMED,
+    Activity,
+    AuditLog,
+    Booking,
+    BookingActivity,
+    Contribution,
+    Edition,
+    Slot,
+)
+from app.services import edition as edition_service
+from tests.helpers import d
+from tests.test_auth import login
+
+URL = "/api/admin/activities"
+FORM = {
+    "title_it": "Escursione",
+    "title_en": "Hike",
+    "description_it": "Sul monte",
+    "description_en": "On the mountain",
+    "date": "2026-07-14",
+    "period": "morning",
+    "start_time": "09:30",
+    "end_time": "12:00",
+    "price_cents": 0,
+    "capacity": None,
+}
+
+
+def slot(db, day, period="morning") -> Slot:
+    return db.scalar(select(Slot).where(Slot.date == d(day), Slot.period == period))
+
+
+def proposal(db, booking, title="Macchine analitiche", kind="talk", hidden=False, now=None):
+    contribution = Contribution(
+        booking_id=booking.id,
+        kind=kind,
+        title=title,
+        description="Un talk",
+        created_at=now,
+        updated_at=now,
+        hidden_at=now if hidden else None,
+    )
+    db.add(contribution)
+    db.commit()
+    return contribution
+
+
+def count(db) -> int:
+    return db.scalar(select(func.count()).select_from(Activity))
+
+
+def test_creates_an_activity_from_a_proposal(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    response = admin_client.post(URL, json={**FORM, "source_contribution_id": source.id})
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source"] == {"contribution_id": source.id, "title": "Macchine analitiche"}
+    activity = db.get(Activity, body["id"])
+    assert (activity.source_contribution_id, activity.source_title) == (
+        source.id,
+        "Macchine analitiche",
+    )
+    log = db.scalar(select(AuditLog).where(AuditLog.action == "activity_created"))
+    assert f"Dalla proposta n. {source.id}" in log.detail
+
+
+def test_the_author_is_not_signed_up_automatically(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 14)])
+    source = proposal(db, ada, now=clock())
+    admin_client.post(URL, json={**FORM, "source_contribution_id": source.id})
+    assert db.scalar(select(func.count()).select_from(BookingActivity)) == 0
+
+
+def test_an_activity_without_a_source_has_none(admin_client, edition):
+    assert admin_client.post(URL, json=FORM).json()["source"] is None
+
+
+def test_one_proposal_can_create_more_activities(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    first = admin_client.post(
+        URL, json={**FORM, "source_contribution_id": source.id, "request_key": "key-0000-0001"}
+    )
+    second = admin_client.post(
+        URL,
+        json={
+            **FORM,
+            "date": "2026-07-15",
+            "source_contribution_id": source.id,
+            "request_key": "key-0000-0002",
+        },
+    )
+    assert (first.status_code, second.status_code) == (201, 201)
+    assert first.json()["id"] != second.json()["id"]
+    assert count(db) == 2
+
+
+def test_a_repeated_save_returns_the_same_activity(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    body = {**FORM, "source_contribution_id": source.id, "request_key": "key-0000-0001"}
+    first = admin_client.post(URL, json=body)
+    again = admin_client.post(URL, json=body)
+    assert (first.status_code, again.status_code) == (201, 200)
+    assert again.json()["id"] == first.json()["id"]
+    assert count(db) == 1
+    assert (
+        db.scalar(
+            select(func.count()).select_from(AuditLog).where(AuditLog.action == "activity_created")
+        )
+        == 1
+    )
+
+
+def test_the_first_save_wins_when_the_same_key_comes_with_other_content(admin_client, db, edition):
+    first = admin_client.post(URL, json={**FORM, "request_key": "key-0000-0001"})
+    again = admin_client.post(
+        URL, json={**FORM, "title_it": "Altro", "request_key": "key-0000-0001"}
+    )
+    assert again.status_code == 200
+    assert again.json()["id"] == first.json()["id"]
+    assert again.json()["title"] == "Escursione"
+    assert count(db) == 1
+
+
+def test_a_proposal_of_another_edition_is_refused(
+    admin_client, db, edition, make_participant, clock
+):
+    other = Edition(
+        name="Old", start_date=edition.start_date, end_date=edition.end_date, is_active=False
+    )
+    db.add(other)
+    db.commit()
+    privacy = edition_service.latest_legal_document(db, edition, "privacy")
+    disclaimer = edition_service.latest_legal_document(db, edition, "disclaimer")
+    foreign = Booking(
+        edition_id=other.id,
+        participant_id=make_participant("stranger@example.com").id,
+        status=STATUS_CONFIRMED,
+        hold_expires_at=clock() + timedelta(days=3),
+        amount_due_cents=0,
+        privacy_document_id=privacy.id,
+        privacy_accepted_at=clock(),
+        disclaimer_document_id=disclaimer.id,
+        disclaimer_accepted_at=clock(),
+    )
+    db.add(foreign)
+    db.commit()
+    source = proposal(db, foreign, now=clock())
+    response = admin_client.post(URL, json={**FORM, "source_contribution_id": source.id})
+    assert response.status_code == 404
+    assert count(db) == 0
+
+
+def test_a_missing_proposal_is_refused(admin_client, edition, db):
+    assert admin_client.post(URL, json={**FORM, "source_contribution_id": 999}).status_code == 404
+    assert count(db) == 0
+
+
+def test_a_hidden_proposal_can_still_become_an_activity(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, hidden=True, now=clock())
+    response = admin_client.post(URL, json={**FORM, "source_contribution_id": source.id})
+    assert response.status_code == 201
+
+
+def test_the_usual_checks_still_apply(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    outside = admin_client.post(
+        URL, json={**FORM, "date": "2026-08-01", "source_contribution_id": source.id}
+    )
+    missing_english = admin_client.post(
+        URL, json={**FORM, "title_en": "", "source_contribution_id": source.id}
+    )
+    assert outside.status_code == 422
+    assert missing_english.status_code == 422
+    assert count(db) == 0
+
+
+def test_editing_the_proposal_does_not_change_the_activity(
+    admin_client, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    created = admin_client.post(URL, json={**FORM, "source_contribution_id": source.id}).json()
+    source.title = "Titolo nuovo"
+    source.description = "Altro"
+    db.commit()
+    detail = admin_client.get(f"{URL}/{created['id']}").json()
+    assert detail["title"] == "Escursione"
+    assert detail["source"] == {"contribution_id": source.id, "title": "Macchine analitiche"}
+
+
+def test_participants_cannot_create_from_a_proposal(
+    client, outbox, db, edition, make_participant, make_booking, clock
+):
+    ada = make_booking(make_participant("ada@example.com"), [slot(db, 13)])
+    source = proposal(db, ada, now=clock())
+    assert client.post(URL, json={**FORM, "source_contribution_id": source.id}).status_code == 401
+    login(client, outbox, "ada@example.com")
+    assert client.post(URL, json={**FORM, "source_contribution_id": source.id}).status_code == 403
+    assert count(db) == 0
+
+
+def test_a_race_between_two_saves_returns_the_winner(admin_client, db, edition, monkeypatch):
+    from app.services import activities as activity_service
+
+    first = admin_client.post(URL, json={**FORM, "request_key": "key-0000-0001"})
+    real = activity_service.find_by_request_key
+    calls = []
+
+    def blind_the_first_lookup(db_, edition_, key):
+        calls.append(key)
+        return None if len(calls) == 1 else real(db_, edition_, key)
+
+    monkeypatch.setattr(activity_service, "find_by_request_key", blind_the_first_lookup)
+    again = admin_client.post(URL, json={**FORM, "request_key": "key-0000-0001"})
+    assert again.status_code == 200
+    assert again.json()["id"] == first.json()["id"]
+    assert count(db) == 1

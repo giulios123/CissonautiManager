@@ -33,6 +33,7 @@ from app.models import (
     Activity,
     Booking,
     BookingActivity,
+    Contribution,
     Edition,
     ExternalGuest,
     ExternalGuestActivity,
@@ -61,6 +62,10 @@ PERIOD_ORDER = {PERIOD_MORNING: 0, PERIOD_AFTERNOON: 1, PERIOD_EVENING: 2}
 
 class ActivityNotFound(Exception):
     pass
+
+
+class SourceNotFound(Exception):
+    """The proposal an activity should come from is missing or belongs to another edition."""
 
 
 class ActivityRefused(Exception):
@@ -206,12 +211,43 @@ def _check_inside(edition: Edition, day: date) -> None:
         raise ActivityRefused("outside_edition")
 
 
-def create(db: Session, admin: Participant, edition: Edition, data: ActivityData) -> Activity:
+def source_contribution(db: Session, edition: Edition, contribution_id: int) -> Contribution:
+    """A proposal of this edition (any booking status, hidden or not), or `SourceNotFound`."""
+    contribution = db.get(Contribution, contribution_id)
+    booking = db.get(Booking, contribution.booking_id) if contribution is not None else None
+    if contribution is None or booking is None or booking.edition_id != edition.id:
+        raise SourceNotFound()
+    return contribution
+
+
+def find_by_request_key(db: Session, edition: Edition, request_key: str) -> Activity | None:
+    return db.scalar(
+        select(Activity).where(
+            Activity.edition_id == edition.id, Activity.request_key == request_key
+        )
+    )
+
+
+def create(
+    db: Session,
+    admin: Participant,
+    edition: Edition,
+    data: ActivityData,
+    *,
+    source: Contribution | None = None,
+    request_key: str | None = None,
+) -> Activity:
     _check_inside(edition, data.date)
-    activity = Activity(edition_id=edition.id, **vars(data))
+    activity = Activity(edition_id=edition.id, **vars(data), request_key=request_key)
+    detail = f"Attività creata: {_describe(activity)}"
+    if source is not None:
+        # The title is copied: the proposal may change or go away, the activity stays.
+        activity.source_contribution_id = source.id
+        activity.source_title = source.title[:200]
+        detail += f". Dalla proposta n. {source.id}: «{source.title}»"
     db.add(activity)
     db.flush()
-    audit.log(db, admin, "activity_created", f"Attività creata: {_describe(activity)}")
+    audit.log(db, admin, "activity_created", detail)
     db.commit()
     return activity
 

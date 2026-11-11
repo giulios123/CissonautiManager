@@ -190,6 +190,10 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "An activity with people signed up can't be deleted",
     },
     "activity.not_found": {"it": "Attività non trovata", "en": "Activity not found"},
+    "activity.source_not_found": {
+        "it": "Proposta non trovata",
+        "en": "Proposal not found",
+    },
     # --- admins
     "admin.already": {
         "it": "Questa persona è già admin.",
