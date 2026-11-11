@@ -28,6 +28,7 @@ const row = (id: number, title: string, hidden: boolean) => ({
   status: "confermata",
   active: true,
   hidden,
+  activities: [],
 });
 
 function setup(rows: ReturnType<typeof row>[], gate?: Promise<void>) {

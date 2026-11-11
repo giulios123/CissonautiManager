@@ -72,6 +72,7 @@ describe("activities admin page", () => {
       payment_instructions: null,
       price_cents: 500,
       capacity: null,
+      request_key: expect.any(String),
     });
     expect(await screen.findByRole("link", { name: "Yoga" })).toBeInTheDocument();
   });
@@ -144,6 +145,7 @@ describe("contributions view", () => {
         last_name: "Lovelace",
         status: "confermata",
         active: true,
+        activities: [],
       },
       {
         id: 2,
@@ -155,6 +157,7 @@ describe("contributions view", () => {
         last_name: "Rossi",
         status: "scaduta",
         active: false,
+        activities: [],
       },
     ];
     const calls = stubAdminApi((call) =>

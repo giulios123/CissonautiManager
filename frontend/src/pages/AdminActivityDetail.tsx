@@ -78,6 +78,17 @@ export function AdminActivityDetail() {
         {detail.free !== null && tn("aact.freePlaces", detail.free)}
       </p>
       {detail.description && <p>{detail.description}</p>}
+      {detail.source && (
+        <p>
+          {detail.source.contribution_id === null ? (
+            t("aact.fromProposalGone", { title: detail.source.title })
+          ) : (
+            <Link to={ROUTES.adminContributions}>
+              {t("aact.fromProposal", { title: detail.source.title })}
+            </Link>
+          )}
+        </p>
+      )}
       <CollectionDetails terms={detail} />
       <p>
         <CsvButton path={`/api/admin/activities/${detail.id}`} />

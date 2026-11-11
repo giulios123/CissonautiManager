@@ -4,8 +4,11 @@ import { api, ApiError } from "../api";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { statusLabel } from "../booking";
 import { KIND_KEYS, kindLabel } from "./Contributions";
-import { useT } from "../i18n";
-import { adminRegistrationPath } from "../routes";
+import { useI18n, useT } from "../i18n";
+import { InfoDialog } from "../InfoDialog";
+import { adminActivityPath, adminRegistrationPath } from "../routes";
+import { formatDay, periodLabel } from "../booking";
+import { ActivityForm, useActivityFormSetup } from "./ActivityForm";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
@@ -19,7 +22,54 @@ type Row = {
   status: string;
   active: boolean;
   hidden: boolean;
+  activities: { id: number; title: string; date: string; period: string }[];
 };
+
+/** The activity form for one proposal: starts from its text, in the language in use. */
+function CreateActivityDialog({
+  row,
+  onSaved,
+  onClose,
+  returnFocusTo,
+}: {
+  row: Row;
+  onSaved: () => Promise<void>;
+  onClose: () => void;
+  returnFocusTo: React.RefObject<HTMLElement | null>;
+}) {
+  const t = useT();
+  const { locale } = useI18n();
+  const { days, hours } = useActivityFormSetup();
+  const text = { title: row.title, description: row.description ?? "" };
+  return (
+    <InfoDialog
+      title={t("contrib.createActivityTitle", { title: row.title })}
+      onClose={onClose}
+      returnFocusTo={returnFocusTo}
+    >
+      {days.length === 0 ? (
+        <p>{t("aact.setDatesFirst")}</p>
+      ) : (
+        <ActivityForm
+          hideHeading
+          days={days}
+          hours={hours}
+          initial={null}
+          source={{ contributionId: row.id, title: row.title }}
+          prefill={
+            locale === "it"
+              ? { title_it: text.title, description_it: text.description }
+              : { title_en: text.title, description_en: text.description }
+          }
+          onSaved={async () => {
+            await onSaved();
+          }}
+          onCancel={onClose}
+        />
+      )}
+    </InfoDialog>
+  );
+}
 
 export function AdminContributions() {
   const t = useT();
@@ -32,6 +82,8 @@ export function AdminContributions() {
   const [working, setWorking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const clickedRef = useRef<HTMLButtonElement | null>(null);
+  const [converting, setConverting] = useState<Row | null>(null);
+  const [created, setCreated] = useState(false);
 
   const load = useCallback(() => {
     const query = new URLSearchParams(kind ? { kind } : {});
@@ -95,6 +147,7 @@ export function AdminContributions() {
                   <th scope="col">{t("contrib.type")}</th>
                   <th scope="col">{t("contrib.colWho")}</th>
                   <th scope="col">{t("contrib.colVisibility")}</th>
+                  <th scope="col">{t("contrib.colActivities")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,12 +208,59 @@ export function AdminContributions() {
                         </button>
                       )}
                     </td>
+                    <td>
+                      {row.activities.length > 0 && (
+                        <>
+                          <strong>{t("contrib.activitiesCreated")}</strong>
+                          <ul>
+                            {row.activities.map((activity) => (
+                              <li key={activity.id}>
+                                <Link to={adminActivityPath(activity.id)}>{activity.title}</Link>{" "}
+                                <small>
+                                  {formatDay(activity.date)},{" "}
+                                  {periodLabel(activity.period).toLowerCase()}
+                                </small>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className="secondary"
+                        aria-label={t("contrib.createActivityFor", { title: row.title })}
+                        onClick={(event) => {
+                          clickedRef.current = event.currentTarget;
+                          setCreated(false);
+                          setConverting(row);
+                        }}
+                      >
+                        {t("contrib.createActivity")}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </>
+      )}
+      {created && (
+        <p role="status" className="notice ok">
+          {t("aact.created")}
+        </p>
+      )}
+      {converting && (
+        <CreateActivityDialog
+          row={converting}
+          returnFocusTo={clickedRef}
+          onClose={() => setConverting(null)}
+          onSaved={async () => {
+            setConverting(null);
+            setCreated(true);
+            load();
+          }}
+        />
       )}
       {hiding && (
         <ConfirmDialog

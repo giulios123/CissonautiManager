@@ -12,6 +12,8 @@ export type Activity = CollectionTerms & {
   description_en?: string | null;
   translation_missing?: boolean;
   internal_note?: string | null;
+  /** Admin only: the proposal it came from; `contribution_id` is empty once the proposal is gone. */
+  source?: { contribution_id: number | null; title: string } | null;
   date: string;
   period: "morning" | "afternoon" | "evening";
   time_label: string | null;
