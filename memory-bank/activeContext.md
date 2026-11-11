@@ -2,7 +2,9 @@
 
 ## Ora
 
-**2026-11-11 · MVP 30 implementato sul branch `feat/mvp-30-consegne-benefit`** (sopra il 29, PR #32; il 30 non è ancora in PR). Migrazione `0029_benefit_delivery` sopra la 0028. Pagina «Consegne», regola di diritto D-121, una consegna attiva per persona e benefit (D-120), annullo con motivo, consegna che sopravvive alla perdita del diritto. Restano CI SQL Server, prova visiva e collaudo organizzatori; nessun deploy. Prossimo: 31 (giorni utili per primi).
+**2026-11-11 · MVP 31 implementato sul branch `feat/mvp-31-giorni-utili`** (sopra il 30, PR #33; il 31 non è ancora in PR). Nessuna migrazione. Viste Settimana, Giorni e slot e Pasti con oggi, poi i prossimi, poi i passati (data di Roma), ricarica al ritorno sulla scheda mai con finestre aperte, badge «Oggi», CSV cronologici (D-122). Restano prova visiva, collaudo organizzatori e la giornata senza demo per il rilascio. Con il 31 finisce il piano 17–31 (resta il merge della catena #32, #33 e della PR del 31).
+
+**2026-11-11 · MVP 30 implementato sul branch `feat/mvp-30-consegne-benefit`** (sopra il 29, PR #33 verso `main`, che porta anche i commit del 29 finché la #32 non è unita). Migrazione `0029_benefit_delivery` sopra la 0028. Pagina «Consegne», regola di diritto D-121, una consegna attiva per persona e benefit (D-120), annullo con motivo, consegna che sopravvive alla perdita del diritto. Restano CI SQL Server, prova visiva e collaudo organizzatori; nessun deploy. Prossimo: 31 (giorni utili per primi).
 
 **2026-11-11 · MVP 29 implementato sul branch `feat/mvp-29-proposta-attivita`** (sopra `docs/spec-mvp-29-31` e lo stack 26–28; non ancora in PR). Migrazione `0028_activity_source` sopra la 0027. «Crea attività» da un contributo con modulo precompilato, più attività per proposta, creazione idempotente con `request_key`, fonte scollegata dal servizio con copia del titolo. Restano CI SQL Server, prova visiva e collaudo organizzatori; nessun deploy. Prossimo: 30 (consegne dei benefit).
 
