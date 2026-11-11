@@ -18,3 +18,5 @@ Se l'edizione non è salvata, canali e testi legali non si possono ancora config
 # Composizione della quota
 
 Con la conferma basata sulla sola quota attiva, le Impostazioni consentono di includere nessun pasto oppure il primo pasto selezionato pagato all’organizzazione. L’anteprima mostra pasto coperto, quota, totale, versamenti, saldo o credito e stato prima e dopo. Solo dopo averla controllata puoi applicare il cambio; se i dati sono cambiati, ricalcola l’anteprima. I pasti pagati direttamente al fornitore restano a carico della persona. Il catalogo benefit permette di aggiungere, rinominare e ritirare le voci IT/EN per edizione; non assegna ancora idoneità né registra consegne.
+
+I benefit del catalogo si consegnano dalla pagina **Consegne**: lì vedi chi ha diritto e segni ciò che hai dato. Ritirare un benefit non cancella le consegne già registrate.
