@@ -4,6 +4,10 @@
 
 **Aggiornamento 2026-11-10:** MVP 25a, 25b e 25c sono integrati in `main` con la PR #28 (le voci «implementato sul branch» qui sotto restano come storico); i collaudi di MVP 23 e 24 sono conclusi. Spec 26–28 pronte, non implementate.
 
+## MVP 30 · Consegne dei benefit — implementato sul branch
+
+Branch `feat/mvp-30-consegne-benefit` (sopra il 29; spec in `specs/mvp-30-consegne-benefit/`). Migrazione additiva `0029_benefit_delivery` (tabella legata a persona, benefit ed edizione; indici filtrati per una sola consegna attiva e per la chiave di richiesta); regola pura `domain/benefits.py` (D-121); servizio `benefit_deliveries` (idempotente, corsa gestita, annullo con motivo, cronologia in `AuditLog`); API admin `api/admin_deliveries.py` con CSV; pagina `AdminDeliveries` con voce di menu; guide admin IT/EN. Test: `test_domain_benefits.py`, `test_benefit_deliveries.py`, `test_deliveries_api.py`, `test_migrations.py`, `AdminDeliveries.test.tsx`. **Non verificato:** CI su SQL Server (indici filtrati della 0029), prova visiva su telefono, collaudo organizzatori (`test-manuali.md`). Nessun deploy.
+
 ## MVP 29 · Da proposta ad attività — implementato sul branch
 
 Branch `feat/mvp-29-proposta-attivita` (spec in `specs/mvp-29-proposta-attivita/`). Migrazione additiva `0028_activity_source` (`source_contribution_id`, `source_title`, `request_key` con indice filtrato); `POST /api/admin/activities` con `source_contribution_id` e `request_key` (idempotente, 404 per proposte di un'altra edizione); `detach_activities` prima di cancellare contributi o prenotazione; vista e CSV dei contributi con le attività collegate (una query); `ActivityForm` estratto e riusato nella modale «Crea attività»; riga «Dalla proposta» nella scheda; guide admin IT/EN. Test: `test_activity_from_proposal.py` (21), `test_migrations.py`, `AdminProposalActivity.test.tsx`. **Non verificato:** CI su SQL Server (indice filtrato e FK della 0028), prova visiva in browser, collaudo organizzatori (`test-manuali.md`). Nessun deploy.

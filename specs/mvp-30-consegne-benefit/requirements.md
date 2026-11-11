@@ -1,6 +1,6 @@
 # MVP 30 · Consegne dei benefit
 
-**Stato:** spec confermata il 2026-11-11 (B1), nessuna implementazione. P3, C5. Origine: [US-C5](../revisione-2026-11-07/c-attivita-logistica/requirements.md), Q-C3 e le risposte del 2026-11-11 (D-120, D-121). Riusa il catalogo dei benefit dell'MVP 23 (`Benefit`, già in Impostazioni) e le categorie e esenzioni dell'MVP 25c. Una migrazione additiva (`0029`, dopo la `0028` dell'MVP 29; se il 29 non è ancora fatto, il numero successivo alla testa).
+**Stato:** spec confermata il 2026-11-11 e implementata sul branch `feat/mvp-30-consegne-benefit` (sopra il 29), 6 task completati. Restano CI SQL Server, prova visiva e collaudo organizzatori. Nessun deploy. P3, C5. Origine: [US-C5](../revisione-2026-11-07/c-attivita-logistica/requirements.md), Q-C3 e le risposte del 2026-11-11 (D-120, D-121). Riusa il catalogo dei benefit dell'MVP 23 (`Benefit`, già in Impostazioni) e le categorie e esenzioni dell'MVP 25c. Una migrazione additiva (`0029`, dopo la `0028` dell'MVP 29; se il 29 non è ancora fatto, il numero successivo alla testa).
 
 ## US-30.1 · Chi ha diritto ai benefit (D-121)
 
