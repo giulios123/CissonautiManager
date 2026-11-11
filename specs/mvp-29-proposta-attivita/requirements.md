@@ -1,6 +1,6 @@
 # MVP 29 · Da proposta ad attività
 
-**Stato:** spec confermata il 2026-11-11 (B1), nessuna implementazione. P3, C4. Origine: [US-C4](../revisione-2026-11-07/c-attivita-logistica/requirements.md) e la risposta del 2026-11-11 su Q-C4 (D-119). Dipende dai contributi (MVP 6, quarto tipo dal 27) e dai testi attività IT/EN (MVP 24). Una migrazione additiva (`0028`, dopo la `0027`).
+**Stato:** spec confermata il 2026-11-11 e implementata sul branch `feat/mvp-29-proposta-attivita` (sopra il branch delle spec), 6 task completati. Restano CI SQL Server, prova visiva e collaudo organizzatori. Nessun deploy. P3, C4. Origine: [US-C4](../revisione-2026-11-07/c-attivita-logistica/requirements.md) e la risposta del 2026-11-11 su Q-C4 (D-119). Dipende dai contributi (MVP 6, quarto tipo dal 27) e dai testi attività IT/EN (MVP 24). Una migrazione additiva (`0028`, dopo la `0027`).
 
 ## US-29.1 · Creare un'attività da una proposta
 

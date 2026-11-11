@@ -178,7 +178,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 29 · Da proposta ad attività
 
-- **Stato:** [spec confermata](mvp-29-proposta-attivita/requirements.md), 6 task, migrazione 0028; nessuna implementazione.
+- **Stato:** [implementato sul branch](mvp-29-proposta-attivita/requirements.md) `feat/mvp-29-proposta-attivita`, 6 task completati, migrazione 0028. Restano CI SQL Server e collaudo organizzatori. Nessun deploy.
 - **Contenuto:** «Crea attività» da un contributo con modulo precompilato (lingua dell'admin, l'altra da completare), più attività per proposta, creazione idempotente, fonte conservata anche se la proposta sparisce (copia del titolo, D-119).
 - **Fatto quando:** una proposta genera più attività indipendenti, un doppio salvataggio non duplica e modificare o cancellare la proposta non tocca le attività.
 

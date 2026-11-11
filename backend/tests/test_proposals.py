@@ -272,8 +272,8 @@ class TestHide:
         assert {r["title"]: r["hidden"] for r in rows} == {"Macchine": True, "Open source": False}
         response = admin_client.get("/api/admin/views/contributions?format=csv")
         lines = response.content.decode("utf-8-sig").splitlines()
-        assert lines[0].split(";")[-1] == "Nascosta agli altri"
-        assert sorted(line.split(";")[-1] for line in lines[1:]) == ["No", "Sì"]
+        assert lines[0].split(";")[-2] == "Nascosta agli altri"
+        assert sorted(line.split(";")[-2] for line in lines[1:]) == ["No", "Sì"]
 
     def test_only_admins_hide_and_unknown_ones_are_404(
         self, admin_client, client, outbox, db, edition, make_participant, make_booking, clock
