@@ -335,6 +335,49 @@ class Benefit(Base):
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class BenefitDelivery(Base):
+    """A benefit handed to a person (MVP 30).
+
+    Tied to the person and the edition, not to the booking, which can disappear. An annulled
+    delivery stays on record with its reason; only one delivery per person and benefit is active.
+    """
+
+    __tablename__ = "benefit_delivery"
+    __table_args__ = (
+        Index(
+            "uq_benefit_delivery_active",
+            "participant_id",
+            "benefit_id",
+            unique=True,
+            mssql_where=text("annulled_at IS NULL"),
+            sqlite_where=text("annulled_at IS NULL"),
+        ),
+        Index(
+            "uq_benefit_delivery_request_key",
+            "request_key",
+            unique=True,
+            mssql_where=text("request_key IS NOT NULL"),
+            sqlite_where=text("request_key IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"), index=True)
+    participant_id: Mapped[int] = mapped_column(ForeignKey("participant.id"), index=True)
+    benefit_id: Mapped[int] = mapped_column(ForeignKey("benefit.id"), index=True)
+    delivered_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    delivered_by_id: Mapped[int] = mapped_column(ForeignKey("participant.id"))
+    annulled_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    annulled_by_id: Mapped[int | None] = mapped_column(ForeignKey("participant.id"))
+    annul_reason: Mapped[str | None] = mapped_column(Unicode(200))
+    request_key: Mapped[str | None] = mapped_column(Unicode(36))
+
+    participant: Mapped["Participant"] = relationship(foreign_keys=[participant_id])
+    benefit: Mapped[Benefit] = relationship()
+    delivered_by: Mapped["Participant"] = relationship(foreign_keys=[delivered_by_id])
+    annulled_by: Mapped["Participant | None"] = relationship(foreign_keys=[annulled_by_id])
+
+
 class Activity(Base):
     """Something organised during the camp, on a day and in one part of it (morning, afternoon,
     evening). Only people present in that part of the day can join."""

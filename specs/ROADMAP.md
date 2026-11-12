@@ -184,7 +184,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 30 · Consegne dei benefit
 
-- **Stato:** [spec confermata](mvp-30-consegne-benefit/requirements.md), 6 task, migrazione 0029; nessuna implementazione.
+- **Stato:** [implementato sul branch](mvp-30-consegne-benefit/requirements.md) `feat/mvp-30-consegne-benefit` (sopra il 29), 6 task completati, migrazione 0029. Restano CI SQL Server e collaudo organizzatori. Nessun deploy.
 - **Contenuto:** pagina admin «Consegne» sul catalogo benefit esistente; diritto per iscritti attivi interni non paganti, con quota esentata o con la base coperta; una consegna attiva per persona e benefit, annullo con motivo, storico conservato (D-120, D-121).
 - **Fatto quando:** un doppio clic non duplica, la consegna sopravvive alla perdita del diritto e nulla è visibile ai partecipanti.
 

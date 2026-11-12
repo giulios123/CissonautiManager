@@ -33,6 +33,7 @@ export function AdminLayout() {
           <NavLink to="/admin/meals">{t("adm.navMeals")}</NavLink>
           <NavLink to="/admin/activities">{t("adm.navActivities")}</NavLink>
           <NavLink to="/admin/guests">{t("adm.navGuests")}</NavLink>
+          <NavLink to="/admin/deliveries">{t("adm.navDeliveries")}</NavLink>
           <NavLink to="/admin/contributions">{t("adm.navContributions")}</NavLink>
           <NavLink to="/admin/report">{t("adm.navReport")}</NavLink>
           <NavLink to="/admin/to-collect">{t("adm.navToCollect")}</NavLink>

@@ -12,6 +12,7 @@ export const ROUTES = {
   adminMeals: "/admin/meals",
   adminActivities: "/admin/activities",
   adminGuests: "/admin/guests",
+  adminDeliveries: "/admin/deliveries",
   adminContributions: "/admin/contributions",
   adminReport: "/admin/report",
   adminToCollect: "/admin/to-collect",

@@ -168,6 +168,26 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "I dati sono cambiati. Ricarica l'anteprima prima di applicare.",
         "en": "The data changed. Refresh the preview before applying.",
     },
+    "benefit.retired": {
+        "it": "Questo benefit è stato ritirato dal catalogo: niente nuove consegne.",
+        "en": "This benefit was retired from the catalogue: new deliveries cannot be recorded.",
+    },
+    "delivery.not_entitled": {
+        "it": "Questa persona non ha diritto ai benefit.",
+        "en": "This person is not entitled to the benefits.",
+    },
+    "delivery.person_not_found": {
+        "it": "Persona non trovata.",
+        "en": "Person not found.",
+    },
+    "delivery.reason_required": {
+        "it": "Scrivi il motivo dell'annullo.",
+        "en": "Write the reason for annulling.",
+    },
+    "delivery.not_found": {
+        "it": "Consegna non trovata.",
+        "en": "Delivery not found.",
+    },
     "benefit.not_found": {
         "it": "Benefit non trovato per questa edizione.",
         "en": "Benefit not found for this edition.",

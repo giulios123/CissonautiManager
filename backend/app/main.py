@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.api import admin_activities as admin_activities_api
 from app.api import admin_admins as admin_admins_api
 from app.api import admin_contributions as admin_contributions_api
+from app.api import admin_deliveries as admin_deliveries_api
 from app.api import admin_edition as admin_edition_api
 from app.api import admin_email as admin_email_api
 from app.api import admin_exemptions as admin_exemptions_api
@@ -103,6 +104,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_contributions_api.router)
     app.include_router(admin_guest_money_api.router)
     app.include_router(admin_guests_api.router)
+    app.include_router(admin_deliveries_api.router)
     app.include_router(admin_admins_api.router)
     app.include_router(admin_edition_api.router)
     app.include_router(admin_email_api.router)

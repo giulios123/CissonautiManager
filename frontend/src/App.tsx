@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { RequireLogin } from "./auth";
 import { AdminAdmins } from "./pages/AdminAdmins";
+import { AdminDeliveries } from "./pages/AdminDeliveries";
 import { AdminActivities } from "./pages/AdminActivities";
 import { AdminActivityDetail } from "./pages/AdminActivityDetail";
 import { AdminGuestDetail } from "./pages/AdminGuestDetail";
@@ -99,6 +100,7 @@ function AppRoutes() {
           <Route path="activities/:id" element={<AdminActivityDetail />} />
           <Route path="guests" element={<AdminGuests />} />
           <Route path="guests/:id" element={<AdminGuestDetail />} />
+          <Route path="deliveries" element={<AdminDeliveries />} />
           <Route path="contributions" element={<AdminContributions />} />
           <Route path="report" element={<AdminReport />} />
           <Route path="to-collect" element={<AdminCollect />} />
