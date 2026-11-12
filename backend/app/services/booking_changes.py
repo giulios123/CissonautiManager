@@ -76,6 +76,19 @@ class PastDay(Exception):
     pass
 
 
+def detach_activities(db: Session, contribution_ids: list[int]) -> None:
+    """Clear the link of the activities created from proposals that are about to be deleted.
+
+    The activities stay, with the title copied when they were created (MVP 29). Done in code and
+    not with `ON DELETE SET NULL`, which would behave differently on SQLite and SQL Server."""
+    if contribution_ids:
+        db.execute(
+            update(Activity)
+            .where(Activity.source_contribution_id.in_(contribution_ids))
+            .values(source_contribution_id=None)
+        )
+
+
 @dataclass
 class ChangeResult:
     booking: Booking
@@ -273,6 +286,7 @@ def request_cancellation(
             update(AuditLog).where(AuditLog.booking_id == booking.id).values(booking_id=None)
         )
         booking.slots = []
+        detach_activities(db, [c.id for c in booking.contributions])
         db.delete(booking)
         outcome = "removed"
     participant = booking.participant

@@ -60,7 +60,8 @@ DIETS = (DIET_OMNIVORE, DIET_VEGETARIAN, DIET_VEGAN)
 CONTRIB_TALK = "talk"
 CONTRIB_TOPIC = "topic"  # a theme for the unconference
 CONTRIB_SKILL = "skill"
-CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL)
+CONTRIB_WANTED_SKILL = "wanted_skill"  # a skill the person is looking for
+CONTRIBUTION_KINDS = (CONTRIB_TALK, CONTRIB_TOPIC, CONTRIB_SKILL, CONTRIB_WANTED_SKILL)
 
 # Why a waitlist entry was closed. Entries are never deleted: the history stays.
 CLOSE_PROMOTED = "promoted"  # the seat went to this person
@@ -339,6 +340,15 @@ class Activity(Base):
     evening). Only people present in that part of the day can join."""
 
     __tablename__ = "activity"
+    __table_args__ = (
+        Index(
+            "uq_activity_request_key",
+            "request_key",
+            unique=True,
+            mssql_where=text("request_key IS NOT NULL"),
+            sqlite_where=text("request_key IS NOT NULL"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id"))
@@ -362,6 +372,14 @@ class Activity(Base):
     # None means no limit.
     capacity: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    # MVP 29: the proposal this activity was created from. The link is cleared when the proposal
+    # goes away; `source_title` is a copy made at creation, visible to the admins only.
+    source_contribution_id: Mapped[int | None] = mapped_column(
+        ForeignKey("contribution.id", name="fk_activity_source_contribution")
+    )
+    source_title: Mapped[str | None] = mapped_column(Unicode(200))
+    # Makes a repeated save of the same form return the activity already created.
+    request_key: Mapped[str | None] = mapped_column(Unicode(36))
 
 
 class BookingActivity(Base):
@@ -485,6 +503,12 @@ class Contribution(Base):
     description: Mapped[str | None] = mapped_column(UnicodeText)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    # An admin can hide a proposal from the other participants (MVP 27). The author still sees it.
+    hidden_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    hidden_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("participant.id", name="fk_contribution_hidden_by")
+    )
+    hidden_reason: Mapped[str | None] = mapped_column(Unicode(200))
 
 
 class PaymentChannel(Base):

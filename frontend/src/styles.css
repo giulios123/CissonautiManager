@@ -832,15 +832,25 @@ a + .status {
   grid-column: 1 / -1;
   margin: 0 -1rem;
   padding: 0.5rem 1rem;
-  background: var(--color-bg-glass);
-  border-bottom: 1px solid var(--color-border);
-  backdrop-filter: blur(8px);
+  background: var(--color-paper);
+  border-bottom: 3px solid var(--color-cta);
+  box-shadow: var(--shadow-sm);
 }
 
+/* Fields and messages that get the focus must not end up under the bar. */
+.with-summary :is(input, select, textarea, button, legend, h2, [tabindex="-1"]) {
+  scroll-margin-top: calc(
+    var(--registration-sticky-offset, 0px) + var(--registration-bar-height, 0px) + 1rem
+  );
+}
+
+/* The recap follows the page (it is not sticky): white, with an accent line on top. */
 .summary {
   min-width: 0;
   margin: 1.5rem -1rem 0;
-  padding: 0;
+  padding: 1rem;
+  background: var(--color-paper);
+  border-top: 3px solid var(--color-cta);
 }
 
 .count {
@@ -862,7 +872,14 @@ a + .status {
 .registration-toolbar .fee {
   grid-column: 1;
   margin: 0;
-  font-size: 1.125rem;
+  color: var(--color-heading);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.registration-toolbar button[type="submit"] {
+  min-height: 2.75rem;
 }
 
 .registration-toolbar .summary-note {
@@ -887,6 +904,7 @@ a + .status {
     margin: 0;
     padding: 1.25rem;
     border: 1px solid var(--color-border);
+    border-top: 3px solid var(--color-cta);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
   }

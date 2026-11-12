@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, StringConstraints, model_validator
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.csv_export import Amount, csv_filename, csv_response
@@ -49,6 +50,9 @@ class ActivityIn(BaseModel):
     payment_instructions: Annotated[Text, Field(max_length=5000)] | None = None
     price_cents: int = Field(default=0, ge=0, le=1_000_000)
     capacity: int | None = Field(default=None, ge=1, le=10000)
+    # MVP 29: only read when creating. `request_key` makes a repeated save return the same activity.
+    source_contribution_id: int | None = Field(default=None, ge=1)
+    request_key: Annotated[Text, Field(min_length=8, max_length=36)] | None = None
 
     @model_validator(mode="after")
     def check_terms(self) -> Self:
@@ -101,6 +105,8 @@ class ActivityOut(BaseModel):
     description_en: str | None = None
     translation_missing: bool = False
     internal_note: str | None = None
+    # The proposal it came from; `contribution_id` is empty once the proposal is gone.
+    source: dict | None = None
 
 
 class ActivityPerson(BaseModel):
@@ -172,6 +178,11 @@ def _out(activity: Activity, free: int | None, joined: int) -> ActivityOut:
             )
         ),
         internal_note=activity.internal_note,
+        source=(
+            {"contribution_id": activity.source_contribution_id, "title": activity.source_title}
+            if activity.source_title is not None
+            else None
+        ),
     )
 
 
@@ -330,24 +341,57 @@ def list_activities(
 @router.post("", status_code=201)
 def create_activity(
     body: ActivityIn,
+    response: Response,
     admin: Participant = Depends(require_admin),
     db: Session = Depends(get_db),
+    now: datetime = Depends(get_now),
 ) -> ActivityOut:
+    edition = _edition(db)
+    if body.request_key is not None:
+        existing = activity_service.find_by_request_key(db, edition, body.request_key)
+        if existing is not None:
+            return _existing(db, existing, now, response)
     if not all((body.title_it, body.title_en, body.description_it, body.description_en)):
         raise HTTPException(status_code=422, detail=t("activity.bilingual_required"))
     try:
-        edition = _edition(db)
+        source = None
+        if body.source_contribution_id is not None:
+            source = activity_service.source_contribution(db, edition, body.source_contribution_id)
         if (
             not edition.start_date
             or not edition.end_date
             or not edition.start_date <= body.date <= edition.end_date
         ):
             raise activity_service.ActivityRefused("outside_edition")
-        activity = activity_service.create(db, admin, edition, _data(body, edition))
+        activity = activity_service.create(
+            db, admin, edition, _data(body, edition), source=source, request_key=body.request_key
+        )
+    except activity_service.SourceNotFound as exc:
+        db.rollback()
+        raise HTTPException(status_code=404, detail=t("activity.source_not_found")) from exc
     except activity_service.ActivityRefused as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=t(REFUSALS[exc.reason])) from exc
+    except IntegrityError:
+        # Two saves of the same form in a race: the other one won, return its activity.
+        db.rollback()
+        existing = (
+            activity_service.find_by_request_key(db, edition, body.request_key)
+            if body.request_key is not None
+            else None
+        )
+        if existing is None:
+            raise
+        return _existing(db, existing, now, response)
     return _out(activity, activity.capacity, 0)
+
+
+def _existing(db: Session, activity: Activity, now: datetime, response: Response) -> ActivityOut:
+    """The activity a repeated save already created (200 instead of 201)."""
+    response.status_code = 200
+    free = activity_service.free_by_activity(db, [activity], now)[activity.id]
+    joined = len(_people(db, activity, now)) + len(_guests(db, activity))
+    return _out(activity, free, joined)
 
 
 @router.get("/{activity_id}", response_model=None)

@@ -190,6 +190,10 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "An activity with people signed up can't be deleted",
     },
     "activity.not_found": {"it": "Attività non trovata", "en": "Activity not found"},
+    "activity.source_not_found": {
+        "it": "Proposta non trovata",
+        "en": "Proposal not found",
+    },
     # --- admins
     "admin.already": {
         "it": "Questa persona è già admin.",
@@ -439,8 +443,12 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "This date is not part of the edition.",
     },
     "contribution.invalid_kind": {
-        "it": "Scegli se è un talk, un tema o una competenza",
-        "en": "Choose whether it is a talk, a topic or a skill",
+        "it": "Scegli se è un talk, un tema, una competenza offerta o una cercata",
+        "en": "Choose whether it is a talk, a topic, a skill you offer or one you look for",
+    },
+    "proposals.not_allowed": {
+        "it": "Le proposte degli altri sono visibili a chi ha un'iscrizione attiva.",
+        "en": "Other participants' proposals are visible to people with an active registration.",
     },
     "contribution.not_found": {"it": "Contributo non trovato", "en": "Contribution not found"},
     # --- waitlist (participant)

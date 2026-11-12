@@ -1,6 +1,20 @@
 # Progress
 
+**Aggiornamento 2026-11-11:** spec 29, 30 e 31 confermate dal maintainer (B1), nessuna implementazione e nessun test eseguito; D-119–D-122.
+
 **Aggiornamento 2026-11-10:** MVP 25a, 25b e 25c sono integrati in `main` con la PR #28 (le voci «implementato sul branch» qui sotto restano come storico); i collaudi di MVP 23 e 24 sono conclusi. Spec 26–28 pronte, non implementate.
+
+## MVP 29 · Da proposta ad attività — implementato sul branch
+
+Branch `feat/mvp-29-proposta-attivita` (spec in `specs/mvp-29-proposta-attivita/`). Migrazione additiva `0028_activity_source` (`source_contribution_id`, `source_title`, `request_key` con indice filtrato); `POST /api/admin/activities` con `source_contribution_id` e `request_key` (idempotente, 404 per proposte di un'altra edizione); `detach_activities` prima di cancellare contributi o prenotazione; vista e CSV dei contributi con le attività collegate (una query); `ActivityForm` estratto e riusato nella modale «Crea attività»; riga «Dalla proposta» nella scheda; guide admin IT/EN. Test: `test_activity_from_proposal.py` (21), `test_migrations.py`, `AdminProposalActivity.test.tsx`. **Non verificato:** CI su SQL Server (indice filtrato e FK della 0028), prova visiva in browser, collaudo organizzatori (`test-manuali.md`). Nessun deploy.
+
+## MVP 28 · Barra e recap più leggibili — implementato sul branch
+
+Branch `feat/mvp-28-barra-recap` (sopra il 27; spec in `specs/mvp-28-barra-recap/`). Barra d'iscrizione con fondo pieno, striscia gialla di 3 px sotto, importo più grande e pulsante da 44 px; recap con fondo bianco e striscia sopra, non sticky; `--registration-bar-height` sul form e `scroll-margin-top` sui campi per non finire sotto la barra; guida partecipante IT/EN. Nessuna migrazione, nessuna API. Test: `theme.test.ts` (nuova coppia di contrasto, regole della barra e del recap) e `Registration.test.tsx` (variabili sul form); frontend 469 test, lint, TypeScript e build verdi. **Non verificato:** scorrimento reale, iframe, zoom 200%, recap con contenuto, telefono vero (solo screenshot headless del solo inizio pagina), collaudo organizzatori. Nessun deploy.
+
+## MVP 27 · Proposte tra partecipanti — implementato sul branch
+
+Branch `feat/mvp-27-proposte-partecipanti` (sopra il 26; spec in `specs/mvp-27-proposte-partecipanti/`). Quarto tipo `wanted_skill` ovunque (editor, admin, CSV, report, messaggi), migrazione `0027_contribution_hidden` (`hidden_at`, `hidden_by_id`, `hidden_reason`), `attendance_authorized` in `services/consents.py` (una query, nessun N+1), `GET /api/me/proposals` (solo iscritti attivi e admin, autore solo con consenso presenza valido sul documento corrente, `Cache-Control: no-store`, nessun id o contatto nel payload), `POST /api/admin/contributions/{id}/hide|unhide` idempotenti con cronologia (`AuditLog`), colonna «Nascosta agli altri» in vista e CSV, `ProposalsDialog` sopra `InfoDialog`, avviso sul testo libero, guide IT/EN partecipante e admin. Test: backend `test_proposals.py` e aggiunte a consensi, contributi, report, migrazioni; frontend `Personal.test.tsx` e `AdminContributions.test.tsx`. **Non verificato:** CI su SQL Server (vincolo `fk_contribution_hidden_by` in `0027`), prova visiva in browser, collaudo organizzatori (`test-manuali.md`). Nessun deploy.
 
 ## MVP 26 · Dettaglio dei numeri settimanali — implementato sul branch
 

@@ -1,15 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
+import { api, ApiError } from "../api";
+import { ConfirmDialog } from "../ConfirmDialog";
 import { statusLabel } from "../booking";
 import { KIND_KEYS, kindLabel } from "./Contributions";
-import { useT } from "../i18n";
-import { adminRegistrationPath } from "../routes";
+import { useI18n, useT } from "../i18n";
+import { InfoDialog } from "../InfoDialog";
+import { adminActivityPath, adminRegistrationPath } from "../routes";
+import { formatDay, periodLabel } from "../booking";
+import { ActivityForm, useActivityFormSetup } from "./ActivityForm";
 import { CsvButton } from "./CsvButton";
 
 type Row = {
   id: number;
-  kind: "talk" | "topic" | "skill";
+  kind: "talk" | "topic" | "skill" | "wanted_skill";
   title: string;
   description: string | null;
   booking_id: number;
@@ -17,7 +21,55 @@ type Row = {
   last_name: string;
   status: string;
   active: boolean;
+  hidden: boolean;
+  activities: { id: number; title: string; date: string; period: string }[];
 };
+
+/** The activity form for one proposal: starts from its text, in the language in use. */
+function CreateActivityDialog({
+  row,
+  onSaved,
+  onClose,
+  returnFocusTo,
+}: {
+  row: Row;
+  onSaved: () => Promise<void>;
+  onClose: () => void;
+  returnFocusTo: React.RefObject<HTMLElement | null>;
+}) {
+  const t = useT();
+  const { locale } = useI18n();
+  const { days, hours } = useActivityFormSetup();
+  const text = { title: row.title, description: row.description ?? "" };
+  return (
+    <InfoDialog
+      title={t("contrib.createActivityTitle", { title: row.title })}
+      onClose={onClose}
+      returnFocusTo={returnFocusTo}
+    >
+      {days.length === 0 ? (
+        <p>{t("aact.setDatesFirst")}</p>
+      ) : (
+        <ActivityForm
+          hideHeading
+          days={days}
+          hours={hours}
+          initial={null}
+          source={{ contributionId: row.id, title: row.title }}
+          prefill={
+            locale === "it"
+              ? { title_it: text.title, description_it: text.description }
+              : { title_en: text.title, description_en: text.description }
+          }
+          onSaved={async () => {
+            await onSaved();
+          }}
+          onCancel={onClose}
+        />
+      )}
+    </InfoDialog>
+  );
+}
 
 export function AdminContributions() {
   const t = useT();
@@ -25,13 +77,44 @@ export function AdminContributions() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
   const params = new URLSearchParams(kind ? { kind } : {});
+  const [hiding, setHiding] = useState<Row | null>(null);
+  const [reason, setReason] = useState("");
+  const [working, setWorking] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const clickedRef = useRef<HTMLButtonElement | null>(null);
+  // Each opening of the form has its own number: a save that completes late must not close a
+  // form opened afterwards.
+  const [converting, setConverting] = useState<{ row: Row; opening: number } | null>(null);
+  const openings = useRef(0);
+  const [created, setCreated] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     const query = new URLSearchParams(kind ? { kind } : {});
     api<Row[]>(`/api/admin/views/contributions?${query}`)
       .then(setRows)
       .catch(() => setFailed(true));
   }, [kind]);
+
+  useEffect(load, [load]);
+
+  async function setHidden(row: Row, hidden: boolean) {
+    if (working) return;
+    setWorking(true);
+    setProblem(null);
+    try {
+      await api(`/api/admin/contributions/${row.id}/${hidden ? "hide" : "unhide"}`, {
+        method: "POST",
+        json: hidden ? { reason: reason.trim() || null } : undefined,
+      });
+      setHiding(null);
+      setReason("");
+      load();
+    } catch (caught) {
+      setProblem(caught instanceof ApiError ? caught.message : t("contrib.hideError"));
+    } finally {
+      setWorking(false);
+    }
+  }
 
   return (
     <main className="wide">
@@ -66,6 +149,8 @@ export function AdminContributions() {
                   <th scope="col">{t("contrib.colContribution")}</th>
                   <th scope="col">{t("contrib.type")}</th>
                   <th scope="col">{t("contrib.colWho")}</th>
+                  <th scope="col">{t("contrib.colVisibility")}</th>
+                  <th scope="col">{t("contrib.colActivities")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -96,12 +181,121 @@ export function AdminContributions() {
                         </>
                       )}
                     </td>
+                    <td>
+                      {row.hidden ? (
+                        <strong>{t("contrib.hiddenBadge")}</strong>
+                      ) : (
+                        t("contrib.visible")
+                      )}{" "}
+                      {row.hidden ? (
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={working}
+                          onClick={() => setHidden(row, false)}
+                        >
+                          {t("contrib.show")}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={working}
+                          onClick={(event) => {
+                            clickedRef.current = event.currentTarget;
+                            setProblem(null);
+                            setHiding(row);
+                          }}
+                        >
+                          {t("contrib.hide")}
+                        </button>
+                      )}
+                    </td>
+                    <td>
+                      {row.activities.length > 0 && (
+                        <>
+                          <strong>{t("contrib.activitiesCreated")}</strong>
+                          <ul>
+                            {row.activities.map((activity) => (
+                              <li key={activity.id}>
+                                <Link to={adminActivityPath(activity.id)}>{activity.title}</Link>{" "}
+                                <small>
+                                  {formatDay(activity.date)},{" "}
+                                  {periodLabel(activity.period).toLowerCase()}
+                                </small>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className="secondary"
+                        aria-label={t("contrib.createActivityFor", { title: row.title })}
+                        onClick={(event) => {
+                          clickedRef.current = event.currentTarget;
+                          setCreated(false);
+                          openings.current += 1;
+                          setConverting({ row, opening: openings.current });
+                        }}
+                      >
+                        {t("contrib.createActivity")}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </>
+      )}
+      {created && (
+        <p role="status" className="notice ok">
+          {t("aact.created")}
+        </p>
+      )}
+      {converting && (
+        <CreateActivityDialog
+          row={converting.row}
+          returnFocusTo={clickedRef}
+          onClose={() => setConverting(null)}
+          onSaved={async () => {
+            const { opening } = converting;
+            setCreated(true);
+            load();
+            setConverting((current) => (current?.opening === opening ? null : current));
+          }}
+        />
+      )}
+      {hiding && (
+        <ConfirmDialog
+          title={t("contrib.hideTitle", { title: hiding.title })}
+          confirmLabel={t("contrib.hideConfirm")}
+          working={working}
+          cancelDisabled={working}
+          error={problem}
+          onConfirm={() => setHidden(hiding, true)}
+          onCancel={() => {
+            setHiding(null);
+            setReason("");
+          }}
+          returnFocusTo={clickedRef}
+        >
+          <p>{t("contrib.hideText")}</p>
+          <label>
+            {t("contrib.hideReason")}
+            <input
+              value={reason}
+              maxLength={200}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </label>
+        </ConfirmDialog>
+      )}
+      {!hiding && problem && (
+        <p role="alert" className="notice error">
+          {problem}
+        </p>
       )}
     </main>
   );

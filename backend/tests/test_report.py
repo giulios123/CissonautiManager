@@ -152,7 +152,7 @@ class TestJson:
 
     def test_contributions_and_waitlist(self, admin_client, camp):
         report = get(admin_client).json()
-        assert report["contributions"] == {"talk": 1, "topic": 0, "skill": 0}
+        assert report["contributions"] == {"talk": 1, "topic": 0, "skill": 0, "wanted_skill": 0}
         assert report["waitlist"]["waiting"] == 1
         assert report["waitlist"]["promoted"] == 1
         assert report["waitlist"]["promoted_plus_one"] == 1

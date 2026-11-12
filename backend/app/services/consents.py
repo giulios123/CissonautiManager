@@ -1,5 +1,7 @@
 """Read and write optional consent evidence for the active edition."""
 
+from collections import defaultdict
+from collections.abc import Collection
 from datetime import datetime
 
 from sqlalchemy import select
@@ -8,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.domain import consents as consent_domain
 from app.domain.consents import ConsentState
 from app.models import (
+    DOC_ATTENDANCE,
     OPTIONAL_CONSENT_KINDS,
     Booking,
     ConsentEvent,
@@ -57,6 +60,35 @@ def get_states(db: Session, edition: Edition, participant: Participant) -> list[
     return consent_domain.build_states(
         _events_for(db, edition, participant), _current_documents(db, edition)
     )
+
+
+def attendance_authorized(
+    db: Session, edition: Edition, participant_ids: Collection[int]
+) -> set[int]:
+    """The people whose attendance consent is granted for the current document, in one query.
+
+    Used to show a name to other participants: anything but a valid grant (declined, withdrawn,
+    never expressed, or granted on an older document) leaves the person out.
+    """
+    current = edition_service.latest_legal_document(db, edition, DOC_ATTENDANCE)
+    if current is None or not participant_ids:
+        return set()
+    by_person: dict[int, list[ConsentEvent]] = defaultdict(list)
+    for event in db.scalars(
+        select(ConsentEvent).where(
+            ConsentEvent.edition_id == edition.id,
+            ConsentEvent.kind == DOC_ATTENDANCE,
+            ConsentEvent.participant_id.in_(participant_ids),
+        )
+    ):
+        by_person[event.participant_id].append(event)
+    authorized: set[int] = set()
+    for person_id, events in by_person.items():
+        latest = consent_domain.latest_by_kind(events).get(DOC_ATTENDANCE)
+        state = ConsentState(DOC_ATTENDANCE, latest.action, latest, current) if latest else None
+        if state is not None and state.is_authorized_for_current_document:
+            authorized.add(person_id)
+    return authorized
 
 
 def has_edition_association(db: Session, edition: Edition, participant: Participant) -> bool:

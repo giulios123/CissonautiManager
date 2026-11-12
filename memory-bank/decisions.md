@@ -506,3 +506,14 @@ La decisione sull'override è arrivata su `main` dopo la registrazione D-050–D
 | D-118 | «Proposte degli altri» è riservata a chi ha una prenotazione attiva (in attesa o confermata) nell'edizione corrente e agli admin; il nome dell'autore compare solo con consenso «presenza» valido, altrimenti la proposta è anonima. | Chi è scaduto, ha disdetto o è solo in lista d'attesa non vede le proposte. Scartato: ogni account autenticato. |
 
 Scelte tecniche proposte nelle spec, da rivedere: registro esterni separato da `Payment` e `booking_refund` separato per evitare di toccare i pagamenti esistenti; omonimi dell'esterno bloccati con conferma esplicita; esenzione legata alla riga della voce (cade se la voce viene tolta).
+
+## D-119–D-122 · Proposta→attività, benefit e ordine dei giorni (MVP 29, 30, 31)
+
+- **Data**: 2026-11-11. **Fonte**: risposte dirette del maintainer alla preparazione delle spec 29/30/31. Chiudono Q-C4, la parte quantità di Q-C3 e il perimetro di Q-D2; nessun codice implementato.
+
+| ID | Decisione | Motivo / alternativa scartata |
+|---|---|---|
+| D-119 | Se la proposta d'origine sparisce (cancellata dall'autore o rimossa con la prenotazione), l'attività creata resta e conserva una **copia del titolo** della proposta, visibile solo agli admin («Dalla proposta «X» (non più disponibile)»); il collegamento diventa vuoto, mai il nome dell'autore. Lo scollegamento è fatto dal servizio, non da `ON DELETE SET NULL`. | Le attività sono indipendenti dalla fonte. Scartato: solo traccia nella cronologia. [Spec 29](../specs/mvp-29-proposta-attivita/design.md). |
+| D-120 | Una sola consegna attiva per persona e benefit; si corregge annullando con motivo e riconsegnando. Se dopo la consegna la persona perde il diritto, la consegna resta in storico marcata «Senza diritto attuale»; **nessuna restituzione tracciata** (dettaglio residuo di Q-C3, confermato con la spec il 2026-11-11). | Semplicità e storia intatta. Scartato: quantità multiple con restituzioni parziali (peserebbe due MVP). [Spec 30](../specs/mvp-30-consegne-benefit/design.md). |
+| D-121 | Diritto ai benefit: iscrizione attiva **e** (categoria «interno non pagante» **oppure** quota esentata, anche se ordinario, **oppure** versato netto ≥ quota base dell'edizione). Esterni, sola lista, scaduti e disdetti esclusi. Con quota base 0 la sola terza condizione non basta (confermato con la spec il 2026-11-11). Distinto dalla conferma base+giorni. | L'esenzione della quota vale come quota «coperta». Scartato: ordinario esentato senza diritto finché non diventa interno. |
+| D-122 | Dal 2026-11-11 l'ordine «oggi, futuri, passati» (data di Roma, aggiornato al ritorno sulla scheda e mai con una finestra aperta) vale per le viste **Settimana, Giorni e slot e Pasti**; i CSV restano cronologici. La finestra di rilascio senza demo resta da concordare. | Scartato: solo Settimana, oppure anche i CSV. [Spec 31](../specs/mvp-31-giorni-utili/design.md). |
