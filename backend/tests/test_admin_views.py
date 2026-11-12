@@ -150,7 +150,7 @@ class TestSlotsView:
         assert client.get("/api/admin/views/slots?format=csv").status_code == 403
 
     def test_without_an_edition_it_is_empty(self, admin_client):
-        assert admin_client.get("/api/admin/views/slots").json() == {"days": []}
+        assert admin_client.get("/api/admin/views/slots").json() == {"days": [], "today": None}
 
 
 class TestWeekView:
@@ -218,6 +218,7 @@ class TestWeekView:
             "total_lunches": 0,
             "total_dinners": 0,
             "total_activities": 0,
+            "today": None,
         }
 
 

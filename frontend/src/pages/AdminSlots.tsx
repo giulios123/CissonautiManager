@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { formatDay, hhmm, periodLabel } from "../booking";
 import { useT } from "../i18n";
+import { useRefreshOnReturn } from "../useRefreshOnReturn";
 import { adminRegistrationPath } from "../routes";
 import { StatusBadge } from "../StatusBadge";
 import { CsvButton } from "./CsvButton";
@@ -42,13 +43,18 @@ type DayRow = { date: string; slots: SlotRow[] };
 export function AdminSlots() {
   const t = useT();
   const [days, setDays] = useState<DayRow[] | null>(null);
+  const [today, setToday] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = useCallback(
-    () =>
-      api<{ days: DayRow[] }>("/api/admin/views/slots")
-        .then((data) => setDays(data.days))
+    (shouldApply?: () => boolean) =>
+      api<{ days: DayRow[]; today?: string | null }>("/api/admin/views/slots")
+        .then((data) => {
+          if (shouldApply && !shouldApply()) return;
+          setDays(data.days);
+          setToday(data.today ?? null);
+        })
         .catch(() => setFailed(true)),
     [],
   );
@@ -56,9 +62,13 @@ export function AdminSlots() {
   useEffect(() => {
     void load();
   }, [load]);
+  // No automatic refresh while a removal is on its way.
+  const removing = useRef(false);
+  useRefreshOnReturn(load, () => removing.current);
 
   async function remove(person: Waiting) {
     setMessage(null);
+    removing.current = true;
     try {
       await api(`/api/admin/waitlist/${person.entry_id}`, { method: "DELETE" });
       setMessage({
@@ -71,6 +81,8 @@ export function AdminSlots() {
         ok: false,
         text: error instanceof ApiError ? error.message : t("common.retryShortly"),
       });
+    } finally {
+      removing.current = false;
     }
   }
 
@@ -99,7 +111,15 @@ export function AdminSlots() {
           {days.map((day) => (
             <div className="table-wrap" key={day.date}>
               <table>
-                <caption>{formatDay(day.date)}</caption>
+                <caption>
+                  {formatDay(day.date)}
+                  {day.date === today && (
+                    <>
+                      {" "}
+                      <span className="tag">{t("views.today")}</span>
+                    </>
+                  )}
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">{t("slots.colSlot")}</th>

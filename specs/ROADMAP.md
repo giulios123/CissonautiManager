@@ -190,7 +190,7 @@ Sequenza condivisa con il 18: [piano operativo](piano-mvp-17-18.md), 17 prima e 
 
 ## MVP 31 · Giorni utili per primi
 
-- **Stato:** [spec confermata](mvp-31-giorni-utili/requirements.md), 4 task, nessuna migrazione; da rilasciare in un giorno senza demo (da concordare).
+- **Stato:** [implementato sul branch](mvp-31-giorni-utili/requirements.md) `feat/mvp-31-giorni-utili` (sopra il 30), 4 task completati, nessuna migrazione. Restano prova visiva e collaudo organizzatori; da rilasciare in un giorno senza demo (da concordare). Nessun deploy.
 - **Contenuto:** viste Settimana, Giorni e slot e Pasti con oggi, poi i prossimi, poi i passati (data di Roma, aggiornamento al ritorno sulla scheda, mai con una finestra aperta); CSV cronologici (D-122).
 - **Fatto quando:** durante l'edizione il giorno di Roma è in testa e nessun numero si sposta dalla sua data.
 

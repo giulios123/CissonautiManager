@@ -1,5 +1,9 @@
 # Progress
 
+## MVP 31 · Giorni utili per primi — implementato sul branch
+
+Branch `feat/mvp-31-giorni-utili` (sopra il 30; spec in `specs/mvp-31-giorni-utili/`). Nessuna migrazione. Funzioni pure `useful_day_order`, `event_today`, `in_useful_order` in `domain/presence.py` e `rome_today` in `timefmt.py`; `/week`, `/slots` e `/meals` (JSON) restituiscono i giorni già ordinati (oggi, futuri, passati, solo durante l'edizione) e il campo `today`; i CSV restano cronologici (D-122). Frontend: hook `useRefreshOnReturn` (ricarica al ritorno sulla scheda, mai con finestra o editor aperti o un campo in focus), badge «Oggi» nelle tre viste; guide admin IT/EN. Test: `test_day_order.py`, `test_useful_days_api.py`, `UsefulDays.test.tsx`. **Non verificato:** prova visiva su telefono e collaudo organizzatori (`test-manuali.md`). **Da concordare:** la giornata senza demo per il rilascio. Nessun deploy.
+
 **Aggiornamento 2026-11-11:** spec 29, 30 e 31 confermate dal maintainer (B1), nessuna implementazione e nessun test eseguito; D-119–D-122.
 
 **Aggiornamento 2026-11-10:** MVP 25a, 25b e 25c sono integrati in `main` con la PR #28 (le voci «implementato sul branch» qui sotto restano come storico); i collaudi di MVP 23 e 24 sono conclusi. Spec 26–28 pronte, non implementate.

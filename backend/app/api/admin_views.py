@@ -14,7 +14,7 @@ from app.csv_export import Amount, Cell, csv_filename, csv_response
 from app.db import get_db
 from app.deps import get_now, require_admin
 from app.domain.meals import diet_counts, meal_counts_by_day
-from app.domain.presence import presence_by_slot, week_summary
+from app.domain.presence import event_today, in_useful_order, presence_by_slot, week_summary
 from app.i18n import current_locale, t, tr
 from app.models import MEAL_DINNER, MEAL_LUNCH, Activity
 from app.services import edition as edition_service
@@ -22,11 +22,23 @@ from app.services import report_export
 from app.services import views as views_service
 from app.services import waitlist as waitlist_service
 from app.services.amounts import meal_terms
-from app.timefmt import meal_label, period_label, status_label
+from app.timefmt import meal_label, period_label, rome_today, status_label
 
 router = APIRouter(prefix="/api/admin/views", tags=["admin"], dependencies=[Depends(require_admin)])
 
 Format = Literal["json", "csv"]
+
+
+def _useful_order[T](db: Session, now: datetime, days: list[T]) -> tuple[list[T], date | None]:
+    """The day rows of a view in the order that is useful during the event (MVP 31): today, then
+    the days to come, then the past ones. Also returns the day of today in Rome while the event
+    runs, or None. Only the screen uses this: the CSV files stay chronological."""
+    edition = edition_service.get_active_edition(db)
+    if edition is None:
+        return days, None
+    today = rome_today(now)
+    ordered = in_useful_order(days, lambda d: d.date, today, edition.start_date, edition.end_date)
+    return ordered, event_today(today, edition.start_date, edition.end_date)
 
 
 class SlotPerson(BaseModel):
@@ -73,6 +85,7 @@ class DayPresenceOut(BaseModel):
 
 class SlotsViewOut(BaseModel):
     days: list[DayPresenceOut]
+    today: date | None = None
 
 
 @router.get("/slots", response_model=None)
@@ -180,7 +193,8 @@ def slots_view(
             "Invitato da",
         ]
         return csv_response(csv_filename("giorni-slot", now), header, rows)
-    return SlotsViewOut(days=days)
+    days, today = _useful_order(db, now, days)
+    return SlotsViewOut(days=days, today=today)
 
 
 class MealPerson(BaseModel):
@@ -212,6 +226,7 @@ class MealDayOut(BaseModel):
 
 class MealsViewOut(BaseModel):
     days: list[MealDayOut]
+    today: date | None = None
 
 
 DIET_LABELS = {"omnivore": "Onnivoro", "vegetarian": "Vegetariano", "vegan": "Vegano"}
@@ -308,7 +323,8 @@ def meals_view(
                 )
             )
         days.append(MealDayOut(date=day, meals=meals))
-    return MealsViewOut(days=days)
+    days, today = _useful_order(db, now, days)
+    return MealsViewOut(days=days, today=today)
 
 
 class WeekDayOut(BaseModel):
@@ -329,6 +345,7 @@ class WeekOut(BaseModel):
     total_lunches: int = 0
     total_dinners: int = 0
     total_activities: int = 0
+    today: date | None = None
 
 
 @router.get("/week", response_model=None)
@@ -402,8 +419,10 @@ def week_view(
             ]
         )
         return csv_response(csv_filename("settimana", now), header, rows)
+    days, today = _useful_order(db, now, days)
     return WeekOut(
         days=days,
+        today=today,
         total_people=total,
         total_lunches=lunches,
         total_dinners=dinners,
